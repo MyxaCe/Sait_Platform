@@ -1,0 +1,27 @@
+{
+  "name": "@broker/realtime",
+  "version": "0.0.1",
+  "private": true,
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "socket.io-client": "^4.7.5",
+    "zustand": "^4.5.4"
+  },
+  "peerDependencies": {
+    "react": "^18.3.0"
+  },
+  "devDependencies": {
+    "@broker/config": "workspace:*",
+    "@types/node": "^20.14.12",
+    "@types/react": "^18.3.3",
+    "react": "^18.3.1",
+    "typescript": "^5.5.4",
+    "vitest": "^2.0.5"
+  }
+}

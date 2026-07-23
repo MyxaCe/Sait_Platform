@@ -1,0 +1,35 @@
+{
+  "permissions": {
+    "allow": [
+      "Skill(artifact-design)",
+      "Skill(artifact-design:*)",
+      "Skill(dataviz)",
+      "Skill(dataviz:*)",
+      "Bash(node scripts/validate_palette.js \"#F0A63C,#2FC98F,#E85D5D\" --mode dark --surface \"#0A0D14\")",
+      "PowerShell(Start-Process \"c:\\\\Users\\\\user\\\\Desktop\\\\Sait_Platform\\\\index.html\")",
+      "PowerShell(node -v)",
+      "PowerShell(npm -v)",
+      "PowerShell(pnpm -v)",
+      "PowerShell(npm install -g pnpm@9)",
+      "PowerShell(pnpm install)",
+      "PowerShell(pnpm build)",
+      "PowerShell(pnpm typecheck)",
+      "PowerShell(git init -b main)",
+      "PowerShell(pnpm --filter @broker/web dev)",
+      "PowerShell($deadline = \\(Get-Date\\).AddSeconds\\(60\\); do { try { $r = Invoke-WebRequest -Uri http://localhost:3000 -UseBasicParsing -TimeoutSec 5; break } catch { Start-Sleep -Seconds 2 } } while \\(\\(Get-Date\\) -lt $deadline\\); if \\($r\\) { \"HTTP $\\($r.StatusCode\\), length $\\($r.RawContentLength\\)\"; if \\($r.Content -match 'Торгуйте на мировых рынках'\\) { 'Hero heading found in HTML' } } else { 'Server did not respond in 60s' })",
+      "PowerShell($deadline = \\(Get-Date\\).AddSeconds\\(90\\); $r = $null; do { try { $r = Invoke-WebRequest -Uri http://localhost:3000 -UseBasicParsing -TimeoutSec 8; break } catch { Start-Sleep -Seconds 2 } } while \\(\\(Get-Date\\) -lt $deadline\\); if \\($r\\) { \"HTTP $\\($r.StatusCode\\)\"; foreach \\($m in 'EURUSD','BTCUSD','animate-ticker','1.08420','Котировки в реальном времени'\\) { if \\($r.Content -match [regex]::Escape\\($m\\)\\) { \"OK: $m\" } else { \"MISSING: $m\" } } } else { 'Server did not respond' })",
+      "PowerShell(Remove-Item -Recurse -Force \"c:\\\\Users\\\\user\\\\Desktop\\\\Sait_Platform\\\\apps\\\\web\\\\.next\" -Confirm:$false)",
+      "PowerShell($r = Invoke-WebRequest -Uri http://localhost:3000/accounts -UseBasicParsing -TimeoutSec 90; \"accounts: HTTP $\\($r.StatusCode\\)\"; foreach \\($m in 'Типы счетов и тарифы','ECN Prime','Популярный','Калькулятор комиссий','Выгоднее всего','Минимальный депозит'\\) { if \\($r.Content -match [regex]::Escape\\($m\\)\\) { \"OK: $m\" } else { \"MISSING: $m\" } })",
+      "PowerShell(pnpm typecheck; if \\($?\\) { foreach \\($u in @\\('education/articles','education/articles/what-is-forex','education/webinars','education/glossary','education/faq'\\)\\) { try { $r = Invoke-WebRequest -Uri \"http://localhost:3000/$u\" -UseBasicParsing -TimeoutSec 90; \"${u}: HTTP $\\($r.StatusCode\\)\" } catch { \"${u}: FAILED\" } }; $faq = Invoke-WebRequest -Uri http://localhost:3000/education/faq -UseBasicParsing -TimeoutSec 30; if \\($faq.Content -match 'FAQPage'\\) { 'OK: FAQPage JSON-LD' } else { 'MISSING: FAQPage JSON-LD' }; $web = Invoke-WebRequest -Uri http://localhost:3000/education/webinars -UseBasicParsing -TimeoutSec 30; if \\($web.Content -match 'Прямой эфир' -and $web.Content -match 'Запись'\\) { 'OK: upcoming + past webinars' } else { 'MISSING: webinar sections' } })",
+      "PowerShell($deadline = \\(Get-Date\\).AddSeconds\\(90\\); $r = $null; do { try { $r = Invoke-WebRequest -Uri http://localhost:3000/education/faq -UseBasicParsing -TimeoutSec 10; break } catch { Start-Sleep -Seconds 2 } } while \\(\\(Get-Date\\) -lt $deadline\\); if \\($r\\) { \"dev server up: HTTP $\\($r.StatusCode\\)\" } else { 'dev server did not respond' })",
+      "PowerShell(pnpm --filter @broker/web start)",
+      "PowerShell(pnpm typecheck; if \\($?\\) { $sm = Invoke-WebRequest -Uri http://localhost:3000/sitemap.xml -UseBasicParsing -TimeoutSec 60; \"sitemap urls: $\\(\\([regex]::Matches\\($sm.Content, '<url>'\\)\\).Count\\)\" })",
+      "PowerShell($st = Invoke-WebRequest -Uri http://localhost:3000/status -UseBasicParsing -TimeoutSec 60; if \\($st.Content -match 'Все системы работают штатно'\\) { 'OK: green banner in SSR' } else { 'still MISSING' })",
+      "PowerShell(pnpm typecheck; if \\($?\\) { foreach \\($u in @\\('promotions','blog','blog/new-web-platform-pwa','company/careers'\\)\\) { try { $r = Invoke-WebRequest -Uri \"http://localhost:3000/$u\" -UseBasicParsing -TimeoutSec 90; \"/${u}: HTTP $\\($r.StatusCode\\)\" } catch { \"/${u}: FAILED\" } }; $sm = Invoke-WebRequest -Uri http://localhost:3000/sitemap.xml -UseBasicParsing -TimeoutSec 30; \"sitemap urls: $\\(\\([regex]::Matches\\($sm.Content, '<url>'\\)\\).Count\\)\" })",
+      "PowerShell($conn = Get-NetTCPConnection -LocalPort 3000 -State Listen -ErrorAction SilentlyContinue; if \\($conn\\) { $conn | ForEach-Object { try { Stop-Process -Id $_.OwningProcess -Force -Confirm:$false; \"killed PID $\\($_.OwningProcess\\)\" } catch { \"PID $\\($_.OwningProcess\\): $\\($_.Exception.Message\\)\" } } } else { 'port 3000 free' }; Start-Sleep -Seconds 2; if \\(Get-NetTCPConnection -LocalPort 3000 -State Listen -ErrorAction SilentlyContinue\\) { 'STILL BUSY' } else { 'port 3000 free now' })",
+      "PowerShell($deadline = \\(Get-Date\\).AddSeconds\\(60\\); do { try { Invoke-WebRequest -Uri http://localhost:3000/ -UseBasicParsing -TimeoutSec 8 | Out-Null; break } catch { Start-Sleep -Seconds 2 } } while \\(\\(Get-Date\\) -lt $deadline\\); Set-Location \"c:\\\\Users\\\\user\\\\Desktop\\\\Sait_Platform\\\\apps\\\\web\"; npx playwright test 2>$null)",
+      "PowerShell(Invoke-WebRequest -Uri http://localhost:3000/instruments/forex/nosuchpair -UseBasicParsing -TimeoutSec 30 2>$null)",
+      "PowerShell(Set-Location \"c:\\\\Users\\\\user\\\\Desktop\\\\Sait_Platform\"; git config user.name 2>$null; git config user.email 2>$null; git status --short | Measure-Object -Line | ForEach-Object { \"files to commit: $\\($_.Lines\\)\" })"
+    ]
+  }
+}

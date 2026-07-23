@@ -1,0 +1,563 @@
+{
+  "meta": {
+    "title": "Apex Capital — Trade Global Markets",
+    "description": "12,000+ trading instruments: Forex, stocks, crypto, indices and metals. Spreads from 0.0 pips, 14 ms order execution."
+  },
+  "common": {
+    "openAccount": "Open Account",
+    "login": "Log In",
+    "freeDemo": "Free Demo Account",
+    "tryDemo": "Try Demo",
+    "read": "Read →",
+    "minRead": "{minutes} min read",
+    "backHome": "Back to home",
+    "trade": "Trade"
+  },
+  "validation": {
+    "nameMin": "At least 2 characters",
+    "nameMax": "Value is too long",
+    "invalidEmail": "Invalid email address",
+    "phoneFormat": "Format: +1 555 123-4567",
+    "selectCountry": "Select your country",
+    "selectAccountType": "Select an account type",
+    "acceptTerms": "You must accept the terms",
+    "selectTopic": "Select a topic",
+    "messageMin": "Please describe your question (at least 10 characters)",
+    "messageMax": "Maximum 2000 characters",
+    "rateLimited": "Too many requests. Please try again in a minute.",
+    "invalidRequest": "Invalid request",
+    "emailExists": "This email is already registered. Please log in.",
+    "generic": "Failed to send. Please try again."
+  },
+  "connection": {
+    "connected": "Real-time data",
+    "connecting": "Connecting…",
+    "reconnecting": "Reconnecting…",
+    "offline": "No connection",
+    "tickerAria": "Real-time quotes"
+  },
+  "categories": {
+    "all": "All",
+    "forex": "Forex",
+    "metals": "Metals",
+    "crypto": "Crypto",
+    "indices": "Indices",
+    "stocks": "Stocks",
+    "energy": "Energy"
+  },
+  "nav": {
+    "instruments": "Instruments",
+    "accounts": "Accounts & Pricing",
+    "analytics": "Analytics",
+    "education": "Education",
+    "about": "About Us",
+    "mainNav": "Main navigation",
+    "mobileNav": "Mobile navigation",
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu"
+  },
+  "footer": {
+    "columns": [
+      {
+        "title": "Trading",
+        "links": [
+          { "href": "/instruments", "label": "Trading Instruments" },
+          { "href": "/accounts", "label": "Account Types" },
+          { "href": "/education/faq", "label": "FAQ" },
+          { "href": "/promotions", "label": "Promotions & Bonuses" }
+        ]
+      },
+      {
+        "title": "Analytics",
+        "links": [
+          { "href": "/analytics/news", "label": "Market News" },
+          { "href": "/analytics/calendar", "label": "Economic Calendar" },
+          { "href": "/education/articles", "label": "Education" },
+          { "href": "/blog", "label": "Blog" }
+        ]
+      },
+      {
+        "title": "Company",
+        "links": [
+          { "href": "/about", "label": "About Us" },
+          { "href": "/partners", "label": "Partners" },
+          { "href": "/company/careers", "label": "Careers" },
+          { "href": "/company/contacts", "label": "Contacts" }
+        ]
+      },
+      {
+        "title": "Legal",
+        "links": [
+          { "href": "/legal/privacy", "label": "Privacy Policy" },
+          { "href": "/legal/terms", "label": "Terms of Use" },
+          { "href": "/legal/risk-disclosure", "label": "Risk Disclosure" },
+          { "href": "/status", "label": "Service Status" }
+        ]
+      }
+    ],
+    "riskWarning": "Risk warning: trading CFDs and leveraged products carries a high level of risk and may result in the loss of your entire invested capital. Make sure you fully understand the risks involved before trading.",
+    "copyright": "© {year} Apex Capital. All rights reserved."
+  },
+  "home": {
+    "hero": {
+      "badge": "Regulated broker · in the market since 2009",
+      "title": "Trade global markets <accent>with confidence</accent>",
+      "subtitle": "12,000+ instruments: Forex, stocks, crypto, indices and metals. Spreads from 0.0 pips, 14 ms order execution.",
+      "statsTraders": "Active traders",
+      "statsVolume": "Monthly volume",
+      "statsVolumeSuffix": " bn $",
+      "statsExecution": "Order execution",
+      "statsExecutionSuffix": " ms"
+    },
+    "advantages": {
+      "title": "Why traders choose us",
+      "subtitle": "Institutional-grade infrastructure, accessible to everyone.",
+      "items": [
+        { "title": "Lightning-fast execution", "text": "Average order execution of 14 ms. Servers in LD4, NY4 and TY3, right next to liquidity providers." },
+        { "title": "Fair spreads", "text": "From 0.0 pips on ECN accounts. No hidden fees, no requotes — the math is fully transparent." },
+        { "title": "Security and regulation", "text": "Licenses from leading regulators, segregated client accounts and negative balance protection." },
+        { "title": "12,000+ instruments", "text": "Forex, stock CFDs, crypto, indices, metals and energies — all in one terminal." },
+        { "title": "24/7 support", "text": "Real specialists in 14 languages. Average chat response time — 40 seconds." },
+        { "title": "Instant withdrawals", "text": "92% of withdrawal requests are processed automatically within minutes." }
+      ]
+    },
+    "download": {
+      "title": "Markets in your pocket",
+      "subtitle": "Install Apex Capital as an app: home screen icon, full screen without browser bars and instant access to the markets.",
+      "features": [
+        "Real-time quotes and market news",
+        "Works offline: your latest data is always at hand",
+        "Installs in one click — no app stores needed",
+        "Under 1 MB with instant launch from your home screen"
+      ]
+    },
+    "cta": {
+      "title": "Start trading in 5 minutes",
+      "subtitle": "Registration, verification and your first deposit — all online. Or practice on a demo account with virtual $10,000."
+    }
+  },
+  "pwa": {
+    "install": "Install App",
+    "installed": "App installed",
+    "iosHint": "On iPhone/iPad: tap “Share” (the square with an arrow) in Safari, then “Add to Home Screen”.",
+    "manualHint": "Open your browser menu and choose “Install app” (Chrome, Edge) or “Add to Home screen”."
+  },
+  "instruments": {
+    "title": "Trading Instruments",
+    "subtitle": "Live quotes across all asset classes. Click an instrument to see details and trading conditions.",
+    "metaDescription": "Real-time quotes: Forex, metals, crypto, indices, stocks and energies. Spreads from 0.0 pips.",
+    "searchPlaceholder": "Search: EURUSD, Apple, Gold…",
+    "searchAria": "Search instruments",
+    "statusLive": "Real-time quotes",
+    "statusConnecting": "Connecting to feed…",
+    "counter": "{filtered} of {total} instruments",
+    "colInstrument": "Instrument",
+    "colCategory": "Category",
+    "colPrice": "Price",
+    "colChange": "Daily change",
+    "notFound": "Nothing found. Try a different query or category.",
+    "breadcrumbs": "Breadcrumbs",
+    "breadcrumbRoot": "Instruments",
+    "detailSubtitle": "Trade {name} with institutional liquidity: 14 ms execution, leverage up to 1:500 and negative balance protection.",
+    "metaDetail": "Live {name} quote: price, spread, CFD trading conditions. Category: {category}.",
+    "metaDetailTitle": "{name} ({symbol}) — Live Quote & Trading Conditions",
+    "specMinLot": "Min. lot",
+    "specLeverage": "Leverage up to",
+    "specCommission": "Commission",
+    "specCommissionValue": "from $0",
+    "specHours": "Trading hours",
+    "specHours247": "24/7",
+    "specHoursWeekdays": "Mon–Fri, 24h",
+    "specPrecision": "Precision",
+    "specPrecisionValue": "{digits} digits",
+    "specSwapFree": "Swap-free",
+    "specAvailable": "Available",
+    "panelLive": "Real time",
+    "panelConnecting": "Connecting…",
+    "tradeSymbol": "Trade {symbol}",
+    "tryOnDemo": "Try on demo"
+  },
+  "accounts": {
+    "title": "Account Types & Pricing",
+    "subtitle": "Three accounts for different trading styles — from first steps to interbank liquidity. Transparent conditions: all the math is below.",
+    "metaDescription": "Compare trading accounts: Standard, Pro and ECN Prime. Spreads from 0.0 pips, deposits from $100. Use the commission calculator to pick the best plan.",
+    "table": {
+      "popular": "Popular",
+      "popularChoice": "Popular choice",
+      "terms": "Conditions",
+      "minDeposit": "Minimum deposit",
+      "from": "from",
+      "deposit": "deposit",
+      "openCta": "Open Account"
+    },
+    "calcTitle": "Commission Calculator",
+    "calcSubtitle": "Move the sliders to match your trading style — and see which account costs less.",
+    "calc": {
+      "volume": "Trade volume",
+      "lots": "{lots} lots",
+      "trades": "Trades per month",
+      "perMonth": "per month",
+      "cheapest": "Best value",
+      "perTrade": "Per trade",
+      "spread": "Spread",
+      "spreadUnit": "{pips} pips",
+      "commissionRT": "Round-turn commission",
+      "note": "Based on EURUSD (pip value — $10 per lot): average spread + round-turn commission. Actual costs depend on the instrument and market conditions."
+    }
+  },
+  "analytics": {
+    "title": "Market Analytics",
+    "subtitle": "News, macro data and the events that move prices — from the Apex Capital research desk.",
+    "tabsAria": "Analytics sections",
+    "tabNews": "Market News",
+    "tabCalendar": "Economic Calendar",
+    "newsMetaTitle": "Market News",
+    "newsMetaDescription": "The latest financial market news: Forex, stocks, crypto and macroeconomics. Analysis from Apex Capital experts.",
+    "calendarMetaTitle": "Economic Calendar",
+    "calendarMetaDescription": "Macroeconomic events calendar: central bank decisions, inflation, employment. Forecasts and actual values in real time.",
+    "readFull": "Read full story →",
+    "backAll": "← All news",
+    "source": "Source: {source}",
+    "articleCta": "Trade the news with 14 ms execution",
+    "calendar": {
+      "filterAll": "All events",
+      "filterHigh": "High impact",
+      "filterMedium": "Medium",
+      "filterLow": "Low",
+      "importanceHigh": "High impact",
+      "importanceMedium": "Medium impact",
+      "importanceLow": "Low impact",
+      "colTime": "Time",
+      "colCurrency": "Currency",
+      "colImportance": "Impact",
+      "colEvent": "Event",
+      "colPrevious": "Prev.",
+      "colForecast": "Forecast",
+      "colActual": "Actual",
+      "noEvents": "No events with the selected impact level."
+    }
+  },
+  "education": {
+    "title": "Trading Education",
+    "subtitle": "Articles, webinars with analysts and reference materials — from your first trade to advanced money management.",
+    "tabsAria": "Education sections",
+    "tabArticles": "Articles",
+    "tabWebinars": "Webinars",
+    "tabGlossary": "Glossary",
+    "tabFaq": "FAQ",
+    "articlesMetaTitle": "Educational Articles",
+    "articlesMetaDescription": "Learn trading from scratch: how the Forex market works, leverage, technical analysis and trading psychology.",
+    "levelBeginner": "Beginner",
+    "levelIntermediate": "Intermediate",
+    "backArticles": "← All articles",
+    "articleCta": "Practice what you learned on a demo account with virtual $10,000",
+    "articleCtaButton": "Open Demo Account",
+    "webinarsMetaTitle": "Webinars",
+    "webinarsMetaDescription": "Free trading webinars: live sessions with analysts, market breakdowns and recordings of past classes.",
+    "upcoming": "Upcoming sessions",
+    "past": "Past recordings",
+    "liveBadge": "Live",
+    "recordBadge": "Recording",
+    "webinarMeta": "{time} MSK · {duration} min",
+    "seat": "Reserve a seat — free",
+    "recordSoon": "Recording will appear in your dashboard",
+    "glossaryMetaTitle": "Trader's Glossary",
+    "glossaryMetaDescription": "A trader's dictionary: spread, margin, leverage, stop loss and other terms in plain language.",
+    "glossaryPlaceholder": "Find a term: spread, margin, lot…",
+    "glossaryAria": "Search the glossary",
+    "glossaryLetterAria": "Terms starting with {letter}",
+    "glossaryNotFound": "Term not found. Write to us — we'll add it to the glossary.",
+    "faqMetaTitle": "Frequently Asked Questions",
+    "faqMetaDescription": "Answers to popular questions: account opening, verification, leverage, deposits and withdrawals.",
+    "faqNotFoundTitle": "Didn't find your answer?",
+    "faqNotFoundText": "Support replies in chat within 40 seconds on average — 24/7.",
+    "faqContact": "Contact support"
+  },
+  "auth": {
+    "backHome": "← Back to home",
+    "footerRisk": "Trading leveraged products involves a high level of risk. © {year} Apex Capital",
+    "loginMetaTitle": "Client Area Login",
+    "loginTitle": "Client Area",
+    "loginText": "The trader's dashboard launches together with the trading platform — it will live on the my.* subdomain with single sign-on (SSO). Meanwhile, you can apply for an account: we'll send invitations first.",
+    "registerMetaTitle": "Open an Account",
+    "registerMetaDescription": "Open a trading account in 5 minutes: online registration, deposits from $100, over 12,000 instruments.",
+    "registerTitle": "Open an account <accent>in 5 minutes</accent>",
+    "registerTitleShort": "Open an Account",
+    "registerSubtitle": "Join 1.2 million traders who already trade with us.",
+    "steps": [
+      { "title": "Application", "text": "2 minutes for the form — no documents at this step" },
+      { "title": "Verification", "text": "Confirm your email and upload a document in the dashboard" },
+      { "title": "Trading", "text": "Fund your account and open your first trade" }
+    ],
+    "trust": "Client funds are held in segregated accounts with Tier-1 banks and are never used in the company's operating activities."
+  },
+  "registerForm": {
+    "firstName": "First name",
+    "lastName": "Last name",
+    "email": "Email",
+    "phone": "Phone",
+    "phoneHint": "International format: +1 555 123-4567",
+    "country": "Country of residence",
+    "countryPlaceholder": "Select your country",
+    "accountType": "Account type",
+    "accountHints": { "standard": "Deposit from $100", "pro": "Deposit from $1,000", "ecn": "Deposit from $5,000" },
+    "agree": "I accept the <terms>terms of use</terms> and the <risk>risk disclosure</risk>, and confirm that I am 18 years of age or older.",
+    "submit": "Open Account",
+    "successTitle": "Application received",
+    "successText": "We've sent an email to {email}. Confirm your address to continue opening your account in the client area.",
+    "haveAccount": "Already have an account?",
+    "countries": [
+      { "code": "RU", "label": "Russia" },
+      { "code": "KZ", "label": "Kazakhstan" },
+      { "code": "BY", "label": "Belarus" },
+      { "code": "UZ", "label": "Uzbekistan" },
+      { "code": "AZ", "label": "Azerbaijan" },
+      { "code": "AM", "label": "Armenia" },
+      { "code": "GE", "label": "Georgia" },
+      { "code": "TR", "label": "Türkiye" },
+      { "code": "AE", "label": "UAE" },
+      { "code": "OTHER", "label": "Other country" }
+    ]
+  },
+  "contacts": {
+    "metaTitle": "Contacts & Support",
+    "metaDescription": "24/7 support: live chat, email, phone. Offices in Limassol, Dubai and Almaty.",
+    "title": "Contacts & Support",
+    "subtitle": "Support in 14 languages, 24/7. Pick a convenient channel or write to us using the form.",
+    "channels": [
+      { "title": "Live chat", "value": "Reply within 40 seconds", "detail": "Around the clock, no days off — the chat button is in the bottom-right corner of the dashboard" },
+      { "title": "Email", "value": "support@apexcapital.example", "detail": "Reply within one business day" },
+      { "title": "Phone", "value": "+357 25 000 000", "detail": "Mon–Fri, 8:00–20:00 (UTC+2), toll-free" }
+    ],
+    "writeUs": "Write to us",
+    "writeUsText": "We'll reply by email within one business day.",
+    "offices": "Offices",
+    "officesList": [
+      { "city": "Limassol", "country": "Cyprus · Headquarters", "address": "Arch. Makariou III Ave 155, 3026" },
+      { "city": "Dubai", "country": "UAE", "address": "Business Bay, Bay Square 12, office 404" },
+      { "city": "Almaty", "country": "Kazakhstan", "address": "77/7 Al-Farabi Ave, Esentai Tower, 12th floor" }
+    ],
+    "form": {
+      "name": "Name",
+      "email": "Email",
+      "topic": "Topic",
+      "topics": [
+        { "value": "general", "label": "General question" },
+        { "value": "account", "label": "Account & verification" },
+        { "value": "payments", "label": "Deposits & withdrawals" },
+        { "value": "partnership", "label": "Partnership" }
+      ],
+      "message": "Message",
+      "messagePlaceholder": "Describe your question…",
+      "submit": "Send message",
+      "successTitle": "Message sent",
+      "successText": "We'll reply to your email within one business day. In a hurry? Ask in chat — average response time is 40 seconds.",
+      "writeAgain": "Write another"
+    }
+  },
+  "about": {
+    "metaTitle": "About Us",
+    "metaDescription": "Apex Capital — an international broker since 2009: 1.2M traders, licenses from leading regulators, segregated accounts and offices in three countries.",
+    "badge": "In the market since 2009",
+    "title": "The broker trusted by <accent>1.2 million traders</accent>",
+    "subtitle": "We build institutional-grade infrastructure and make it available to retail traders: fair prices, fast execution and support that replies in 40 seconds.",
+    "statsYears": "Years in the market",
+    "statsYearsSuffix": "",
+    "statsTraders": "Active traders",
+    "statsVolume": "Monthly volume",
+    "statsVolumeSuffix": " bn $",
+    "statsCountries": "Countries served",
+    "historyTitle": "Company history",
+    "timeline": [
+      { "year": "2009", "text": "Company founded. First 1,000 clients and a CySEC license." },
+      { "year": "2013", "text": "ECN execution launched with direct agreements with Tier-1 liquidity providers." },
+      { "year": "2017", "text": "Offices opened in Dubai and Almaty. 100,000 active traders." },
+      { "year": "2021", "text": "Proprietary trading infrastructure: servers in LD4, NY4 and TY3, execution from 14 ms." },
+      { "year": "2024", "text": "One million active clients. Crypto trading and swap-free accounts launched." },
+      { "year": "2026", "text": "A new ecosystem: web platform, mobile PWA app and a unified client area." }
+    ],
+    "valuesTitle": "Our principles",
+    "values": [
+      { "title": "Transparency", "text": "We publish average execution times, slippage and withdrawal statistics. No hidden fees." },
+      { "title": "Reliability", "text": "Segregated accounts with Tier-1 banks, negative balance protection, regular external audits." },
+      { "title": "Technology", "text": "Proprietary infrastructure next to liquidity venues and a team of 120 engineers." }
+    ],
+    "licensesTitle": "Licenses & regulation",
+    "licensesText": "The company is regulated in several jurisdictions. Client funds are held in segregated accounts and never take part in operating activities — a requirement of every one of our regulators.",
+    "riskCta": "Risk Disclosure",
+    "licenses": [
+      { "authority": "CySEC", "region": "European Union", "number": "No. 000/09" },
+      { "authority": "FSCA", "region": "South Africa", "number": "No. 00000" },
+      { "authority": "FSA", "region": "Seychelles", "number": "SD000" }
+    ]
+  },
+  "partners": {
+    "metaTitle": "Partner Program",
+    "metaDescription": "IB program with up to 40% of the spread and White Label — brokerage under your brand. Daily payouts, transparent statistics.",
+    "badge": "Up to 40% of the spread · daily payouts",
+    "title": "Partner Program",
+    "subtitle": "Earn by referring traders or launch a brokerage under your own brand. 4,200+ partners already work with us.",
+    "models": [
+      {
+        "name": "Introducing Broker (IB)",
+        "description": "Recommend us to your audience and receive up to 40% of the spread from every referred client — for life, as long as the client trades.",
+        "features": [
+          "Daily payouts with no minimum threshold",
+          "Referral links, promo materials and landing pages",
+          "Partner dashboard with real-time statistics",
+          "Sub-partner network: 10% of sub-agents' rewards"
+        ]
+      },
+      {
+        "name": "White Label",
+        "description": "Your own brokerage brand on our infrastructure: platform, liquidity, back office and support — turnkey.",
+        "features": [
+          "Trading platform and client area under your brand",
+          "Aggregated Tier-1 liquidity",
+          "Risk management and reporting out of the box",
+          "Launch from 6 weeks with a dedicated project manager"
+        ]
+      }
+    ],
+    "tiersTitle": "IB reward tiers",
+    "tiersSubtitle": "Your share of the spread grows with your client base. Tiers are reviewed monthly — upgrades only during the first 6 months.",
+    "tierMax": "Maximum",
+    "fromSpread": "of the spread",
+    "tiers": [
+      { "name": "Bronze", "clients": "up to 20 active clients", "share": "25%" },
+      { "name": "Silver", "clients": "20–100 active clients", "share": "30%" },
+      { "name": "Gold", "clients": "100+ active clients", "share": "40%", "featured": true }
+    ],
+    "howTitle": "How to start",
+    "steps": [
+      { "title": "Application", "text": "Fill in the form — a manager will contact you within one business day" },
+      { "title": "Tools", "text": "Get links, promo materials and access to the partner dashboard" },
+      { "title": "Income", "text": "Refer clients and receive payouts every day" }
+    ],
+    "ctaTitle": "Ready to become a partner?",
+    "ctaText": "Send a request with the “Partnership” topic — a manager will prepare personal terms and estimate your potential income.",
+    "ctaButton": "Become a Partner"
+  },
+  "promotions": {
+    "metaTitle": "Promotions & Bonuses",
+    "metaDescription": "Current Apex Capital offers: 30% welcome bonus, spread cashback, demo trading contest and the refer-a-friend program.",
+    "title": "Promotions & Bonuses",
+    "subtitle": "Current offers for new and active traders. All conditions — transparent, right on the card.",
+    "promos": [
+      {
+        "badge": "For new clients",
+        "title": "30% Welcome Bonus",
+        "description": "Fund your first account with $500 or more — get +30% in trading funds. The bonus counts towards margin and helps you withstand drawdowns.",
+        "terms": "Bonus up to $5,000. Available once; released at 1 lot per every $10 of bonus.",
+        "ctaLabel": "Get the bonus",
+        "href": "/register?promo=welcome30",
+        "featured": true
+      },
+      {
+        "badge": "For active traders",
+        "title": "Up to 15% Spread Cashback",
+        "description": "Trade 50+ lots a month — we return part of the spread in real money to your account. The bigger the volume, the higher the rate.",
+        "terms": "Credited automatically on the first day of the following month. No cap on the amount.",
+        "ctaLabel": "Join",
+        "href": "/register?promo=cashback"
+      },
+      {
+        "badge": "Risk-free",
+        "title": "Demo Trading Contest",
+        "description": "A monthly competition on demo accounts with a $10,000 prize pool. Three winners receive live trading accounts funded with the prize money.",
+        "terms": "Free to enter. A new round starts on the 1st of every month.",
+        "ctaLabel": "Enter the contest",
+        "href": "/register?demo=1"
+      },
+      {
+        "badge": "Referrals",
+        "title": "Refer a Friend — Get $50",
+        "description": "Share your personal link: when your friend opens an account and starts trading, you both receive $50 on your trading accounts.",
+        "terms": "Your friend must deposit at least $100 and trade 1 lot within 30 days.",
+        "ctaLabel": "Get your link",
+        "href": "/register"
+      }
+    ],
+    "disclaimer": "Full terms of each promotion are available in the corresponding regulations. The company may change promotion terms with notice to participants. Trading leveraged products involves risk — bonus funds do not remove the need to manage it."
+  },
+  "blog": {
+    "metaTitle": "Blog & Press Center",
+    "metaDescription": "Apex Capital company news: products, results, industry events and announcements.",
+    "title": "Blog & Press Center",
+    "subtitle": "What's new in the product, the company and the industry — first-hand.",
+    "backAll": "← All posts",
+    "categoryLabels": { "company": "Company", "product": "Product", "events": "Events" }
+  },
+  "careers": {
+    "metaTitle": "Careers",
+    "metaDescription": "Apex Capital jobs: engineering, analytics, support. Offices in Limassol, Dubai, Almaty and remote work.",
+    "badge": "340+ people · 12 countries",
+    "title": "Build the fintech of the future with us",
+    "subtitle": "We build infrastructure that moves billions of dollars a day. We're looking for people who care about speed, reliability and an honest product.",
+    "benefits": [
+      { "title": "Flexible format", "text": "Office, hybrid or fully remote — your choice" },
+      { "title": "FinTech scale", "text": "Problems at the intersection of finance and high load: millions of quotes per second" },
+      { "title": "Growth", "text": "Budget for training and conferences, internal market courses" },
+      { "title": "Care", "text": "Health insurance incl. dental, sports, 5 weeks of vacation" }
+    ],
+    "vacanciesTitle": "Open positions",
+    "vacancies": [
+      { "title": "Senior Frontend Developer (React/Next.js)", "department": "Engineering", "location": "Remote / Limassol", "type": "Full-time" },
+      { "title": "Backend Developer (Go, liquidity & execution)", "department": "Engineering", "location": "Limassol", "type": "Full-time" },
+      { "title": "DevOps / SRE (trading infrastructure)", "department": "Infrastructure", "location": "Remote", "type": "Full-time" },
+      { "title": "Financial Analyst (FX markets)", "department": "Research", "location": "Almaty / remote", "type": "Full-time" },
+      { "title": "Support Specialist (Russian + English)", "department": "Client Service", "location": "Remote", "type": "2/2 shift schedule" }
+    ],
+    "apply": "Apply →",
+    "applySubject": "Application: {title}",
+    "notFound": "Didn't find a suitable role? Write to us at <email></email> — we find places for strong candidates beyond open positions."
+  },
+  "legal": {
+    "navTitle": "Legal",
+    "navAria": "Legal documents",
+    "updated": "Updated: {date}",
+    "questions": "Questions about this document? Use the <link>contact form</link> — our legal team replies within three business days."
+  },
+  "status": {
+    "metaTitle": "Service Status",
+    "metaDescription": "Current status of Apex Capital services: trading API, quotes, client area, payments.",
+    "title": "Service Status",
+    "subtitle": "The state of every subsystem in real time. The “Quotes” row reflects your actual WebSocket connection.",
+    "bannerOk": "All systems operational",
+    "bannerIssues": "Some services are experiencing slowdowns",
+    "stateOperational": "Operational",
+    "stateDegraded": "Degraded",
+    "stateOutage": "Outage",
+    "stateMaintenance": "Maintenance",
+    "uptime": "90-day uptime: {value}",
+    "wsName": "Quotes (WebSocket)",
+    "wsDescription": "Real-time price stream — the status of your connection",
+    "services": [
+      { "name": "Website & registration", "description": "Marketing site, application forms", "uptime": "99.99%" },
+      { "name": "Trading API", "description": "Order execution, trading operations", "uptime": "99.97%" },
+      { "name": "Client area", "description": "Authentication, profile, documents", "uptime": "99.95%" },
+      { "name": "Payment gateway", "description": "Deposits and withdrawals", "uptime": "99.92%" }
+    ],
+    "incidentsTitle": "Incident history",
+    "incidents": [
+      {
+        "date": "2026-07-14",
+        "title": "Delayed card withdrawal processing",
+        "status": "Resolved",
+        "text": "From 10:20 to 12:45 UTC some withdrawal requests were processed with a delay due to degradation on the payment provider's side. All requests have been executed and funds credited."
+      },
+      {
+        "date": "2026-06-30",
+        "title": "Scheduled trading API maintenance",
+        "status": "Completed",
+        "text": "On the night of June 29–30 (01:00–02:30 UTC, markets closed) the execution infrastructure was upgraded. Downtime was 12 minutes within the announced window."
+      }
+    ]
+  },
+  "offline": {
+    "metaTitle": "No Connection",
+    "title": "No internet connection",
+    "text": "Looks like you're offline. Quotes and news need a connection — check your network and try again.",
+    "retry": "Try again"
+  }
+}
