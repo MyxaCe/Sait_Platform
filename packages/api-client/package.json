@@ -1,0 +1,26 @@
+{
+  "name": "@broker/api-client",
+  "version": "0.0.1",
+  "private": true,
+  "exports": {
+    ".": "./src/index.ts",
+    "./schemas": "./src/schemas/index.ts",
+    "./scrubbing-policy.v1.json": "./scrubbing-policy.v1.json"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "gen:json-schema": "tsx scripts/generate-json-schema.ts"
+  },
+  "dependencies": {
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@broker/config": "workspace:*",
+    "@types/node": "^20.14.12",
+    "tsx": "^4.16.2",
+    "typescript": "^5.5.4",
+    "vitest": "^2.0.5",
+    "zod-to-json-schema": "^3.23.2"
+  }
+}

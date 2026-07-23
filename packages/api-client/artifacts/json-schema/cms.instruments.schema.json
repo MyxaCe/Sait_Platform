@@ -1,0 +1,105 @@
+{
+  "$ref": "#/definitions/cms.instruments",
+  "definitions": {
+    "cms.instruments": {
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "symbol": {
+                "type": "string",
+                "minLength": 1
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "category": {
+                "type": "string",
+                "enum": [
+                  "forex",
+                  "metals",
+                  "crypto",
+                  "indices",
+                  "stocks",
+                  "energy"
+                ]
+              },
+              "digits": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 8
+              },
+              "leverageMax": {
+                "type": "string"
+              },
+              "spreadFrom": {
+                "type": "string"
+              },
+              "swapFree": {
+                "type": "boolean"
+              },
+              "icon": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "url": {
+                        "type": "string",
+                        "format": "uri"
+                      },
+                      "width": {
+                        "type": "integer",
+                        "exclusiveMinimum": 0
+                      },
+                      "height": {
+                        "type": "integer",
+                        "exclusiveMinimum": 0
+                      },
+                      "alt": {
+                        "type": "string"
+                      },
+                      "mimeType": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "url",
+                      "width",
+                      "height",
+                      "alt",
+                      "mimeType"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "symbol",
+              "name",
+              "category",
+              "digits",
+              "leverageMax",
+              "spreadFrom",
+              "swapFree",
+              "icon"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "items"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}

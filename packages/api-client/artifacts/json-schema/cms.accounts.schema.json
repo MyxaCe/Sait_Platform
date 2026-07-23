@@ -1,0 +1,85 @@
+{
+  "$ref": "#/definitions/cms.accounts",
+  "definitions": {
+    "cms.accounts": {
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              },
+              "minDeposit": {
+                "type": "string"
+              },
+              "featured": {
+                "type": "boolean"
+              },
+              "features": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "label": {
+                      "type": "string"
+                    },
+                    "value": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "label",
+                    "value"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "pricing": {
+                "type": "object",
+                "properties": {
+                  "spreadPips": {
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  "commissionPerLotRT": {
+                    "type": "number",
+                    "minimum": 0
+                  }
+                },
+                "required": [
+                  "spreadPips",
+                  "commissionPerLotRT"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "id",
+              "name",
+              "description",
+              "minDeposit",
+              "featured",
+              "features",
+              "pricing"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "items"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}

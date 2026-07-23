@@ -12,6 +12,7 @@
     "test:e2e": "playwright test"
   },
   "dependencies": {
+    "@broker/api-client": "workspace:*",
     "@broker/realtime": "workspace:*",
     "@broker/ui": "workspace:*",
     "@broker/utils": "workspace:*",

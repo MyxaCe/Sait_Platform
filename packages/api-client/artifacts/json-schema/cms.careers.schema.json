@@ -1,0 +1,67 @@
+{
+  "$ref": "#/definitions/cms.careers",
+  "definitions": {
+    "cms.careers": {
+      "type": "object",
+      "properties": {
+        "benefits": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "title": {
+                "type": "string"
+              },
+              "text": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "title",
+              "text"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "vacancies": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "title": {
+                "type": "string"
+              },
+              "department": {
+                "type": "string"
+              },
+              "location": {
+                "type": "string"
+              },
+              "type": {
+                "type": "string"
+              },
+              "applyEmail": {
+                "type": "string",
+                "format": "email"
+              }
+            },
+            "required": [
+              "title",
+              "department",
+              "location",
+              "type",
+              "applyEmail"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "benefits",
+        "vacancies"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}

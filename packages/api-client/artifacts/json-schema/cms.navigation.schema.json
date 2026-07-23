@@ -1,0 +1,72 @@
+{
+  "$ref": "#/definitions/cms.navigation",
+  "definitions": {
+    "cms.navigation": {
+      "type": "object",
+      "properties": {
+        "header": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "label": {
+                "type": "string",
+                "minLength": 1
+              },
+              "href": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "label",
+              "href"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "footer": {
+          "type": "object",
+          "properties": {
+            "columns": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "title": {
+                    "type": "string"
+                  },
+                  "links": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/definitions/cms.navigation/properties/header/items"
+                    }
+                  }
+                },
+                "required": [
+                  "title",
+                  "links"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "riskWarning": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "columns",
+            "riskWarning"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "header",
+        "footer"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}

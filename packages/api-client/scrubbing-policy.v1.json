@@ -1,0 +1,40 @@
+{
+  "$comment": "Shared PII scrubbing policy for all GlitchTip SDKs (site: @sentry/nextjs, CRM: sentry-sdk python + @sentry/react). Neutral format by agreement 2026-07-23. Each side implements a thin beforeSend/before_send adapter. Version bumps require sign-off from both teams.",
+  "version": 1,
+  "sendDefaultPii": false,
+  "removeHeaders": ["authorization", "cookie", "set-cookie", "x-api-key"],
+  "maskQueryParams": ["token", "key", "signature", "email", "phone", "code", "session"],
+  "requestBodies": {
+    "$comment": "Allowlist mode (not denylist): only listed fields may be attached to events; everything else is dropped. Regex over free-form names does not work.",
+    "mode": "allowlist",
+    "neverAttachPathPrefixes": ["/api/leads", "/v1/leads", "/api/v1/auth", "/api/v1/clients", "/api/v1/support/tickets"],
+    "allowedFields": [
+      "accountType",
+      "topic",
+      "locale",
+      "country",
+      "category_key",
+      "subcategory_key",
+      "site",
+      "priority",
+      "request_kind",
+      "status",
+      "page",
+      "pageSize",
+      "slug",
+      "tags",
+      "event_id"
+    ]
+  },
+  "valueScrubRegexes": [
+    { "name": "email", "pattern": "[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}" },
+    { "name": "phone", "pattern": "\\+?\\d[\\d\\s()\\-]{8,}\\d" },
+    { "name": "card_pan", "pattern": "\\b(?:\\d[ \\-]?){13,19}\\b" },
+    { "name": "iban", "pattern": "\\b[A-Z]{2}\\d{2}[A-Z0-9]{10,30}\\b" }
+  ],
+  "userContext": {
+    "allowedKeys": ["idHash"],
+    "hashAlgorithm": "sha256"
+  },
+  "replacement": "[scrubbed]"
+}

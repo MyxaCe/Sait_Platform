@@ -1,0 +1,78 @@
+{
+  "$ref": "#/definitions/leads.account-opening.request",
+  "definitions": {
+    "leads.account-opening.request": {
+      "type": "object",
+      "properties": {
+        "firstName": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 60
+        },
+        "lastName": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 60
+        },
+        "email": {
+          "type": "string",
+          "format": "email"
+        },
+        "phone": {
+          "type": "string",
+          "minLength": 10,
+          "maxLength": 20
+        },
+        "country": {
+          "type": "string",
+          "minLength": 2
+        },
+        "accountType": {
+          "type": "string",
+          "enum": [
+            "standard",
+            "pro",
+            "ecn"
+          ]
+        },
+        "locale": {
+          "type": "string",
+          "enum": [
+            "ru",
+            "en"
+          ]
+        },
+        "source": {
+          "type": "object",
+          "properties": {
+            "url": {
+              "type": "string",
+              "format": "uri"
+            },
+            "promo": {
+              "type": "string"
+            },
+            "utm": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "string"
+              }
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "firstName",
+        "lastName",
+        "email",
+        "phone",
+        "country",
+        "accountType",
+        "locale"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}

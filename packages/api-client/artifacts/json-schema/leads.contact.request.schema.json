@@ -1,0 +1,49 @@
+{
+  "$ref": "#/definitions/leads.contact.request",
+  "definitions": {
+    "leads.contact.request": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 80
+        },
+        "email": {
+          "type": "string",
+          "format": "email"
+        },
+        "topic": {
+          "type": "string",
+          "enum": [
+            "general",
+            "account",
+            "payments",
+            "partnership"
+          ]
+        },
+        "message": {
+          "type": "string",
+          "minLength": 10,
+          "maxLength": 2000
+        },
+        "locale": {
+          "type": "string",
+          "enum": [
+            "ru",
+            "en"
+          ]
+        }
+      },
+      "required": [
+        "name",
+        "email",
+        "topic",
+        "message",
+        "locale"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}

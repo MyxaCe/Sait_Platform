@@ -1,0 +1,129 @@
+{
+  "$ref": "#/definitions/cms.academy",
+  "definitions": {
+    "cms.academy": {
+      "type": "object",
+      "properties": {
+        "articles": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "slug": {
+                "type": "string"
+              },
+              "title": {
+                "type": "string"
+              },
+              "excerpt": {
+                "type": "string"
+              },
+              "level": {
+                "type": "string",
+                "enum": [
+                  "beginner",
+                  "intermediate"
+                ]
+              },
+              "readingMinutes": {
+                "type": "integer",
+                "exclusiveMinimum": 0
+              },
+              "bodyMarkdown": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "slug",
+              "title",
+              "excerpt",
+              "level",
+              "readingMinutes",
+              "bodyMarkdown"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "webinars": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "title": {
+                "type": "string"
+              },
+              "speaker": {
+                "type": "string"
+              },
+              "speakerRole": {
+                "type": "string"
+              },
+              "startsAt": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                ]
+              },
+              "durationMinutes": {
+                "type": "integer",
+                "exclusiveMinimum": 0
+              },
+              "level": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "title",
+              "speaker",
+              "speakerRole",
+              "startsAt",
+              "durationMinutes",
+              "level",
+              "description"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "glossary": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "term": {
+                "type": "string"
+              },
+              "definition": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "term",
+              "definition"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "articles",
+        "webinars",
+        "glossary"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}

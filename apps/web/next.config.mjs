@@ -13,7 +13,7 @@ const withSerwist = withSerwistInit({
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  transpilePackages: ['@broker/ui', '@broker/utils', '@broker/realtime'],
+  transpilePackages: ['@broker/ui', '@broker/utils', '@broker/realtime', '@broker/api-client'],
   images: {
     formats: ['image/avif', 'image/webp'],
     deviceSizes: [320, 428, 768, 1024, 1440, 1920, 2560],

@@ -1,0 +1,21 @@
+{
+  "$ref": "#/definitions/leads.error.response",
+  "definitions": {
+    "leads.error.response": {
+      "type": "object",
+      "properties": {
+        "fieldErrors": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "error": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}

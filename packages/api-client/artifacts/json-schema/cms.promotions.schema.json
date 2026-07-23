@@ -1,0 +1,89 @@
+{
+  "$ref": "#/definitions/cms.promotions",
+  "definitions": {
+    "cms.promotions": {
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "badge": {
+                "type": "string"
+              },
+              "title": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              },
+              "terms": {
+                "type": "string"
+              },
+              "ctaLabel": {
+                "type": "string"
+              },
+              "ctaHref": {
+                "type": "string"
+              },
+              "featured": {
+                "type": "boolean"
+              },
+              "activeFrom": {
+                "anyOf": [
+                  {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      {
+                        "type": "string",
+                        "format": "date-time"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "activeTo": {
+                "anyOf": [
+                  {
+                    "$ref": "#/definitions/cms.promotions/properties/items/items/properties/activeFrom/anyOf/0"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "badge",
+              "title",
+              "description",
+              "terms",
+              "ctaLabel",
+              "ctaHref",
+              "featured",
+              "activeFrom",
+              "activeTo"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "items"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}
