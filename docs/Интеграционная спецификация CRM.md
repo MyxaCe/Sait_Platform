@@ -80,6 +80,9 @@ status: v0.1 — на согласование с командой CRM
 проверяются по БД сайта (сайт — source of truth по клиентам брокера, §10.1 брифа).
 Rate-limit и honeypot — на стороне сайта.
 
+## 5a. Preview для редакторов CMS
+Кнопка «Предпросмотр» в CMS открывает `{site}/api/preview?secret=<PREVIEW_SECRET>&path=<internal-path>`. Сайт включает draft-режим (кука `__prerender_bypass`, Secure — работает по HTTPS и в браузерах на localhost), показывает баннер предпросмотра и рендерит страницы с `noindex`. **Требование к CMS**: content-ручки принимают `draft=true` (тот же `X-API-Key`) и возвращают черновую версию контента. Выход — `/api/preview/disable`.
+
 ## 6. Вебхуки инвалидации контента (CRM → сайт)
 
 - URL: `POST https://<site>/api/revalidate`

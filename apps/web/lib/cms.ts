@@ -1,4 +1,5 @@
 import { unstable_cache } from 'next/cache';
+import { draftMode } from 'next/headers';
 import type { z } from 'zod';
 import { CMS_RESPONSE_SCHEMAS, cmsFetch, type Locale } from '@broker/api-client';
 import { CMS_MOCK } from './cms-mock';
@@ -29,15 +30,28 @@ export async function getCms<K extends Resource>(
   const tag = `cms:${resource}`;
   const buildLocal = () => CMS_MOCK[resource]!(locale, new URLSearchParams(params));
 
+  // Preview (этап 3): редактор с draftMode-кукой видит черновой контент —
+  // кеш обходится, к CMS уходит draft=true. Вне request-контекста — false.
+  let draft = false;
+  try {
+    draft = draftMode().isEnabled;
+  } catch {
+    draft = false;
+  }
+
   if (process.env.CMS_API_URL) {
     return cmsFetch(`/cms/${resource}`, {
       schema,
       locale,
       tags: [tag],
-      revalidate,
-      searchParams: params,
+      revalidate: draft ? 0 : revalidate,
+      searchParams: draft ? { ...params, draft: 'true' } : params,
       fallback: schema.parse(buildLocal()),
     }) as Promise<z.infer<(typeof CMS_RESPONSE_SCHEMAS)[K]>>;
+  }
+
+  if (draft) {
+    return schema.parse(buildLocal()) as z.infer<(typeof CMS_RESPONSE_SCHEMAS)[K]>;
   }
 
   const cached = unstable_cache(

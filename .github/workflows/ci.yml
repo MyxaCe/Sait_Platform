@@ -36,6 +36,9 @@ jobs:
       - name: Build
         run: pnpm build
 
+      - name: Bundle size budget
+        run: node scripts/check-bundle-budget.mjs
+
       - name: Install Playwright Chromium
         run: pnpm --filter @broker/web exec playwright install --with-deps chromium
 

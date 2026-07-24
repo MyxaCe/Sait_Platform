@@ -1,8 +1,10 @@
 import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
+import { draftMode } from 'next/headers';
 import { notFound } from 'next/navigation';
 import { hasLocale, NextIntlClientProvider } from 'next-intl';
 import { getMessages, getTranslations, setRequestLocale } from 'next-intl/server';
+import { PreviewBanner } from '@/components/PreviewBanner';
 import { OrganizationJsonLd } from '@/components/seo/OrganizationJsonLd';
 import { routing } from '@/i18n/routing';
 import { hexToRgbChannels } from '@/lib/brand';
@@ -32,6 +34,15 @@ export async function generateMetadata({
   params: { locale: string };
 }): Promise<Metadata> {
   const t = await getTranslations({ locale: params.locale, namespace: 'meta' });
+
+  // Черновики не индексируются (риск R-09)
+  let draft = false;
+  try {
+    draft = draftMode().isEnabled;
+  } catch {
+    draft = false;
+  }
+
   return {
     metadataBase: new URL(SITE_URL),
     title: {
@@ -54,9 +65,12 @@ export async function generateMetadata({
       description: t('description'),
     },
     robots: {
-      index: true,
-      follow: true,
+      index: !draft,
+      follow: !draft,
     },
+    // Возраст контента (ADR-020): по этой метке синтетический монитор
+    // проверяет цикл «правка → вебхук → обновление страницы»
+    other: { 'rendered-at': new Date().toISOString() },
     appleWebApp: {
       capable: true,
       title: SITE_NAME,
@@ -97,6 +111,7 @@ export default async function RootLayout({ children, params }: LayoutProps) {
         <NextIntlClientProvider messages={messages}>
           <Providers>{children}</Providers>
         </NextIntlClientProvider>
+        <PreviewBanner locale={locale} />
       </body>
     </html>
   );
