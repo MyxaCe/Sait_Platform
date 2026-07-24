@@ -86,6 +86,18 @@ export class MemoryLeadStore implements LeadStore {
 /* Singleton c переживанием hot-reload в dev */
 const globalStore = globalThis as unknown as { __leadStore?: LeadStore; __pgPool?: Pool };
 
+/** Health-check БД для /api/health/ready. Без DATABASE_URL — 'skipped'. */
+export async function pingDatabase(): Promise<'ok' | 'skipped' | 'failed'> {
+  if (!process.env.DATABASE_URL) return 'skipped';
+  try {
+    globalStore.__pgPool ??= new Pool({ connectionString: process.env.DATABASE_URL, max: 5 });
+    await globalStore.__pgPool.query('SELECT 1');
+    return 'ok';
+  } catch {
+    return 'failed';
+  }
+}
+
 export function getLeadStore(): LeadStore {
   if (globalStore.__leadStore) return globalStore.__leadStore;
 

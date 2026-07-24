@@ -1,0 +1,123 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "site-web public surface",
+    "version": "0.1.0",
+    "description": "Public HTTP surface of the broker site for the platform team (brief section 10.4). Everything else (/api/leads/*, /api/cms/*) is internal: called only by the site's own browser clients or server. Outbound integration goes through the platform bus (see events.envelope.v1 / events.lead.submitted.v1 JSON Schemas in ../json-schema)."
+  },
+  "paths": {
+    "/api/health": {
+      "get": {
+        "summary": "Liveness probe",
+        "responses": {
+          "200": {
+            "description": "Process is alive",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "const": "ok" },
+                    "service": { "const": "site-web" },
+                    "time": { "type": "string", "format": "date-time" }
+                  },
+                  "required": ["status", "service", "time"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/health/ready": {
+      "get": {
+        "summary": "Readiness probe (checks own database only; neighbours are intentionally excluded per platform brief section 3)",
+        "responses": {
+          "200": {
+            "description": "Ready",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/Readiness" } }
+            }
+          },
+          "503": {
+            "description": "Own database unreachable",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/Readiness" } }
+            }
+          }
+        }
+      }
+    },
+    "/api/revalidate": {
+      "post": {
+        "summary": "Content invalidation webhook (CMS -> site)",
+        "description": "HMAC-SHA256 signed. Idempotent by event_id; per-tag cooldown protects against invalidation storms. Sender requirements: >=3 retries with exponential backoff, 5s timeout.",
+        "parameters": [
+          {
+            "name": "X-Signature",
+            "in": "header",
+            "required": true,
+            "schema": { "type": "string", "pattern": "^sha256=[0-9a-f]{64}$" },
+            "description": "sha256=HEX(HMAC-SHA256(rawBody, shared_secret))"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "event_id": { "type": "string", "format": "uuid" },
+                  "occurred_at": { "type": "string", "format": "date-time" },
+                  "tags": {
+                    "type": "array",
+                    "items": { "type": "string", "pattern": "^cms:[a-z0-9-]+(:[a-z0-9-]+)?$" },
+                    "minItems": 1,
+                    "maxItems": 20
+                  }
+                },
+                "required": ["event_id", "tags"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Accepted. applied = invalidated now; throttled = suppressed by cooldown (safety-net revalidate interval still applies); deduplicated = event_id already processed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "applied": { "type": "array", "items": { "type": "string" } },
+                    "throttled": { "type": "array", "items": { "type": "string" } },
+                    "deduplicated": { "type": "boolean" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "description": "Invalid body or tag outside the cms:* allowlist" },
+          "401": { "description": "Invalid HMAC signature" },
+          "503": { "description": "Webhook secret not configured on the site" }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Readiness": {
+        "type": "object",
+        "properties": {
+          "status": { "enum": ["ready", "degraded"] },
+          "checks": {
+            "type": "object",
+            "properties": { "database": { "enum": ["ok", "skipped", "failed"] } }
+          }
+        },
+        "required": ["status", "checks"]
+      }
+    }
+  }
+}
