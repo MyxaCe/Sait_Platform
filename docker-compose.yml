@@ -27,6 +27,8 @@ services:
     environment:
       DATABASE_URL: postgres://broker:broker_dev_password@db:5432/broker_site
       NEXT_PUBLIC_SITE_URL: http://localhost:3000
+      CMS_WEBHOOK_SECRET: local-dev-secret
+      PREVIEW_SECRET: preview-dev-secret
     ports:
       - '3000:3000'
     depends_on:

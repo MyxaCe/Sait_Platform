@@ -29,7 +29,8 @@ updated: 2026-07-23
 | Тесты: 35 unit (vitest) + 18 e2e (Playwright, desktop+mobile) | ✅ готовы |
 | Git (первый коммит) + CI (GitHub Actions) | ✅ готово |
 | Платформенная модель: Postgres (leads+outbox) + релей в шину | ✅ контур работает (шина — LogPublisher до кредлов) |
-| Docker: compose (db/web/relay) + Dockerfile'ы | ✅ готово · CD на VPS 📋 |
+| Docker: полный стек проверен локально (db/web/relay) | ✅ готово · CD на VPS 📋 |
+| CMS-сервис (свой, Payload CMS 3, ADR-021) | 🔄 следующий крупный этап |
 | Error tracking (общий GlitchTip, хостит команда CRM) | 🔄 согласовано, ждёт сроков |
 | Интеграция с CMS — этап 0 (контракт + mock + JSON Schema) | ✅ готов |
 | Интеграция с CMS — этап 1 (вебхук-инвалидация + brand/nav/legal/faq/contacts) | ✅ готов |
