@@ -3,6 +3,8 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import {
   __resetRevalidateState,
   ALLOWED_TAG_PATTERN,
+  claimDeferredInvalidate,
+  completeDeferredInvalidate,
   isDuplicateEvent,
   shouldInvalidate,
   verifySignature,
@@ -40,6 +42,30 @@ describe('shouldInvalidate (cooldown)', () => {
   it('теги независимы', () => {
     expect(shouldInvalidate('cms:brand', 1_000)).toBe(true);
     expect(shouldInvalidate('cms:faq', 1_000)).toBe(true);
+  });
+});
+
+describe('claimDeferredInvalidate (B-011: cooldown откладывает, а не теряет)', () => {
+  it('первый опоздавший получает задержку до конца cooldown, повторные коалесцируются', () => {
+    expect(shouldInvalidate('cms:faq', 1_000, 2_000)).toBe(true);
+    // событие через 500 мс после инвалидации: ждать остаток окна 1500 мс (+джиттер 50)
+    const delay = claimDeferredInvalidate('cms:faq', 1_500, 2_000);
+    expect(delay).toBe(1_550);
+    // пока отложенная не выполнена — параллельные события не получают право
+    expect(claimDeferredInvalidate('cms:faq', 1_600, 2_000)).toBeNull();
+  });
+
+  it('после completeDeferredInvalidate тег снова живёт по обычному cooldown', () => {
+    shouldInvalidate('cms:brand', 1_000, 2_000);
+    expect(claimDeferredInvalidate('cms:brand', 1_500, 2_000)).toBe(1_550);
+    completeDeferredInvalidate('cms:brand', 3_050);
+    // право снова свободно, а lastInvalidatedAt обновлён моментом отложенного вызова
+    expect(shouldInvalidate('cms:brand', 3_100, 2_000)).toBe(false);
+    expect(claimDeferredInvalidate('cms:brand', 3_100, 2_000)).toBe(2_000);
+  });
+
+  it('тег без истории ждёт полный cooldown (защитный дефолт)', () => {
+    expect(claimDeferredInvalidate('cms:legal', 5_000, 2_000)).toBe(2_050);
   });
 });
 

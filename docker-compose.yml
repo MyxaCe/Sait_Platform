@@ -29,6 +29,10 @@ services:
       NEXT_PUBLIC_SITE_URL: http://localhost:3000
       CMS_WEBHOOK_SECRET: local-dev-secret
       PREVIEW_SECRET: preview-dev-secret
+      # Реальная CMS (репо Broker_CMS, локально на хосте :3001).
+      # Если CMS не запущена — getCms уходит в фолбэк-фикстуры (штатный режим, R-06).
+      CMS_API_URL: http://host.docker.internal:3001/v1
+      CMS_API_KEY: dev-cms-api-key
     ports:
       - '3000:3000'
     depends_on:

@@ -36,6 +36,33 @@ export function shouldInvalidate(
   return true;
 }
 
+const pendingTags = new Set<string>();
+
+/**
+ * Тег попал в cooldown: не терять инвалидацию (B-011), а отложить одну
+ * до истечения cooldown. Первый «опоздавший» запрос забирает право на
+ * отложенную инвалидацию (возвращается задержка в мс) и обязан выполнить её
+ * САМ, дождавшись `delay` внутри своего обработчика: revalidateTag() работает
+ * только в контексте запроса — setTimeout после ответа был бы тихим no-op.
+ * Остальные события на тот же тег коалесцируются (null) — шторм невозможен.
+ */
+export function claimDeferredInvalidate(
+  tag: string,
+  now = Date.now(),
+  cooldownMs = DEFAULT_COOLDOWN_MS,
+): number | null {
+  if (pendingTags.has(tag)) return null;
+  pendingTags.add(tag);
+  const last = lastInvalidatedAt.get(tag) ?? now;
+  return Math.max(0, last + cooldownMs - now) + 50;
+}
+
+/** Вызывается сразу после выполненной отложенной инвалидации. */
+export function completeDeferredInvalidate(tag: string, now = Date.now()): void {
+  pendingTags.delete(tag);
+  lastInvalidatedAt.set(tag, now);
+}
+
 const SEEN_LIMIT = 1_000;
 const seenOrder: string[] = [];
 const seenSet = new Set<string>();
@@ -57,4 +84,5 @@ export function __resetRevalidateState() {
   lastInvalidatedAt.clear();
   seenOrder.length = 0;
   seenSet.clear();
+  pendingTags.clear();
 }

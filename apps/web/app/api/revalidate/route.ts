@@ -3,6 +3,8 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import {
   ALLOWED_TAG_PATTERN,
+  claimDeferredInvalidate,
+  completeDeferredInvalidate,
   isDuplicateEvent,
   shouldInvalidate,
   verifySignature,
@@ -44,18 +46,27 @@ export async function POST(request: Request) {
   }
 
   const applied: string[] = [];
-  const throttled: string[] = [];
+  const deferred: string[] = [];
   for (const tag of new Set(parsed.tags)) {
     if (shouldInvalidate(tag)) {
       revalidateTag(tag);
       applied.push(tag);
-    } else {
-      throttled.push(tag);
+      continue;
     }
+    // B-011: внутри cooldown инвалидация не теряется — этот запрос дожидается
+    // конца окна (≤2 с) и инвалидирует сам: revalidateTag() живёт только
+    // в контексте запроса. Параллельные события того же тега коалесцируются.
+    const delay = claimDeferredInvalidate(tag);
+    if (delay !== null) {
+      await new Promise((resolve) => setTimeout(resolve, delay));
+      revalidateTag(tag);
+      completeDeferredInvalidate(tag);
+    }
+    deferred.push(tag);
   }
 
   console.info(
-    `[revalidate] event=${parsed.event_id} applied=[${applied.join(',')}] throttled=[${throttled.join(',')}]`,
+    `[revalidate] event=${parsed.event_id} applied=[${applied.join(',')}] deferred=[${deferred.join(',')}]`,
   );
-  return NextResponse.json({ applied, throttled }, { status: 202 });
+  return NextResponse.json({ applied, deferred }, { status: 202 });
 }

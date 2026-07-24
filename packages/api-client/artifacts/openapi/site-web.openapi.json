@@ -84,14 +84,14 @@
         },
         "responses": {
           "202": {
-            "description": "Accepted. applied = invalidated now; throttled = suppressed by cooldown (safety-net revalidate interval still applies); deduplicated = event_id already processed",
+            "description": "Accepted. applied = invalidated now; deferred = in cooldown, coalesced into a single invalidation right after cooldown expires; deduplicated = event_id already processed",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
                   "properties": {
                     "applied": { "type": "array", "items": { "type": "string" } },
-                    "throttled": { "type": "array", "items": { "type": "string" } },
+                    "deferred": { "type": "array", "items": { "type": "string" } },
                     "deduplicated": { "type": "boolean" }
                   }
                 }

@@ -48,7 +48,24 @@
       "PowerShell(Set-Location \"c:\\\\Users\\\\user\\\\Desktop\\\\Sait_Platform\"; $env:DATABASE_URL='postgres://broker:broker_dev_password@localhost:5432/broker_site'; $env:CMS_WEBHOOK_SECRET='local-dev-secret'; $env:PREVIEW_SECRET='preview-dev-secret'; pnpm --filter @broker/web start)",
       "PowerShell($conn = Get-NetTCPConnection -LocalPort 3000 -State Listen -ErrorAction SilentlyContinue; if \\($conn\\) { $conn | ForEach-Object { try { Stop-Process -Id $_.OwningProcess -Force -Confirm:$false } catch {} }; Start-Sleep 2 }; Set-Location \"c:\\\\Users\\\\user\\\\Desktop\\\\Sait_Platform\"; pnpm build 2>&1 | Select-String -Pattern 'error|✓ Generating|Tasks:' | Select-Object -First 4)",
       "PowerShell(Set-Location \"c:\\\\Users\\\\user\\\\Desktop\\\\Sait_Platform\"; $env:DATABASE_URL='postgres://broker:broker_dev_password@localhost:5432/broker_site'; $env:CMS_WEBHOOK_SECRET='local-dev-secret'; $env:PREVIEW_SECRET='preview-dev-secret'; pnpm --filter @broker/web dev)",
-      "PowerShell($conn = Get-NetTCPConnection -LocalPort 3000 -State Listen -ErrorAction SilentlyContinue; if \\($conn\\) { $conn | ForEach-Object { try { Stop-Process -Id $_.OwningProcess -Force -Confirm:$false } catch {} } }; Set-Location \"c:\\\\Users\\\\user\\\\Desktop\\\\Sait_Platform\"; docker compose --profile full build)"
+      "PowerShell($conn = Get-NetTCPConnection -LocalPort 3000 -State Listen -ErrorAction SilentlyContinue; if \\($conn\\) { $conn | ForEach-Object { try { Stop-Process -Id $_.OwningProcess -Force -Confirm:$false } catch {} } }; Set-Location \"c:\\\\Users\\\\user\\\\Desktop\\\\Sait_Platform\"; docker compose --profile full build)",
+      "PowerShell(npx --yes create-payload-app@latest --help 2>&1)",
+      "Read(//c/Users/user/Desktop/Broker_CMS/**)",
+      "Read(//c/Users/user/Desktop/Broker_CMS/src/**)",
+      "PowerShell(npm view payload version)",
+      "PowerShell(npm view @payloadcms/db-postgres version)",
+      "PowerShell(npm view @payloadcms/next version)",
+      "PowerShell(npm view @payloadcms/next peerDependencies --json)",
+      "Read(//c/Users/user/Desktop/Broker_CMS/src/app/\\\\\\(payload\\\\\\)/admin/**)",
+      "Read(//c/Users/user/Desktop/Broker_CMS/src/collections/**)",
+      "PowerShell(Set-Location \"c:\\\\Users\\\\user\\\\Desktop\\\\Broker_CMS\"; pnpm dev 2>&1 | ForEach-Object { $_ })",
+      "PowerShell(node \"C:\\\\Users\\\\user\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-user-Desktop-Sait-Platform\\\\e81f2968-cd83-4135-b0ac-f74341102576\\\\scratchpad\\\\verify-cms-contract.mjs\")",
+      "PowerShell(docker exec sait_platform-web-1 node -e \"fetch\\('http://host.docker.internal:3001/v1/health'\\).then\\(r=>r.text\\(\\)\\).then\\(t=>console.log\\('CMS from container:',t\\)\\).catch\\(e=>{console.error\\('FAIL',e.message\\);process.exit\\(1\\)}\\)\")",
+      "PowerShell(node \"C:\\\\Users\\\\user\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-user-Desktop-Sait-Platform\\\\e81f2968-cd83-4135-b0ac-f74341102576\\\\scratchpad\\\\demo-cms-loop.mjs\")",
+      "PowerShell(gh auth status 2>&1)"
+    ],
+    "additionalDirectories": [
+      "c:\\Users\\user\\Desktop\\Broker_CMS"
     ]
   }
 }
