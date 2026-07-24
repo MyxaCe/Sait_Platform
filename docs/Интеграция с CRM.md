@@ -67,7 +67,7 @@ React Query для наполнения страниц **не используе
 
 - [x] **Этап 0** — Zod-контракт + JSON Schema в `packages/api-client`; mock-CRM `/api/cms/*` поверх текущих данных; scrubbing-policy.v1.json; 34 контрактных теста. Выполнен 2026-07-23
 - [x] **Этап 1** — `/api/revalidate` (HMAC, дедуп, cooldown) + brand / navigation / legal / faq / contacts через тегированный CMS-слой (`getCms`); бренд-цвет и название из CMS. Выполнен 2026-07-24
-- [ ] **Этап 2** — типизированные эндпоинты: instruments (allow-list для WS), accounts, promotions, articles, academy/streams, careers, system-status; постранично, e2e после каждой
+- [x] **Этап 2** — ВСЕ данные сайта через CMS-слой: instruments (allow-list для WS), accounts, promotions, articles, academy, streams (фасад iframe), careers, system-status. Выполнен 2026-07-24
 - [ ] **Этап 3** — preview (draftMode + noindex), синтетический мониторинг «правка в CRM → сайт < 2 мин», подключение реального CRM URL
 - [ ] **Этап 4** — data-файлы остаются только фикстурами mock-CRM
 - ⏸ **Конструктор страниц** — отложен, см. [[Технический долг#TD-001]]
