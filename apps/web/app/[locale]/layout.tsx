@@ -5,6 +5,8 @@ import { hasLocale, NextIntlClientProvider } from 'next-intl';
 import { getMessages, getTranslations, setRequestLocale } from 'next-intl/server';
 import { OrganizationJsonLd } from '@/components/seo/OrganizationJsonLd';
 import { routing } from '@/i18n/routing';
+import { hexToRgbChannels } from '@/lib/brand';
+import { getCms } from '@/lib/cms';
 import { SITE_NAME, SITE_URL } from '@/lib/site';
 import { Providers } from './providers';
 import '../globals.css';
@@ -80,10 +82,17 @@ export default async function RootLayout({ children, params }: LayoutProps) {
   setRequestLocale(locale);
   const messages = await getMessages();
 
+  // Бренд из CMS (тег cms:brand): акцентный цвет инжектируется поверх токенов
+  const brand = await getCms('brand', { locale: locale as 'ru' | 'en' });
+  const accentChannels = hexToRgbChannels(brand.primaryColor);
+
   return (
     // suppressHydrationWarning: next-themes меняет data-theme до гидрации
     <html lang={locale} suppressHydrationWarning className={inter.variable}>
       <body className="bg-base font-sans text-primary">
+        {accentChannels && (
+          <style>{`:root{--accent:${accentChannels};}`}</style>
+        )}
         <OrganizationJsonLd />
         <NextIntlClientProvider messages={messages}>
           <Providers>{children}</Providers>

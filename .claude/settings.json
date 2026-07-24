@@ -41,7 +41,8 @@
       "PowerShell(Set-Location \"c:\\\\Users\\\\user\\\\Desktop\\\\Sait_Platform\"; docker compose up -d db 2>&1 | Select-Object -Last 3; $deadline = \\(Get-Date\\).AddSeconds\\(60\\); do { $h = docker inspect --format '{{.State.Health.Status}}' \\(docker compose ps -q db\\) 2>$null; Start-Sleep 2 } while \\($h -ne 'healthy' -and \\(Get-Date\\) -lt $deadline\\); \"db health: $h\"; docker compose exec -T db psql -U broker -d broker_site -c '\\\\dt' 2>&1 | Select-Object -First 8)",
       "PowerShell(Set-Location \"c:\\\\Users\\\\user\\\\Desktop\\\\Sait_Platform\"; $env:DATABASE_URL='postgres://broker:broker_dev_password@localhost:5432/broker_site'; pnpm --filter @broker/web dev)",
       "PowerShell($conn = Get-NetTCPConnection -LocalPort 3000 -State Listen -ErrorAction SilentlyContinue; if \\($conn\\) { $conn | ForEach-Object { try { Stop-Process -Id $_.OwningProcess -Force -Confirm:$false } catch {} }; Start-Sleep 2 }; if \\(Get-NetTCPConnection -LocalPort 3000 -State Listen -ErrorAction SilentlyContinue\\) { 'STILL BUSY' } else { 'port 3000 free' })",
-      "PowerShell(Set-Location \"c:\\\\Users\\\\user\\\\Desktop\\\\Sait_Platform\"; $env:DATABASE_URL='postgres://broker:broker_dev_password@localhost:5432/broker_site'; pnpm --filter @broker/relay start)"
+      "PowerShell(Set-Location \"c:\\\\Users\\\\user\\\\Desktop\\\\Sait_Platform\"; $env:DATABASE_URL='postgres://broker:broker_dev_password@localhost:5432/broker_site'; pnpm --filter @broker/relay start)",
+      "PowerShell($conn = Get-NetTCPConnection -LocalPort 3000 -State Listen -ErrorAction SilentlyContinue; if \\($conn\\) { $conn | ForEach-Object { try { Stop-Process -Id $_.OwningProcess -Force -Confirm:$false } catch {} }; Start-Sleep 2 }; Set-Location \"c:\\\\Users\\\\user\\\\Desktop\\\\Sait_Platform\"; $env:DATABASE_URL='postgres://broker:broker_dev_password@localhost:5432/broker_site'; $env:CMS_WEBHOOK_SECRET='local-dev-secret'; pnpm --filter @broker/web dev)"
     ]
   }
 }

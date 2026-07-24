@@ -31,8 +31,9 @@ updated: 2026-07-23
 | Платформенная модель: Postgres (leads+outbox) + релей в шину | ✅ контур работает (шина — LogPublisher до кредлов) |
 | Docker: compose (db/web/relay) + Dockerfile'ы | ✅ готово · CD на VPS 📋 |
 | Error tracking (общий GlitchTip, хостит команда CRM) | 🔄 согласовано, ждёт сроков |
-| Интеграция с CRM — этап 0 (контракт + mock-CRM + JSON Schema) | ✅ готов |
-| Интеграция с CRM — этап 1 (вебхук + медленные данные) | 🔄 следующий |
+| Интеграция с CMS — этап 0 (контракт + mock + JSON Schema) | ✅ готов |
+| Интеграция с CMS — этап 1 (вебхук-инвалидация + brand/nav/legal/faq/contacts) | ✅ готов |
+| Интеграция с CMS — этап 2 (instruments/accounts/promotions/articles/…) | 🔄 следующий |
 | Конструктор страниц (page builder) | ⏸ тех. долг — [[Технический долг]] |
 
 ## Быстрые факты

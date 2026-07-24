@@ -1,6 +1,7 @@
 import { useTranslations } from 'next-intl';
 import { setRequestLocale } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
+import { getCms } from '@/lib/cms';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -11,12 +12,19 @@ interface LayoutProps {
  * Облегчённый layout для входа/регистрации: без полного меню и тикера,
  * ничто не отвлекает от конверсионного действия.
  */
-export default function AuthLayout({ children, params }: LayoutProps) {
+export default async function AuthLayout({ children, params }: LayoutProps) {
   setRequestLocale(params.locale);
-  return <LayoutContent>{children}</LayoutContent>;
+  const brand = await getCms('brand', { locale: params.locale === 'en' ? 'en' : 'ru' });
+  return <LayoutContent brandName={brand.name}>{children}</LayoutContent>;
 }
 
-function LayoutContent({ children }: { children: React.ReactNode }) {
+function LayoutContent({
+  children,
+  brandName,
+}: {
+  children: React.ReactNode;
+  brandName: string;
+}) {
   const t = useTranslations('auth');
   return (
     <div className="flex min-h-svh flex-col">
@@ -24,9 +32,9 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
         <div className="mx-auto flex h-16 w-full max-w-page items-center justify-between px-4 sm:px-6 lg:px-8">
           <Link href="/" className="flex items-center gap-2 text-lg font-semibold text-primary">
             <span className="grid size-8 place-items-center rounded-lg bg-accent font-bold text-base">
-              A
+              {brandName.charAt(0)}
             </span>
-            Apex Capital
+            {brandName}
           </Link>
           <Link href="/" className="text-sm text-secondary transition-colors hover:text-primary">
             {t('backHome')}

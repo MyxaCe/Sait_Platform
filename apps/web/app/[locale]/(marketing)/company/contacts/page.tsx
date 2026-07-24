@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { Container, Section } from '@broker/ui';
 import { ContactForm } from '@/features/contacts/ContactForm';
+import { getCms } from '@/lib/cms';
 
 interface PageProps {
   params: { locale: string };
@@ -12,22 +13,13 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   return { title: t('metaTitle'), description: t('metaDescription') };
 }
 
-interface Channel {
-  title: string;
-  value: string;
-  detail: string;
-}
-interface Office {
-  city: string;
-  country: string;
-  address: string;
-}
-
 export default async function ContactsPage({ params }: PageProps) {
   setRequestLocale(params.locale);
   const t = await getTranslations('contacts');
-  const channels = t.raw('channels') as Channel[];
-  const offices = t.raw('officesList') as Office[];
+  // Каналы и офисы из CMS-слоя (тег cms:contacts, вебхук-инвалидация)
+  const { channels, offices } = await getCms('contacts', {
+    locale: params.locale === 'en' ? 'en' : 'ru',
+  });
 
   return (
     <Section className="py-10 md:py-14">

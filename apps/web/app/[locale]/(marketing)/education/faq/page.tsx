@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { Button } from '@broker/ui';
 import { Link } from '@/i18n/navigation';
-import { getFaqSections } from '@/features/education/faq-data';
+import { getCms } from '@/lib/cms';
 
 interface PageProps {
   params: { locale: string };
@@ -16,7 +16,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 export default async function FaqPage({ params }: PageProps) {
   setRequestLocale(params.locale);
   const t = await getTranslations('education');
-  const sections = getFaqSections(params.locale);
+  // Контент из CMS-слоя (тег cms:faq, вебхук-инвалидация)
+  const { sections } = await getCms('faq', {
+    locale: params.locale === 'en' ? 'en' : 'ru',
+  });
 
   // Микроразметка FAQPage: вопросы попадают в расширенные сниппеты поиска
   const jsonLd = {

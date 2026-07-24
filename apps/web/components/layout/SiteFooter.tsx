@@ -2,14 +2,15 @@ import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import { Container } from '@broker/ui';
 
-interface FooterColumn {
-  title: string;
-  links: { href: string; label: string }[];
+export interface SiteFooterProps {
+  /** Колонки и risk warning приходят из CMS (тег cms:navigation) */
+  columns: { title: string; links: { href: string; label: string }[] }[];
+  riskWarning: string;
+  brandName: string;
 }
 
-export function SiteFooter() {
+export function SiteFooter({ columns, riskWarning, brandName }: SiteFooterProps) {
   const t = useTranslations('footer');
-  const columns = t.raw('columns') as FooterColumn[];
 
   return (
     <footer className="border-t border-border bg-elevated">
@@ -35,7 +36,7 @@ export function SiteFooter() {
         </div>
 
         <div className="mt-12 border-t border-border pt-8">
-          <p className="text-xs leading-relaxed text-secondary">{t('riskWarning')}</p>
+          <p className="text-xs leading-relaxed text-secondary">{riskWarning}</p>
           <p className="mt-4 text-xs text-secondary">
             {t('copyright', { year: new Date().getFullYear() })}
           </p>

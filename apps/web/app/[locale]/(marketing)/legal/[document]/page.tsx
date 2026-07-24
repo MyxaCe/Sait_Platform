@@ -4,11 +4,8 @@ import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { Container, Section, cn } from '@broker/ui';
 import { formatDate } from '@broker/utils';
 import { Link } from '@/i18n/navigation';
-import {
-  findLegalDocument,
-  getLegalDocuments,
-  LEGAL_SLUGS,
-} from '@/features/legal/documents';
+import { findLegalDocument, LEGAL_SLUGS } from '@/features/legal/documents';
+import { getCms } from '@/lib/cms';
 
 interface PageParams {
   params: { locale: string; document: string };
@@ -26,11 +23,16 @@ export function generateMetadata({ params }: PageParams): Metadata {
 
 export default async function LegalDocumentPage({ params }: PageParams) {
   setRequestLocale(params.locale);
-  const doc = findLegalDocument(params.document, params.locale);
+
+  // Контент из CMS-слоя (тег cms:legal, вебхук-инвалидация)
+  const { items: documents } = await getCms('legal', {
+    locale: params.locale === 'en' ? 'en' : 'ru',
+  });
+  const doc = documents.find((d) => d.slug === params.document);
   if (!doc) notFound();
+
   const t = await getTranslations('legal');
   const intlLocale = params.locale === 'en' ? 'en-US' : 'ru-RU';
-  const documents = getLegalDocuments(params.locale);
 
   return (
     <Section className="py-10 md:py-14">
@@ -74,7 +76,7 @@ export default async function LegalDocumentPage({ params }: PageParams) {
                 <section key={section.heading}>
                   <h2 className="text-xl font-semibold text-primary">{section.heading}</h2>
                   <div className="mt-3 space-y-4">
-                    {section.paragraphs.map((p, i) => (
+                    {section.paragraphsMarkdown.map((p, i) => (
                       <p key={i} className="leading-relaxed text-primary/85">
                         {p}
                       </p>

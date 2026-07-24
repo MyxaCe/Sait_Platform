@@ -7,16 +7,13 @@ import { Button, Container, cn } from '@broker/ui';
 import { LangSwitcher } from './LangSwitcher';
 import { ThemeToggle } from './ThemeToggle';
 
-// «Платформы» появятся здесь при интеграции модуля торговой платформы
-const NAV_ITEMS = [
-  { href: '/instruments', key: 'instruments' },
-  { href: '/accounts', key: 'accounts' },
-  { href: '/analytics/news', key: 'analytics' },
-  { href: '/education', key: 'education' },
-  { href: '/about', key: 'about' },
-] as const;
+export interface SiteHeaderProps {
+  /** Название бренда и навигация приходят из CMS (тег cms:brand / cms:navigation) */
+  brandName: string;
+  nav: { label: string; href: string }[];
+}
 
-export function SiteHeader() {
+export function SiteHeader({ brandName, nav }: SiteHeaderProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const pathname = usePathname();
   const t = useTranslations('nav');
@@ -38,13 +35,13 @@ export function SiteHeader() {
       <Container className="flex h-16 items-center justify-between gap-4 lg:h-[72px]">
         <Link href="/" className="flex items-center gap-2 text-lg font-semibold text-primary">
           <span className="grid size-8 place-items-center rounded-lg bg-accent font-bold text-base">
-            A
+            {brandName.charAt(0)}
           </span>
-          Apex Capital
+          {brandName}
         </Link>
 
         <nav className="hidden items-center gap-1 lg:flex" aria-label={t('mainNav')}>
-          {NAV_ITEMS.map((item) => (
+          {nav.map((item) => (
             <Link
               key={item.href}
               href={item.href}
@@ -55,7 +52,7 @@ export function SiteHeader() {
                   : 'text-secondary hover:bg-primary/5 hover:text-primary',
               )}
             >
-              {t(item.key)}
+              {item.label}
             </Link>
           ))}
         </nav>
@@ -118,13 +115,13 @@ export function SiteHeader() {
         )}
       >
         <nav className="flex-1 overflow-y-auto px-4 py-6" aria-label={t('mobileNav')}>
-          {NAV_ITEMS.map((item) => (
+          {nav.map((item) => (
             <Link
               key={item.href}
               href={item.href}
               className="block rounded-xl px-4 py-4 text-lg font-medium text-primary hover:bg-primary/5"
             >
-              {t(item.key)}
+              {item.label}
             </Link>
           ))}
         </nav>
