@@ -6,6 +6,7 @@ import { Badge, Container, Section } from '@broker/ui';
 import { Link } from '@/i18n/navigation';
 import { CATEGORY_LABELS_STATIC } from '@/features/instruments/categories';
 import { LiveQuotePanel } from '@/features/instruments/LiveQuotePanel';
+import { getCms } from '@/lib/cms';
 import { SITE_URL } from '@/lib/site';
 
 interface PageParams {
@@ -35,11 +36,19 @@ export default async function InstrumentPage({ params }: PageParams) {
   // setRequestLocale строго до notFound(): иначе рендер 404-границы
   // уходит в динамический режим (DYNAMIC_SERVER_USAGE)
   setRequestLocale(params.locale);
+  const locale = params.locale === 'en' ? 'en' : 'ru';
+
   const def = findSymbol(params.symbol);
   if (!def || def.category !== params.category) notFound();
+
+  // Allow-list и торговые условия из CMS (тег cms:instruments):
+  // инструмент вне списка недоступен, даже если есть в realtime-справочнике
+  const { items } = await getCms('instruments', { locale });
+  const meta = items.find((i) => i.symbol === def.symbol);
+  if (!meta) notFound();
+
   const t = await getTranslations('instruments');
-  const categoryLabel =
-    CATEGORY_LABELS_STATIC[params.locale === 'en' ? 'en' : 'ru']![def.category];
+  const categoryLabel = CATEGORY_LABELS_STATIC[locale]![def.category];
 
   // Микроразметка хлебных крошек — дублирует видимую навигацию для поисковиков
   const breadcrumbJsonLd = {
@@ -108,7 +117,7 @@ export default async function InstrumentPage({ params }: PageParams) {
               </div>
               <div>
                 <dt className="text-sm text-secondary">{t('specLeverage')}</dt>
-                <dd className="mt-1 font-medium text-primary">1:500</dd>
+                <dd className="mt-1 font-medium text-primary">{meta.leverageMax}</dd>
               </div>
               <div>
                 <dt className="text-sm text-secondary">{t('specCommission')}</dt>
@@ -128,7 +137,9 @@ export default async function InstrumentPage({ params }: PageParams) {
               </div>
               <div>
                 <dt className="text-sm text-secondary">{t('specSwapFree')}</dt>
-                <dd className="mt-1 font-medium text-primary">{t('specAvailable')}</dd>
+                <dd className="mt-1 font-medium text-primary">
+                  {meta.swapFree ? t('specAvailable') : '—'}
+                </dd>
               </div>
             </dl>
           </div>

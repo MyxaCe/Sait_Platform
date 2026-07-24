@@ -4,7 +4,6 @@ import { useTranslations } from 'next-intl';
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from '@/i18n/navigation';
 import {
-  SYMBOL_UNIVERSE,
   useConnectionStatus,
   useRealtimeQuotes,
   type InstrumentCategory,
@@ -15,11 +14,14 @@ import { formatPrice } from '@broker/utils';
 import { CATEGORY_ORDER } from './categories';
 import { usePriceFlash } from './usePriceFlash';
 
-const ALL_SYMBOLS = SYMBOL_UNIVERSE.map((d) => d.symbol);
-
 type CategoryFilter = InstrumentCategory | 'all';
 
-export function InstrumentsBrowser() {
+export interface InstrumentsBrowserProps {
+  /** Allow-list символов из CMS — отображаются и подписываются только они */
+  symbols: string[];
+}
+
+export function InstrumentsBrowser({ symbols }: InstrumentsBrowserProps) {
   const t = useTranslations('instruments');
   const tCat = useTranslations('categories');
   const tConn = useTranslations('connection');
@@ -37,7 +39,7 @@ export function InstrumentsBrowser() {
     }
   }, []);
 
-  const quotes = useRealtimeQuotes(ALL_SYMBOLS);
+  const quotes = useRealtimeQuotes(symbols);
   const status = useConnectionStatus();
 
   const filtered = useMemo(() => {

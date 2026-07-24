@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { Badge, Container, Section } from '@broker/ui';
+import { getCms } from '@/lib/cms';
 
 interface PageProps {
   params: { locale: string };
@@ -11,24 +12,14 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   return { title: t('metaTitle'), description: t('metaDescription') };
 }
 
-interface Benefit {
-  title: string;
-  text: string;
-}
-interface Vacancy {
-  title: string;
-  department: string;
-  location: string;
-  type: string;
-}
-
-const HR_EMAIL = 'hr@apexcapital.example';
-
 export default async function CareersPage({ params }: PageProps) {
   setRequestLocale(params.locale);
   const t = await getTranslations('careers');
-  const benefits = t.raw('benefits') as Benefit[];
-  const vacancies = t.raw('vacancies') as Vacancy[];
+  // Вакансии и бенефиты из CMS (тег cms:careers)
+  const { benefits, vacancies } = await getCms('careers', {
+    locale: params.locale === 'en' ? 'en' : 'ru',
+  });
+  const hrEmail = vacancies[0]?.applyEmail ?? 'hr@apexcapital.example';
 
   return (
     <>
@@ -62,7 +53,7 @@ export default async function CareersPage({ params }: PageProps) {
             {vacancies.map((vacancy) => (
               <li key={vacancy.title} className="bg-card">
                 <a
-                  href={`mailto:${HR_EMAIL}?subject=${encodeURIComponent(t('applySubject', { title: vacancy.title }))}`}
+                  href={`mailto:${vacancy.applyEmail}?subject=${encodeURIComponent(t('applySubject', { title: vacancy.title }))}`}
                   className="group flex flex-col gap-3 px-5 py-5 transition-colors hover:bg-elevated/60 sm:flex-row sm:items-center sm:justify-between lg:px-8"
                 >
                   <div>
@@ -82,8 +73,8 @@ export default async function CareersPage({ params }: PageProps) {
           <p className="mt-8 text-sm text-secondary">
             {t.rich('notFound', {
               email: () => (
-                <a href={`mailto:${HR_EMAIL}`} className="text-accent hover:underline">
-                  {HR_EMAIL}
+                <a href={`mailto:${hrEmail}`} className="text-accent hover:underline">
+                  {hrEmail}
                 </a>
               ),
             })}

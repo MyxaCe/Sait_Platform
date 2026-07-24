@@ -14,9 +14,9 @@ import { formatPrice } from '@broker/utils';
  * (мок или socket.io — решает NEXT_PUBLIC_WS_URL) и маппит
  * котировки в презентационный TickerTape из дизайн-системы.
  */
-export function QuotesTicker() {
+export function QuotesTicker({ symbols = DEFAULT_TICKER_SYMBOLS }: { symbols?: string[] }) {
   const tConn = useTranslations('connection');
-  const quotes = useRealtimeQuotes(DEFAULT_TICKER_SYMBOLS);
+  const quotes = useRealtimeQuotes(symbols);
   const status = useConnectionStatus();
 
   const items = quotes.map((q) => ({

@@ -3,10 +3,12 @@ import { notFound } from 'next/navigation';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { Button } from '@broker/ui';
 import { Link } from '@/i18n/navigation';
+import { MarkdownText } from '@/components/MarkdownText';
 import {
   EDUCATION_SLUGS,
   findEducationArticle,
 } from '@/features/education/articles-data';
+import { getCms } from '@/lib/cms';
 
 interface PageParams {
   params: { locale: string; slug: string };
@@ -24,7 +26,12 @@ export function generateMetadata({ params }: PageParams): Metadata {
 
 export default async function EducationArticlePage({ params }: PageParams) {
   setRequestLocale(params.locale);
-  const article = findEducationArticle(params.slug, params.locale);
+
+  // Статья из CMS (тег cms:academy)
+  const { articles } = await getCms('academy', {
+    locale: params.locale === 'en' ? 'en' : 'ru',
+  });
+  const article = articles.find((a) => a.slug === params.slug);
   if (!article) notFound();
   const t = await getTranslations('education');
   const tCommon = await getTranslations('common');
@@ -65,11 +72,7 @@ export default async function EducationArticlePage({ params }: PageParams) {
       </h1>
 
       <div className="mt-8 space-y-5 border-t border-border pt-8">
-        {article.body.map((paragraph, i) => (
-          <p key={i} className="leading-relaxed text-primary/90">
-            {paragraph}
-          </p>
-        ))}
+        <MarkdownText markdown={article.bodyMarkdown} />
       </div>
 
       <div className="mt-10 rounded-2xl border border-accent/20 bg-accent/5 p-6 text-center">

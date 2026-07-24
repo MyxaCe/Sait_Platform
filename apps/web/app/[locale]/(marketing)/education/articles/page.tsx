@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
-import { getEducationArticles } from '@/features/education/articles-data';
+import { getCms } from '@/lib/cms';
 
 interface PageProps {
   params: { locale: string };
@@ -16,7 +16,10 @@ export default async function EducationArticlesPage({ params }: PageProps) {
   setRequestLocale(params.locale);
   const t = await getTranslations('education');
   const tCommon = await getTranslations('common');
-  const articles = getEducationArticles(params.locale);
+  // Обучение из CMS (тег cms:academy)
+  const { articles } = await getCms('academy', {
+    locale: params.locale === 'en' ? 'en' : 'ru',
+  });
 
   return (
     <div className="grid gap-4 sm:grid-cols-2 lg:gap-6">

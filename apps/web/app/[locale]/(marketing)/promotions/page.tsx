@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { Badge, Button, Container, Section } from '@broker/ui';
 import { Link } from '@/i18n/navigation';
+import { getCms } from '@/lib/cms';
 
 interface PageProps {
   params: { locale: string };
@@ -12,20 +13,15 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   return { title: t('metaTitle'), description: t('metaDescription') };
 }
 
-interface Promo {
-  badge: string;
-  title: string;
-  description: string;
-  terms: string;
-  ctaLabel: string;
-  href: string;
-  featured?: boolean;
-}
-
 export default async function PromotionsPage({ params }: PageProps) {
   setRequestLocale(params.locale);
   const t = await getTranslations('promotions');
-  const promos = t.raw('promos') as Promo[];
+  // Акции из CMS (тег cms:promotions, страховочный revalidate 60 c —
+  // условно-динамические данные из классификации §1 задания)
+  const { items: promos } = await getCms('promotions', {
+    locale: params.locale === 'en' ? 'en' : 'ru',
+    revalidate: 60,
+  });
 
   return (
     <Section className="py-10 md:py-14">
@@ -55,7 +51,7 @@ export default async function PromotionsPage({ params }: PageProps) {
               <p className="mt-4 rounded-xl bg-elevated px-4 py-3 text-xs leading-relaxed text-secondary">
                 {promo.terms}
               </p>
-              <Link href={promo.href} className="mt-5 block">
+              <Link href={promo.ctaHref} className="mt-5 block">
                 <Button
                   variant={promo.featured ? 'primary' : 'secondary'}
                   className="w-full"

@@ -4,11 +4,14 @@ import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { Badge, Button } from '@broker/ui';
 import { formatDate, formatTime } from '@broker/utils';
 import { Link } from '@/i18n/navigation';
+import { MarkdownText } from '@/components/MarkdownText';
 import {
   findArticle,
   NEWS_CATEGORY_LABELS,
   NEWS_SLUGS,
+  type NewsCategory,
 } from '@/features/analytics/news-data';
+import { getCms } from '@/lib/cms';
 
 interface PageParams {
   params: { locale: string; slug: string };
@@ -35,8 +38,17 @@ export function generateMetadata({ params }: PageParams): Metadata {
 
 export default async function NewsArticlePage({ params }: PageParams) {
   setRequestLocale(params.locale);
-  const article = findArticle(params.slug, params.locale);
+  const locale = params.locale === 'en' ? 'en' : 'ru';
+
+  // Статья из CMS (тег cms:articles)
+  const { items } = await getCms('articles', {
+    locale,
+    revalidate: 60,
+    params: { pageSize: '50' },
+  });
+  const article = items.find((a) => a.slug === params.slug);
   if (!article) notFound();
+  const category = article.category as NewsCategory;
   const t = await getTranslations('analytics');
   const tCommon = await getTranslations('common');
   const intlLocale = params.locale === 'en' ? 'en-US' : 'ru-RU';
@@ -68,7 +80,7 @@ export default async function NewsArticlePage({ params }: PageParams) {
 
       <div className="mt-6 flex flex-wrap items-center gap-3 text-xs text-secondary">
         <Badge variant="accent" className="px-3 py-1 text-xs">
-          {categoryLabels[article.category]}
+          {categoryLabels[category]}
         </Badge>
         <time dateTime={article.publishedAt}>
           {formatDate(article.publishedAt, intlLocale)} ·{' '}
@@ -84,11 +96,7 @@ export default async function NewsArticlePage({ params }: PageParams) {
       <p className="mt-4 text-lg leading-relaxed text-secondary">{article.excerpt}</p>
 
       <div className="mt-8 space-y-5 border-t border-border pt-8">
-        {article.body.map((paragraph, i) => (
-          <p key={i} className="leading-relaxed text-primary/90">
-            {paragraph}
-          </p>
-        ))}
+        <MarkdownText markdown={article.bodyMarkdown} />
       </div>
 
       <p className="mt-8 text-sm text-secondary">{t('source', { source: article.source })}</p>

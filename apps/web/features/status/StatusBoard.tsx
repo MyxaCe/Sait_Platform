@@ -21,20 +21,19 @@ const TEXT: Record<ServiceStatus, string> = {
   maintenance: 'text-secondary',
 };
 
-interface ServiceEntry {
-  name: string;
-  description: string;
-  uptime: string;
+export interface StatusBoardProps {
+  /** Данные из CMS (тег cms:system-status); сервис id=quotes-ws подменяется live-состоянием */
+  services: {
+    id: string;
+    name: string;
+    description: string;
+    status: ServiceStatus;
+    uptime90d: string;
+  }[];
+  incidents: { date: string; title: string; status: string; text: string }[];
 }
 
-interface IncidentEntry {
-  date: string;
-  title: string;
-  status: string;
-  text: string;
-}
-
-export function StatusBoard() {
+export function StatusBoard({ services: cmsServices, incidents }: StatusBoardProps) {
   const t = useTranslations('status');
   const locale = useLocale();
   const intlLocale = locale === 'en' ? 'en-US' : 'ru-RU';
@@ -53,20 +52,9 @@ export function StatusBoard() {
           ? t('stateOutage')
           : t('stateMaintenance');
 
-  const staticServices = t.raw('services') as ServiceEntry[];
-  const incidents = t.raw('incidents') as IncidentEntry[];
-
-  const services: (ServiceEntry & { status: ServiceStatus })[] = [
-    ...staticServices.slice(0, 2).map((s) => ({ ...s, status: 'operational' as const })),
-    {
-      name: t('wsName'),
-      description: t('wsDescription'),
-      uptime: '99.98%',
-      status: feedStatus,
-    },
-    ...staticServices.slice(2).map((s) => ({ ...s, status: 'operational' as const })),
-  ];
-
+  const services = cmsServices.map((s) =>
+    s.id === 'quotes-ws' ? { ...s, status: feedStatus } : s,
+  );
   const allOk = services.every((s) => s.status === 'operational');
 
   return (
@@ -90,7 +78,7 @@ export function StatusBoard() {
       {/* Сервисы */}
       <ul className="mt-6 divide-y divide-border overflow-hidden rounded-2xl border border-border">
         {services.map((service) => (
-          <li key={service.name} className="flex items-center gap-4 bg-card px-5 py-4">
+          <li key={service.id} className="flex items-center gap-4 bg-card px-5 py-4">
             <span className={cn('size-2.5 shrink-0 rounded-full', DOT[service.status])} aria-hidden />
             <div className="min-w-0 flex-1">
               <p className="font-medium text-primary">{service.name}</p>
@@ -101,7 +89,7 @@ export function StatusBoard() {
                 {stateLabel(service.status)}
               </p>
               <p className="text-xs tabular-nums text-secondary">
-                {t('uptime', { value: service.uptime })}
+                {t('uptime', { value: service.uptime90d })}
               </p>
             </div>
           </li>

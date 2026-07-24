@@ -3,7 +3,8 @@ import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { Badge, Button } from '@broker/ui';
 import { formatDate, formatTime } from '@broker/utils';
 import { Link } from '@/i18n/navigation';
-import { getWebinars, type Webinar } from '@/features/education/webinars-data';
+import { StreamFacade } from '@/features/streams/StreamFacade';
+import { getCms } from '@/lib/cms';
 
 interface PageProps {
   params: { locale: string };
@@ -17,6 +18,18 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 // Расписание пересчитывается раз в час
 export const revalidate = 3600;
 
+interface WebinarView {
+  id: string;
+  title: string;
+  speaker: string;
+  speakerRole: string;
+  startsAt: string;
+  durationMinutes: number;
+  level: string;
+  description: string;
+  isPast: boolean;
+}
+
 interface CardLabels {
   live: string;
   record: string;
@@ -26,7 +39,7 @@ interface CardLabels {
   recordSoon: string;
 }
 
-function WebinarCard({ webinar, labels }: { webinar: Webinar; labels: CardLabels }) {
+function WebinarCard({ webinar, labels }: { webinar: WebinarView; labels: CardLabels }) {
   return (
     <article className="flex flex-col rounded-2xl border border-border bg-card p-6 lg:p-8">
       <div className="flex flex-wrap items-center gap-2 text-xs">
@@ -34,8 +47,8 @@ function WebinarCard({ webinar, labels }: { webinar: Webinar; labels: CardLabels
           {webinar.isPast ? labels.record : labels.live}
         </Badge>
         <span className="text-secondary">
-          {labels.date(webinar.datetime)} ·{' '}
-          {labels.meta(formatTime(webinar.datetime), webinar.durationMinutes)}
+          {labels.date(webinar.startsAt)} ·{' '}
+          {labels.meta(formatTime(webinar.startsAt), webinar.durationMinutes)}
         </span>
       </div>
 
@@ -76,11 +89,22 @@ function WebinarCard({ webinar, labels }: { webinar: Webinar; labels: CardLabels
 export default async function WebinarsPage({ params }: PageProps) {
   setRequestLocale(params.locale);
   const t = await getTranslations('education');
-  const intlLocale = params.locale === 'en' ? 'en-US' : 'ru-RU';
+  const locale = params.locale === 'en' ? 'en' : 'ru';
+  const intlLocale = locale === 'en' ? 'en-US' : 'ru-RU';
 
-  const webinars = getWebinars(new Date(), params.locale);
-  const upcoming = webinars.filter((w) => !w.isPast);
-  const past = webinars.filter((w) => w.isPast).reverse();
+  // Вебинары и стримы из CMS (теги cms:academy / cms:streams)
+  const [{ webinars }, streams] = await Promise.all([
+    getCms('academy', { locale }),
+    getCms('streams', { locale, revalidate: 60 }),
+  ]);
+
+  const now = Date.now();
+  const views: WebinarView[] = webinars
+    .map((w) => ({ ...w, isPast: Date.parse(w.startsAt) < now }))
+    .sort((a, b) => a.startsAt.localeCompare(b.startsAt));
+  const upcoming = views.filter((w) => !w.isPast);
+  const past = views.filter((w) => w.isPast).reverse();
+  const activeStreams = streams.items.filter((s) => s.status !== 'past');
 
   const labels: CardLabels = {
     live: t('liveBadge'),
@@ -93,6 +117,22 @@ export default async function WebinarsPage({ params }: PageProps) {
 
   return (
     <div className="space-y-12">
+      {activeStreams.length > 0 && (
+        <section aria-label={t('liveBadge')}>
+          <div className="grid gap-4 md:grid-cols-2 lg:gap-6">
+            {activeStreams.map((stream) => (
+              <StreamFacade
+                key={stream.videoId}
+                provider={stream.provider}
+                videoId={stream.videoId}
+                title={stream.title}
+                posterUrl={stream.poster?.url}
+              />
+            ))}
+          </div>
+        </section>
+      )}
+
       <section aria-label={t('upcoming')}>
         <h2 className="text-xl font-semibold text-primary">{t('upcoming')}</h2>
         <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3 lg:gap-6">

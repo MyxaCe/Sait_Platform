@@ -3,7 +3,8 @@ import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { Badge } from '@broker/ui';
 import { formatDate, formatTime } from '@broker/utils';
 import { Link } from '@/i18n/navigation';
-import { getNewsArticles, NEWS_CATEGORY_LABELS } from '@/features/analytics/news-data';
+import { NEWS_CATEGORY_LABELS, type NewsCategory } from '@/features/analytics/news-data';
+import { getCms } from '@/lib/cms';
 
 interface PageProps {
   params: { locale: string };
@@ -22,7 +23,15 @@ export default async function NewsPage({ params }: PageProps) {
   const intlLocale = locale === 'en' ? 'en-US' : 'ru-RU';
   const categoryLabels = NEWS_CATEGORY_LABELS[locale === 'en' ? 'en' : 'ru']!;
 
-  const [featured, ...rest] = getNewsArticles(locale);
+  // Новости из CMS (тег cms:articles, условно-динамические → revalidate 60 c)
+  const { items } = await getCms('articles', {
+    locale: locale === 'en' ? 'en' : 'ru',
+    revalidate: 60,
+  });
+  const [featured, ...rest] = items.map((a) => ({
+    ...a,
+    category: a.category as NewsCategory,
+  }));
   if (!featured) return null;
 
   return (

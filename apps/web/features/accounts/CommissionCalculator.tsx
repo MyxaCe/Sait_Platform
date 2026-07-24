@@ -4,18 +4,24 @@ import { useTranslations } from 'next-intl';
 import { useMemo, useState } from 'react';
 import { cn } from '@broker/ui';
 import { formatCurrency } from '@broker/utils';
-import { ACCOUNT_PRICING } from './plans';
 
 /** Стоимость пункта для 1 стандартного лота EURUSD */
 const PIP_VALUE_USD = 10;
 
-export function CommissionCalculator() {
+export interface CalculatorPricing {
+  id: string;
+  name: string;
+  spreadPips: number;
+  commissionPerLotRT: number;
+}
+
+export function CommissionCalculator({ pricing }: { pricing: CalculatorPricing[] }) {
   const t = useTranslations('accounts.calc');
   const [lots, setLots] = useState(0.5);
   const [tradesPerMonth, setTradesPerMonth] = useState(40);
 
   const results = useMemo(() => {
-    const rows = ACCOUNT_PRICING.map((acc) => {
+    const rows = pricing.map((acc) => {
       const spreadCost = acc.spreadPips * PIP_VALUE_USD * lots;
       const commission = acc.commissionPerLotRT * lots;
       const perTrade = spreadCost + commission;
@@ -23,7 +29,7 @@ export function CommissionCalculator() {
     });
     const cheapest = Math.min(...rows.map((r) => r.monthly));
     return rows.map((r) => ({ ...r, isCheapest: r.monthly === cheapest }));
-  }, [lots, tradesPerMonth]);
+  }, [pricing, lots, tradesPerMonth]);
 
   return (
     <div className="rounded-3xl border border-border bg-card p-6 sm:p-8">

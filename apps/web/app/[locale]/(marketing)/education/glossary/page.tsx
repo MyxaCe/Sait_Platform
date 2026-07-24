@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { GlossaryList } from '@/features/education/GlossaryList';
+import { getCms } from '@/lib/cms';
 
 interface PageProps {
   params: { locale: string };
@@ -11,7 +12,11 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   return { title: t('glossaryMetaTitle'), description: t('glossaryMetaDescription') };
 }
 
-export default function GlossaryPage({ params }: PageProps) {
+export default async function GlossaryPage({ params }: PageProps) {
   setRequestLocale(params.locale);
-  return <GlossaryList />;
+  // Глоссарий из CMS (тег cms:academy)
+  const { glossary } = await getCms('academy', {
+    locale: params.locale === 'en' ? 'en' : 'ru',
+  });
+  return <GlossaryList terms={glossary} />;
 }

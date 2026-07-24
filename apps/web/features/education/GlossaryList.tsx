@@ -3,20 +3,25 @@
 import { useLocale, useTranslations } from 'next-intl';
 import { useMemo, useState } from 'react';
 import { Input } from '@broker/ui';
-import { getGlossaryTerms } from './glossary-data';
 
-export function GlossaryList() {
+export interface GlossaryTermView {
+  term: string;
+  definition: string;
+}
+
+/** Термины приходят из CMS-слоя пропом (тег cms:academy) */
+export function GlossaryList({ terms }: { terms: GlossaryTermView[] }) {
   const t = useTranslations('education');
   const locale = useLocale();
   const [query, setQuery] = useState('');
 
   const groups = useMemo(() => {
     const q = query.trim().toLowerCase();
-    const filtered = getGlossaryTerms(locale).filter(
+    const filtered = terms.filter(
       (item) =>
         !q || item.term.toLowerCase().includes(q) || item.definition.toLowerCase().includes(q),
     );
-    const byLetter = new Map<string, typeof filtered>();
+    const byLetter = new Map<string, GlossaryTermView[]>();
     for (const item of filtered) {
       const letter = item.term[0]!.toUpperCase();
       const list = byLetter.get(letter) ?? [];
@@ -24,7 +29,7 @@ export function GlossaryList() {
       byLetter.set(letter, list);
     }
     return [...byLetter.entries()].sort(([a], [b]) => a.localeCompare(b, locale));
-  }, [query, locale]);
+  }, [terms, query, locale]);
 
   return (
     <div>
@@ -39,11 +44,11 @@ export function GlossaryList() {
       </div>
 
       <div className="mt-8 space-y-10">
-        {groups.map(([letter, terms]) => (
+        {groups.map(([letter, items]) => (
           <section key={letter} aria-label={t('glossaryLetterAria', { letter })}>
             <h2 className="text-2xl font-semibold text-accent">{letter}</h2>
             <dl className="mt-4 space-y-4">
-              {terms.map((item) => (
+              {items.map((item) => (
                 <div key={item.term} className="rounded-2xl border border-border bg-card p-5">
                   <dt className="font-semibold text-primary">{item.term}</dt>
                   <dd className="mt-1.5 text-sm leading-relaxed text-secondary">

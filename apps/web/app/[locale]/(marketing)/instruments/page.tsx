@@ -3,6 +3,7 @@ import { useTranslations } from 'next-intl';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { Container, Section } from '@broker/ui';
 import { InstrumentsBrowser } from '@/features/instruments/InstrumentsBrowser';
+import { getCms } from '@/lib/cms';
 
 interface PageProps {
   params: { locale: string };
@@ -13,12 +14,16 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   return { title: t('title'), description: t('metaDescription') };
 }
 
-export default function InstrumentsPage({ params }: PageProps) {
+export default async function InstrumentsPage({ params }: PageProps) {
   setRequestLocale(params.locale);
-  return <PageContent />;
+  // Allow-list из CMS (тег cms:instruments): показываем только разрешённые
+  const { items } = await getCms('instruments', {
+    locale: params.locale === 'en' ? 'en' : 'ru',
+  });
+  return <PageContent symbols={items.map((i) => i.symbol)} />;
 }
 
-function PageContent() {
+function PageContent({ symbols }: { symbols: string[] }) {
   const t = useTranslations('instruments');
   return (
     <Section className="py-10 md:py-14">
@@ -31,7 +36,7 @@ function PageContent() {
         </div>
 
         <div className="mt-8 lg:mt-10">
-          <InstrumentsBrowser />
+          <InstrumentsBrowser symbols={symbols} />
         </div>
       </Container>
     </Section>

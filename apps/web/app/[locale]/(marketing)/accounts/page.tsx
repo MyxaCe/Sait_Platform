@@ -1,9 +1,9 @@
 import type { Metadata } from 'next';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
-import { Container, PricingTable, Section } from '@broker/ui';
+import { Container, PricingTable, Section, type AccountPlan } from '@broker/ui';
 import { CtaBand } from '@/components/home/CtaBand';
 import { CommissionCalculator } from '@/features/accounts/CommissionCalculator';
-import { getAccountPlans } from '@/features/accounts/plans';
+import { getCms } from '@/lib/cms';
 
 interface PageProps {
   params: { locale: string };
@@ -17,7 +17,22 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 export default async function AccountsPage({ params }: PageProps) {
   setRequestLocale(params.locale);
   const t = await getTranslations('accounts');
-  const plans = getAccountPlans(params.locale);
+
+  // Тарифы из CMS (тег cms:accounts): таблица и калькулятор питаются
+  // одним ответом — расчёты не разойдутся с витриной
+  const { items } = await getCms('accounts', {
+    locale: params.locale === 'en' ? 'en' : 'ru',
+  });
+  const plans: AccountPlan[] = items.map((p) => ({
+    id: p.id,
+    name: p.name,
+    description: p.description,
+    minDeposit: p.minDeposit,
+    featured: p.featured,
+    features: p.features,
+    ctaHref: `/register?account=${p.id}`,
+  }));
+  const pricing = items.map((p) => ({ id: p.id, name: p.name, ...p.pricing }));
 
   return (
     <>
@@ -56,7 +71,7 @@ export default async function AccountsPage({ params }: PageProps) {
           </div>
 
           <div className="mt-8 lg:mt-10">
-            <CommissionCalculator />
+            <CommissionCalculator pricing={pricing} />
           </div>
         </Container>
       </Section>
