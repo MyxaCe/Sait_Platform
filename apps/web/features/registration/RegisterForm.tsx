@@ -2,7 +2,7 @@
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation } from '@tanstack/react-query';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { Link } from '@/i18n/navigation';
@@ -23,7 +23,7 @@ interface CountryOption {
   label: string;
 }
 
-async function submitLead(data: RegisterLeadInput) {
+async function submitLead(data: RegisterLeadInput & { locale: string }) {
   const res = await fetch('/api/leads/register', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -38,6 +38,7 @@ export function RegisterForm() {
   const t = useTranslations('registerForm');
   const tv = useTranslations('validation');
   const tCommon = useTranslations('common');
+  const locale = useLocale();
   const countries = t.raw('countries') as CountryOption[];
 
   // Ошибки валидации приходят КЛЮЧАМИ (см. schema.ts) — переводим при показе
@@ -101,7 +102,7 @@ export function RegisterForm() {
 
   return (
     <form
-      onSubmit={handleSubmit((data) => mutation.mutate(data))}
+      onSubmit={handleSubmit((data) => mutation.mutate({ ...data, locale }))}
       noValidate
       className="space-y-5"
     >

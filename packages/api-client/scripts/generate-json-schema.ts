@@ -6,7 +6,7 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { zodToJsonSchema } from 'zod-to-json-schema';
-import { CMS_RESPONSE_SCHEMAS, LEAD_SCHEMAS } from '../src/schemas';
+import { CMS_RESPONSE_SCHEMAS, EVENT_SCHEMAS, LEAD_SCHEMAS } from '../src/schemas';
 
 const outDir = join(import.meta.dirname, '..', 'artifacts', 'json-schema');
 mkdirSync(outDir, { recursive: true });
@@ -22,6 +22,12 @@ for (const [name, schema] of Object.entries(CMS_RESPONSE_SCHEMAS)) {
 for (const [name, schema] of Object.entries(LEAD_SCHEMAS)) {
   const json = zodToJsonSchema(schema, { name: `leads.${name}`, target: 'jsonSchema7' });
   writeFileSync(join(outDir, `leads.${name}.schema.json`), JSON.stringify(json, null, 2));
+  count++;
+}
+
+for (const [name, schema] of Object.entries(EVENT_SCHEMAS)) {
+  const json = zodToJsonSchema(schema, { name: `events.${name}`, target: 'jsonSchema7' });
+  writeFileSync(join(outDir, `events.${name}.schema.json`), JSON.stringify(json, null, 2));
   count++;
 }
 

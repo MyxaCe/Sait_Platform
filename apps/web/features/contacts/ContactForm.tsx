@@ -2,7 +2,7 @@
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation } from '@tanstack/react-query';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { Button, FormField, Input, Select } from '@broker/ui';
@@ -18,7 +18,7 @@ interface TopicOption {
   label: string;
 }
 
-async function submitContact(data: ContactInput) {
+async function submitContact(data: ContactInput & { locale: string }) {
   const res = await fetch('/api/leads/contact', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -32,6 +32,7 @@ async function submitContact(data: ContactInput) {
 export function ContactForm() {
   const t = useTranslations('contacts.form');
   const tv = useTranslations('validation');
+  const locale = useLocale();
   const topics = t.raw('topics') as TopicOption[];
 
   // Ошибки валидации приходят ключами — переводим при показе
@@ -91,7 +92,7 @@ export function ContactForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit((d) => mutation.mutate(d))} noValidate className="space-y-5">
+    <form onSubmit={handleSubmit((d) => mutation.mutate({ ...d, locale }))} noValidate className="space-y-5">
       {/* Honeypot для ботов */}
       <input
         type="text"

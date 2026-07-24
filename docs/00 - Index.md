@@ -28,7 +28,8 @@ updated: 2026-07-23
 | i18n RU/EN — полный перевод, 153 SSG-страницы | ✅ готов |
 | Тесты: 35 unit (vitest) + 18 e2e (Playwright, desktop+mobile) | ✅ готовы |
 | Git (первый коммит) + CI (GitHub Actions) | ✅ готово |
-| Docker + CD на VPS | 📋 запланировано |
+| Платформенная модель: Postgres (leads+outbox) + релей в шину | ✅ контур работает (шина — LogPublisher до кредлов) |
+| Docker: compose (db/web/relay) + Dockerfile'ы | ✅ готово · CD на VPS 📋 |
 | Error tracking (общий GlitchTip, хостит команда CRM) | 🔄 согласовано, ждёт сроков |
 | Интеграция с CRM — этап 0 (контракт + mock-CRM + JSON Schema) | ✅ готов |
 | Интеграция с CRM — этап 1 (вебхук + медленные данные) | 🔄 следующий |

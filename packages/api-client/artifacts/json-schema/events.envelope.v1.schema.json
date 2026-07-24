@@ -1,0 +1,48 @@
+{
+  "$ref": "#/definitions/events.envelope.v1",
+  "definitions": {
+    "events.envelope.v1": {
+      "type": "object",
+      "properties": {
+        "event_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "event": {
+          "type": "string",
+          "minLength": 1
+        },
+        "version": {
+          "type": "integer",
+          "exclusiveMinimum": 0
+        },
+        "occurred_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "string",
+              "format": "date-time"
+            }
+          ]
+        },
+        "source": {
+          "type": "string",
+          "const": "site-web"
+        },
+        "data": {}
+      },
+      "required": [
+        "event_id",
+        "event",
+        "version",
+        "occurred_at",
+        "source"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}

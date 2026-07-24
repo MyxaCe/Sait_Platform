@@ -13,6 +13,9 @@ const withSerwist = withSerwistInit({
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  // standalone — только для Docker-сборки (docker/web.Dockerfile);
+  // локальный `next start` работает в обычном режиме
+  output: process.env.BUILD_STANDALONE ? 'standalone' : undefined,
   transpilePackages: ['@broker/ui', '@broker/utils', '@broker/realtime', '@broker/api-client'],
   images: {
     formats: ['image/avif', 'image/webp'],

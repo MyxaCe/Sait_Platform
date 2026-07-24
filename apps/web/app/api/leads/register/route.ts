@@ -1,14 +1,14 @@
 import { NextResponse } from 'next/server';
 import { registerLeadSchema } from '@/features/registration/schema';
+import { getLeadStore } from '@/lib/leads/store';
 import { clientIp, isRateLimited } from '@/lib/rate-limit';
 
 /**
- * BFF-эндпоинт заявки на открытие счёта.
- * Браузер никогда не ходит в CRM напрямую: здесь — повторная валидация
- * той же Zod-схемой, honeypot, rate-limit, и только потом проксирование
- * в CRM с серверным API-ключом (пока — мок).
+ * Заявка на открытие счёта (ADR-018): пишется ЛОКАЛЬНО (лид + outbox
+ * в одной транзакции), клиент получает 201 немедленно. CRM узнаёт о лиде
+ * асинхронно через событие lead.submitted — синхронных вызовов CRM
+ * на пути клиента нет (золотое правило платформы).
  */
-
 export async function POST(request: Request) {
   const ip = clientIp(request);
 
@@ -40,17 +40,27 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, fieldErrors }, { status: 422 });
   }
 
-  // Мок серверной бизнес-ошибки — для проверки маппинга ошибок в поля формы.
-  // При интеграции с CRM здесь будет реальный ответ бэкенда.
-  if (parsed.data.email.toLowerCase() === 'exists@example.com') {
+  const rawLocale = (body as Record<string, unknown>).locale;
+  const { agreeTerms: _agreeTerms, ...lead } = parsed.data;
+
+  const result = await getLeadStore().createLead({
+    kind: 'account-opening',
+    firstName: lead.firstName,
+    lastName: lead.lastName,
+    email: lead.email,
+    phone: lead.phone,
+    country: lead.country,
+    accountType: lead.accountType,
+    locale: rawLocale === 'en' ? 'en' : 'ru',
+  });
+
+  if (!result.ok) {
+    // Дубликат — по НАШЕЙ БД (сайт — source of truth по клиентам брокера)
     return NextResponse.json(
       { ok: false, fieldErrors: { email: 'emailExists' } },
       { status: 409 },
     );
   }
 
-  // TODO(CRM): POST https://crm.internal/v1/leads с CRM_API_KEY из env
-  await new Promise((resolve) => setTimeout(resolve, 400));
-
-  return NextResponse.json({ ok: true, leadId: crypto.randomUUID() }, { status: 201 });
+  return NextResponse.json({ ok: true, leadId: result.leadId }, { status: 201 });
 }

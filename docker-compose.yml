@@ -1,0 +1,50 @@
+# Локальная сборка/проверка (Docker Desktop) и основа для VPS-деплоя.
+# Профили: `docker compose up db` — только Postgres для pnpm dev;
+#          `docker compose --profile full up` — весь стек (web + relay).
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: broker_site
+      POSTGRES_USER: broker
+      POSTGRES_PASSWORD: broker_dev_password
+    ports:
+      - '5432:5432'
+    volumes:
+      - db-data:/var/lib/postgresql/data
+      - ./db/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U broker -d broker_site']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  web:
+    profiles: [full]
+    build:
+      context: .
+      dockerfile: docker/web.Dockerfile
+    environment:
+      DATABASE_URL: postgres://broker:broker_dev_password@db:5432/broker_site
+      NEXT_PUBLIC_SITE_URL: http://localhost:3000
+    ports:
+      - '3000:3000'
+    depends_on:
+      db:
+        condition: service_healthy
+
+  relay:
+    profiles: [full]
+    build:
+      context: .
+      dockerfile: docker/relay.Dockerfile
+    environment:
+      DATABASE_URL: postgres://broker:broker_dev_password@db:5432/broker_site
+      # BUS_URL: amqp://...  ← реквизиты шины платформы (созвон §10);
+      # без него релей публикует в лог (LogPublisher) — контур проверяем уже сейчас
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  db-data:

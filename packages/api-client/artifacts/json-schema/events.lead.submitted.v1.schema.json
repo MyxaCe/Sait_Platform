@@ -1,0 +1,129 @@
+{
+  "$ref": "#/definitions/events.lead.submitted.v1",
+  "definitions": {
+    "events.lead.submitted.v1": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "const": "account-opening"
+            },
+            "leadId": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "firstName": {
+              "type": "string"
+            },
+            "lastName": {
+              "type": "string"
+            },
+            "email": {
+              "type": "string",
+              "format": "email"
+            },
+            "phone": {
+              "type": "string"
+            },
+            "country": {
+              "type": "string"
+            },
+            "accountType": {
+              "type": "string",
+              "enum": [
+                "standard",
+                "pro",
+                "ecn"
+              ]
+            },
+            "locale": {
+              "type": "string",
+              "enum": [
+                "ru",
+                "en"
+              ]
+            },
+            "source": {
+              "type": "object",
+              "properties": {
+                "url": {
+                  "type": "string"
+                },
+                "promo": {
+                  "type": "string"
+                },
+                "utm": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "string"
+                  }
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "kind",
+            "leadId",
+            "firstName",
+            "lastName",
+            "email",
+            "phone",
+            "country",
+            "accountType",
+            "locale"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "const": "contact"
+            },
+            "leadId": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "name": {
+              "type": "string"
+            },
+            "email": {
+              "type": "string",
+              "format": "email"
+            },
+            "topic": {
+              "type": "string",
+              "enum": [
+                "general",
+                "account",
+                "payments",
+                "partnership"
+              ]
+            },
+            "message": {
+              "type": "string"
+            },
+            "locale": {
+              "$ref": "#/definitions/events.lead.submitted.v1/anyOf/0/properties/locale"
+            }
+          },
+          "required": [
+            "kind",
+            "leadId",
+            "name",
+            "email",
+            "topic",
+            "message",
+            "locale"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    }
+  },
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}

@@ -1,13 +1,13 @@
 import { NextResponse } from 'next/server';
 import { contactSchema } from '@/features/contacts/schema';
+import { getLeadStore } from '@/lib/leads/store';
 import { clientIp, isRateLimited } from '@/lib/rate-limit';
 
-/** BFF-эндпоинт формы обратной связи. Паттерн тот же, что у /api/leads/register. */
+/** Форма обратной связи: локальная запись + outbox (ADR-018), как и register. */
 export async function POST(request: Request) {
   const ip = clientIp(request);
 
   if (isRateLimited(`contact:${ip}`)) {
-    // error — ключ из namespace `validation`, клиент переводит при отображении
     return NextResponse.json({ ok: false, error: 'rateLimited' }, { status: 429 });
   }
 
@@ -33,8 +33,21 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, fieldErrors }, { status: 422 });
   }
 
-  // TODO(CRM): создание тикета в хелпдеске / отправка в CRM
-  await new Promise((resolve) => setTimeout(resolve, 300));
+  const rawLocale = (body as Record<string, unknown>).locale;
 
-  return NextResponse.json({ ok: true, ticketId: crypto.randomUUID() }, { status: 201 });
+  const result = await getLeadStore().createLead({
+    kind: 'contact',
+    name: parsed.data.name,
+    email: parsed.data.email,
+    topic: parsed.data.topic,
+    message: parsed.data.message,
+    locale: rawLocale === 'en' ? 'en' : 'ru',
+  });
+
+  if (!result.ok) {
+    // Для contact дубликатов нет по схеме БД; ветка на будущее
+    return NextResponse.json({ ok: false, error: 'generic' }, { status: 500 });
+  }
+
+  return NextResponse.json({ ok: true, ticketId: result.leadId }, { status: 201 });
 }

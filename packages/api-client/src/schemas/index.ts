@@ -16,6 +16,7 @@ import {
   streamsResponseSchema,
   systemStatusResponseSchema,
 } from './cms';
+import { eventEnvelopeSchema, leadSubmittedDataSchema } from './events';
 import {
   accountOpeningLeadResponseSchema,
   accountOpeningLeadSchema,
@@ -26,6 +27,7 @@ import {
 
 export * from './common';
 export * from './cms';
+export * from './events';
 export * from './leads';
 
 /**
@@ -49,6 +51,11 @@ export const CMS_RESPONSE_SCHEMAS = {
   careers: careersResponseSchema,
   legal: legalResponseSchema,
   'system-status': systemStatusResponseSchema,
+} satisfies Record<string, z.ZodTypeAny>;
+
+export const EVENT_SCHEMAS = {
+  'envelope.v1': eventEnvelopeSchema,
+  'lead.submitted.v1': leadSubmittedDataSchema,
 } satisfies Record<string, z.ZodTypeAny>;
 
 export const LEAD_SCHEMAS = {
