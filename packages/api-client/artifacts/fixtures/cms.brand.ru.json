@@ -1,0 +1,22 @@
+{
+  "name": "Apex Capital",
+  "logo": null,
+  "favicon": {
+    "url": "http://localhost:3000/icons/icon-512.png",
+    "width": 512,
+    "height": 512,
+    "alt": "Apex Capital",
+    "mimeType": "image/png"
+  },
+  "primaryColor": "#d4a437",
+  "socials": [
+    {
+      "name": "telegram",
+      "url": "https://t.me/apexcapital"
+    },
+    {
+      "name": "youtube",
+      "url": "https://www.youtube.com/@apexcapital"
+    }
+  ]
+}

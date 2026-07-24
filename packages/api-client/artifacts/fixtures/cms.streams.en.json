@@ -1,0 +1,20 @@
+{
+  "items": [
+    {
+      "provider": "youtube",
+      "videoId": "mock-live-review",
+      "title": "Weekly market review — live",
+      "poster": null,
+      "startsAt": "2026-08-05T18:00:00Z",
+      "status": "upcoming"
+    },
+    {
+      "provider": "youtube",
+      "videoId": "mock-gold-breakdown",
+      "title": "Gold technical breakdown",
+      "poster": null,
+      "startsAt": "2026-07-10T18:00:00Z",
+      "status": "past"
+    }
+  ]
+}

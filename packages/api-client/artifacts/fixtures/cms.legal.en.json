@@ -1,0 +1,134 @@
+{
+  "items": [
+    {
+      "slug": "privacy",
+      "title": "Privacy Policy",
+      "updatedAt": "2026-06-01",
+      "intro": "This policy describes what personal data Apex Capital collects, the purposes for which it is processed and the rights of the data subject.",
+      "sections": [
+        {
+          "heading": "1. What data we collect",
+          "paragraphsMarkdown": [
+            "During registration and verification we collect identification data (full name, date of birth, citizenship), contact data (email, phone, address), copies of documents required under KYC/AML rules, and technical data about your use of the service (IP address, device type, dashboard activity).",
+            "Financial data — transaction history, source of funds, payment details — is processed solely to perform the agreement and meet legal requirements."
+          ]
+        },
+        {
+          "heading": "2. Purposes and legal grounds for processing",
+          "paragraphsMarkdown": [
+            "Data is processed to conclude and perform the client agreement, meet regulatory requirements (identification, anti-money-laundering), secure the account and — subject to separate consent — for marketing communications.",
+            "You may withdraw consent to marketing communications at any time in the dashboard settings or via support; this does not affect account servicing."
+          ]
+        },
+        {
+          "heading": "3. Storage and transfer of data",
+          "paragraphsMarkdown": [
+            "Data is stored in encrypted form in EU data centers. The retention period is determined by legal requirements (as a rule, 5 years after the relationship ends).",
+            "Transfers to third parties are possible only to providers involved in delivering the service (payment providers, verification services) under data processing agreements, and to regulators upon lawful request."
+          ]
+        },
+        {
+          "heading": "4. Your rights",
+          "paragraphsMarkdown": [
+            "You have the right to request access to your data, its correction, deletion (subject to mandatory retention periods), restriction of processing and data portability. Requests are sent to support and fulfilled within 30 days."
+          ]
+        }
+      ]
+    },
+    {
+      "slug": "terms",
+      "title": "Terms of Use",
+      "updatedAt": "2026-06-01",
+      "intro": "These terms govern the use of the Apex Capital website and services. By opening an account you confirm full acceptance of the client agreement.",
+      "sections": [
+        {
+          "heading": "1. Services",
+          "paragraphsMarkdown": [
+            "The company provides access to leveraged trading in derivative financial instruments (CFDs) on currencies, metals, indices, stocks, cryptocurrencies and energies, together with related analytical and educational materials.",
+            "Analytical materials are for information purposes only and do not constitute individual investment advice."
+          ]
+        },
+        {
+          "heading": "2. Client requirements",
+          "paragraphsMarkdown": [
+            "Services are available to legally capable persons aged 18 or over who have completed identification. The company may refuse service to residents of jurisdictions where the provision of services is restricted by law.",
+            "The client undertakes to provide accurate data, not to give third parties access to the account, and to use the service only for lawful purposes."
+          ]
+        },
+        {
+          "heading": "3. Liability",
+          "paragraphsMarkdown": [
+            "The company is not liable for losses caused by market movements, connectivity failures on the client side or actions of third parties, except in cases expressly provided for in the client agreement.",
+            "The company's aggregate liability is limited to the amount of the client's funds on the account."
+          ]
+        },
+        {
+          "heading": "4. Changes to the terms",
+          "paragraphsMarkdown": [
+            "The company may amend these terms with at least 10 business days’ notice to clients via the dashboard and email. Continued use of the service constitutes acceptance of the changes."
+          ]
+        }
+      ]
+    },
+    {
+      "slug": "risk-disclosure",
+      "title": "Risk Disclosure",
+      "updatedAt": "2026-06-01",
+      "intro": "Trading leveraged products involves a high level of risk and is not suitable for all investors. Read this notice carefully before you start trading.",
+      "sections": [
+        {
+          "heading": "1. Leverage risk",
+          "paragraphsMarkdown": [
+            "Leverage multiplies both potential profit and loss. A relatively small market move can lead to the loss of all funds on the account. Never trade with money you cannot afford to lose."
+          ]
+        },
+        {
+          "heading": "2. Market risks",
+          "paragraphsMarkdown": [
+            "Prices of financial instruments are subject to sharp changes driven by economic events, news and liquidity. During periods of elevated volatility, execution may occur at a price different from the requested one (slippage), and gaps may cause stop orders to fill at a worse price.",
+            "Past performance does not guarantee future returns. Cryptocurrency instruments are more volatile than traditional markets."
+          ]
+        },
+        {
+          "heading": "3. Technology risks",
+          "paragraphsMarkdown": [
+            "Trading over the internet carries risks of connectivity, hardware and software failures. The company makes reasonable efforts to ensure service continuity but cannot guarantee the absence of interruptions."
+          ]
+        },
+        {
+          "heading": "4. Negative balance protection",
+          "paragraphsMarkdown": [
+            "The company guarantees that a client's loss will not exceed the funds placed on the trading account: any negative balance resulting from a market gap is reset to zero at the company's expense."
+          ]
+        }
+      ]
+    },
+    {
+      "slug": "kyc-aml",
+      "title": "KYC/AML Policy",
+      "updatedAt": "2026-06-01",
+      "intro": "The company complies with international anti-money-laundering (AML) and counter-terrorist-financing (CFT) standards, including FATF recommendations and the requirements of applicable regulators.",
+      "sections": [
+        {
+          "heading": "1. Client identification (KYC)",
+          "paragraphsMarkdown": [
+            "Before servicing begins, the client completes identification: providing an identity document, proof of residence address and, where necessary, information on the source of funds. The company may request additional documents at any stage of servicing."
+          ]
+        },
+        {
+          "heading": "2. Transaction monitoring",
+          "paragraphsMarkdown": [
+            "The company continuously monitors transactions for unusual activity. Transactions inconsistent with the client's profile may be suspended pending clarification.",
+            "Deposits and withdrawals are possible only from the client’s own accounts and cards: third-party payments are not accepted and are returned to the sender."
+          ]
+        },
+        {
+          "heading": "3. Refusal of service",
+          "paragraphsMarkdown": [
+            "The company may refuse to open an account, or suspend or terminate service, if identification procedures are not completed, inaccurate information is provided or signs of unlawful activity are detected, notifying the competent authorities where required by law."
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,67 @@
+{
+  "items": [
+    {
+      "slug": "fed-signals-rate-path-september",
+      "title": "Fed signals its rate path: markets price in a September cut",
+      "excerpt": "The July meeting minutes revealed a growing number of easing supporters. The dollar weakened against major currencies and Treasury yields declined.",
+      "category": "economy",
+      "source": "Apex Capital Research Desk",
+      "publishedAt": "2026-07-23T08:30:00Z",
+      "readingMinutes": 4,
+      "bodyMarkdown": "The Federal Reserve meeting minutes published yesterday showed that most committee members consider it appropriate to begin the easing cycle as early as the September meeting, provided inflation dynamics hold. Rate futures now price a 78% probability of a 25 bp cut.\n\nThe DXY dollar index reacted with a 0.4% decline while EURUSD climbed toward 1.0850. The 10-year Treasury yield slipped below 4.1% — a six-week low.\n\nFor traders, the key event of the week remains Friday's core PCE release: a print above forecast could quickly reverse market expectations and bring demand back to the dollar."
+    },
+    {
+      "slug": "gold-tests-record-highs",
+      "title": "Gold tests record highs as the dollar weakens",
+      "excerpt": "XAUUSD gains for a third consecutive session. Analysts see targets in the $2,450–2,480 range if the price holds above $2,420.",
+      "category": "forex",
+      "source": "Apex Capital Research Desk",
+      "publishedAt": "2026-07-23T06:10:00Z",
+      "readingMinutes": 3,
+      "bodyMarkdown": "Gold refreshed its weekly high and trades around $2,417 per ounce. The metal is supported by expectations of a Fed rate cut and continued purchases by Asian central banks.\n\nTechnically, the price holds above the 20-day moving average, and the RSI has not yet reached overbought territory. Nearest resistance sits at $2,431, followed by the all-time high.\n\nThe main risk for bulls remains strong US macro data: unexpectedly high employment or inflation numbers could trigger a correction toward support at $2,380."
+    },
+    {
+      "slug": "nvidia-earnings-preview",
+      "title": "NVIDIA earnings preview: what to expect from the AI boom's biggest beneficiary",
+      "excerpt": "Consensus expects $37.5bn in revenue. The options market prices a ±9% move in the shares after the release.",
+      "category": "stocks",
+      "source": "Apex Capital Research Desk",
+      "publishedAt": "2026-07-22T15:45:00Z",
+      "readingMinutes": 5,
+      "bodyMarkdown": "Next week NVIDIA reports quarterly results that traditionally set the tone for the entire tech sector. The analyst consensus calls for $37.5bn in revenue (+62% YoY) and adjusted EPS of $0.95.\n\nThe key question is data-center momentum and management commentary on demand for the new generation of accelerators. Any hint of slowing hyperscaler orders would be taken badly: the stock trades at a P/E above 45.\n\nThe options market prices a ±9% move the day after the report. For NVDA CFD holders this means elevated risk management requirements: define exit levels in advance and avoid exceeding your standard position size."
+    },
+    {
+      "slug": "bitcoin-etf-inflows-resume",
+      "title": "Bitcoin ETF inflows resume: $850M in a week",
+      "excerpt": "After three weeks of outflows, spot ETFs are attracting capital again. BTCUSD consolidates near $67,500 with key resistance at $69,000.",
+      "category": "crypto",
+      "source": "Apex Capital Research Desk",
+      "publishedAt": "2026-07-22T11:20:00Z",
+      "readingMinutes": 3,
+      "bodyMarkdown": "According to provider data, net inflows into US spot bitcoin ETFs reached $850M over the past week — the best result in a month and a half. Most of the volume went to funds run by the largest asset managers.\n\nBitcoin consolidates in the $66,000–68,000 range. A break above $69,000 would open the way to a retest of the all-time high, while losing support at $64,500 would strengthen selling pressure.\n\nEthereum volatility remains elevated ahead of the regulator's decision on staking within ETFs — an event that could become a catalyst for the entire altcoin segment."
+    },
+    {
+      "slug": "ecb-holds-rates-lagarde-comments",
+      "title": "ECB holds rates: Lagarde points to September as an “open window”",
+      "excerpt": "The regulator paused as expected. The euro strengthened after the press conference: the market heard fewer dovish signals than it had hoped for.",
+      "category": "economy",
+      "source": "Apex Capital Research Desk",
+      "publishedAt": "2026-07-21T14:00:00Z",
+      "readingMinutes": 4,
+      "bodyMarkdown": "The European Central Bank left key rates unchanged, pausing after June's cut. The decision matched market expectations, so attention focused on the president's rhetoric.\n\nChristine Lagarde noted that the September meeting remains “wide open” and that further decisions will depend on incoming data. The absence of explicit easing promises was read by the market as a mildly hawkish signal.\n\nEURUSD added 0.3% during the press conference. The spread between German and US 10-year yields narrowed to its tightest since spring, supporting the single currency."
+    },
+    {
+      "slug": "oil-inventories-draw-opec-outlook",
+      "title": "US oil inventories fall for a fifth straight week",
+      "excerpt": "The EIA reported a 3.7M-barrel draw. Brent holds above $85 ahead of the OPEC report.",
+      "category": "economy",
+      "source": "Apex Capital Research Desk",
+      "publishedAt": "2026-07-21T09:05:00Z",
+      "readingMinutes": 3,
+      "bodyMarkdown": "US commercial crude inventories fell by 3.7 million barrels last week against a forecast of −1.9M. Five consecutive weeks of draws — the longest streak since last summer — point to robust demand at the peak of driving season.\n\nBrent holds above $85 per barrel while WTI trades near $81.6. Traders await the monthly OPEC report: confirmation of the global demand growth forecast would support the current upward impulse.\n\nNon-OPEC supply remains the limiting factor: record output from the US and Brazil caps the potential for a rally above $90 without additional supply shocks."
+    }
+  ],
+  "total": 6,
+  "page": 1,
+  "pageSize": 20
+}

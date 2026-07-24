@@ -1,0 +1,36 @@
+{
+  "channels": [
+    {
+      "title": "Live chat",
+      "value": "Reply within 40 seconds",
+      "detail": "Around the clock, no days off — the chat button is in the bottom-right corner of the dashboard"
+    },
+    {
+      "title": "Email",
+      "value": "support@apexcapital.example",
+      "detail": "Reply within one business day"
+    },
+    {
+      "title": "Phone",
+      "value": "+357 25 000 000",
+      "detail": "Mon–Fri, 8:00–20:00 (UTC+2), toll-free"
+    }
+  ],
+  "offices": [
+    {
+      "city": "Limassol",
+      "country": "Cyprus · Headquarters",
+      "address": "Arch. Makariou III Ave 155, 3026"
+    },
+    {
+      "city": "Dubai",
+      "country": "UAE",
+      "address": "Business Bay, Bay Square 12, office 404"
+    },
+    {
+      "city": "Almaty",
+      "country": "Kazakhstan",
+      "address": "77/7 Al-Farabi Ave, Esentai Tower, 12th floor"
+    }
+  ]
+}

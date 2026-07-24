@@ -1,0 +1,52 @@
+{
+  "items": [
+    {
+      "id": "promo-1",
+      "badge": "For new clients",
+      "title": "30% Welcome Bonus",
+      "description": "Fund your first account with $500 or more — get +30% in trading funds. The bonus counts towards margin and helps you withstand drawdowns.",
+      "terms": "Bonus up to $5,000. Available once; released at 1 lot per every $10 of bonus.",
+      "ctaLabel": "Get the bonus",
+      "ctaHref": "/register?promo=welcome30",
+      "featured": true,
+      "activeFrom": null,
+      "activeTo": null
+    },
+    {
+      "id": "promo-2",
+      "badge": "For active traders",
+      "title": "Up to 15% Spread Cashback",
+      "description": "Trade 50+ lots a month — we return part of the spread in real money to your account. The bigger the volume, the higher the rate.",
+      "terms": "Credited automatically on the first day of the following month. No cap on the amount.",
+      "ctaLabel": "Join",
+      "ctaHref": "/register?promo=cashback",
+      "featured": false,
+      "activeFrom": null,
+      "activeTo": null
+    },
+    {
+      "id": "promo-3",
+      "badge": "Risk-free",
+      "title": "Demo Trading Contest",
+      "description": "A monthly competition on demo accounts with a $10,000 prize pool. Three winners receive live trading accounts funded with the prize money.",
+      "terms": "Free to enter. A new round starts on the 1st of every month.",
+      "ctaLabel": "Enter the contest",
+      "ctaHref": "/register?demo=1",
+      "featured": false,
+      "activeFrom": null,
+      "activeTo": null
+    },
+    {
+      "id": "promo-4",
+      "badge": "Referrals",
+      "title": "Refer a Friend — Get $50",
+      "description": "Share your personal link: when your friend opens an account and starts trading, you both receive $50 on your trading accounts.",
+      "terms": "Your friend must deposit at least $100 and trade 1 lot within 30 days.",
+      "ctaLabel": "Get your link",
+      "ctaHref": "/register",
+      "featured": false,
+      "activeFrom": null,
+      "activeTo": null
+    }
+  ]
+}

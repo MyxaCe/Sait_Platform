@@ -1,0 +1,57 @@
+{
+  "benefits": [
+    {
+      "title": "Гибкий формат",
+      "text": "Офис, гибрид или полная удалёнка — выбираете сами"
+    },
+    {
+      "title": "Рынок FinTech",
+      "text": "Задачи на стыке финансов и высоких нагрузок: миллионы котировок в секунду"
+    },
+    {
+      "title": "Развитие",
+      "text": "Бюджет на обучение и конференции, внутренние курсы по рынкам"
+    },
+    {
+      "title": "Забота",
+      "text": "ДМС со стоматологией, спорт, 5 недель отпуска"
+    }
+  ],
+  "vacancies": [
+    {
+      "title": "Senior Frontend Developer (React/Next.js)",
+      "department": "Разработка",
+      "location": "Удалённо / Лимассол",
+      "type": "Полная занятость",
+      "applyEmail": "hr@apexcapital.example"
+    },
+    {
+      "title": "Backend Developer (Go, ликвидность и исполнение)",
+      "department": "Разработка",
+      "location": "Лимассол",
+      "type": "Полная занятость",
+      "applyEmail": "hr@apexcapital.example"
+    },
+    {
+      "title": "DevOps / SRE (торговая инфраструктура)",
+      "department": "Инфраструктура",
+      "location": "Удалённо",
+      "type": "Полная занятость",
+      "applyEmail": "hr@apexcapital.example"
+    },
+    {
+      "title": "Финансовый аналитик (валютные рынки)",
+      "department": "Аналитика",
+      "location": "Алматы / удалённо",
+      "type": "Полная занятость",
+      "applyEmail": "hr@apexcapital.example"
+    },
+    {
+      "title": "Специалист поддержки (русский + английский)",
+      "department": "Клиентский сервис",
+      "location": "Удалённо",
+      "type": "Сменный график 2/2",
+      "applyEmail": "hr@apexcapital.example"
+    }
+  ]
+}

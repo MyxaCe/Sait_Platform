@@ -1,0 +1,56 @@
+{
+  "models": [
+    {
+      "name": "Introducing Broker (IB)",
+      "description": "Recommend us to your audience and receive up to 40% of the spread from every referred client — for life, as long as the client trades.",
+      "features": [
+        "Daily payouts with no minimum threshold",
+        "Referral links, promo materials and landing pages",
+        "Partner dashboard with real-time statistics",
+        "Sub-partner network: 10% of sub-agents' rewards"
+      ]
+    },
+    {
+      "name": "White Label",
+      "description": "Your own brokerage brand on our infrastructure: platform, liquidity, back office and support — turnkey.",
+      "features": [
+        "Trading platform and client area under your brand",
+        "Aggregated Tier-1 liquidity",
+        "Risk management and reporting out of the box",
+        "Launch from 6 weeks with a dedicated project manager"
+      ]
+    }
+  ],
+  "tiers": [
+    {
+      "name": "Bronze",
+      "clients": "up to 20 active clients",
+      "share": "25%"
+    },
+    {
+      "name": "Silver",
+      "clients": "20–100 active clients",
+      "share": "30%"
+    },
+    {
+      "name": "Gold",
+      "clients": "100+ active clients",
+      "share": "40%",
+      "featured": true
+    }
+  ],
+  "steps": [
+    {
+      "title": "Application",
+      "text": "Fill in the form — a manager will contact you within one business day"
+    },
+    {
+      "title": "Tools",
+      "text": "Get links, promo materials and access to the partner dashboard"
+    },
+    {
+      "title": "Income",
+      "text": "Refer clients and receive payouts every day"
+    }
+  ]
+}

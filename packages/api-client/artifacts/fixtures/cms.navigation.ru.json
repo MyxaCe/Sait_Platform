@@ -1,0 +1,113 @@
+{
+  "header": [
+    {
+      "label": "Инструменты",
+      "href": "/instruments"
+    },
+    {
+      "label": "Счета и тарифы",
+      "href": "/accounts"
+    },
+    {
+      "label": "Аналитика",
+      "href": "/analytics/news"
+    },
+    {
+      "label": "Обучение",
+      "href": "/education"
+    },
+    {
+      "label": "О компании",
+      "href": "/about"
+    }
+  ],
+  "footer": {
+    "columns": [
+      {
+        "title": "Торговля",
+        "links": [
+          {
+            "label": "Торговые инструменты",
+            "href": "/instruments"
+          },
+          {
+            "label": "Типы счетов",
+            "href": "/accounts"
+          },
+          {
+            "label": "FAQ",
+            "href": "/education/faq"
+          },
+          {
+            "label": "Акции и бонусы",
+            "href": "/promotions"
+          }
+        ]
+      },
+      {
+        "title": "Аналитика",
+        "links": [
+          {
+            "label": "Новости рынка",
+            "href": "/analytics/news"
+          },
+          {
+            "label": "Экономический календарь",
+            "href": "/analytics/calendar"
+          },
+          {
+            "label": "Обучение",
+            "href": "/education/articles"
+          },
+          {
+            "label": "Блог",
+            "href": "/blog"
+          }
+        ]
+      },
+      {
+        "title": "Компания",
+        "links": [
+          {
+            "label": "О компании",
+            "href": "/about"
+          },
+          {
+            "label": "Партнёрам",
+            "href": "/partners"
+          },
+          {
+            "label": "Карьера",
+            "href": "/company/careers"
+          },
+          {
+            "label": "Контакты",
+            "href": "/company/contacts"
+          }
+        ]
+      },
+      {
+        "title": "Правовая информация",
+        "links": [
+          {
+            "label": "Конфиденциальность",
+            "href": "/legal/privacy"
+          },
+          {
+            "label": "Условия использования",
+            "href": "/legal/terms"
+          },
+          {
+            "label": "Раскрытие рисков",
+            "href": "/legal/risk-disclosure"
+          },
+          {
+            "label": "Статус сервисов",
+            "href": "/status"
+          }
+        ]
+      }
+    ],
+    "riskWarning": "Предупреждение о рисках: торговля CFD и маржинальными продуктами сопряжена с высоким уровнем риска и может привести к потере всего инвестированного капитала. Убедитесь, что вы полностью понимаете риски, прежде чем начинать торговлю."
+  }
+}

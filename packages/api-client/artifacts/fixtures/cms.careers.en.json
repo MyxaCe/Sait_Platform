@@ -1,0 +1,57 @@
+{
+  "benefits": [
+    {
+      "title": "Flexible format",
+      "text": "Office, hybrid or fully remote — your choice"
+    },
+    {
+      "title": "FinTech scale",
+      "text": "Problems at the intersection of finance and high load: millions of quotes per second"
+    },
+    {
+      "title": "Growth",
+      "text": "Budget for training and conferences, internal market courses"
+    },
+    {
+      "title": "Care",
+      "text": "Health insurance incl. dental, sports, 5 weeks of vacation"
+    }
+  ],
+  "vacancies": [
+    {
+      "title": "Senior Frontend Developer (React/Next.js)",
+      "department": "Engineering",
+      "location": "Remote / Limassol",
+      "type": "Full-time",
+      "applyEmail": "hr@apexcapital.example"
+    },
+    {
+      "title": "Backend Developer (Go, liquidity & execution)",
+      "department": "Engineering",
+      "location": "Limassol",
+      "type": "Full-time",
+      "applyEmail": "hr@apexcapital.example"
+    },
+    {
+      "title": "DevOps / SRE (trading infrastructure)",
+      "department": "Infrastructure",
+      "location": "Remote",
+      "type": "Full-time",
+      "applyEmail": "hr@apexcapital.example"
+    },
+    {
+      "title": "Financial Analyst (FX markets)",
+      "department": "Research",
+      "location": "Almaty / remote",
+      "type": "Full-time",
+      "applyEmail": "hr@apexcapital.example"
+    },
+    {
+      "title": "Support Specialist (Russian + English)",
+      "department": "Client Service",
+      "location": "Remote",
+      "type": "2/2 shift schedule",
+      "applyEmail": "hr@apexcapital.example"
+    }
+  ]
+}

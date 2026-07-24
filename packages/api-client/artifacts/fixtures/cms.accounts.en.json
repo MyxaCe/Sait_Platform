@@ -1,0 +1,139 @@
+{
+  "items": [
+    {
+      "id": "standard",
+      "name": "Standard",
+      "description": "For your first steps in the market",
+      "minDeposit": "$100",
+      "featured": false,
+      "features": [
+        {
+          "label": "Spread from",
+          "value": "1.2 pips"
+        },
+        {
+          "label": "Commission",
+          "value": "$0"
+        },
+        {
+          "label": "Leverage up to",
+          "value": "1:500"
+        },
+        {
+          "label": "Minimum lot",
+          "value": "0.01"
+        },
+        {
+          "label": "Instruments",
+          "value": "12,000+"
+        },
+        {
+          "label": "Execution",
+          "value": "Market, from 14 ms"
+        },
+        {
+          "label": "Swap-free",
+          "value": "Available"
+        },
+        {
+          "label": "Personal manager",
+          "value": "—"
+        }
+      ],
+      "pricing": {
+        "spreadPips": 1.2,
+        "commissionPerLotRT": 0
+      }
+    },
+    {
+      "id": "pro",
+      "name": "Pro",
+      "description": "For active traders",
+      "minDeposit": "$1,000",
+      "featured": true,
+      "features": [
+        {
+          "label": "Spread from",
+          "value": "0.5 pips"
+        },
+        {
+          "label": "Commission",
+          "value": "$2.5 / lot / side"
+        },
+        {
+          "label": "Leverage up to",
+          "value": "1:400"
+        },
+        {
+          "label": "Minimum lot",
+          "value": "0.01"
+        },
+        {
+          "label": "Instruments",
+          "value": "12,000+"
+        },
+        {
+          "label": "Execution",
+          "value": "Market, from 14 ms"
+        },
+        {
+          "label": "Swap-free",
+          "value": "Available"
+        },
+        {
+          "label": "Personal manager",
+          "value": "Yes"
+        }
+      ],
+      "pricing": {
+        "spreadPips": 0.5,
+        "commissionPerLotRT": 5
+      }
+    },
+    {
+      "id": "ecn",
+      "name": "ECN Prime",
+      "description": "Interbank liquidity",
+      "minDeposit": "$5,000",
+      "featured": false,
+      "features": [
+        {
+          "label": "Spread from",
+          "value": "0.0 pips"
+        },
+        {
+          "label": "Commission",
+          "value": "$3 / lot / side"
+        },
+        {
+          "label": "Leverage up to",
+          "value": "1:200"
+        },
+        {
+          "label": "Minimum lot",
+          "value": "0.01"
+        },
+        {
+          "label": "Instruments",
+          "value": "12,000+"
+        },
+        {
+          "label": "Execution",
+          "value": "ECN, from 9 ms"
+        },
+        {
+          "label": "Swap-free",
+          "value": "On request"
+        },
+        {
+          "label": "Personal manager",
+          "value": "Yes"
+        }
+      ],
+      "pricing": {
+        "spreadPips": 0.1,
+        "commissionPerLotRT": 6
+      }
+    }
+  ]
+}

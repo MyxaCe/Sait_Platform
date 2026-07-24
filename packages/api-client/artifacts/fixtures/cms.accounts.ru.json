@@ -1,0 +1,139 @@
+{
+  "items": [
+    {
+      "id": "standard",
+      "name": "Standard",
+      "description": "Для первых шагов на рынке",
+      "minDeposit": "$100",
+      "featured": false,
+      "features": [
+        {
+          "label": "Спред от",
+          "value": "1.2 пункта"
+        },
+        {
+          "label": "Комиссия",
+          "value": "$0"
+        },
+        {
+          "label": "Кредитное плечо до",
+          "value": "1:500"
+        },
+        {
+          "label": "Минимальный лот",
+          "value": "0.01"
+        },
+        {
+          "label": "Инструменты",
+          "value": "12 000+"
+        },
+        {
+          "label": "Исполнение",
+          "value": "Market, от 14 мс"
+        },
+        {
+          "label": "Своп-фри",
+          "value": "Доступно"
+        },
+        {
+          "label": "Персональный менеджер",
+          "value": "—"
+        }
+      ],
+      "pricing": {
+        "spreadPips": 1.2,
+        "commissionPerLotRT": 0
+      }
+    },
+    {
+      "id": "pro",
+      "name": "Pro",
+      "description": "Для активных трейдеров",
+      "minDeposit": "$1 000",
+      "featured": true,
+      "features": [
+        {
+          "label": "Спред от",
+          "value": "0.5 пункта"
+        },
+        {
+          "label": "Комиссия",
+          "value": "$2.5 / лот / сторона"
+        },
+        {
+          "label": "Кредитное плечо до",
+          "value": "1:400"
+        },
+        {
+          "label": "Минимальный лот",
+          "value": "0.01"
+        },
+        {
+          "label": "Инструменты",
+          "value": "12 000+"
+        },
+        {
+          "label": "Исполнение",
+          "value": "Market, от 14 мс"
+        },
+        {
+          "label": "Своп-фри",
+          "value": "Доступно"
+        },
+        {
+          "label": "Персональный менеджер",
+          "value": "Да"
+        }
+      ],
+      "pricing": {
+        "spreadPips": 0.5,
+        "commissionPerLotRT": 5
+      }
+    },
+    {
+      "id": "ecn",
+      "name": "ECN Prime",
+      "description": "Межбанковская ликвидность",
+      "minDeposit": "$5 000",
+      "featured": false,
+      "features": [
+        {
+          "label": "Спред от",
+          "value": "0.0 пунктов"
+        },
+        {
+          "label": "Комиссия",
+          "value": "$3 / лот / сторона"
+        },
+        {
+          "label": "Кредитное плечо до",
+          "value": "1:200"
+        },
+        {
+          "label": "Минимальный лот",
+          "value": "0.01"
+        },
+        {
+          "label": "Инструменты",
+          "value": "12 000+"
+        },
+        {
+          "label": "Исполнение",
+          "value": "ECN, от 9 мс"
+        },
+        {
+          "label": "Своп-фри",
+          "value": "По запросу"
+        },
+        {
+          "label": "Персональный менеджер",
+          "value": "Да"
+        }
+      ],
+      "pricing": {
+        "spreadPips": 0.1,
+        "commissionPerLotRT": 6
+      }
+    }
+  ]
+}

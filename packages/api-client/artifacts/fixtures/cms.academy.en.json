@@ -1,0 +1,162 @@
+{
+  "articles": [
+    {
+      "slug": "what-is-forex",
+      "title": "What is Forex and how the currency market works",
+      "excerpt": "The world's largest financial market with $7.5 trillion in daily turnover: who trades on it, where the price comes from and what a currency pair means.",
+      "level": "beginner",
+      "readingMinutes": 7,
+      "bodyMarkdown": "Forex (Foreign Exchange) is the global over-the-counter currency market. Unlike a stock exchange it has no single venue: deals are struck directly between banks, funds, companies and brokers around the world, 24 hours a day from Monday to Friday.\n\nThe basic unit of the market is the currency pair. EURUSD = 1.0850 means one euro buys 1.0850 dollars. The first currency in the pair is called the base currency, the second — the quote currency. Buying the pair means buying the base currency with the quote currency; selling is the opposite.\n\nThe price is formed by the order flow of the largest participants — market makers and top-tier banks. A broker aggregates these liquidity streams and passes the best prices to clients. The difference between the buy (Ask) and sell (Bid) price is the spread — the main transaction cost for a trader.\n\nThe minimum price increment is a pip. For most pairs it's the fourth decimal place: a move in EURUSD from 1.0850 to 1.0851 is one pip. A standard lot equals 100,000 units of the base currency, while modern brokers let you trade from 0.01 lots.\n\nStart with a demo account: it fully replicates live trading with zero risk to your capital. Practice order mechanics, stop losses and position sizing there — and only then move to a live account with an amount you can afford to lose."
+    },
+    {
+      "slug": "leverage-risk-management",
+      "title": "Leverage: how to use it without unnecessary risk",
+      "excerpt": "1:500 leverage can multiply both profit and loss. We break down margin, free equity and the main rule — risk no more than 1–2% per trade.",
+      "level": "beginner",
+      "readingMinutes": 6,
+      "bodyMarkdown": "Leverage lets you open positions larger than your own capital. With 1:100 leverage, a 1-lot EURUSD position (€100,000) requires only about €1,000 of collateral. That collateral is called margin — it is locked on your account while the position is open.\n\nUnderstand this clearly: leverage multiplies not only potential profit but also loss. A 1% price move against a position at 1:100 leverage means losing 100% of the margin. That is exactly why experienced traders use only a small part of the available leverage.\n\nThe key metric is margin level: equity divided by used margin. When it falls to the Margin Call level the broker warns you about insufficient funds; at the Stop Out level positions start closing forcibly. Negative balance protection guarantees you will never lose more than your deposit.\n\nA practical rule: risk no more than 1–2% of your deposit per trade. Position size is derived from the stop loss, not the other way round: first decide where your idea becomes invalid, then choose a volume so that the loss at your stop does not exceed your risk allowance."
+    },
+    {
+      "slug": "technical-analysis-basics",
+      "title": "Technical analysis: five essential tools",
+      "excerpt": "Support and resistance, trend, moving averages, RSI and volume — the minimal toolkit that chart reading starts with.",
+      "level": "intermediate",
+      "readingMinutes": 8,
+      "bodyMarkdown": "Technical analysis assumes that all available information is already reflected in the price and that crowd behavior repeats. Its job is not to predict the future but to find zones where the reward-to-risk ratio favors the trader.\n\nSupport and resistance levels are the foundation. These are price zones where the market previously reversed or stalled: buyer and seller interest is concentrated there. The more touches a level has and the “older” it is, the more significant the reaction.\n\nThe trend defines context: a sequence of higher highs and higher lows is an uptrend; lower highs and lower lows — a downtrend. Trading with the trend is statistically more reliable than counter-trend trades, so the first question to any chart is: “where is the market going on the higher timeframe?”\n\nMoving averages (MA) smooth out noise and visualize the trend. Popular periods are 20, 50 and 200. Price above the MA200 means the global context is bullish; crossovers of fast and slow averages are used as a signal filter, not as a standalone system.\n\nThe Relative Strength Index (RSI) measures momentum: readings above 70 suggest overbought conditions, below 30 — oversold. In a strong trend the RSI can stay in extreme zones for a long time, so indicator signals are always cross-checked against levels and market structure.\n\nVolume confirms the move: a breakout on rising volume deserves trust, while a thin, volume-less spike is often a trap. Together these five tools cover 90% of a beginning technical analyst’s needs."
+    },
+    {
+      "slug": "trading-psychology",
+      "title": "Trading psychology: why discipline beats predictions",
+      "excerpt": "Tilt, fear of missing out and revenge trading destroy deposits faster than a bad strategy. How to build a process that protects you from yourself.",
+      "level": "intermediate",
+      "readingMinutes": 6,
+      "bodyMarkdown": "Broker statistics show that most losing accounts die not from bad analysis but from breaking one’s own rules. The market is an environment of uncertainty, and the mind reacts to it with ancient mechanisms: fear, greed and the urge to win it back immediately.\n\nTilt is the state where, after a loss, a trader increases size and enters trades without a setup, trying to “get their money back”. The only working protection is hard limits: a daily loss limit (for example, 3% of the deposit) after which trading stops until the next day.\n\nFear of missing out (FOMO) makes you chase a move that has already happened — entering at a worse price with an unclear stop. The antidote is a written trading plan that defines entry conditions in advance. No conditions — no trade, no matter how far the chart “flies away”.\n\nKeep a trade journal: entry screenshot, reason, emotional state, result. After 50–100 entries you will see your own systematic mistakes — the most valuable analytics no indicator can give you. Discipline is not a character trait but a process you can engineer."
+    }
+  ],
+  "webinars": [
+    {
+      "id": "web-4",
+      "title": "Trading psychology: how to stop breaking your own rules",
+      "speaker": "Dmitry Sokolov",
+      "speakerRole": "Lead Analyst",
+      "startsAt": "2026-07-11T18:00:00.000Z",
+      "durationMinutes": 60,
+      "level": "Beginner",
+      "description": "Tilt, FOMO and revenge trading: the mechanics of breakdowns and practical techniques — limits, a trade journal, a pre-entry checklist."
+    },
+    {
+      "id": "web-3",
+      "title": "Technical analysis of gold: the levels the market trades from",
+      "speaker": "Anna Vereshchagina",
+      "speakerRole": "Head of Research",
+      "startsAt": "2026-07-18T19:00:00.000Z",
+      "durationMinutes": 60,
+      "level": "Intermediate",
+      "description": "A breakdown of XAUUSD market structure: key levels, price behavior around the all-time high and scenarios through the end of the quarter."
+    },
+    {
+      "id": "web-0",
+      "title": "First steps in Forex: from demo account to your first trade",
+      "speaker": "Dmitry Sokolov",
+      "speakerRole": "Lead Analyst",
+      "startsAt": "2026-07-25T19:00:00.000Z",
+      "durationMinutes": 60,
+      "level": "Beginner",
+      "description": "How the market works, order types, position sizing and the typical mistakes of the first months. A live platform walkthrough and Q&A."
+    },
+    {
+      "id": "web-1",
+      "title": "News trading: a strategy for working with the economic calendar",
+      "speaker": "Anna Vereshchagina",
+      "speakerRole": "Head of Research",
+      "startsAt": "2026-07-27T18:00:00.000Z",
+      "durationMinutes": 90,
+      "level": "Intermediate",
+      "description": "Which releases move the market, how to read the actual-vs-forecast deviation and where to place stops when volatility multiplies."
+    },
+    {
+      "id": "web-2",
+      "title": "Money management: a portfolio of strategies instead of one “holy grail”",
+      "speaker": "Marat Gareev",
+      "speakerRole": "Portfolio Manager",
+      "startsAt": "2026-08-01T19:00:00.000Z",
+      "durationMinutes": 75,
+      "level": "Advanced",
+      "description": "Diversification across strategies and instruments, position correlations, drawdown as a metric and portfolio-level risk calculation."
+    }
+  ],
+  "glossary": [
+    {
+      "term": "Ask",
+      "definition": "The price at which the broker sells you the base currency (the buy price for the trader). Always higher than the Bid."
+    },
+    {
+      "term": "Bid",
+      "definition": "The price at which the broker buys the base currency from you (the sell price for the trader)."
+    },
+    {
+      "term": "CFD",
+      "definition": "Contract for Difference. Lets you profit from an asset’s price movement without owning the asset itself."
+    },
+    {
+      "term": "ECN",
+      "definition": "Electronic Communication Network — an execution model where client orders are routed directly to a network of liquidity providers with minimal spreads plus a commission."
+    },
+    {
+      "term": "Gap",
+      "definition": "A break on the chart between the closing price and the next opening price. Often occurs after weekends or major news."
+    },
+    {
+      "term": "Leverage",
+      "definition": "The ratio of position size to the trader’s own funds. 1:100 leverage lets you control a position 100 times larger than your collateral."
+    },
+    {
+      "term": "Lot",
+      "definition": "The standard unit of trade volume. In Forex, 1 lot = 100,000 units of the base currency; most brokers allow trading from 0.01 lots."
+    },
+    {
+      "term": "Margin",
+      "definition": "Collateral locked on the account when a leveraged position is opened. Released after the trade is closed."
+    },
+    {
+      "term": "Margin Call",
+      "definition": "A broker warning that account funds are barely sufficient to maintain open positions."
+    },
+    {
+      "term": "Pip",
+      "definition": "The minimum price increment of a currency pair. For most pairs — a change in the fourth decimal place (0.0001)."
+    },
+    {
+      "term": "Spread",
+      "definition": "The difference between the Ask and Bid prices — the trader’s main transaction cost."
+    },
+    {
+      "term": "Stop Loss",
+      "definition": "An order that automatically closes a position when a specified loss is reached. The main risk-management tool."
+    },
+    {
+      "term": "Stop Out",
+      "definition": "Forced closing of positions by the broker when the margin level falls below a critical value."
+    },
+    {
+      "term": "Support level",
+      "definition": "A price zone where demand previously stopped a decline. The mirror concept is a resistance level."
+    },
+    {
+      "term": "Swap",
+      "definition": "A charge or credit for holding a position overnight, based on the interest-rate differential of the pair’s currencies."
+    },
+    {
+      "term": "Take Profit",
+      "definition": "An order that automatically locks in profit when a target price is reached."
+    },
+    {
+      "term": "Trend",
+      "definition": "A sustained directional price move: up (rising highs and lows) or down."
+    },
+    {
+      "term": "Volatility",
+      "definition": "A measure of price variability over a period. High volatility — big moves and big risks; low — narrow ranges."
+    }
+  ]
+}

@@ -1,0 +1,334 @@
+{
+  "items": [
+    {
+      "symbol": "EURUSD",
+      "name": "Euro / US Dollar",
+      "category": "forex",
+      "digits": 5,
+      "leverageMax": "1:500",
+      "spreadFrom": "0.0 pips",
+      "swapFree": true,
+      "icon": null
+    },
+    {
+      "symbol": "GBPUSD",
+      "name": "British Pound / US Dollar",
+      "category": "forex",
+      "digits": 5,
+      "leverageMax": "1:500",
+      "spreadFrom": "0.0 pips",
+      "swapFree": true,
+      "icon": null
+    },
+    {
+      "symbol": "USDJPY",
+      "name": "US Dollar / Japanese Yen",
+      "category": "forex",
+      "digits": 3,
+      "leverageMax": "1:500",
+      "spreadFrom": "0.0 pips",
+      "swapFree": true,
+      "icon": null
+    },
+    {
+      "symbol": "AUDUSD",
+      "name": "Australian Dollar / US Dollar",
+      "category": "forex",
+      "digits": 5,
+      "leverageMax": "1:500",
+      "spreadFrom": "0.0 pips",
+      "swapFree": true,
+      "icon": null
+    },
+    {
+      "symbol": "USDCHF",
+      "name": "US Dollar / Swiss Franc",
+      "category": "forex",
+      "digits": 5,
+      "leverageMax": "1:500",
+      "spreadFrom": "0.0 pips",
+      "swapFree": true,
+      "icon": null
+    },
+    {
+      "symbol": "USDCAD",
+      "name": "US Dollar / Canadian Dollar",
+      "category": "forex",
+      "digits": 5,
+      "leverageMax": "1:500",
+      "spreadFrom": "0.0 pips",
+      "swapFree": true,
+      "icon": null
+    },
+    {
+      "symbol": "NZDUSD",
+      "name": "New Zealand Dollar / US Dollar",
+      "category": "forex",
+      "digits": 5,
+      "leverageMax": "1:500",
+      "spreadFrom": "0.0 pips",
+      "swapFree": true,
+      "icon": null
+    },
+    {
+      "symbol": "EURGBP",
+      "name": "Euro / British Pound",
+      "category": "forex",
+      "digits": 5,
+      "leverageMax": "1:500",
+      "spreadFrom": "0.0 pips",
+      "swapFree": true,
+      "icon": null
+    },
+    {
+      "symbol": "EURJPY",
+      "name": "Euro / Japanese Yen",
+      "category": "forex",
+      "digits": 3,
+      "leverageMax": "1:500",
+      "spreadFrom": "0.0 pips",
+      "swapFree": true,
+      "icon": null
+    },
+    {
+      "symbol": "XAUUSD",
+      "name": "Gold",
+      "category": "metals",
+      "digits": 2,
+      "leverageMax": "1:500",
+      "spreadFrom": "0.1 pips",
+      "swapFree": true,
+      "icon": null
+    },
+    {
+      "symbol": "XAGUSD",
+      "name": "Silver",
+      "category": "metals",
+      "digits": 3,
+      "leverageMax": "1:500",
+      "spreadFrom": "0.1 pips",
+      "swapFree": true,
+      "icon": null
+    },
+    {
+      "symbol": "XPTUSD",
+      "name": "Platinum",
+      "category": "metals",
+      "digits": 2,
+      "leverageMax": "1:500",
+      "spreadFrom": "0.1 pips",
+      "swapFree": true,
+      "icon": null
+    },
+    {
+      "symbol": "BTCUSD",
+      "name": "Bitcoin",
+      "category": "crypto",
+      "digits": 0,
+      "leverageMax": "1:500",
+      "spreadFrom": "0.15%",
+      "swapFree": true,
+      "icon": null
+    },
+    {
+      "symbol": "ETHUSD",
+      "name": "Ethereum",
+      "category": "crypto",
+      "digits": 1,
+      "leverageMax": "1:500",
+      "spreadFrom": "0.15%",
+      "swapFree": true,
+      "icon": null
+    },
+    {
+      "symbol": "SOLUSD",
+      "name": "Solana",
+      "category": "crypto",
+      "digits": 2,
+      "leverageMax": "1:500",
+      "spreadFrom": "0.15%",
+      "swapFree": true,
+      "icon": null
+    },
+    {
+      "symbol": "XRPUSD",
+      "name": "Ripple",
+      "category": "crypto",
+      "digits": 4,
+      "leverageMax": "1:500",
+      "spreadFrom": "0.15%",
+      "swapFree": true,
+      "icon": null
+    },
+    {
+      "symbol": "BNBUSD",
+      "name": "BNB",
+      "category": "crypto",
+      "digits": 1,
+      "leverageMax": "1:500",
+      "spreadFrom": "0.15%",
+      "swapFree": true,
+      "icon": null
+    },
+    {
+      "symbol": "US500",
+      "name": "S&P 500",
+      "category": "indices",
+      "digits": 1,
+      "leverageMax": "1:500",
+      "spreadFrom": "0.4 pips",
+      "swapFree": true,
+      "icon": null
+    },
+    {
+      "symbol": "NAS100",
+      "name": "Nasdaq 100",
+      "category": "indices",
+      "digits": 1,
+      "leverageMax": "1:500",
+      "spreadFrom": "0.4 pips",
+      "swapFree": true,
+      "icon": null
+    },
+    {
+      "symbol": "US30",
+      "name": "Dow Jones 30",
+      "category": "indices",
+      "digits": 1,
+      "leverageMax": "1:500",
+      "spreadFrom": "0.4 pips",
+      "swapFree": true,
+      "icon": null
+    },
+    {
+      "symbol": "GER40",
+      "name": "DAX 40",
+      "category": "indices",
+      "digits": 1,
+      "leverageMax": "1:500",
+      "spreadFrom": "0.4 pips",
+      "swapFree": true,
+      "icon": null
+    },
+    {
+      "symbol": "UK100",
+      "name": "FTSE 100",
+      "category": "indices",
+      "digits": 1,
+      "leverageMax": "1:500",
+      "spreadFrom": "0.4 pips",
+      "swapFree": true,
+      "icon": null
+    },
+    {
+      "symbol": "JPN225",
+      "name": "Nikkei 225",
+      "category": "indices",
+      "digits": 0,
+      "leverageMax": "1:500",
+      "spreadFrom": "0.4 pips",
+      "swapFree": true,
+      "icon": null
+    },
+    {
+      "symbol": "AAPL",
+      "name": "Apple Inc.",
+      "category": "stocks",
+      "digits": 2,
+      "leverageMax": "1:500",
+      "spreadFrom": "0.02%",
+      "swapFree": true,
+      "icon": null
+    },
+    {
+      "symbol": "MSFT",
+      "name": "Microsoft Corp.",
+      "category": "stocks",
+      "digits": 2,
+      "leverageMax": "1:500",
+      "spreadFrom": "0.02%",
+      "swapFree": true,
+      "icon": null
+    },
+    {
+      "symbol": "NVDA",
+      "name": "NVIDIA Corp.",
+      "category": "stocks",
+      "digits": 2,
+      "leverageMax": "1:500",
+      "spreadFrom": "0.02%",
+      "swapFree": true,
+      "icon": null
+    },
+    {
+      "symbol": "AMZN",
+      "name": "Amazon.com Inc.",
+      "category": "stocks",
+      "digits": 2,
+      "leverageMax": "1:500",
+      "spreadFrom": "0.02%",
+      "swapFree": true,
+      "icon": null
+    },
+    {
+      "symbol": "META",
+      "name": "Meta Platforms Inc.",
+      "category": "stocks",
+      "digits": 2,
+      "leverageMax": "1:500",
+      "spreadFrom": "0.02%",
+      "swapFree": true,
+      "icon": null
+    },
+    {
+      "symbol": "GOOGL",
+      "name": "Alphabet Inc.",
+      "category": "stocks",
+      "digits": 2,
+      "leverageMax": "1:500",
+      "spreadFrom": "0.02%",
+      "swapFree": true,
+      "icon": null
+    },
+    {
+      "symbol": "TSLA",
+      "name": "Tesla Inc.",
+      "category": "stocks",
+      "digits": 2,
+      "leverageMax": "1:500",
+      "spreadFrom": "0.02%",
+      "swapFree": true,
+      "icon": null
+    },
+    {
+      "symbol": "USOIL",
+      "name": "WTI Crude Oil",
+      "category": "energy",
+      "digits": 2,
+      "leverageMax": "1:500",
+      "spreadFrom": "0.03",
+      "swapFree": true,
+      "icon": null
+    },
+    {
+      "symbol": "UKOIL",
+      "name": "Brent Crude Oil",
+      "category": "energy",
+      "digits": 2,
+      "leverageMax": "1:500",
+      "spreadFrom": "0.03",
+      "swapFree": true,
+      "icon": null
+    },
+    {
+      "symbol": "NGAS",
+      "name": "Natural Gas",
+      "category": "energy",
+      "digits": 3,
+      "leverageMax": "1:500",
+      "spreadFrom": "0.03",
+      "swapFree": true,
+      "icon": null
+    }
+  ]
+}

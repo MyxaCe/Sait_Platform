@@ -1,0 +1,113 @@
+{
+  "header": [
+    {
+      "label": "Instruments",
+      "href": "/instruments"
+    },
+    {
+      "label": "Accounts & Pricing",
+      "href": "/accounts"
+    },
+    {
+      "label": "Analytics",
+      "href": "/analytics/news"
+    },
+    {
+      "label": "Education",
+      "href": "/education"
+    },
+    {
+      "label": "About Us",
+      "href": "/about"
+    }
+  ],
+  "footer": {
+    "columns": [
+      {
+        "title": "Trading",
+        "links": [
+          {
+            "label": "Trading Instruments",
+            "href": "/instruments"
+          },
+          {
+            "label": "Account Types",
+            "href": "/accounts"
+          },
+          {
+            "label": "FAQ",
+            "href": "/education/faq"
+          },
+          {
+            "label": "Promotions & Bonuses",
+            "href": "/promotions"
+          }
+        ]
+      },
+      {
+        "title": "Analytics",
+        "links": [
+          {
+            "label": "Market News",
+            "href": "/analytics/news"
+          },
+          {
+            "label": "Economic Calendar",
+            "href": "/analytics/calendar"
+          },
+          {
+            "label": "Education",
+            "href": "/education/articles"
+          },
+          {
+            "label": "Blog",
+            "href": "/blog"
+          }
+        ]
+      },
+      {
+        "title": "Company",
+        "links": [
+          {
+            "label": "About Us",
+            "href": "/about"
+          },
+          {
+            "label": "Partners",
+            "href": "/partners"
+          },
+          {
+            "label": "Careers",
+            "href": "/company/careers"
+          },
+          {
+            "label": "Contacts",
+            "href": "/company/contacts"
+          }
+        ]
+      },
+      {
+        "title": "Legal",
+        "links": [
+          {
+            "label": "Privacy Policy",
+            "href": "/legal/privacy"
+          },
+          {
+            "label": "Terms of Use",
+            "href": "/legal/terms"
+          },
+          {
+            "label": "Risk Disclosure",
+            "href": "/legal/risk-disclosure"
+          },
+          {
+            "label": "Service Status",
+            "href": "/status"
+          }
+        ]
+      }
+    ],
+    "riskWarning": "Risk warning: trading CFDs and leveraged products carries a high level of risk and may result in the loss of your entire invested capital. Make sure you fully understand the risks involved before trading."
+  }
+}

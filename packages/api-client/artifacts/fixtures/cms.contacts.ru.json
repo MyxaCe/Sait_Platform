@@ -1,0 +1,36 @@
+{
+  "channels": [
+    {
+      "title": "Онлайн-чат",
+      "value": "Ответ за 40 секунд",
+      "detail": "Круглосуточно, без выходных — кнопка чата в правом нижнем углу кабинета"
+    },
+    {
+      "title": "Email",
+      "value": "support@apexcapital.example",
+      "detail": "Ответ в течение рабочего дня"
+    },
+    {
+      "title": "Телефон",
+      "value": "+357 25 000 000",
+      "detail": "Пн–Пт, 8:00–20:00 (UTC+2), звонок бесплатный"
+    }
+  ],
+  "offices": [
+    {
+      "city": "Лимассол",
+      "country": "Кипр · Головной офис",
+      "address": "Arch. Makariou III Ave 155, 3026"
+    },
+    {
+      "city": "Дубай",
+      "country": "ОАЭ",
+      "address": "Business Bay, Bay Square 12, офис 404"
+    },
+    {
+      "city": "Алматы",
+      "country": "Казахстан",
+      "address": "пр. Аль-Фараби 77/7, БЦ Esentai Tower, 12 этаж"
+    }
+  ]
+}
