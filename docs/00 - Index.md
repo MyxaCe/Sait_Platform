@@ -30,7 +30,7 @@ updated: 2026-07-24
 | Git (первый коммит) + CI (GitHub Actions) | ✅ готово |
 | Платформенная модель: Postgres (leads+outbox) + релей в шину | ✅ контур работает (шина — LogPublisher до кредлов) |
 | Docker: полный стек проверен локально (db/web/relay) | ✅ готово · CD на VPS 📋 |
-| CMS-сервис (свой, Payload CMS 3, отдельное репо Broker_CMS, ADR-021) | 🔄 первый срез работает: brand/navigation/faq, seed, ajv-контракт |
+| CMS-сервис (свой, Payload CMS 3, отдельное репо Broker_CMS, ADR-021) | ✅ все 14 ресурсов контракта + preview + CI с контрактным тестом |
 | Error tracking (общий GlitchTip, хостит команда CRM) | 🔄 согласовано, ждёт сроков |
 | Интеграция с CMS — этап 0 (контракт + mock + JSON Schema) | ✅ готов |
 | Интеграция с CMS — этап 1 (вебхук-инвалидация + brand/nav/legal/faq/contacts) | ✅ готов |
