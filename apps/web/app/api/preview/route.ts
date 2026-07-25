@@ -1,6 +1,6 @@
 import { draftMode } from 'next/headers';
 import { NextResponse } from 'next/server';
-import { sanitizeRedirectPath } from '@/lib/preview';
+import { requestOrigin, sanitizeRedirectPath } from '@/lib/preview';
 
 /**
  * Вход в preview: CMS даёт редактору ссылку
@@ -21,5 +21,5 @@ export async function GET(request: Request) {
 
   draftMode().enable();
   const path = sanitizeRedirectPath(url.searchParams.get('path'));
-  return NextResponse.redirect(new URL(path, url.origin));
+  return NextResponse.redirect(new URL(path, requestOrigin(request.headers, url.origin)));
 }
