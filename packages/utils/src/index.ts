@@ -7,3 +7,4 @@ export {
   formatTime,
   formatWeekday,
 } from './format';
+export { hexToRgbChannels } from './brand';

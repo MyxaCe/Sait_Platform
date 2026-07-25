@@ -3,7 +3,9 @@ import { Inter } from 'next/font/google';
 import { notFound } from 'next/navigation';
 import { hasLocale, NextIntlClientProvider } from 'next-intl';
 import { getMessages, getTranslations, setRequestLocale } from 'next-intl/server';
+import { hexToRgbChannels } from '@broker/utils';
 import { routing } from '@/i18n/routing';
+import { getChromeBrand } from '@/lib/chrome';
 import '../globals.css';
 
 const inter = Inter({
@@ -38,9 +40,14 @@ export default async function RootLayout({ children, params }: LayoutProps) {
   setRequestLocale(locale);
   const messages = await getMessages();
 
+  // Бренд из CMS (тот же тенант, что у сайта): акцент поверх токенов
+  const brand = await getChromeBrand(locale);
+  const accentChannels = brand ? hexToRgbChannels(brand.primaryColor) : null;
+
   return (
     <html lang={locale} data-theme="dark" className={inter.variable}>
       <body className="bg-base font-sans text-primary">
+        {accentChannels && <style>{`:root{--accent:${accentChannels};}`}</style>}
         <NextIntlClientProvider messages={messages}>{children}</NextIntlClientProvider>
       </body>
     </html>

@@ -55,6 +55,9 @@ services:
       DATABASE_URL: postgres://broker:broker_dev_password@db:5432/broker_site
       NEXT_PUBLIC_SITE_URL: http://localhost:3000
       UPLOAD_DIR: /app/uploads
+      # Хром из CMS (ADR-025): бренд/футер того же тенанта, что у сайта
+      CMS_API_URL: http://host.docker.internal:3001/v1
+      CMS_API_KEY: dev-cms-api-key
       # Терминал (dev-origin от их команды; iframe грузит браузер — localhost ок)
       NEXT_PUBLIC_TERMINAL_URL: http://localhost:8888
       # SSO для терминала (ADR-023): dev-ключ RS256; на VPS — секрет

@@ -31,3 +31,4 @@ export { Section } from './layout/Section/Section';
 
 // Utils
 export { cn } from './lib/cn';
+export { SiteFooter, type SiteFooterProps, type FooterLink } from './organisms/SiteFooter/SiteFooter';

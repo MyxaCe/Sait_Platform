@@ -1,7 +1,9 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { redirect } from 'next/navigation';
+import { SiteFooter } from '@broker/ui';
 import { Link } from '@/i18n/navigation';
 import { getSessionUser } from '@/lib/auth/session';
+import { getChromeBrand, getChromeFooter, siteHref } from '@/lib/chrome';
 import { countUnread } from '@/lib/data';
 import { logoutAction } from '@/lib/actions';
 import { NavLink } from '@/features/shell/NavLink';
@@ -19,11 +21,14 @@ export default async function AppLayout({ children, params }: LayoutProps) {
     redirect(params.locale === 'en' ? '/en/login' : '/login');
   }
 
-  const [tNav, tCommon, unread] = await Promise.all([
+  const [tNav, tCommon, unread, brand, footer] = await Promise.all([
     getTranslations('nav'),
     getTranslations('common'),
     countUnread(user.id),
+    getChromeBrand(params.locale),
+    getChromeFooter(params.locale),
   ]);
+  const brandName = brand?.name ?? tCommon('brand');
 
   const nav = [
     { href: '/', label: tNav('dashboard') },
@@ -38,9 +43,14 @@ export default async function AppLayout({ children, params }: LayoutProps) {
     <div className="flex min-h-svh">
       <aside className="hidden w-64 shrink-0 flex-col border-r border-border bg-elevated p-4 lg:flex">
         <Link href="/" className="mb-8 flex items-center gap-2 px-2 text-lg font-semibold">
-          <span className="grid size-8 place-items-center rounded-lg bg-accent font-bold text-base">
-            {tCommon('brand').charAt(0)}
-          </span>
+          {brand?.logo ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={brand.logo.url} alt={brand.logo.alt || brandName} className="h-8 w-auto" />
+          ) : (
+            <span className="grid size-8 place-items-center rounded-lg bg-accent font-bold text-base">
+              {brandName.charAt(0)}
+            </span>
+          )}
           {tCommon('cabinet')}
         </Link>
         <nav className="flex flex-1 flex-col gap-1">
@@ -75,6 +85,23 @@ export default async function AppLayout({ children, params }: LayoutProps) {
         </header>
 
         <main className="flex-1 px-4 py-6 pb-24 sm:px-6 lg:px-10 lg:pb-6">{children}</main>
+
+        {/* Общий футер платформы (ADR-025): те же данные CMS, что у сайта;
+            ссылки — абсолютные на сайт. risk warning обязателен и в кабинете */}
+        {footer && (
+          <div className="hidden lg:block">
+            <SiteFooter
+              columns={footer.columns.map((col) => ({
+                title: col.title,
+                links: col.links.map((l) => ({ label: l.label, href: siteHref(l.href, params.locale) })),
+              }))}
+              riskWarning={footer.riskWarning}
+              brandName={brandName}
+              socials={brand?.socials ?? []}
+              copyright={tCommon('copyright', { year: new Date().getFullYear() })}
+            />
+          </div>
+        )}
 
         <nav className="fixed inset-x-0 bottom-0 z-40 flex border-t border-border bg-elevated lg:hidden">
           {nav.map((item) => (
