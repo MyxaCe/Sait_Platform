@@ -86,7 +86,10 @@
       "PowerShell(try { $r = Invoke-WebRequest -UseBasicParsing \"http://localhost:8888/health\" -TimeoutSec 5; \"terminal health: HTTP $\\($r.StatusCode\\) $\\($r.Content\\)\" } catch { try { $r2 = Invoke-WebRequest -UseBasicParsing \"http://localhost:8888/\" -TimeoutSec 5; \"terminal /: HTTP $\\($r2.StatusCode\\), $\\(\\(\\($r2.Content.Length\\)/1024\\).ToString\\('F0'\\)\\)KB\" } catch { \"терминал на :8888 не отвечает\" } })",
       "Read(//c/Users/user/Desktop/Broker_CMS/src/app/v1/cms/\\\\[...path\\\\]/**)",
       "PowerShell(Set-Location \"c:\\\\Users\\\\user\\\\Desktop\\\\Sait_Platform\\\\apps\\\\web\"; $env:CABINET_URL = 'http://localhost:3002'; $env:TERMINAL_URL = 'http://localhost:8888'; pnpm exec playwright test e2e/cabinet-sso.spec.ts --project=desktop-chromium --reporter=list 2>&1 | Select-Object -Last 8)",
-      "PowerShell(Set-Location \"c:\\\\Users\\\\user\\\\Desktop\\\\Sait_Platform\\\\apps\\\\web\"; $env:CABINET_URL = 'http://localhost:3002'; $env:TERMINAL_URL = 'http://localhost:8888'; pnpm exec playwright test e2e/cabinet-sso.spec.ts --project=desktop-chromium --reporter=list 2>&1 | Select-Object -Last 4)"
+      "PowerShell(Set-Location \"c:\\\\Users\\\\user\\\\Desktop\\\\Sait_Platform\\\\apps\\\\web\"; $env:CABINET_URL = 'http://localhost:3002'; $env:TERMINAL_URL = 'http://localhost:8888'; pnpm exec playwright test e2e/cabinet-sso.spec.ts --project=desktop-chromium --reporter=list 2>&1 | Select-Object -Last 4)",
+      "PowerShell(Get-ChildItem \"c:\\\\Users\\\\user\\\\Desktop\\\\Sait_Platform\\\\packages\\\\realtime\\\\src\" -Recurse -File | Select-Object -ExpandProperty FullName | ForEach-Object { $_.Replace\\('c:\\\\Users\\\\user\\\\Desktop\\\\Sait_Platform\\\\packages\\\\realtime\\\\src\\\\', ''\\) })",
+      "PowerShell(Set-Location \"c:\\\\Users\\\\user\\\\Desktop\\\\Broker_MDS\"; pnpm dev 2>&1 | ForEach-Object { $_ })",
+      "PowerShell(try { Invoke-WebRequest -UseBasicParsing -Method POST \"http://localhost:3000/api/leads/register\" -ContentType 'application/json' -Body '{\"firstName\":\"Шина\",\"lastName\":\"Проверкин\",\"email\":\"bus-test-1@example.com\",\"phone\":\"+35725000003\",\"country\":\"Кипр\",\"accountType\":\"standard\",\"locale\":\"ru\"}' } catch { $reader = New-Object System.IO.StreamReader\\($_.Exception.Response.GetResponseStream\\(\\)\\); $reader.ReadToEnd\\(\\) })"
     ],
     "additionalDirectories": [
       "c:\\Users\\user\\Desktop\\Broker_CMS",
@@ -99,7 +102,8 @@
       "c:\\Users\\user\\Desktop\\Broker_CMS\\src\\seed",
       "c:\\Users\\user\\Desktop\\Broker_CMS\\src\\lib",
       "c:\\Users\\user\\Desktop\\Broker_CMS\\scripts",
-      "c:\\Users\\user\\Desktop\\Broker_CMS\\.github\\workflows"
+      "c:\\Users\\user\\Desktop\\Broker_CMS\\.github\\workflows",
+      "c:\\Users\\user\\Desktop\\Broker_MDS"
     ]
   }
 }

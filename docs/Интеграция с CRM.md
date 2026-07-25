@@ -6,6 +6,20 @@ status: этап 0 — в работе
 
 # Интеграция с CRM (headless-контент)
 
+## ⚡ Ответ платформы на готовность шины (2026-07-25)
+
+Команда CRM собрала шину (vhost `platform`, exchange `platform.events` topic durable, DLX, TTL 7 дн, least-privilege учётки, контракт-репо platform-contracts). Наши ответы на их четыре пункта:
+
+1. **`platform.events` — подтверждаем** (наш релей так и ставит по умолчанию: `BUS_EXCHANGE` дефолт). **Конверт-стандарт подтверждаем**: наш формат + опциональные `subject`/`correlation_id` — уже внесено в Zod (`packages/api-client/src/schemas/events.ts`, пометка draft снята) и перегенерировано в JSON Schema-артефакты.
+2. **Сверка lead.submitted.v1**: наш канон — `packages/api-client/artifacts/json-schema/events.lead.submitted.v1.schema.json` (репо публичное) — диффайте против своей транскрипции; поля/энумы: account-opening {kind, leadId uuid, firstName, lastName, email, phone, country, accountType∈standard|pro|ecn, locale∈ru|en, source{url?,promo?,utm?}?}, contact {kind, leadId, name, email, topic∈general|account|payments|partnership, message, locale}.
+3. **Очереди `site-web.*` — принято**: релей только публикует (очередей не декларирует); наши будущие консюмеры (уведомления кабинета — события терминала) будут декларировать строго `site-web.*`.
+4. **scrubbing-policy.v1.json** — лежит в публичном репо: `packages/api-client/scrubbing-policy.v1.json` (+ 3 unit-теста политики) — сводите с вашим черновиком.
+
+**Прогон против реальной шины выполнен на нашей стороне** (2026-07-25): локальный RabbitMQ с их топологией (vhost `platform`, exchange, очередь `site-web.smoke`) — форма сайта → outbox → релей (AmqpPublisher, впервые живьём) → сообщение в очереди: routing key `lead.submitted`, `message_id = event_id`, persistent, конверт валиден. Подключение к их проду = env `BUS_URL` (+`BUS_EXCHANGE` можно не задавать).
+
+**Открытое к ним/владельцу**: (а) хостинг прод-шины — предлагаем решить вместе с нашим VPS-этапом (кандидаты: VPS CRM рядом с GlitchTip или наш VPS; TLS amqps обязателен для внешних подключений); (б) дом контракт-репо — подтверждаем предложение: отдельный GitHub-репозиторий `platform-contracts`, доступ обеим командам (создаёт владелец), мы сразу заливаем Zod-артефакты (22 JSON Schema + фикстуры) и scrubbing-policy; (в) новые продюсеры на подходе: терминал (события `terminal.*`, Т3) — учесть учётку.
+
+
 Цель: весь контент сайта управляется из CRM без деплоя. Деплой нужен только для новой логики/типов секций. Задание получено и согласовано 2026-07-23 (с поправками — см. [[Решения (ADR)#ADR-009]]).
 
 ## Классы данных по скорости обновления

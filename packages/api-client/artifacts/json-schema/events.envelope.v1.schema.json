@@ -32,6 +32,13 @@
           "type": "string",
           "const": "site-web"
         },
+        "subject": {
+          "type": "string"
+        },
+        "correlation_id": {
+          "type": "string",
+          "format": "uuid"
+        },
         "data": {}
       },
       "required": [
