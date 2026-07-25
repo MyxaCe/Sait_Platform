@@ -16,3 +16,4 @@ public/workbox-*.js
 test-results/
 playwright-report/
 *.tsbuildinfo
+.claude/scheduled_tasks.lock
