@@ -81,7 +81,8 @@
       "PowerShell(docker exec -i sait_platform-db-1 psql -U broker -d broker_site 2>&1)",
       "PowerShell(Set-Location \"c:\\\\Users\\\\user\\\\Desktop\\\\Sait_Platform\\\\apps\\\\web\"; $env:CABINET_URL = 'http://localhost:3002'; pnpm exec playwright test e2e/cabinet.spec.ts --project='Desktop Chrome' --reporter=list 2>&1 | Select-Object -Last 15)",
       "PowerShell(Set-Location \"c:\\\\Users\\\\user\\\\Desktop\\\\Sait_Platform\\\\apps\\\\web\"; $env:CABINET_URL = 'http://localhost:3002'; pnpm exec playwright test e2e/cabinet.spec.ts --project=desktop-chromium --reporter=list 2>&1 | Select-Object -Last 15)",
-      "PowerShell(Set-Location \"c:\\\\Users\\\\user\\\\Desktop\\\\Sait_Platform\\\\apps\\\\web\"; $env:CABINET_URL = 'http://localhost:3002'; pnpm exec playwright test e2e/cabinet.spec.ts --project=desktop-chromium --reporter=list 2>&1 | Select-Object -Last 6)"
+      "PowerShell(Set-Location \"c:\\\\Users\\\\user\\\\Desktop\\\\Sait_Platform\\\\apps\\\\web\"; $env:CABINET_URL = 'http://localhost:3002'; pnpm exec playwright test e2e/cabinet.spec.ts --project=desktop-chromium --reporter=list 2>&1 | Select-Object -Last 6)",
+      "PowerShell($r = Invoke-WebRequest -UseBasicParsing \"https://api.github.com/repos/MyxaCe/Sait_Platform/actions/runs?per_page=2\" -TimeoutSec 15; \\($r.Content | ConvertFrom-Json\\).workflow_runs | ForEach-Object { \"$\\($_.head_sha.Substring\\(0,7\\)\\)  $\\($_.status\\)  $\\($_.conclusion\\)\" })"
     ],
     "additionalDirectories": [
       "c:\\Users\\user\\Desktop\\Broker_CMS",
