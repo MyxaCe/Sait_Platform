@@ -3,6 +3,7 @@ import { SiteFooter } from '@/components/layout/SiteFooter';
 import { SiteHeader } from '@/components/layout/SiteHeader';
 import { QuotesTicker } from '@/features/quotes/QuotesTicker';
 import { getCms } from '@/lib/cms';
+import { getMdsSymbols } from '@/lib/mds';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -19,9 +20,14 @@ export default async function MarketingLayout({ children, params }: LayoutProps)
     getCms('instruments', { locale }),
   ]);
 
-  // Тикер показывает только разрешённые CMS инструменты
+  // Тикер: только разрешённые CMS инструменты; при подключённом MDS —
+  // дополнительно только то, что реально стримится живыми ценами
+  // (замершие мок-цены рядом с живыми — обман, ADR-024)
   const allowed = new Set(instruments.items.map((i) => i.symbol));
-  const tickerSymbols = DEFAULT_TICKER_SYMBOLS.filter((s) => allowed.has(s));
+  const mdsSymbols = await getMdsSymbols();
+  const tickerSymbols = mdsSymbols
+    ? [...mdsSymbols].filter((s) => allowed.has(s))
+    : DEFAULT_TICKER_SYMBOLS.filter((s) => allowed.has(s));
 
   return (
     <div className="flex min-h-svh flex-col">

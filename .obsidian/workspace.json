@@ -178,18 +178,19 @@
   },
   "active": "535f747013be9a71",
   "lastOpenFiles": [
+    "apps/web/test-results/mds-live-Тикер-сайта-←-MDS-569f3-крипта-из-MDS-статус-онлайн-desktop-chromium/error-context.md",
+    "apps/web/test-results/mds-live-Тикер-сайта-←-MDS-569f3-крипта-из-MDS-статус-онлайн-desktop-chromium",
+    "apps/web/e2e/mds-live.spec.ts.tmp.47552.6de7892e5fd5",
+    "apps/web/e2e/mds-live.spec.ts",
+    "apps/web/e2e/mds-live.spec.ts.tmp.47552.0eff1f76df1a",
+    "apps/web/app/[locale]/(marketing)/layout.tsx.tmp.47552.0be9298ad308",
+    "apps/web/lib/mds.ts",
+    "apps/web/lib/mds.ts.tmp.47552.9285faf8079c",
     "apps/web/test-results/cabinet-sso-SSO-кабинет-→--d6fd1-ращается-в-сессию-терминала-desktop-chromium/error-context.md",
     "apps/web/test-results/cabinet-sso-SSO-кабинет-→--d6fd1-ращается-в-сессию-терминала-desktop-chromium",
     "apps/web/test-results",
     "apps/web/e2e/cabinet-sso.spec.ts",
-    "apps/web/e2e/cabinet-sso.spec.ts.tmp.47552.b8a9c09a7153",
-    "apps/cabinet/check-trade.tmp.mjs",
-    "docker-compose.yml.tmp.47552.5054359296bd",
-    "packages/api-client/artifacts/theming-pack/tokens.v1.css",
     "packages/api-client/artifacts/theming-pack/README.md",
-    "packages/api-client/artifacts/theming-pack/cms.brand.schema.json",
-    "packages/api-client/artifacts/theming-pack/brand.example.json",
-    "packages/api-client/artifacts/theming-pack",
     "packages/api-client/artifacts/sso-pack/README.md"
   ]
 }

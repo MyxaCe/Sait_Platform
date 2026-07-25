@@ -26,6 +26,9 @@ ENV FRAME_ANCESTORS=$FRAME_ANCESTORS
 # Адрес кабинета вшивается в клиентский бандл (кнопки Войти/Открыть счёт)
 ARG NEXT_PUBLIC_CABINET_URL="http://localhost:3002"
 ENV NEXT_PUBLIC_CABINET_URL=$NEXT_PUBLIC_CABINET_URL
+# Адрес MDS для браузера: задан → живые котировки (socket.io), пусто → мок
+ARG NEXT_PUBLIC_WS_URL=""
+ENV NEXT_PUBLIC_WS_URL=$NEXT_PUBLIC_WS_URL
 RUN pnpm --filter @broker/web build
 
 FROM node:22-alpine AS runner
