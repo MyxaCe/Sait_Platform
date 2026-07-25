@@ -1,0 +1,133 @@
+{
+  "meta": {
+    "title": "Личный кабинет — Apex Capital",
+    "description": "Личный кабинет клиента Apex Capital"
+  },
+  "common": {
+    "brand": "Apex Capital",
+    "cabinet": "Личный кабинет",
+    "logout": "Выйти",
+    "save": "Сохранить",
+    "saved": "Сохранено",
+    "backToSite": "На сайт",
+    "notFound": "Страница не найдена",
+    "notFoundHint": "Проверьте адрес или вернитесь на главную кабинета",
+    "toDashboard": "К дашборду"
+  },
+  "nav": {
+    "dashboard": "Обзор",
+    "profile": "Профиль",
+    "security": "Безопасность",
+    "documents": "Документы",
+    "notifications": "Уведомления"
+  },
+  "connection": {
+    "tickerAria": "Живые котировки",
+    "connected": "Онлайн",
+    "connecting": "Подключение…",
+    "disconnected": "Оффлайн"
+  },
+  "auth": {
+    "loginTitle": "Вход в кабинет",
+    "loginSubtitle": "Торговый счёт, документы и уведомления",
+    "registerTitle": "Открытие счёта",
+    "registerSubtitle": "2 минуты — и демо-счёт на $10 000 уже ваш",
+    "email": "Email",
+    "password": "Пароль",
+    "firstName": "Имя",
+    "lastName": "Фамилия",
+    "phone": "Телефон",
+    "country": "Страна",
+    "accountType": "Тип счёта",
+    "accountTypes": {
+      "standard": "Standard — от $100",
+      "pro": "Pro — от $1 000",
+      "ecn": "ECN Prime — от $5 000"
+    },
+    "loginButton": "Войти",
+    "registerButton": "Открыть счёт",
+    "noAccount": "Ещё нет счёта?",
+    "haveAccount": "Уже есть счёт?",
+    "toRegister": "Открыть счёт",
+    "toLogin": "Войти",
+    "riskNote": "Открывая счёт, вы подтверждаете согласие с клиентским соглашением и уведомлением о рисках."
+  },
+  "dashboard": {
+    "greeting": "Здравствуйте, {name}!",
+    "application": "Заявка на счёт",
+    "applicationNone": "Заявка не найдена — обратитесь в поддержку",
+    "stepSubmitted": "Заявка получена",
+    "stepDispatched": "Передана в обработку",
+    "stepReview": "Проверка документов",
+    "stepReviewHint": "Загрузите документы — это ускорит открытие счёта",
+    "demoTitle": "Демо-счёт",
+    "demoHint": "Виртуальные средства, реальные котировки. Торговый терминал подключается на следующем этапе.",
+    "demoBalance": "Баланс",
+    "openedAt": "Открыт {date}",
+    "marketsTitle": "Рынки сейчас",
+    "quickTitle": "Что дальше",
+    "quickDocs": "Загрузить документы верификации",
+    "quickProfile": "Заполнить профиль",
+    "quickSecurity": "Проверить активные сессии"
+  },
+  "profile": {
+    "title": "Профиль",
+    "fullName": "Имя и фамилия",
+    "email": "Email",
+    "emailHint": "Смена email станет доступна после подключения подтверждений",
+    "language": "Язык кабинета",
+    "memberSince": "Клиент с {date}"
+  },
+  "security": {
+    "title": "Безопасность",
+    "changePassword": "Смена пароля",
+    "currentPassword": "Текущий пароль",
+    "newPassword": "Новый пароль",
+    "confirmPassword": "Новый пароль ещё раз",
+    "passwordChanged": "Пароль изменён",
+    "sessions": "Активные сессии",
+    "sessionCurrent": "Текущая",
+    "sessionRevoke": "Завершить",
+    "sessionCreated": "Вход {date}",
+    "sessionsHint": "Завершайте сессии на устройствах, которые вам не принадлежат"
+  },
+  "documents": {
+    "title": "Документы",
+    "hint": "Для верификации нужны документ, удостоверяющий личность, и подтверждение адреса. PDF, JPG или PNG до 10 МБ.",
+    "upload": "Загрузить документ",
+    "kind": "Тип документа",
+    "kinds": { "identity": "Удостоверение личности", "address": "Подтверждение адреса", "other": "Другое" },
+    "file": "Файл",
+    "uploaded": "Документ загружен",
+    "empty": "Документов пока нет",
+    "statuses": { "uploaded": "На проверке", "approved": "Принят", "rejected": "Отклонён" }
+  },
+  "notifications": {
+    "title": "Уведомления",
+    "empty": "Уведомлений нет",
+    "markAll": "Прочитать все",
+    "markRead": "Прочитано",
+    "types": {
+      "welcome": "Добро пожаловать! Заявка на счёт {accountType} принята, демо-счёт с $10 000 уже открыт.",
+      "documentUploaded": "Документ «{filename}» загружен и передан на проверку."
+    }
+  },
+  "validation": {
+    "required": "Обязательное поле",
+    "tooShort": "Слишком короткое значение",
+    "tooLong": "Слишком длинное значение",
+    "invalidEmail": "Некорректный email",
+    "invalidPhone": "Некорректный телефон",
+    "passwordTooShort": "Пароль — минимум 8 символов",
+    "passwordsMismatch": "Пароли не совпадают",
+    "emailExists": "Счёт с таким email уже существует",
+    "wrongPassword": "Неверный текущий пароль",
+    "invalidCredentials": "Неверный email или пароль",
+    "rateLimited": "Слишком много попыток — подождите минуту",
+    "unauthorized": "Сессия истекла — войдите заново",
+    "unsupportedFormat": "Поддерживаются PDF, JPG и PNG",
+    "fileTooLarge": "Файл больше 10 МБ",
+    "invalidRequest": "Некорректный запрос",
+    "bot": "Ошибка отправки"
+  }
+}

@@ -1,11 +1,18 @@
 'use client';
 
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
 import { Link, usePathname } from '@/i18n/navigation';
 import { Button, Container, cn } from '@broker/ui';
 import { LangSwitcher } from './LangSwitcher';
 import { ThemeToggle } from './ThemeToggle';
+
+/** Вход и открытие счёта живут в кабинете (ADR-022) — отдельное приложение. */
+const CABINET_URL = (process.env.NEXT_PUBLIC_CABINET_URL ?? 'http://localhost:3002').replace(/\/$/, '');
+
+function cabinetHref(path: '/login' | '/register', locale: string): string {
+  return `${CABINET_URL}${locale === 'en' ? '/en' : ''}${path}`;
+}
 
 export interface SiteHeaderProps {
   /** Название бренда и навигация приходят из CMS (тег cms:brand / cms:navigation) */
@@ -18,6 +25,7 @@ export interface SiteHeaderProps {
 export function SiteHeader({ brandName, logo, nav }: SiteHeaderProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const pathname = usePathname();
+  const locale = useLocale();
   const t = useTranslations('nav');
   const tCommon = useTranslations('common');
 
@@ -76,16 +84,16 @@ export function SiteHeader({ brandName, logo, nav }: SiteHeaderProps) {
         <div className="hidden items-center gap-2 lg:flex">
           <LangSwitcher />
           <ThemeToggle />
-          <Link href="/login">
+          <a href={cabinetHref('/login', locale)}>
             <Button variant="ghost" size="sm" tabIndex={-1}>
               {tCommon('login')}
             </Button>
-          </Link>
-          <Link href="/register">
+          </a>
+          <a href={cabinetHref('/register', locale)}>
             <Button size="sm" tabIndex={-1}>
               {tCommon('openAccount')}
             </Button>
-          </Link>
+          </a>
         </div>
 
         <div className="flex items-center gap-1 lg:hidden">
@@ -142,16 +150,16 @@ export function SiteHeader({ brandName, logo, nav }: SiteHeaderProps) {
           ))}
         </nav>
         <div className="flex flex-col gap-3 border-t border-border p-4 pb-8">
-          <Link href="/register">
+          <a href={cabinetHref('/register', locale)}>
             <Button size="lg" className="w-full" tabIndex={-1}>
               {tCommon('openAccount')}
             </Button>
-          </Link>
-          <Link href="/login">
+          </a>
+          <a href={cabinetHref('/login', locale)}>
             <Button variant="secondary" size="lg" className="w-full" tabIndex={-1}>
               {tCommon('login')}
             </Button>
-          </Link>
+          </a>
         </div>
       </div>
     </header>

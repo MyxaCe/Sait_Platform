@@ -39,6 +39,23 @@ services:
       db:
         condition: service_healthy
 
+  cabinet:
+    profiles: [full]
+    build:
+      context: .
+      dockerfile: docker/cabinet.Dockerfile
+    environment:
+      DATABASE_URL: postgres://broker:broker_dev_password@db:5432/broker_site
+      NEXT_PUBLIC_SITE_URL: http://localhost:3000
+      UPLOAD_DIR: /app/uploads
+    ports:
+      - '3002:3002'
+    volumes:
+      - cabinet-uploads:/app/uploads
+    depends_on:
+      db:
+        condition: service_healthy
+
   relay:
     profiles: [full]
     build:
@@ -54,3 +71,4 @@ services:
 
 volumes:
   db-data:
+  cabinet-uploads:

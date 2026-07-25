@@ -77,7 +77,11 @@
       "PowerShell(node \"C:\\\\Users\\\\user\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-user-Desktop-Sait-Platform\\\\e81f2968-cd83-4135-b0ac-f74341102576\\\\scratchpad\\\\demo-media.mjs\")",
       "Read(//c/Users/user/Desktop/Broker_CMS/scripts/**)",
       "PowerShell(node \"C:\\\\Users\\\\user\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-user-Desktop-Sait-Platform\\\\e81f2968-cd83-4135-b0ac-f74341102576\\\\scratchpad\\\\poke-brand.mjs\")",
-      "PowerShell($r = Invoke-WebRequest -UseBasicParsing \"http://localhost:3000/\" -TimeoutSec 30; $r.Headers.GetEnumerator\\(\\) | Where-Object { $_.Key -match 'Frame|Security|Content-Security' } | ForEach-Object { \"$\\($_.Key\\): $\\($_.Value\\)\" })"
+      "PowerShell($r = Invoke-WebRequest -UseBasicParsing \"http://localhost:3000/\" -TimeoutSec 30; $r.Headers.GetEnumerator\\(\\) | Where-Object { $_.Key -match 'Frame|Security|Content-Security' } | ForEach-Object { \"$\\($_.Key\\): $\\($_.Value\\)\" })",
+      "PowerShell(docker exec -i sait_platform-db-1 psql -U broker -d broker_site 2>&1)",
+      "PowerShell(Set-Location \"c:\\\\Users\\\\user\\\\Desktop\\\\Sait_Platform\\\\apps\\\\web\"; $env:CABINET_URL = 'http://localhost:3002'; pnpm exec playwright test e2e/cabinet.spec.ts --project='Desktop Chrome' --reporter=list 2>&1 | Select-Object -Last 15)",
+      "PowerShell(Set-Location \"c:\\\\Users\\\\user\\\\Desktop\\\\Sait_Platform\\\\apps\\\\web\"; $env:CABINET_URL = 'http://localhost:3002'; pnpm exec playwright test e2e/cabinet.spec.ts --project=desktop-chromium --reporter=list 2>&1 | Select-Object -Last 15)",
+      "PowerShell(Set-Location \"c:\\\\Users\\\\user\\\\Desktop\\\\Sait_Platform\\\\apps\\\\web\"; $env:CABINET_URL = 'http://localhost:3002'; pnpm exec playwright test e2e/cabinet.spec.ts --project=desktop-chromium --reporter=list 2>&1 | Select-Object -Last 6)"
     ],
     "additionalDirectories": [
       "c:\\Users\\user\\Desktop\\Broker_CMS",

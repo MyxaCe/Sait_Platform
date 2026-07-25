@@ -1,0 +1,133 @@
+{
+  "meta": {
+    "title": "Client area — Apex Capital",
+    "description": "Apex Capital client area"
+  },
+  "common": {
+    "brand": "Apex Capital",
+    "cabinet": "Client area",
+    "logout": "Sign out",
+    "save": "Save",
+    "saved": "Saved",
+    "backToSite": "Back to website",
+    "notFound": "Page not found",
+    "notFoundHint": "Check the address or return to the dashboard",
+    "toDashboard": "To dashboard"
+  },
+  "nav": {
+    "dashboard": "Overview",
+    "profile": "Profile",
+    "security": "Security",
+    "documents": "Documents",
+    "notifications": "Notifications"
+  },
+  "connection": {
+    "tickerAria": "Live quotes",
+    "connected": "Online",
+    "connecting": "Connecting…",
+    "disconnected": "Offline"
+  },
+  "auth": {
+    "loginTitle": "Sign in",
+    "loginSubtitle": "Your trading account, documents and notifications",
+    "registerTitle": "Open an account",
+    "registerSubtitle": "2 minutes — and a $10,000 demo account is yours",
+    "email": "Email",
+    "password": "Password",
+    "firstName": "First name",
+    "lastName": "Last name",
+    "phone": "Phone",
+    "country": "Country",
+    "accountType": "Account type",
+    "accountTypes": {
+      "standard": "Standard — from $100",
+      "pro": "Pro — from $1,000",
+      "ecn": "ECN Prime — from $5,000"
+    },
+    "loginButton": "Sign in",
+    "registerButton": "Open account",
+    "noAccount": "Don't have an account yet?",
+    "haveAccount": "Already have an account?",
+    "toRegister": "Open account",
+    "toLogin": "Sign in",
+    "riskNote": "By opening an account you agree to the client agreement and risk disclosure."
+  },
+  "dashboard": {
+    "greeting": "Hello, {name}!",
+    "application": "Account application",
+    "applicationNone": "Application not found — please contact support",
+    "stepSubmitted": "Application received",
+    "stepDispatched": "Sent for processing",
+    "stepReview": "Document verification",
+    "stepReviewHint": "Upload your documents to speed up account opening",
+    "demoTitle": "Demo account",
+    "demoHint": "Virtual funds, real quotes. The trading terminal arrives in the next phase.",
+    "demoBalance": "Balance",
+    "openedAt": "Opened {date}",
+    "marketsTitle": "Markets now",
+    "quickTitle": "Next steps",
+    "quickDocs": "Upload verification documents",
+    "quickProfile": "Complete your profile",
+    "quickSecurity": "Review active sessions"
+  },
+  "profile": {
+    "title": "Profile",
+    "fullName": "Full name",
+    "email": "Email",
+    "emailHint": "Email change will be available once confirmations are enabled",
+    "language": "Interface language",
+    "memberSince": "Client since {date}"
+  },
+  "security": {
+    "title": "Security",
+    "changePassword": "Change password",
+    "currentPassword": "Current password",
+    "newPassword": "New password",
+    "confirmPassword": "Repeat new password",
+    "passwordChanged": "Password changed",
+    "sessions": "Active sessions",
+    "sessionCurrent": "Current",
+    "sessionRevoke": "Revoke",
+    "sessionCreated": "Signed in {date}",
+    "sessionsHint": "Revoke sessions on devices that are not yours"
+  },
+  "documents": {
+    "title": "Documents",
+    "hint": "Verification requires an identity document and a proof of address. PDF, JPG or PNG up to 10 MB.",
+    "upload": "Upload document",
+    "kind": "Document type",
+    "kinds": { "identity": "Identity document", "address": "Proof of address", "other": "Other" },
+    "file": "File",
+    "uploaded": "Document uploaded",
+    "empty": "No documents yet",
+    "statuses": { "uploaded": "Under review", "approved": "Approved", "rejected": "Rejected" }
+  },
+  "notifications": {
+    "title": "Notifications",
+    "empty": "No notifications",
+    "markAll": "Mark all as read",
+    "markRead": "Read",
+    "types": {
+      "welcome": "Welcome! Your {accountType} account application has been received; a $10,000 demo account is already open.",
+      "documentUploaded": "Document “{filename}” has been uploaded and sent for review."
+    }
+  },
+  "validation": {
+    "required": "This field is required",
+    "tooShort": "Too short",
+    "tooLong": "Too long",
+    "invalidEmail": "Invalid email",
+    "invalidPhone": "Invalid phone number",
+    "passwordTooShort": "Password must be at least 8 characters",
+    "passwordsMismatch": "Passwords do not match",
+    "emailExists": "An account with this email already exists",
+    "wrongPassword": "Current password is incorrect",
+    "invalidCredentials": "Invalid email or password",
+    "rateLimited": "Too many attempts — try again in a minute",
+    "unauthorized": "Session expired — please sign in again",
+    "unsupportedFormat": "PDF, JPG and PNG are supported",
+    "fileTooLarge": "File is larger than 10 MB",
+    "invalidRequest": "Invalid request",
+    "bot": "Submission error"
+  }
+}

@@ -8,6 +8,7 @@ FROM base AS deps
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json turbo.json ./
 COPY apps/web/package.json apps/web/
 COPY apps/relay/package.json apps/relay/
+COPY apps/cabinet/package.json apps/cabinet/
 COPY packages/api-client/package.json packages/api-client/
 COPY packages/config/package.json packages/config/
 COPY packages/realtime/package.json packages/realtime/
@@ -22,6 +23,9 @@ ENV BUILD_STANDALONE=1
 # headers() Next фиксируются на сборке — на VPS передать реальный origin CMS
 ARG FRAME_ANCESTORS="'self' http://localhost:3001"
 ENV FRAME_ANCESTORS=$FRAME_ANCESTORS
+# Адрес кабинета вшивается в клиентский бандл (кнопки Войти/Открыть счёт)
+ARG NEXT_PUBLIC_CABINET_URL="http://localhost:3002"
+ENV NEXT_PUBLIC_CABINET_URL=$NEXT_PUBLIC_CABINET_URL
 RUN pnpm --filter @broker/web build
 
 FROM node:22-alpine AS runner
