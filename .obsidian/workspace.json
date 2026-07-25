@@ -178,6 +178,13 @@
   },
   "active": "535f747013be9a71",
   "lastOpenFiles": [
+    "apps/cabinet/check-trade.tmp.mjs",
+    "docker-compose.yml.tmp.47552.5054359296bd",
+    "packages/api-client/artifacts/theming-pack/tokens.v1.css",
+    "packages/api-client/artifacts/theming-pack/README.md",
+    "packages/api-client/artifacts/theming-pack/cms.brand.schema.json",
+    "packages/api-client/artifacts/theming-pack/brand.example.json",
+    "packages/api-client/artifacts/theming-pack",
     "packages/api-client/artifacts/sso-pack/token.example.txt",
     "packages/api-client/artifacts/sso-pack/jwks.example.json",
     "apps/cabinet/check-sso.tmp.mjs",
