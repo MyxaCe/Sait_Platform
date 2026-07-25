@@ -24,10 +24,11 @@ test.describe('Личный кабинет', () => {
     await page.getByLabel(/пароль/i).fill(password);
     await page.getByRole('button', { name: /открыть счёт/i }).click();
 
-    // Дашборд: демо-баланс и статус заявки
-    await expect(page.getByText(/здравствуйте, тест/i)).toBeVisible({ timeout: 15_000 });
-    await expect(page.getByText(/10\s*000/)).toBeVisible();
-    await expect(page.getByText(/заявка получена/i)).toBeVisible();
+    // Модульная главная (ADR-026): профиль (имя+UID), баланс, онбординг
+    await expect(page.getByText('Тест Кабинетов').first()).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByText(/UID\s*\d{6}/).first()).toBeVisible();
+    await expect(page.getByText(/10\s*000/).first()).toBeVisible();
+    await expect(page.getByText(/пройти верификацию/i)).toBeVisible();
 
     // Уведомление welcome — непрочитанное
     await page.goto(`${CABINET}/notifications`);
@@ -50,7 +51,7 @@ test.describe('Личный кабинет', () => {
     // Верный вход
     await page.getByLabel(/пароль/i).fill(password);
     await page.getByRole('button', { name: /войти/i }).click();
-    await expect(page.getByText(/здравствуйте, тест/i)).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByText('Тест Кабинетов').first()).toBeVisible({ timeout: 15_000 });
 
     // Повторная регистрация того же email — ошибка emailExists
     await page.getByRole('button', { name: /выйти/i }).first().click();

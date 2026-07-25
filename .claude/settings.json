@@ -97,7 +97,9 @@
       "PowerShell(Set-Location \"c:\\\\Users\\\\user\\\\Desktop\\\\Sait_Platform\\\\apps\\\\web\"; $env:MDS_E2E = '1'; pnpm exec playwright test e2e/mds-live.spec.ts --project=desktop-chromium --reporter=list 2>&1 | Select-Object -Last 4; Remove-Item Env:MDS_E2E)",
       "PowerShell(Get-ChildItem \"c:\\\\Users\\\\user\\\\Desktop\\\\Sait_Platform\\\\apps\\\\web\\\\test-results\" -Recurse -Filter \"error-context.md\" | Sort-Object LastWriteTime -Descending | Select-Object -First 1 | ForEach-Object { Get-Content $_.FullName -TotalCount 30 | Select-Object -Skip 8 })",
       "PowerShell(Get-ChildItem \"c:\\\\Users\\\\user\\\\Desktop\\\\Sait_Platform\\\\apps\\\\web\\\\test-results\" -Recurse -Filter \"error-context.md\" | Sort-Object LastWriteTime -Descending | Select-Object -First 1 | ForEach-Object { \\(Get-Content $_.FullName -TotalCount 40 | Select-Object -Skip 10\\) -join \"`n\" })",
-      "Bash(rm -f src/migrations/*)"
+      "Bash(rm -f src/migrations/*)",
+      "PowerShell(docker exec sait_platform-db-1 psql -U broker -d broker_site -c \"SELECT email, uid, vip_level FROM users ORDER BY created_at DESC LIMIT 3;\")",
+      "PowerShell(Set-Location \"c:\\\\Users\\\\user\\\\Desktop\\\\Sait_Platform\\\\apps\\\\web\"; $env:CABINET_URL = 'http://localhost:3002'; pnpm exec playwright test e2e/cabinet.spec.ts --project=desktop-chromium --reporter=list 2>&1 | Select-Object -Last 4; Remove-Item Env:CABINET_URL)"
     ],
     "additionalDirectories": [
       "c:\\Users\\user\\Desktop\\Broker_CMS",

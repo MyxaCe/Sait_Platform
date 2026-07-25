@@ -27,7 +27,7 @@ function siteSlug(): string {
   return process.env.SITE_SLUG ?? 'apex-ru';
 }
 
-async function cmsGet(resource: string, locale: string): Promise<unknown | null> {
+export async function cmsGet(resource: string, locale: string): Promise<unknown | null> {
   const base = cmsUrl();
   if (!base) return null;
   try {

@@ -11,9 +11,12 @@ import { SESSION_COOKIE, SESSION_TTL_DAYS } from './constants';
 
 export interface SessionUser {
   id: string;
+  /** Публичный номер пользователя (показывается в ЛК, ADR-026) */
+  uid: number;
   email: string;
   fullName: string;
   locale: 'ru' | 'en';
+  vipLevel: number;
   createdAt: Date;
 }
 
@@ -52,7 +55,7 @@ export async function getSessionUser(): Promise<SessionUser | null> {
   const token = cookies().get(SESSION_COOKIE)?.value;
   if (!token) return null;
   const result = await getPool().query(
-    `SELECT u.id, u.email, u.full_name, u.locale, u.created_at
+    `SELECT u.id, u.uid, u.email, u.full_name, u.locale, u.vip_level, u.created_at
        FROM sessions s JOIN users u ON u.id = s.user_id
       WHERE s.token_hash = $1 AND s.expires_at > now()`,
     [hashToken(token)],
@@ -61,9 +64,11 @@ export async function getSessionUser(): Promise<SessionUser | null> {
   if (!row) return null;
   return {
     id: row.id,
+    uid: Number(row.uid ?? 0),
     email: row.email,
     fullName: row.full_name,
     locale: row.locale === 'en' ? 'en' : 'ru',
+    vipLevel: Number(row.vip_level ?? 0),
     createdAt: row.created_at,
   };
 }
