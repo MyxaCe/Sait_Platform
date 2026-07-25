@@ -76,7 +76,8 @@
       "PowerShell(Get-Content \"$env:LOCALAPPDATA\\\\Docker\\\\log\\\\host\\\\com.docker.backend.exe.log\" -Tail 40)",
       "PowerShell(node \"C:\\\\Users\\\\user\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-user-Desktop-Sait-Platform\\\\e81f2968-cd83-4135-b0ac-f74341102576\\\\scratchpad\\\\demo-media.mjs\")",
       "Read(//c/Users/user/Desktop/Broker_CMS/scripts/**)",
-      "PowerShell(node \"C:\\\\Users\\\\user\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-user-Desktop-Sait-Platform\\\\e81f2968-cd83-4135-b0ac-f74341102576\\\\scratchpad\\\\poke-brand.mjs\")"
+      "PowerShell(node \"C:\\\\Users\\\\user\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-user-Desktop-Sait-Platform\\\\e81f2968-cd83-4135-b0ac-f74341102576\\\\scratchpad\\\\poke-brand.mjs\")",
+      "PowerShell($r = Invoke-WebRequest -UseBasicParsing \"http://localhost:3000/\" -TimeoutSec 30; $r.Headers.GetEnumerator\\(\\) | Where-Object { $_.Key -match 'Frame|Security|Content-Security' } | ForEach-Object { \"$\\($_.Key\\): $\\($_.Value\\)\" })"
     ],
     "additionalDirectories": [
       "c:\\Users\\user\\Desktop\\Broker_CMS",

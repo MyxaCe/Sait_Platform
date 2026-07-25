@@ -10,6 +10,12 @@ const withSerwist = withSerwistInit({
   disable: process.env.NODE_ENV === 'development',
 });
 
+// Кому разрешено встраивать сайт в iframe: только админке CMS —
+// вкладка Preview в Payload рендерит сайт через iframe (замена X-Frame-Options:
+// DENY, который блокировал её). Значение фиксируется на СБОРКЕ (headers()
+// статичны): для Docker пробрасывается build-arg'ом FRAME_ANCESTORS.
+const frameAncestors = process.env.FRAME_ANCESTORS ?? "'self' http://localhost:3001";
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
@@ -25,7 +31,9 @@ const nextConfig = {
     {
       source: '/(.*)',
       headers: [
-        { key: 'X-Frame-Options', value: 'DENY' },
+        // frame-ancestors — современная замена X-Frame-Options: тот же анти-clickjacking,
+        // но с allowlist. При наличии CSP-директивы браузеры игнорируют XFO.
+        { key: 'Content-Security-Policy', value: `frame-ancestors ${frameAncestors}` },
         { key: 'X-Content-Type-Options', value: 'nosniff' },
         { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
       ],

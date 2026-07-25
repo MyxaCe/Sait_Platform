@@ -18,6 +18,10 @@ RUN pnpm install --frozen-lockfile
 FROM deps AS build
 COPY . .
 ENV BUILD_STANDALONE=1
+# Кто может встраивать сайт в iframe (Preview-вкладка админки CMS);
+# headers() Next фиксируются на сборке — на VPS передать реальный origin CMS
+ARG FRAME_ANCESTORS="'self' http://localhost:3001"
+ENV FRAME_ANCESTORS=$FRAME_ANCESTORS
 RUN pnpm --filter @broker/web build
 
 FROM node:22-alpine AS runner
