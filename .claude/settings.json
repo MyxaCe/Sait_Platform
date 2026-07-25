@@ -62,10 +62,34 @@
       "PowerShell(node \"C:\\\\Users\\\\user\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-user-Desktop-Sait-Platform\\\\e81f2968-cd83-4135-b0ac-f74341102576\\\\scratchpad\\\\verify-cms-contract.mjs\")",
       "PowerShell(docker exec sait_platform-web-1 node -e \"fetch\\('http://host.docker.internal:3001/v1/health'\\).then\\(r=>r.text\\(\\)\\).then\\(t=>console.log\\('CMS from container:',t\\)\\).catch\\(e=>{console.error\\('FAIL',e.message\\);process.exit\\(1\\)}\\)\")",
       "PowerShell(node \"C:\\\\Users\\\\user\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-user-Desktop-Sait-Platform\\\\e81f2968-cd83-4135-b0ac-f74341102576\\\\scratchpad\\\\demo-cms-loop.mjs\")",
-      "PowerShell(gh auth status 2>&1)"
+      "PowerShell(gh auth status 2>&1)",
+      "PowerShell(try { $r = Invoke-WebRequest -UseBasicParsing \"https://api.github.com/repos/MyhaC1/Broker_CMS\" -TimeoutSec 15; \\($r.Content | ConvertFrom-Json\\) | Select-Object full_name, private, permissions | Format-List } catch { \"HTTP $\\($_.Exception.Response.StatusCode.value__\\): репозиторий не виден анонимно \\(private\\)\" })",
+      "PowerShell($r = Invoke-WebRequest -UseBasicParsing \"https://api.github.com/repos/MyhaC1/Broker_CMS/commits?per_page=1\" -TimeoutSec 15; \\($r.Content | ConvertFrom-Json\\) | ForEach-Object { \"$\\($_.sha.Substring\\(0,7\\)\\)  $\\($_.commit.message.Split\\(\"`n\"\\)[0]\\)\" })",
+      "Read(//c/Users/user/Desktop/Broker_CMS/contract/fixtures/**)",
+      "PowerShell(try { $r = Invoke-WebRequest -UseBasicParsing \"http://localhost:3001/v1/cms/articles?locale=ru\" -Headers @{ 'X-API-Key' = 'dev-cms-api-key' } -TimeoutSec 20; $r.StatusCode; $r.Content.Substring\\(0, 200\\) } catch { \"HTTP $\\($_.Exception.Response.StatusCode.value__\\)\"; $reader = New-Object System.IO.StreamReader\\($_.Exception.Response.GetResponseStream\\(\\)\\); $reader.ReadToEnd\\(\\) })",
+      "PowerShell(foreach \\($p in @\\('/', '/instruments', '/accounts', '/education/faq', '/blog', '/status', '/en/instruments', '/en/blog', '/promotions', '/company/careers'\\)\\) { $r = Invoke-WebRequest -UseBasicParsing \"http://localhost:3000$p\" -TimeoutSec 30; \"$\\($r.StatusCode\\)  $p\" })",
+      "PowerShell(Get-ChildItem \"c:\\\\Users\\\\user\\\\Desktop\\\\Sait_Platform\\\\apps\\\\web\\\\app\\\\[locale]\" -Recurse -Directory | Select-Object -ExpandProperty FullName | ForEach-Object { $_.Replace\\('c:\\\\Users\\\\user\\\\Desktop\\\\Sait_Platform\\\\apps\\\\web\\\\app\\\\[locale]\\\\', ''\\) } | Sort-Object)",
+      "PowerShell(node \"C:\\\\Users\\\\user\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-user-Desktop-Sait-Platform\\\\e81f2968-cd83-4135-b0ac-f74341102576\\\\scratchpad\\\\demo-preview.mjs\")",
+      "PowerShell($r = Invoke-WebRequest -UseBasicParsing \"https://api.github.com/repos/MyhaC1/Broker_CMS/actions/runs?per_page=3\" -TimeoutSec 15; \\($r.Content | ConvertFrom-Json\\).workflow_runs | ForEach-Object { \"$\\($_.id\\)  $\\($_.status\\)  $\\($_.conclusion\\)  $\\($_.head_sha.Substring\\(0,7\\)\\)  $\\($_.name\\)\" })",
+      "PowerShell(Set-Location \"c:\\\\Users\\\\user\\\\Desktop\\\\Broker_CMS\"; pnpm start 2>&1 | ForEach-Object { $_ })",
+      "Bash(docker info *)",
+      "PowerShell(Get-Content \"$env:LOCALAPPDATA\\\\Docker\\\\log\\\\host\\\\com.docker.backend.exe.log\" -Tail 40)",
+      "PowerShell(node \"C:\\\\Users\\\\user\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-user-Desktop-Sait-Platform\\\\e81f2968-cd83-4135-b0ac-f74341102576\\\\scratchpad\\\\demo-media.mjs\")",
+      "Read(//c/Users/user/Desktop/Broker_CMS/scripts/**)",
+      "PowerShell(node \"C:\\\\Users\\\\user\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-user-Desktop-Sait-Platform\\\\e81f2968-cd83-4135-b0ac-f74341102576\\\\scratchpad\\\\poke-brand.mjs\")"
     ],
     "additionalDirectories": [
-      "c:\\Users\\user\\Desktop\\Broker_CMS"
+      "c:\\Users\\user\\Desktop\\Broker_CMS",
+      "c:\\Users\\user\\Desktop\\Broker_CMS\\src\\globals",
+      "c:\\Users\\user\\Desktop\\Broker_CMS\\src\\collections",
+      "c:\\Users\\user\\Desktop\\Broker_CMS\\src\\lib\\contract",
+      "c:\\Users\\user\\Desktop\\Broker_CMS\\src\\app\\v1\\cms\\[...path]",
+      "c:\\Users\\user\\Desktop\\Broker_CMS\\src",
+      "c:\\Users\\user\\Desktop\\Broker_CMS\\src\\app\\v1\\cms\\[resource]",
+      "c:\\Users\\user\\Desktop\\Broker_CMS\\src\\seed",
+      "c:\\Users\\user\\Desktop\\Broker_CMS\\src\\lib",
+      "c:\\Users\\user\\Desktop\\Broker_CMS\\scripts",
+      "c:\\Users\\user\\Desktop\\Broker_CMS\\.github\\workflows"
     ]
   }
 }

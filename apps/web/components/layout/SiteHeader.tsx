@@ -10,10 +10,12 @@ import { ThemeToggle } from './ThemeToggle';
 export interface SiteHeaderProps {
   /** Название бренда и навигация приходят из CMS (тег cms:brand / cms:navigation) */
   brandName: string;
+  /** Логотип из CMS; null — фолбэк на букву в квадрате */
+  logo?: { url: string; width: number; height: number; alt: string } | null;
   nav: { label: string; href: string }[];
 }
 
-export function SiteHeader({ brandName, nav }: SiteHeaderProps) {
+export function SiteHeader({ brandName, logo, nav }: SiteHeaderProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const pathname = usePathname();
   const t = useTranslations('nav');
@@ -34,9 +36,23 @@ export function SiteHeader({ brandName, nav }: SiteHeaderProps) {
     <header className="sticky top-0 z-50 border-b border-border bg-base/80 backdrop-blur-xl">
       <Container className="flex h-16 items-center justify-between gap-4 lg:h-[72px]">
         <Link href="/" className="flex items-center gap-2 text-lg font-semibold text-primary">
-          <span className="grid size-8 place-items-center rounded-lg bg-accent font-bold text-base">
-            {brandName.charAt(0)}
-          </span>
+          {logo ? (
+            // Обычный <img>: файл отдаёт CMS с другого origin — next/image
+            // потребовал бы remotePatterns и проксирование через сервер сайта.
+            // width/height из контракта обязательны — защита от CLS (R-05).
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={logo.url}
+              width={logo.width}
+              height={logo.height}
+              alt={logo.alt || brandName}
+              className="h-8 w-auto"
+            />
+          ) : (
+            <span className="grid size-8 place-items-center rounded-lg bg-accent font-bold text-base">
+              {brandName.charAt(0)}
+            </span>
+          )}
           {brandName}
         </Link>
 

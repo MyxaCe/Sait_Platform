@@ -44,7 +44,25 @@ export async function generateMetadata({
     draft = false;
   }
 
+  // Favicon из CMS (White Label): если загружен — переопределяет статический
+  const brand = await getCms('brand', {
+    locale: params.locale === 'en' ? 'en' : 'ru',
+  });
+
   return {
+    ...(brand.favicon
+      ? {
+          icons: {
+            icon: [
+              {
+                url: brand.favicon.url,
+                sizes: `${brand.favicon.width}x${brand.favicon.height}`,
+                type: brand.favicon.mimeType,
+              },
+            ],
+          },
+        }
+      : {}),
     metadataBase: new URL(SITE_URL),
     title: {
       default: t('title'),
