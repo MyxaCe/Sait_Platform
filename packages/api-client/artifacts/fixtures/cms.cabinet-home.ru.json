@@ -1,0 +1,29 @@
+{
+  "modules": [
+    { "type": "profile", "enabled": true },
+    {
+      "type": "onboarding",
+      "enabled": true,
+      "steps": { "verification": true, "deposit": true, "firstTrade": true }
+    },
+    {
+      "type": "balance",
+      "enabled": true,
+      "buttons": { "deposit": true, "withdraw": true, "buyFiat": true }
+    },
+    {
+      "type": "markets",
+      "enabled": true,
+      "tabs": {
+        "assets": true,
+        "popular": true,
+        "newListing": true,
+        "favorites": false,
+        "gainers": true,
+        "volume": true
+      },
+      "newListingSymbols": ["SOLUSD", "XRPUSD", "BNBUSD"]
+    },
+    { "type": "promotions", "enabled": true }
+  ]
+}
