@@ -32,6 +32,7 @@ export default async function MarketingLayout({ children, params }: LayoutProps)
         columns={navigation.footer.columns}
         riskWarning={navigation.footer.riskWarning}
         brandName={brand.name}
+        socials={brand.socials}
       />
     </div>
   );

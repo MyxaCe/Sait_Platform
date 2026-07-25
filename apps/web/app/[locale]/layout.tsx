@@ -4,6 +4,7 @@ import { draftMode } from 'next/headers';
 import { notFound } from 'next/navigation';
 import { hasLocale, NextIntlClientProvider } from 'next-intl';
 import { getMessages, getTranslations, setRequestLocale } from 'next-intl/server';
+import { ContentAutoRefresh } from '@/components/ContentAutoRefresh';
 import { PreviewBanner } from '@/components/PreviewBanner';
 import { OrganizationJsonLd } from '@/components/seo/OrganizationJsonLd';
 import { routing } from '@/i18n/routing';
@@ -100,6 +101,15 @@ export default async function RootLayout({ children, params }: LayoutProps) {
   const brand = await getCms('brand', { locale: locale as 'ru' | 'en' });
   const accentChannels = hexToRgbChannels(brand.primaryColor);
 
+  // В preview страница динамическая, rendered-at меняется на каждый запрос —
+  // автообновление там не имеет смысла (тот же try/catch, что в generateMetadata)
+  let isDraft = false;
+  try {
+    isDraft = draftMode().isEnabled;
+  } catch {
+    isDraft = false;
+  }
+
   return (
     // suppressHydrationWarning: next-themes меняет data-theme до гидрации
     <html lang={locale} suppressHydrationWarning className={inter.variable}>
@@ -111,6 +121,7 @@ export default async function RootLayout({ children, params }: LayoutProps) {
         <NextIntlClientProvider messages={messages}>
           <Providers>{children}</Providers>
         </NextIntlClientProvider>
+        <ContentAutoRefresh disabled={isDraft} />
         <PreviewBanner locale={locale} />
       </body>
     </html>
