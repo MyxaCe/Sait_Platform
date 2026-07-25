@@ -16,6 +16,7 @@
   },
   "nav": {
     "dashboard": "Overview",
+    "trade": "Trade",
     "profile": "Profile",
     "security": "Security",
     "documents": "Documents",
@@ -111,6 +112,11 @@
       "welcome": "Welcome! Your {accountType} account application has been received; a $10,000 demo account is already open.",
       "documentUploaded": "Document “{filename}” has been uploaded and sent for review."
     }
+  },
+  "trade": {
+    "title": "Trade",
+    "comingSoon": "Terminal is on its way",
+    "comingSoonHint": "The trading terminal will appear here once the integration is complete — your demo account is ready."
   },
   "validation": {
     "required": "This field is required",

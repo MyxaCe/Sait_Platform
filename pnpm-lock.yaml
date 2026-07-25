@@ -35,6 +35,9 @@ importers:
       bcryptjs:
         specifier: ^2.4.3
         version: 2.4.3
+      jose:
+        specifier: ^6.2.4
+        version: 6.2.4
       next:
         specifier: ^14.2.5
         version: 14.2.35(@playwright/test@1.61.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -2512,6 +2515,9 @@ packages:
   jiti@1.21.7:
     resolution: {integrity: sha512-/imKNG4EbWNrVjoNC/1H5/9GFy+tqjGBHCaSsN+P2RnPqjsLmv6UD3Ej+Kj8nBWaRAwyk7kK5ZUc+OEatnTR3A==}
     hasBin: true
+
+  jose@6.2.4:
+    resolution: {integrity: sha512-N8acGzVsQy6M/fjFcxtysNc4Q379TcM5dM/qKkNtsHFji88yANnXTr7BLeP75iPnFwBfQzM/jg2BZ9+HZrHCZA==}
 
   js-tokens@4.0.0:
     resolution: {integrity: sha512-RdJUflcE3cUzKiMqQgsCu06FPu9UdIJO0beYbPhHN4k6apgJtifcoCtT9bcxOpYBtpD2kCM6Sbzg4CausW/PKQ==}
@@ -5846,6 +5852,8 @@ snapshots:
       '@pkgjs/parseargs': 0.11.0
 
   jiti@1.21.7: {}
+
+  jose@6.2.4: {}
 
   js-tokens@4.0.0: {}
 

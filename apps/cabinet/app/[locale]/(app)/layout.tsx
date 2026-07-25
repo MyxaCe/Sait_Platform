@@ -27,6 +27,7 @@ export default async function AppLayout({ children, params }: LayoutProps) {
 
   const nav = [
     { href: '/', label: tNav('dashboard') },
+    { href: '/trade', label: tNav('trade') },
     { href: '/profile', label: tNav('profile') },
     { href: '/security', label: tNav('security') },
     { href: '/documents', label: tNav('documents') },
