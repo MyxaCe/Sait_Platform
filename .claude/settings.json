@@ -96,7 +96,8 @@
       "PowerShell(Get-ChildItem \"c:\\\\Users\\\\user\\\\Desktop\\\\Sait_Platform\\\\apps\\\\web\\\\test-results\" -Recurse -Filter \"error-context.md\" | Sort-Object LastWriteTime -Descending | Select-Object -First 1 | ForEach-Object { Get-Content $_.FullName -TotalCount 28 })",
       "PowerShell(Set-Location \"c:\\\\Users\\\\user\\\\Desktop\\\\Sait_Platform\\\\apps\\\\web\"; $env:MDS_E2E = '1'; pnpm exec playwright test e2e/mds-live.spec.ts --project=desktop-chromium --reporter=list 2>&1 | Select-Object -Last 4; Remove-Item Env:MDS_E2E)",
       "PowerShell(Get-ChildItem \"c:\\\\Users\\\\user\\\\Desktop\\\\Sait_Platform\\\\apps\\\\web\\\\test-results\" -Recurse -Filter \"error-context.md\" | Sort-Object LastWriteTime -Descending | Select-Object -First 1 | ForEach-Object { Get-Content $_.FullName -TotalCount 30 | Select-Object -Skip 8 })",
-      "PowerShell(Get-ChildItem \"c:\\\\Users\\\\user\\\\Desktop\\\\Sait_Platform\\\\apps\\\\web\\\\test-results\" -Recurse -Filter \"error-context.md\" | Sort-Object LastWriteTime -Descending | Select-Object -First 1 | ForEach-Object { \\(Get-Content $_.FullName -TotalCount 40 | Select-Object -Skip 10\\) -join \"`n\" })"
+      "PowerShell(Get-ChildItem \"c:\\\\Users\\\\user\\\\Desktop\\\\Sait_Platform\\\\apps\\\\web\\\\test-results\" -Recurse -Filter \"error-context.md\" | Sort-Object LastWriteTime -Descending | Select-Object -First 1 | ForEach-Object { \\(Get-Content $_.FullName -TotalCount 40 | Select-Object -Skip 10\\) -join \"`n\" })",
+      "Bash(rm -f src/migrations/*)"
     ],
     "additionalDirectories": [
       "c:\\Users\\user\\Desktop\\Broker_CMS",
@@ -110,7 +111,8 @@
       "c:\\Users\\user\\Desktop\\Broker_CMS\\src\\lib",
       "c:\\Users\\user\\Desktop\\Broker_CMS\\scripts",
       "c:\\Users\\user\\Desktop\\Broker_CMS\\.github\\workflows",
-      "c:\\Users\\user\\Desktop\\Broker_MDS"
+      "c:\\Users\\user\\Desktop\\Broker_MDS",
+      "c:\\Users\\user\\Desktop\\Broker_CMS\\src\\collections\\content"
     ]
   }
 }

@@ -40,12 +40,14 @@ export async function getCms<K extends Resource>(
   }
 
   if (process.env.CMS_API_URL) {
+    // Мульти-тенантная CMS: сайт явно называет себя (без site CMS взяла бы дефолт)
+    const siteParams = { site: process.env.SITE_SLUG ?? 'apex-ru', ...params };
     return cmsFetch(`/cms/${resource}`, {
       schema,
       locale,
       tags: [tag],
       revalidate: draft ? 0 : revalidate,
-      searchParams: draft ? { ...params, draft: 'true' } : params,
+      searchParams: draft ? { ...siteParams, draft: 'true' } : siteParams,
       fallback: schema.parse(buildLocal()),
     }) as Promise<z.infer<(typeof CMS_RESPONSE_SCHEMAS)[K]>>;
   }

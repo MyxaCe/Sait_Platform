@@ -38,6 +38,8 @@ services:
       # Если CMS не запущена — getCms уходит в фолбэк-фикстуры (штатный режим, R-06).
       CMS_API_URL: http://host.docker.internal:3001/v1
       CMS_API_KEY: dev-cms-api-key
+      # Мульти-тенантная CMS: этот сайт = тенант apex-ru
+      SITE_SLUG: apex-ru
     ports:
       - '3000:3000'
     depends_on:
