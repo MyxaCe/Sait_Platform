@@ -58,7 +58,7 @@ export function TerminalFrame({ terminalUrl, site, title }: TerminalFrameProps) 
       src={src}
       title={title}
       onLoad={() => void sendToken()}
-      className="h-[calc(100svh-8rem)] w-full rounded-2xl border border-border bg-elevated"
+      className="block h-[calc(100svh-7rem)] w-full border-0 bg-elevated lg:h-svh"
       allow="clipboard-write"
     />
   );
