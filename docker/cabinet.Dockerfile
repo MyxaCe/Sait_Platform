@@ -22,6 +22,9 @@ ENV BUILD_STANDALONE=1
 # Адрес MDS для браузера (живые котировки модуля «Рынки»); пусто — мок
 ARG NEXT_PUBLIC_WS_URL=""
 ENV NEXT_PUBLIC_WS_URL=$NEXT_PUBLIC_WS_URL
+# GlitchTip клиентский DSN (site-web /1) — вшивается в браузерный бандл
+ARG NEXT_PUBLIC_SENTRY_DSN=""
+ENV NEXT_PUBLIC_SENTRY_DSN=$NEXT_PUBLIC_SENTRY_DSN
 RUN pnpm --filter @broker/cabinet build
 
 FROM node:22-alpine AS runner

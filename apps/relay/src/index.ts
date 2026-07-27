@@ -1,7 +1,20 @@
+import * as Sentry from '@sentry/node';
 import { Pool } from 'pg';
-import { eventEnvelopeSchema } from '@broker/api-client';
+import { eventEnvelopeSchema, scrubSentryEvent } from '@broker/api-client';
 import { nextDelayMs } from './backoff';
 import { createPublisher } from './publisher';
+
+// GlitchTip (site-bff /2): ошибки воркера. Без DSN — выключен. Скраббинг до отправки.
+if (process.env.SENTRY_DSN) {
+  Sentry.init({
+    dsn: process.env.SENTRY_DSN,
+    environment: process.env.SENTRY_ENV ?? 'test',
+    tracesSampleRate: 0,
+    sendDefaultPii: false,
+    beforeSend: (event) =>
+      scrubSentryEvent(event as unknown as Record<string, unknown>) as unknown as typeof event,
+  });
+}
 
 /**
  * Релей outbox → шина платформы (ADR-018).
@@ -57,6 +70,7 @@ async function processBatch(): Promise<number> {
         console.error(
           `[relay] publish failed event_id=${row.event_id} attempt=${attempts} retry_in=${delay}ms: ${message}`,
         );
+        Sentry.captureException(error, { tags: { component: 'relay', routing_key: row.routing_key } });
         await client.query(
           `UPDATE outbox
               SET attempts = $2,

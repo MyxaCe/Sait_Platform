@@ -1,9 +1,23 @@
 import 'dotenv/config';
 
 import { randomUUID } from 'node:crypto';
+import * as Sentry from '@sentry/node';
 import { Pool } from 'pg';
+import { scrubSentryEvent } from '@broker/api-client';
 import { applyTerminalEvent, parseMessage } from './projection.js';
 import { createSubscriber } from './subscriber.js';
+
+// GlitchTip (site-bff /2): ошибки консюмера. Без DSN — выключен. Скраббинг до отправки.
+if (process.env.SENTRY_DSN) {
+  Sentry.init({
+    dsn: process.env.SENTRY_DSN,
+    environment: process.env.SENTRY_ENV ?? 'test',
+    tracesSampleRate: 0,
+    sendDefaultPii: false,
+    beforeSend: (event) =>
+      scrubSentryEvent(event as unknown as Record<string, unknown>) as unknown as typeof event,
+  });
+}
 
 /**
  * Консюмер событий терминала (ADR-023 Т3): шина platform.events →
@@ -35,6 +49,7 @@ async function handle(raw: unknown): Promise<void> {
     if (outcome === 'applied') console.info(`[consumer] ${event.name} ${eventId} applied`);
   } catch (error) {
     await client.query('ROLLBACK').catch(() => {});
+    Sentry.captureException(error, { tags: { component: 'consumer', event: event.name } });
     throw error; // подписчик отправит в DLX; дедуп защитит при повторе
   } finally {
     client.release();
