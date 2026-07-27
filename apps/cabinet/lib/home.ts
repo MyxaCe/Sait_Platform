@@ -5,6 +5,7 @@ import {
 } from '@broker/api-client';
 import { cmsGet } from './chrome';
 import { getPool } from './db';
+import { getTenantConfig } from './tenant';
 
 /**
  * Данные модульной главной ЛК (ADR-026).
@@ -58,27 +59,11 @@ export interface MarketInstrument {
 }
 
 /**
- * Доступ сайта к инструментам (allow-list с карточки сайта в CMS,
- * конфиг тенанта /v1/cms/sites/{slug}). null — CMS недоступна:
- * деградируем «открыто» (полный каталог MDS, прежнее поведение) —
- * кабинет обязан жить без соседей.
+ * Доступ сайта к инструментам — из общего конфига тенанта (lib/tenant.ts).
+ * null — CMS недоступна: деградируем «открыто» (полный каталог MDS).
  */
 async function getSiteAllowList(): Promise<Set<string> | null> {
-  const base = process.env.CMS_API_URL?.replace(/\/$/, '');
-  if (!base) return null;
-  const slug = process.env.SITE_SLUG ?? 'apex-ru';
-  try {
-    const res = await fetch(`${base}/cms/sites/${slug}`, {
-      headers: process.env.CMS_API_KEY ? { 'X-API-Key': process.env.CMS_API_KEY } : {},
-      next: { revalidate: 300 },
-      signal: AbortSignal.timeout(3_000),
-    });
-    if (!res.ok) return null;
-    const data = (await res.json()) as { instruments?: unknown };
-    return Array.isArray(data.instruments) ? new Set(data.instruments.map(String)) : null;
-  } catch {
-    return null;
-  }
+  return (await getTenantConfig()).instruments;
 }
 
 export async function getMarketInstruments(): Promise<MarketInstrument[]> {

@@ -1,6 +1,7 @@
 import { getFormatter, getTranslations } from 'next-intl/server';
 import { Button } from '@broker/ui';
 import type { CabinetHomeModule } from '@broker/api-client';
+import { resetDemoAccountAction } from '@/lib/actions';
 import type { DemoAccount } from '@/lib/data';
 
 type BalanceConfig = Extract<CabinetHomeModule, { type: 'balance' }>;
@@ -47,6 +48,15 @@ export async function BalanceModule({
           ))}
           <span className="text-xs text-secondary/80">{t('fiatSoon')}</span>
         </div>
+      )}
+      {/* Сброс демо-счёта к стартовому балансу — работает без платёжки
+          (server action, прогрессивное улучшение без JS) */}
+      {demo && (
+        <form action={resetDemoAccountAction} className="mt-3">
+          <Button type="submit" size="sm" variant="ghost">
+            {t('btnResetDemo')}
+          </Button>
+        </form>
       )}
     </section>
   );

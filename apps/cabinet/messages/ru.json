@@ -72,6 +72,7 @@
     "btnWithdraw": "Вывод",
     "btnBuyFiat": "Купить за фиат",
     "fiatSoon": "Фиатные операции — скоро",
+    "btnResetDemo": "Сбросить демо-счёт",
     "marketsTitle": "Рынки",
     "tabAssets": "Активы",
     "tabPopular": "Популярное",
@@ -141,7 +142,9 @@
     "markRead": "Прочитано",
     "types": {
       "welcome": "Добро пожаловать! Заявка на счёт {accountType} принята, демо-счёт с $10 000 уже открыт.",
-      "documentUploaded": "Документ «{filename}» загружен и передан на проверку."
+      "documentUploaded": "Документ «{filename}» загружен и передан на проверку.",
+      "demoReset": "Демо-счёт сброшен к стартовому балансу.",
+      "tradeExecuted": "Сделка исполнена: {side} {volume} {symbol}."
     }
   },
   "trade": {

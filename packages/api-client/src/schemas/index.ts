@@ -19,6 +19,12 @@ import {
 import { cabinetHomeResponseSchema } from './cabinet';
 import { eventEnvelopeSchema, leadSubmittedDataSchema } from './events';
 import {
+  incomingEnvelopeSchema,
+  terminalAccountOpenedSchema,
+  terminalBalanceChangedSchema,
+  terminalTradeExecutedSchema,
+} from './terminal-events';
+import {
   accountOpeningLeadResponseSchema,
   accountOpeningLeadSchema,
   contactLeadResponseSchema,
@@ -30,6 +36,7 @@ export * from './common';
 export * from './cms';
 export * from './cabinet';
 export * from './events';
+export * from './terminal-events';
 export * from './leads';
 
 /**
@@ -58,7 +65,11 @@ export const CMS_RESPONSE_SCHEMAS = {
 
 export const EVENT_SCHEMAS = {
   'envelope.v1': eventEnvelopeSchema,
+  'incoming-envelope.v1': incomingEnvelopeSchema,
   'lead.submitted.v1': leadSubmittedDataSchema,
+  'terminal.account.opened.v1': terminalAccountOpenedSchema,
+  'terminal.balance.changed.v1': terminalBalanceChangedSchema,
+  'terminal.trade.executed.v1': terminalTradeExecutedSchema,
 } satisfies Record<string, z.ZodTypeAny>;
 
 export const LEAD_SCHEMAS = {

@@ -5,6 +5,7 @@ import {
   type LeadSubmittedData,
 } from '@broker/api-client';
 import { getPool } from '../db';
+import { getTenantStartBalanceCents } from '../tenant';
 import { hashPassword } from './password';
 
 /**
@@ -35,6 +36,9 @@ export async function registerUser(input: RegisterInput): Promise<RegisterResult
   const leadId = randomUUID();
   const occurredAt = new Date().toISOString();
   const passwordHash = await hashPassword(input.password);
+  // Стартовый демо-баланс — из конфига тенанта CMS (единый источник с
+  // терминалом); CMS недоступна → дефолт $10 000. Сеть ДО транзакции.
+  const startBalanceCents = await getTenantStartBalanceCents();
 
   const leadData: LeadSubmittedData = {
     kind: 'account-opening',
@@ -66,7 +70,10 @@ export async function registerUser(input: RegisterInput): Promise<RegisterResult
       `INSERT INTO outbox (event_id, routing_key, payload, occurred_at) VALUES ($1, $2, $3, $4)`,
       [envelope.event_id, LEAD_SUBMITTED_ROUTING_KEY, JSON.stringify(envelope), occurredAt],
     );
-    await client.query(`INSERT INTO demo_accounts (user_id) VALUES ($1)`, [userId]);
+    await client.query(`INSERT INTO demo_accounts (user_id, balance_cents) VALUES ($1, $2)`, [
+      userId,
+      startBalanceCents,
+    ]);
     await client.query(
       `INSERT INTO notifications (id, user_id, type, params) VALUES ($1, $2, $3, $4)`,
       [randomUUID(), userId, 'welcome', JSON.stringify({ accountType: input.accountType })],

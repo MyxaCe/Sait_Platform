@@ -2,11 +2,11 @@ import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { redirect } from 'next/navigation';
 import { SiteFooter } from '@broker/ui';
 import { CabinetHeader } from '@/features/shell/CabinetHeader';
+import { LogoutForm } from '@/features/shell/LogoutForm';
 import { NavLink } from '@/features/shell/NavLink';
 import { getSessionUser } from '@/lib/auth/session';
 import { getChromeBrand, getChromeFooter, siteHref } from '@/lib/chrome';
 import { countUnread } from '@/lib/data';
-import { logoutAction } from '@/lib/actions';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -59,12 +59,7 @@ export default async function AppLayout({ children, params }: LayoutProps) {
           )}
           {tCommon('cabinet')}
         </span>
-        <form action={logoutAction}>
-          <input type="hidden" name="uiLocale" value={params.locale} />
-          <button type="submit" className="text-sm text-secondary">
-            {tCommon('logout')}
-          </button>
-        </form>
+        <LogoutForm locale={params.locale} label={tCommon('logout')} className="text-sm text-secondary" />
       </header>
 
       <div className="flex min-h-0 flex-1">

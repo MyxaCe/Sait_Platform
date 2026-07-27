@@ -1,6 +1,6 @@
 import { getTranslations } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
-import { logoutAction } from '@/lib/actions';
+import { LogoutForm } from '@/features/shell/LogoutForm';
 import type { SessionUser } from '@/lib/auth/session';
 import type { ChromeBrand } from '@/lib/chrome';
 
@@ -45,15 +45,11 @@ export async function CabinetHeader({
         <span className="grid size-9 shrink-0 place-items-center rounded-full bg-accent/20 text-sm font-semibold text-accent">
           {user.fullName.charAt(0).toUpperCase()}
         </span>
-        <form action={logoutAction}>
-          <input type="hidden" name="uiLocale" value={locale} />
-          <button
-            type="submit"
-            className="rounded-lg px-3 py-2 text-sm text-secondary transition-colors hover:bg-primary/5 hover:text-negative"
-          >
-            {t('logout')}
-          </button>
-        </form>
+        <LogoutForm
+          locale={locale}
+          label={t('logout')}
+          className="rounded-lg px-3 py-2 text-sm text-secondary transition-colors hover:bg-primary/5 hover:text-negative"
+        />
       </div>
     </header>
   );

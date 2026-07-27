@@ -19,6 +19,27 @@ export async function getDemoAccount(userId: string): Promise<DemoAccount | null
     : null;
 }
 
+export interface OpenPosition {
+  symbol: string;
+  side: 'buy' | 'sell';
+  volume: number;
+  entryPrice: number;
+}
+
+/** Открытые позиции демо-счёта — проекция событий терминала (Т3). Пусто до подключения шины. */
+export async function getOpenPositions(userId: string): Promise<OpenPosition[]> {
+  const r = await getPool().query(
+    `SELECT symbol, side, volume, entry_price FROM demo_positions WHERE user_id = $1 ORDER BY symbol`,
+    [userId],
+  );
+  return r.rows.map((row) => ({
+    symbol: row.symbol,
+    side: row.side,
+    volume: Number(row.volume),
+    entryPrice: Number(row.entry_price),
+  }));
+}
+
 export interface ApplicationStatus {
   submittedAt: Date;
   /** Событие ушло в шину платформы (релей отметил published_at) */

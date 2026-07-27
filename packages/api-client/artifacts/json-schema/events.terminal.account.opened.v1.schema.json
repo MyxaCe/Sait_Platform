@@ -1,0 +1,35 @@
+{
+  "$ref": "#/definitions/events.terminal.account.opened.v1",
+  "definitions": {
+    "events.terminal.account.opened.v1": {
+      "type": "object",
+      "properties": {
+        "tenant": {
+          "type": "string",
+          "minLength": 1
+        },
+        "userId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "currency": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 3
+        },
+        "balanceCents": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "tenant",
+        "userId",
+        "currency",
+        "balanceCents"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}

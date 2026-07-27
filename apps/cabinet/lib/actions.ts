@@ -10,6 +10,7 @@ import { getPool } from './db';
 import { isRateLimited } from './rate-limit';
 import { hashPassword, verifyPassword } from './auth/password';
 import { registerUser } from './auth/register';
+import { getTenantStartBalanceCents } from './tenant';
 import {
   changePasswordSchema,
   loginSchema,
@@ -196,6 +197,32 @@ export async function uploadDocumentAction(_prev: ActionState, formData: FormDat
   );
   revalidatePath('/documents');
   return { ok: true };
+}
+
+/* ------------------------------------------------------------------ */
+/* Демо-счёт                                                           */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Сброс демо-счёта к стартовому балансу тенанта (из CMS). Пока баланс —
+ * единственное состояние проекции; с приходом позиций/сделок (консюмер Т3)
+ * сброс будет чистить и их. Чисто наша сторона, терминалу не отправляется.
+ */
+export async function resetDemoAccountAction(): Promise<void> {
+  const user = await getSessionUser();
+  if (!user) return;
+  if (isRateLimited(`demo-reset:${user.id}`, 5, 60_000)) return;
+
+  const startBalanceCents = await getTenantStartBalanceCents();
+  await getPool().query(
+    `UPDATE demo_accounts SET balance_cents = $1 WHERE user_id = $2`,
+    [startBalanceCents, user.id],
+  );
+  await getPool().query(
+    `INSERT INTO notifications (id, user_id, type, params) VALUES ($1, $2, 'demoReset', $3)`,
+    [randomUUID(), user.id, JSON.stringify({ balanceCents: startBalanceCents })],
+  );
+  revalidatePath('/', 'layout');
 }
 
 /* ------------------------------------------------------------------ */

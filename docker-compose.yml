@@ -94,6 +94,21 @@ services:
       db:
         condition: service_healthy
 
+  # Консюмер событий терминала → проекция demo_accounts/позиции/сделки (Т3).
+  # Без BUS_URL простаивает (NullSubscriber); подключение шины = env.
+  consumer:
+    profiles: [full]
+    build:
+      context: .
+      dockerfile: docker/consumer.Dockerfile
+    environment:
+      DATABASE_URL: postgres://broker:broker_dev_password@db:5432/broker_site
+      SITE_SLUG: apex-ru
+      # BUS_URL: amqp://...  ← кредлы platform.events (созвон §10 с CRM)
+    depends_on:
+      db:
+        condition: service_healthy
+
 volumes:
   db-data:
   cabinet-uploads:
