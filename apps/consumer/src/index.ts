@@ -1,3 +1,5 @@
+import 'dotenv/config';
+
 import { randomUUID } from 'node:crypto';
 import { Pool } from 'pg';
 import { applyTerminalEvent, parseMessage } from './projection.js';
