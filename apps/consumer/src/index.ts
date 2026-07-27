@@ -41,6 +41,12 @@ async function handle(raw: unknown): Promise<void> {
   }
 }
 
+// Keep-alive хэндл: с шиной loop держит открытый amqp-consumer, без шины
+// (NullSubscriber) — этот таймер, иначе Node завершает процесс и restart-policy
+// крутит сервис в цикле рестарта (pending-промис loop НЕ держит). Выход —
+// только по сигналу (обработчики ниже).
+const keepAlive = setInterval(() => {}, 1 << 30);
+
 async function main() {
   await subscriber.start(handle);
   console.info(`[consumer] started (tenant=${tenant})`);
@@ -49,6 +55,7 @@ async function main() {
 for (const signal of ['SIGINT', 'SIGTERM'] as const) {
   process.on(signal, () => {
     console.info(`[consumer] ${signal} received, shutting down...`);
+    clearInterval(keepAlive);
     void subscriber
       .close()
       .then(() => pool.end())

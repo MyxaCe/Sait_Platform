@@ -1,0 +1,173 @@
+# Единый deploy тестового контура «страновой группы» Sait_Platform на VPS.
+# Своя папка /opt/site-web, свои порты, свои БД. Шина и GlitchTip — чужие
+# (platform-bus / platform-glitchtip), их не трогаем.
+# Публичный хост браузера: ${VPS_HOST}. Порты: web 3000 · cabinet 3002 ·
+# cms 3001 · mds 3003 (шина 5672/15672 и GlitchTip 8000 — заняты платформой).
+services:
+  site-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: broker_site
+      POSTGRES_USER: broker
+      POSTGRES_PASSWORD: ${SITE_DB_PASSWORD}
+    volumes:
+      - site-db-data:/var/lib/postgresql/data
+      - ../Sait_Platform/db/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U broker -d broker_site']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  cms-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: broker_cms
+      POSTGRES_USER: cms
+      POSTGRES_PASSWORD: ${CMS_DB_PASSWORD}
+    volumes:
+      - cms-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U cms -d broker_cms']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  mds:
+    build:
+      context: ../Broker_MDS
+    environment:
+      TWELVEDATA_API_KEY: ${TWELVEDATA_API_KEY}
+      TWELVEDATA_CREDITS_PER_MIN: '8'
+      TWELVEDATA_CREDITS_PER_DAY: '800'
+    ports:
+      - '3003:3003'
+    restart: unless-stopped
+
+  cms-migrate:
+    build:
+      context: ../Broker_CMS
+      target: build
+    command: sh -c "pnpm payload migrate && (NODE_ENV=production DEFAULT_SITE=apex-ru pnpm seed || echo 'seed skipped')"
+    environment:
+      DATABASE_URL: postgres://cms:${CMS_DB_PASSWORD}@cms-db:5432/broker_cms
+      PAYLOAD_SECRET: ${PAYLOAD_SECRET}
+      CMS_API_KEY: ${CMS_API_KEY}
+      CMS_PUBLIC_URL: http://${VPS_HOST}:3001
+      SITE_URL: http://${VPS_HOST}:3000
+      SITE_PREVIEW_SECRET: ${PREVIEW_SECRET}
+      SEED_ADMIN_EMAIL: ${SEED_ADMIN_EMAIL}
+      SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD}
+      DEFAULT_SITE: apex-ru
+    depends_on:
+      cms-db:
+        condition: service_healthy
+
+  cms:
+    build:
+      context: ../Broker_CMS
+    environment:
+      DATABASE_URL: postgres://cms:${CMS_DB_PASSWORD}@cms-db:5432/broker_cms
+      PAYLOAD_SECRET: ${PAYLOAD_SECRET}
+      CMS_API_KEY: ${CMS_API_KEY}
+      MDS_HTTP_URL: http://mds:3003
+      SITE_WEBHOOK_URL: http://web:3000/api/revalidate
+      SITE_WEBHOOK_SECRET: ${CMS_WEBHOOK_SECRET}
+      CMS_PUBLIC_URL: http://${VPS_HOST}:3001
+      SITE_URL: http://${VPS_HOST}:3000
+      SITE_PREVIEW_SECRET: ${PREVIEW_SECRET}
+      DEFAULT_SITE: apex-ru
+    volumes:
+      - cms-media:/app/media
+    ports:
+      - '3001:3001'
+    restart: unless-stopped
+    depends_on:
+      cms-db:
+        condition: service_healthy
+      cms-migrate:
+        condition: service_completed_successfully
+
+  web:
+    build:
+      context: ../Sait_Platform
+      dockerfile: docker/web.Dockerfile
+      args:
+        NEXT_PUBLIC_WS_URL: http://${VPS_HOST}:3003
+        NEXT_PUBLIC_CABINET_URL: http://${VPS_HOST}:3002
+        FRAME_ANCESTORS: "'self' http://${VPS_HOST}:3001"
+    environment:
+      DATABASE_URL: postgres://broker:${SITE_DB_PASSWORD}@site-db:5432/broker_site
+      MDS_HTTP_URL: http://mds:3003
+      NEXT_PUBLIC_WS_URL: http://${VPS_HOST}:3003
+      NEXT_PUBLIC_SITE_URL: http://${VPS_HOST}:3000
+      CMS_API_URL: http://cms:3001/v1
+      CMS_API_KEY: ${CMS_API_KEY}
+      CMS_WEBHOOK_SECRET: ${CMS_WEBHOOK_SECRET}
+      PREVIEW_SECRET: ${PREVIEW_SECRET}
+      SITE_SLUG: apex-ru
+    ports:
+      - '3000:3000'
+    restart: unless-stopped
+    depends_on:
+      site-db:
+        condition: service_healthy
+
+  cabinet:
+    build:
+      context: ../Sait_Platform
+      dockerfile: docker/cabinet.Dockerfile
+      args:
+        NEXT_PUBLIC_WS_URL: http://${VPS_HOST}:3003
+    environment:
+      DATABASE_URL: postgres://broker:${SITE_DB_PASSWORD}@site-db:5432/broker_site
+      MDS_HTTP_URL: http://mds:3003
+      NEXT_PUBLIC_WS_URL: http://${VPS_HOST}:3003
+      NEXT_PUBLIC_SITE_URL: http://${VPS_HOST}:3000
+      UPLOAD_DIR: /app/uploads
+      CMS_API_URL: http://cms:3001/v1
+      CMS_API_KEY: ${CMS_API_KEY}
+      SITE_SLUG: apex-ru
+      SSO_PRIVATE_KEY_B64: ${SSO_PRIVATE_KEY_B64}
+    ports:
+      - '3002:3002'
+    volumes:
+      - cabinet-uploads:/app/uploads
+    restart: unless-stopped
+    depends_on:
+      site-db:
+        condition: service_healthy
+
+  relay:
+    build:
+      context: ../Sait_Platform
+      dockerfile: docker/relay.Dockerfile
+    environment:
+      DATABASE_URL: postgres://broker:${SITE_DB_PASSWORD}@site-db:5432/broker_site
+      BUS_URL: ${BUS_URL}
+      BUS_EXCHANGE: platform.events
+    restart: unless-stopped
+    depends_on:
+      site-db:
+        condition: service_healthy
+
+  # Консюмер событий терминала: без BUS_URL простаивает (NullSubscriber).
+  # Кредл site-web — publish-only, для консюмера нужен свой (403 на declare) —
+  # запрошен у CRM; до него консюмер деплоится idle.
+  consumer:
+    build:
+      context: ../Sait_Platform
+      dockerfile: docker/consumer.Dockerfile
+    environment:
+      DATABASE_URL: postgres://broker:${SITE_DB_PASSWORD}@site-db:5432/broker_site
+      SITE_SLUG: apex-ru
+    restart: unless-stopped
+    depends_on:
+      site-db:
+        condition: service_healthy
+
+volumes:
+  site-db-data:
+  cms-db-data:
+  cms-media:
+  cabinet-uploads:
