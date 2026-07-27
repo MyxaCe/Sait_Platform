@@ -29,6 +29,9 @@ ENV NEXT_PUBLIC_CABINET_URL=$NEXT_PUBLIC_CABINET_URL
 # Адрес MDS для браузера: задан → живые котировки (socket.io), пусто → мок
 ARG NEXT_PUBLIC_WS_URL=""
 ENV NEXT_PUBLIC_WS_URL=$NEXT_PUBLIC_WS_URL
+# GlitchTip клиентский DSN (site-web, проект /1) — вшивается в браузерный бандл
+ARG NEXT_PUBLIC_SENTRY_DSN=""
+ENV NEXT_PUBLIC_SENTRY_DSN=$NEXT_PUBLIC_SENTRY_DSN
 RUN pnpm --filter @broker/web build
 
 FROM node:22-alpine AS runner

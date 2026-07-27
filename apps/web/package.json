@@ -17,6 +17,7 @@
     "@broker/ui": "workspace:*",
     "@broker/utils": "workspace:*",
     "@hookform/resolvers": "^3.9.0",
+    "@sentry/nextjs": "^8.42.0",
     "@serwist/next": "^9.0.5",
     "@tanstack/react-query": "^5.51.1",
     "react-hook-form": "^7.52.1",

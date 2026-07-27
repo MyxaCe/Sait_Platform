@@ -1,3 +1,4 @@
+import { withSentryConfig } from '@sentry/nextjs';
 import withSerwistInit from '@serwist/next';
 import createNextIntlPlugin from 'next-intl/plugin';
 
@@ -19,6 +20,8 @@ const frameAncestors = process.env.FRAME_ANCESTORS ?? "'self' http://localhost:3
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  // instrumentation.ts (инициализация серверного Sentry) в Next 14.2 — за флагом
+  experimental: { instrumentationHook: true },
   // standalone — только для Docker-сборки (docker/web.Dockerfile);
   // локальный `next start` работает в обычном режиме
   output: process.env.BUILD_STANDALONE ? 'standalone' : undefined,
@@ -46,4 +49,13 @@ const nextConfig = {
   ],
 };
 
-export default withNextIntl(withSerwist(nextConfig));
+// Sentry/GlitchTip: оборачиваем последним. Без authToken source maps не
+// заливаются (GlitchTip их не принимает так же, как Sentry) — только рантайм.
+export default withSentryConfig(withNextIntl(withSerwist(nextConfig)), {
+  silent: true,
+  disableLogger: true,
+  sourcemaps: { disable: true },
+  // Отключаем телеметрию Sentry-плагина сборки
+  telemetry: false,
+});
+
