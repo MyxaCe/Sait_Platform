@@ -9,6 +9,7 @@ import { LiveQuotePanel } from '@/features/instruments/LiveQuotePanel';
 import { getCms } from '@/lib/cms';
 import { getMdsIcons } from '@/lib/mds';
 import { SITE_URL } from '@/lib/site';
+import { getTenantAllowList } from '@/lib/tenant';
 
 interface PageParams {
   params: { locale: string; category: string; symbol: string };
@@ -42,11 +43,16 @@ export default async function InstrumentPage({ params }: PageParams) {
   const def = findSymbol(params.symbol);
   if (!def || def.category !== params.category) notFound();
 
-  // Allow-list и торговые условия из CMS (тег cms:instruments):
-  // инструмент вне списка недоступен, даже если есть в realtime-справочнике
-  const { items } = await getCms('instruments', { locale });
+  // Контент из CMS + ДОСТУП сайта (allow-list карточки сайта, ADR-028):
+  // инструмент вне контента ИЛИ вне доступа недоступен,
+  // даже если есть в realtime-справочнике
+  const [{ items }, allowList] = await Promise.all([
+    getCms('instruments', { locale }),
+    getTenantAllowList(),
+  ]);
   const meta = items.find((i) => i.symbol === def.symbol);
   if (!meta) notFound();
+  if (allowList && !allowList.has(def.symbol)) notFound();
 
   // Иконка: загруженная в CMS приоритетнее, иначе — монета из MDS
   const iconUrl = meta.icon?.url ?? (await getMdsIcons())[def.symbol];

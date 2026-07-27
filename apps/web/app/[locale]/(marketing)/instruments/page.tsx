@@ -5,6 +5,7 @@ import { Container, Section } from '@broker/ui';
 import { InstrumentsBrowser } from '@/features/instruments/InstrumentsBrowser';
 import { getCms } from '@/lib/cms';
 import { getMdsIcons } from '@/lib/mds';
+import { getTenantAllowList } from '@/lib/tenant';
 
 interface PageProps {
   params: { locale: string };
@@ -17,10 +18,12 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function InstrumentsPage({ params }: PageProps) {
   setRequestLocale(params.locale);
-  // Allow-list из CMS (тег cms:instruments): показываем только разрешённые
-  const { items } = await getCms('instruments', {
-    locale: params.locale === 'en' ? 'en' : 'ru',
-  });
+  // Контент страницы ∩ ДОСТУП сайта (allow-list карточки сайта, ADR-028)
+  const [{ items: pageItems }, allowList] = await Promise.all([
+    getCms('instruments', { locale: params.locale === 'en' ? 'en' : 'ru' }),
+    getTenantAllowList(),
+  ]);
+  const items = pageItems.filter((i) => !allowList || allowList.has(i.symbol));
 
   // Иконки: загруженная в CMS приоритетнее, иначе — иконка монеты из MDS
   const mdsIcons = await getMdsIcons();

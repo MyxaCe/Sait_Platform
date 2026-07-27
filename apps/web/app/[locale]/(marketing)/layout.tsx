@@ -4,6 +4,7 @@ import { SiteHeader } from '@/components/layout/SiteHeader';
 import { QuotesTicker } from '@/features/quotes/QuotesTicker';
 import { getCms } from '@/lib/cms';
 import { getMdsSymbols } from '@/lib/mds';
+import { getTenantAllowList } from '@/lib/tenant';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -20,11 +21,13 @@ export default async function MarketingLayout({ children, params }: LayoutProps)
     getCms('instruments', { locale }),
   ]);
 
-  // Тикер: только разрешённые CMS инструменты; при подключённом MDS —
-  // дополнительно только то, что реально стримится живыми ценами
-  // (замершие мок-цены рядом с живыми — обман, ADR-024)
-  const allowed = new Set(instruments.items.map((i) => i.symbol));
-  const mdsSymbols = await getMdsSymbols();
+  // Тикер: инструменты страницы ∩ ДОСТУП сайта (allow-list карточки сайта,
+  // ADR-028) ∩ реально стримящееся в MDS (замершие мок-цены рядом
+  // с живыми — обман, ADR-024)
+  const [mdsSymbols, allowList] = await Promise.all([getMdsSymbols(), getTenantAllowList()]);
+  const allowed = new Set(
+    instruments.items.map((i) => i.symbol).filter((s) => !allowList || allowList.has(s)),
+  );
   const tickerSymbols = mdsSymbols
     ? [...mdsSymbols].filter((s) => allowed.has(s))
     : DEFAULT_TICKER_SYMBOLS.filter((s) => allowed.has(s));

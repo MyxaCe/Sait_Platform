@@ -57,24 +57,53 @@ export interface MarketInstrument {
   icon: string | null;
 }
 
+/**
+ * Доступ сайта к инструментам (allow-list с карточки сайта в CMS,
+ * конфиг тенанта /v1/cms/sites/{slug}). null — CMS недоступна:
+ * деградируем «открыто» (полный каталог MDS, прежнее поведение) —
+ * кабинет обязан жить без соседей.
+ */
+async function getSiteAllowList(): Promise<Set<string> | null> {
+  const base = process.env.CMS_API_URL?.replace(/\/$/, '');
+  if (!base) return null;
+  const slug = process.env.SITE_SLUG ?? 'apex-ru';
+  try {
+    const res = await fetch(`${base}/cms/sites/${slug}`, {
+      headers: process.env.CMS_API_KEY ? { 'X-API-Key': process.env.CMS_API_KEY } : {},
+      next: { revalidate: 300 },
+      signal: AbortSignal.timeout(3_000),
+    });
+    if (!res.ok) return null;
+    const data = (await res.json()) as { instruments?: unknown };
+    return Array.isArray(data.instruments) ? new Set(data.instruments.map(String)) : null;
+  } catch {
+    return null;
+  }
+}
+
 export async function getMarketInstruments(): Promise<MarketInstrument[]> {
   const url = process.env.MDS_HTTP_URL;
   if (!url) return [];
   // Иконки грузит браузер — база должна быть браузерным origin MDS
   const iconBase = process.env.NEXT_PUBLIC_WS_URL?.replace(/\/$/, '');
   try {
-    const res = await fetch(`${url.replace(/\/$/, '')}/v1/instruments`, {
-      next: { revalidate: 300 },
-      signal: AbortSignal.timeout(2_000),
-    });
+    const [res, allowList] = await Promise.all([
+      fetch(`${url.replace(/\/$/, '')}/v1/instruments`, {
+        next: { revalidate: 300 },
+        signal: AbortSignal.timeout(2_000),
+      }),
+      getSiteAllowList(),
+    ]);
     if (!res.ok) return [];
     const data = (await res.json()) as { items?: (MarketInstrument & { icon?: string | null })[] };
-    return (data.items ?? []).map((i) => ({
-      symbol: i.symbol,
-      name: i.name,
-      digits: i.digits,
-      icon: iconBase && i.icon ? `${iconBase}${i.icon}` : null,
-    }));
+    return (data.items ?? [])
+      .filter((i) => !allowList || allowList.has(i.symbol))
+      .map((i) => ({
+        symbol: i.symbol,
+        name: i.name,
+        digits: i.digits,
+        icon: iconBase && i.icon ? `${iconBase}${i.icon}` : null,
+      }));
   } catch {
     return [];
   }
