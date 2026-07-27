@@ -4,6 +4,7 @@ import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { Container, Section } from '@broker/ui';
 import { InstrumentsBrowser } from '@/features/instruments/InstrumentsBrowser';
 import { getCms } from '@/lib/cms';
+import { getMdsIcons } from '@/lib/mds';
 
 interface PageProps {
   params: { locale: string };
@@ -20,10 +21,19 @@ export default async function InstrumentsPage({ params }: PageProps) {
   const { items } = await getCms('instruments', {
     locale: params.locale === 'en' ? 'en' : 'ru',
   });
-  return <PageContent symbols={items.map((i) => i.symbol)} />;
+
+  // Иконки: загруженная в CMS приоритетнее, иначе — иконка монеты из MDS
+  const mdsIcons = await getMdsIcons();
+  const icons: Record<string, string> = {};
+  for (const item of items) {
+    const url = item.icon?.url ?? mdsIcons[item.symbol];
+    if (url) icons[item.symbol] = url;
+  }
+
+  return <PageContent symbols={items.map((i) => i.symbol)} icons={icons} />;
 }
 
-function PageContent({ symbols }: { symbols: string[] }) {
+function PageContent({ symbols, icons }: { symbols: string[]; icons: Record<string, string> }) {
   const t = useTranslations('instruments');
   return (
     <Section className="py-10 md:py-14">
@@ -36,7 +46,7 @@ function PageContent({ symbols }: { symbols: string[] }) {
         </div>
 
         <div className="mt-8 lg:mt-10">
-          <InstrumentsBrowser symbols={symbols} />
+          <InstrumentsBrowser symbols={symbols} icons={icons} />
         </div>
       </Container>
     </Section>

@@ -7,6 +7,7 @@ import { Link } from '@/i18n/navigation';
 import { CATEGORY_LABELS_STATIC } from '@/features/instruments/categories';
 import { LiveQuotePanel } from '@/features/instruments/LiveQuotePanel';
 import { getCms } from '@/lib/cms';
+import { getMdsIcons } from '@/lib/mds';
 import { SITE_URL } from '@/lib/site';
 
 interface PageParams {
@@ -46,6 +47,9 @@ export default async function InstrumentPage({ params }: PageParams) {
   const { items } = await getCms('instruments', { locale });
   const meta = items.find((i) => i.symbol === def.symbol);
   if (!meta) notFound();
+
+  // Иконка: загруженная в CMS приоритетнее, иначе — монета из MDS
+  const iconUrl = meta.icon?.url ?? (await getMdsIcons())[def.symbol];
 
   const t = await getTranslations('instruments');
   const categoryLabel = CATEGORY_LABELS_STATIC[locale]![def.category];
@@ -103,9 +107,15 @@ export default async function InstrumentPage({ params }: PageParams) {
             <Badge variant="neutral" className="mb-4">
               {categoryLabel}
             </Badge>
-            <h1 className="text-3xl font-semibold tracking-tight text-primary sm:text-4xl lg:text-5xl">
-              {def.name} <span className="text-secondary">({def.symbol})</span>
-            </h1>
+            <div className="flex items-center gap-4">
+              {iconUrl && (
+                // eslint-disable-next-line @next/next/no-img-element -- SVG с MDS/CMS
+                <img src={iconUrl} alt="" width={48} height={48} className="h-12 w-12 rounded-full" />
+              )}
+              <h1 className="text-3xl font-semibold tracking-tight text-primary sm:text-4xl lg:text-5xl">
+                {def.name} <span className="text-secondary">({def.symbol})</span>
+              </h1>
+            </div>
             <p className="mt-4 max-w-xl text-secondary sm:text-lg">
               {t('detailSubtitle', { name: def.name })}
             </p>

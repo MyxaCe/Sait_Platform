@@ -19,9 +19,11 @@ type CategoryFilter = InstrumentCategory | 'all';
 export interface InstrumentsBrowserProps {
   /** Allow-list символов из CMS — отображаются и подписываются только они */
   symbols: string[];
+  /** Символ → URL иконки (CMS-загрузка приоритетнее, иначе монета из MDS) */
+  icons?: Record<string, string>;
 }
 
-export function InstrumentsBrowser({ symbols }: InstrumentsBrowserProps) {
+export function InstrumentsBrowser({ symbols, icons = {} }: InstrumentsBrowserProps) {
   const t = useTranslations('instruments');
   const tCat = useTranslations('categories');
   const tConn = useTranslations('connection');
@@ -98,7 +100,7 @@ export function InstrumentsBrowser({ symbols }: InstrumentsBrowserProps) {
       {/* Mobile: список карточек-строк */}
       <ul className="mt-4 divide-y divide-border overflow-hidden rounded-2xl border border-border md:hidden">
         {filtered.map((q) => (
-          <MobileRow key={q.symbol} quote={q} />
+          <MobileRow key={q.symbol} quote={q} iconUrl={icons[q.symbol]} />
         ))}
       </ul>
 
@@ -116,7 +118,13 @@ export function InstrumentsBrowser({ symbols }: InstrumentsBrowserProps) {
           </thead>
           <tbody className="divide-y divide-border">
             {filtered.map((q) => (
-              <DesktopRow key={q.symbol} quote={q} categoryLabel={tCat(q.category)} tradeLabel={tCommon('trade')} />
+              <DesktopRow
+                key={q.symbol}
+                quote={q}
+                iconUrl={icons[q.symbol]}
+                categoryLabel={tCat(q.category)}
+                tradeLabel={tCommon('trade')}
+              />
             ))}
           </tbody>
         </table>
@@ -138,14 +146,42 @@ const FLASH_CLASSES = {
   down: 'bg-negative/10',
 } as const;
 
-function MobileRow({ quote }: { quote: Quote }) {
+/** Иконка инструмента; без URL — буквенный бейдж (деградация без MDS/CMS). */
+function InstrumentIcon({ symbol, iconUrl }: { symbol: string; iconUrl?: string }) {
+  if (iconUrl) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element -- SVG с MDS, next/image не нужен
+      <img
+        src={iconUrl}
+        alt=""
+        width={32}
+        height={32}
+        loading="lazy"
+        className="h-8 w-8 shrink-0 rounded-full"
+      />
+    );
+  }
+  return (
+    <span
+      aria-hidden
+      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-elevated text-xs font-semibold text-secondary"
+    >
+      {symbol.slice(0, 2)}
+    </span>
+  );
+}
+
+function MobileRow({ quote, iconUrl }: { quote: Quote; iconUrl?: string }) {
   const flash = usePriceFlash(quote.price);
   return (
     <li className={cn('transition-colors duration-500', flash && FLASH_CLASSES[flash])}>
       <Link href={instrumentHref(quote)} className="flex items-center justify-between gap-3 px-4 py-3.5">
-        <div className="min-w-0">
-          <p className="font-medium text-primary">{quote.symbol}</p>
-          <p className="truncate text-xs text-secondary">{quote.name}</p>
+        <div className="flex min-w-0 items-center gap-3">
+          <InstrumentIcon symbol={quote.symbol} iconUrl={iconUrl} />
+          <div className="min-w-0">
+            <p className="font-medium text-primary">{quote.symbol}</p>
+            <p className="truncate text-xs text-secondary">{quote.name}</p>
+          </div>
         </div>
         <div className="text-right">
           <p className="tabular-nums text-primary">{formatPrice(quote.price, quote.digits)}</p>
@@ -158,10 +194,12 @@ function MobileRow({ quote }: { quote: Quote }) {
 
 function DesktopRow({
   quote,
+  iconUrl,
   categoryLabel,
   tradeLabel,
 }: {
   quote: Quote;
+  iconUrl?: string;
   categoryLabel: string;
   tradeLabel: string;
 }) {
@@ -174,9 +212,12 @@ function DesktopRow({
       )}
     >
       <td className="px-6 py-3.5">
-        <Link href={instrumentHref(quote)} className="group block">
-          <span className="font-medium text-primary group-hover:text-accent">{quote.symbol}</span>
-          <span className="block text-xs text-secondary">{quote.name}</span>
+        <Link href={instrumentHref(quote)} className="group flex items-center gap-3">
+          <InstrumentIcon symbol={quote.symbol} iconUrl={iconUrl} />
+          <span>
+            <span className="font-medium text-primary group-hover:text-accent">{quote.symbol}</span>
+            <span className="block text-xs text-secondary">{quote.name}</span>
+          </span>
         </Link>
       </td>
       <td className="px-6 py-3.5 text-secondary">{categoryLabel}</td>

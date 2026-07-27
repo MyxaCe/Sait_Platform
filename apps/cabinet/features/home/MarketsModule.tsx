@@ -26,6 +26,10 @@ export function MarketsModule({
 }) {
   const t = useTranslations('home');
   const symbols = useMemo(() => instruments.map((i) => i.symbol), [instruments]);
+  const icons = useMemo(
+    () => new Map(instruments.filter((i) => i.icon).map((i) => [i.symbol, i.icon!])),
+    [instruments],
+  );
   const quotes = useRealtimeQuotes(symbols);
 
   const tabs = useMemo(() => {
@@ -96,8 +100,30 @@ export function MarketsModule({
             {rows.map((q) => (
               <tr key={q.symbol} className="border-t border-border">
                 <td className="py-3">
-                  <span className="font-medium">{q.symbol}</span>
-                  <span className="ml-2 hidden text-secondary sm:inline">{q.name}</span>
+                  <span className="flex items-center gap-2.5">
+                    {icons.has(q.symbol) ? (
+                      // eslint-disable-next-line @next/next/no-img-element -- SVG с MDS
+                      <img
+                        src={icons.get(q.symbol)}
+                        alt=""
+                        width={24}
+                        height={24}
+                        loading="lazy"
+                        className="h-6 w-6 shrink-0 rounded-full"
+                      />
+                    ) : (
+                      <span
+                        aria-hidden
+                        className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/5 text-[10px] font-semibold text-secondary"
+                      >
+                        {q.symbol.slice(0, 2)}
+                      </span>
+                    )}
+                    <span>
+                      <span className="font-medium">{q.symbol}</span>
+                      <span className="ml-2 hidden text-secondary sm:inline">{q.name}</span>
+                    </span>
+                  </span>
                 </td>
                 <td className="py-3 tabular-nums">{formatPrice(q.price, q.digits)}</td>
                 <td className="py-3">

@@ -53,19 +53,28 @@ export interface MarketInstrument {
   symbol: string;
   name: string;
   digits: number;
+  /** Абсолютный URL иконки монеты (браузерный origin MDS) либо null */
+  icon: string | null;
 }
 
 export async function getMarketInstruments(): Promise<MarketInstrument[]> {
   const url = process.env.MDS_HTTP_URL;
   if (!url) return [];
+  // Иконки грузит браузер — база должна быть браузерным origin MDS
+  const iconBase = process.env.NEXT_PUBLIC_WS_URL?.replace(/\/$/, '');
   try {
     const res = await fetch(`${url.replace(/\/$/, '')}/v1/instruments`, {
       next: { revalidate: 300 },
       signal: AbortSignal.timeout(2_000),
     });
     if (!res.ok) return [];
-    const data = (await res.json()) as { items?: MarketInstrument[] };
-    return (data.items ?? []).map((i) => ({ symbol: i.symbol, name: i.name, digits: i.digits }));
+    const data = (await res.json()) as { items?: (MarketInstrument & { icon?: string | null })[] };
+    return (data.items ?? []).map((i) => ({
+      symbol: i.symbol,
+      name: i.name,
+      digits: i.digits,
+      icon: iconBase && i.icon ? `${iconBase}${i.icon}` : null,
+    }));
   } catch {
     return [];
   }
