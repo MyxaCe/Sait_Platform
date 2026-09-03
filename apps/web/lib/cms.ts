@@ -42,13 +42,27 @@ export async function getCms<K extends Resource>(
   if (process.env.CMS_API_URL) {
     // Мульти-тенантная CMS: сайт явно называет себя (без site CMS взяла бы дефолт)
     const siteParams = { site: process.env.SITE_SLUG ?? 'apex-ru', ...params };
+    // Фикстура строится ДО вызова, значит её исключение летит мимо try/catch
+    // внутри cmsFetch (баг B-017): сломанная фикстура роняла страницу даже при
+    // живой CMS, к которой не успевали сходить. Страховка не имеет права быть
+    // причиной аварии — строим её здесь и сами же ловим.
+    // Тип — union по всем ресурсам, а не по K: сузить до K значит увести
+    // вывод T у cmsFetch с schema на fallback и поссорить их между собой.
+    let fallback: z.infer<(typeof CMS_RESPONSE_SCHEMAS)[Resource]> | undefined;
+    try {
+      fallback = schema.parse(buildLocal());
+    } catch (error) {
+      // Подавленная диагностика дороже шумной: фикстура разошлась с контрактом,
+      // сайт остался без последнего рубежа — это должно быть видно.
+      console.error(`[getCms] fixture build failed resource=${resource} locale=${locale}`, error);
+    }
     return cmsFetch(`/cms/${resource}`, {
       schema,
       locale,
       tags: [tag],
       revalidate: draft ? 0 : revalidate,
       searchParams: draft ? { ...siteParams, draft: 'true' } : siteParams,
-      fallback: schema.parse(buildLocal()),
+      fallback,
     }) as Promise<z.infer<(typeof CMS_RESPONSE_SCHEMAS)[K]>>;
   }
 
