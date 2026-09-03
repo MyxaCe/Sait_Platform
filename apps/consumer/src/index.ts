@@ -4,7 +4,7 @@ import { randomUUID } from 'node:crypto';
 import * as Sentry from '@sentry/node';
 import { Pool } from 'pg';
 import { scrubSentryEvent } from '@broker/api-client';
-import { applyTerminalEvent, parseMessage } from './projection.js';
+import { applyTerminalEvent, classifyMessage } from './projection.js';
 import { createSubscriber } from './subscriber.js';
 
 // GlitchTip (site-bff /2): ошибки консюмера. Без DSN — выключен. Скраббинг до отправки.
@@ -36,17 +36,65 @@ const tenant = process.env.SITE_SLUG ?? 'apex-ru';
 const pool = new Pool({ connectionString: databaseUrl, max: 3 });
 const subscriber = createSubscriber();
 
+/**
+ * Счётчики разбора (CON-03). Раньше «чужое» и «наше сломанное» были одинаково
+ * невидимы: оба глотались одним `return`, и из трёх доставленных одно
+ * подтверждалось и терялось. Считаем порознь — иначе по счётчику не отличить
+ * здоровый пропуск соседского события от потери своего.
+ */
+export const parseStats = { foreign: 0, malformed: 0, applied: 0 };
+
+/** Сломанное сообщение обязано попасть в DLQ — подписчик шлёт туда по throw. */
+class MalformedMessageError extends Error {
+  constructor(
+    reason: string,
+    readonly eventId: string | null,
+  ) {
+    super(`malformed message: ${reason}`);
+    this.name = 'MalformedMessageError';
+  }
+}
+
 async function handle(raw: unknown): Promise<void> {
-  const event = parseMessage(raw);
-  if (!event) return; // не-терминальное/невалидное — молча пропускаем
-  const eventId = (raw as { event_id: string }).event_id;
+  const message = classifyMessage(raw);
+
+  if (message.kind === 'foreign') {
+    // Норма, а не поломка: сосед выкатил тип, которого мы ещё не знаем.
+    // Счётчик + отладочная строка, без шума в предупреждениях.
+    parseStats.foreign += 1;
+    console.debug(
+      `[consumer] foreign event skipped: ${message.event} ${message.eventId} (foreign=${parseStats.foreign})`,
+    );
+    return;
+  }
+
+  if (message.kind === 'malformed') {
+    // След в трёх местах: счётчик, предупреждение, DLQ (через throw).
+    // Плюс трекер — тишина здесь и была причиной того, что потерю нашли
+    // только на счётчиках брокера.
+    parseStats.malformed += 1;
+    console.warn(
+      `[consumer] MALFORMED message → DLQ: ${message.reason} id=${message.eventId ?? '(no id)'} (malformed=${parseStats.malformed})`,
+    );
+    const error = new MalformedMessageError(message.reason, message.eventId);
+    Sentry.captureException(error, {
+      tags: { component: 'consumer', kind: 'malformed' },
+      extra: { eventId: message.eventId, reason: message.reason },
+    });
+    throw error;
+  }
+
+  const { eventId, event } = message;
 
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
     const outcome = await applyTerminalEvent(client, eventId, event, { tenant, newId: randomUUID });
     await client.query('COMMIT');
-    if (outcome === 'applied') console.info(`[consumer] ${event.name} ${eventId} applied`);
+    if (outcome === 'applied') {
+      parseStats.applied += 1;
+      console.info(`[consumer] ${event.name} ${eventId} applied`);
+    }
   } catch (error) {
     await client.query('ROLLBACK').catch(() => {});
     Sentry.captureException(error, { tags: { component: 'consumer', event: event.name } });

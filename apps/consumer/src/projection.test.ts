@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { applyTerminalEvent, parseMessage, type Querier } from './projection.js';
+import { applyTerminalEvent, classifyMessage, type Querier } from './projection.js';
 
 /** Фейковый Querier: пишет вызовы в лог, эмулирует ON CONFLICT дедупа. */
 function fakeDb() {
@@ -33,25 +33,85 @@ function envelope(event: string, data: unknown, eventId = crypto.randomUUID()) {
   };
 }
 
-describe('parseMessage', () => {
-  it('валидное событие терминала разбирается', () => {
-    const parsed = parseMessage(
-      envelope('terminal.balance.changed', { tenant: 'apex-ru', userId: 'u1', balanceCents: 900000 }),
+/** Разбирает валидное событие (используется дальше в проекции). */
+function parsed(raw: unknown) {
+  const result = classifyMessage(raw);
+  if (result.kind !== 'terminal-event') throw new Error(`ожидалось событие, а не ${result.kind}`);
+  return result.event;
+}
+
+describe('classifyMessage · чужое и сломанное — РАЗНЫЕ исходы', () => {
+  it('наше валидное событие → terminal-event', () => {
+    const result = classifyMessage(
+      envelope('terminal.balance.changed', {
+        tenant: 'apex-ru',
+        userId: 'u1',
+        balanceCents: 900000,
+      }),
     );
-    expect(parsed?.name).toBe('terminal.balance.changed');
+    expect(result.kind).toBe('terminal-event');
+    if (result.kind === 'terminal-event') {
+      expect(result.event.name).toBe('terminal.balance.changed');
+    }
   });
 
-  it('неизвестный event и мусор → null', () => {
-    expect(parseMessage(envelope('terminal.unknown', { tenant: 'apex-ru', userId: 'u1' }))).toBeNull();
-    expect(parseMessage({ garbage: true })).toBeNull();
-    expect(parseMessage(envelope('terminal.balance.changed', { tenant: 'apex-ru' }))).toBeNull();
+  it('чужой тип события → foreign, а НЕ malformed', () => {
+    // Пропускать правильно: сосед выкатил тип раньше нас. Шуметь тут нельзя,
+    // иначе предупреждения обесценятся и в них утонет настоящая потеря
+    const result = classifyMessage(envelope('billing.invoice.issued', { anything: true }));
+    expect(result.kind).toBe('foreign');
+    if (result.kind === 'foreign') expect(result.event).toBe('billing.invoice.issued');
+  });
+
+  it('НАШ тип со сломанным payload → malformed, а НЕ foreign', () => {
+    // Ровно то, что терялось: тип наш, значит событие адресовано нам
+    const result = classifyMessage(envelope('terminal.balance.changed', { tenant: 'apex-ru' }));
+    expect(result.kind).toBe('malformed');
+    if (result.kind === 'malformed') {
+      expect(result.reason).toContain('payload');
+      expect(result.reason).toContain('terminal.balance.changed');
+    }
+  });
+
+  it('сломанный конверт → malformed с указанием места', () => {
+    const result = classifyMessage({ garbage: true });
+    expect(result.kind).toBe('malformed');
+    if (result.kind === 'malformed') expect(result.reason).toContain('envelope');
+  });
+
+  it('malformed сохраняет event_id, когда он есть — иначе в DLQ нечего искать', () => {
+    const id = '11111111-2222-3333-4444-555555555555';
+    const broken = classifyMessage(envelope('terminal.balance.changed', { tenant: 'apex-ru' }, id));
+    expect(broken.kind === 'malformed' && broken.eventId).toBe(id);
+  });
+
+  it('конверт без event_id → malformed с eventId null, но всё равно с причиной', () => {
+    const result = classifyMessage({ event: 'terminal.balance.changed', data: {} });
+    expect(result.kind).toBe('malformed');
+    if (result.kind === 'malformed') {
+      expect(result.eventId).toBeNull();
+      expect(result.reason).toBeTruthy();
+    }
+  });
+
+  it('лишнее неизвестное поле НЕ ломает разбор (потребитель парсит мягко)', () => {
+    const raw = {
+      ...envelope('terminal.balance.changed', {
+        tenant: 'apex-ru',
+        userId: 'u1',
+        balanceCents: 900000,
+        somethingNew: 'из будущей версии',
+      }),
+      unknown_envelope_field: 42,
+    };
+    expect(classifyMessage(raw).kind).toBe('terminal-event');
   });
 });
 
 describe('applyTerminalEvent', () => {
   it('balance.changed обновляет баланс и заменяет позиции', async () => {
     const { db, calls } = fakeDb();
-    const ev = parseMessage(
+    const ev = parsed(
       envelope('terminal.balance.changed', {
         tenant: 'apex-ru',
         userId: 'u1',
@@ -68,8 +128,12 @@ describe('applyTerminalEvent', () => {
 
   it('дубликат по event_id пропускается', async () => {
     const { db } = fakeDb();
-    const ev = parseMessage(
-      envelope('terminal.balance.changed', { tenant: 'apex-ru', userId: 'u1', balanceCents: 900000 }),
+    const ev = parsed(
+      envelope('terminal.balance.changed', {
+        tenant: 'apex-ru',
+        userId: 'u1',
+        balanceCents: 900000,
+      }),
     )!;
     expect(await applyTerminalEvent(db, 'dup', ev, cfg)).toBe('applied');
     expect(await applyTerminalEvent(db, 'dup', ev, cfg)).toBe('skipped-duplicate');
@@ -77,7 +141,7 @@ describe('applyTerminalEvent', () => {
 
   it('чужой тенант пропускается', async () => {
     const { db } = fakeDb();
-    const ev = parseMessage(
+    const ev = parsed(
       envelope('terminal.balance.changed', { tenant: 'other-site', userId: 'u1', balanceCents: 1 }),
     )!;
     expect(await applyTerminalEvent(db, 'e2', ev, cfg)).toBe('skipped-tenant');
@@ -85,7 +149,7 @@ describe('applyTerminalEvent', () => {
 
   it('trade.executed пишет сделку и уведомление', async () => {
     const { db, calls } = fakeDb();
-    const ev = parseMessage(
+    const ev = parsed(
       envelope('terminal.trade.executed', {
         tenant: 'apex-ru',
         userId: 'u1',

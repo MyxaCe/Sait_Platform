@@ -1,6 +1,7 @@
 import {
   incomingEnvelopeSchema,
   parseTerminalEvent,
+  TERMINAL_EVENT_SCHEMAS,
   type ParsedTerminalEvent,
 } from '@broker/api-client';
 
@@ -26,16 +27,63 @@ export interface ProjectionConfig {
 }
 
 export type ProjectionOutcome =
-  | 'applied'
-  | 'skipped-duplicate'
-  | 'skipped-tenant'
-  | 'skipped-unknown';
+  'applied' | 'skipped-duplicate' | 'skipped-tenant' | 'skipped-unknown';
 
-/** Разобрать сырое сообщение шины в терминальное событие (или null). */
-export function parseMessage(raw: unknown): ParsedTerminalEvent | null {
+/**
+ * Итог разбора сообщения. ТРИ разных исхода там, где раньше был один `null`
+ * (баг B-020): «чужое» и «наше сломанное» требуют противоположных действий, а
+ * молчаливый пропуск обоих терял наши же события без следа.
+ */
+export type MessageClassification =
+  /** Наше событие, разобрано. */
+  | { kind: 'terminal-event'; eventId: string; event: ParsedTerminalEvent }
+  /**
+   * Не наш тип события. Пропускать ПРАВИЛЬНО: без этого нельзя выкатывать
+   * части платформы порознь — сосед выкатит новый тип раньше нас.
+   */
+  | { kind: 'foreign'; eventId: string; event: string }
+  /**
+   * Конверт наш или тип наш, а разбор не прошёл. Это дефект: либо продюсер
+   * шлёт не то, либо схемы разъехались. Тишина здесь — потеря нашего события.
+   */
+  | { kind: 'malformed'; eventId: string | null; reason: string };
+
+/** Известные нам типы событий терминала — реестр контракта, не локальный список. */
+function isOurEvent(name: string): boolean {
+  return Object.prototype.hasOwnProperty.call(TERMINAL_EVENT_SCHEMAS, name);
+}
+
+/**
+ * Разобрать сырое сообщение шины, СОХРАНИВ причину неудачи.
+ *
+ * Мягкий разбор означает «не падает», а не «исчезает без следа»: неизвестный
+ * тип отбрасывается молча и это норма, а вот наш тип со сломанным payload
+ * обязан оставить след.
+ */
+export function classifyMessage(raw: unknown): MessageClassification {
   const envelope = incomingEnvelopeSchema.safeParse(raw);
-  if (!envelope.success) return null;
-  return parseTerminalEvent(envelope.data);
+  if (!envelope.success) {
+    // Лишние поля Zod срезает, а не отвергает, поэтому сюда попадает именно
+    // сломанный конверт, а не более новая версия от соседа
+    const issue = envelope.error.issues[0];
+    const at = issue?.path.join('.') || '(root)';
+    return {
+      kind: 'malformed',
+      eventId:
+        typeof (raw as { event_id?: unknown })?.event_id === 'string'
+          ? (raw as { event_id: string }).event_id
+          : null,
+      reason: `envelope: ${at} — ${issue?.message ?? 'invalid'}`,
+    };
+  }
+
+  const { event_id: eventId, event: name } = envelope.data;
+  if (!isOurEvent(name)) return { kind: 'foreign', eventId, event: name };
+
+  const parsed = parseTerminalEvent(envelope.data);
+  if (!parsed) return { kind: 'malformed', eventId, reason: `payload: ${name}` };
+
+  return { kind: 'terminal-event', eventId, event: parsed };
 }
 
 /**
@@ -110,7 +158,11 @@ export async function applyTerminalEvent(
       );
       await db.query(
         `INSERT INTO notifications (id, user_id, type, params) VALUES ($1, $2, 'tradeExecuted', $3)`,
-        [cfg.newId(), d.userId, JSON.stringify({ symbol: d.symbol, side: d.side, volume: d.volume })],
+        [
+          cfg.newId(),
+          d.userId,
+          JSON.stringify({ symbol: d.symbol, side: d.side, volume: d.volume }),
+        ],
       );
       break;
     }
