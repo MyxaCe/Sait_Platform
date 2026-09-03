@@ -10,9 +10,12 @@ out/
 .DS_Store
 Thumbs.db
 coverage/
-public/sw.js
-public/sw.js.map
-public/workbox-*.js
+# Артефакты сборки Serwist. Шаблон со слэшем внутри якорится на папку
+# самого .gitignore, поэтому "public/sw.js" НЕ покрывал apps/web/public/sw.js
+# и файл лежал в истории, пачкая диффы каждой сборкой (WEB-01).
+**/public/sw.js
+**/public/sw.js.map
+**/public/workbox-*.js
 test-results/
 playwright-report/
 *.tsbuildinfo

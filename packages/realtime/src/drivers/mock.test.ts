@@ -28,7 +28,9 @@ describe('mock driver', () => {
     expect(statuses).toEqual(['connecting']);
 
     vi.advanceTimersByTime(500); // CONNECT_DELAY_MS = 400
-    expect(statuses).toEqual(['connecting', 'connected']);
+    // НЕ 'connected': синтетические цены не выдаются за рыночные (B-018)
+    expect(statuses).toEqual(['connecting', 'simulated']);
+    expect(statuses).not.toContain('connected');
     expect(batches).toHaveLength(1);
     expect(batches[0]!.map((q) => q.symbol).sort()).toEqual(['EURUSD', 'XAUUSD']);
   });
@@ -68,5 +70,20 @@ describe('mock driver', () => {
     driver.disconnect();
     vi.advanceTimersByTime(5_000);
     expect(batches.length).toBe(countAfterConnect);
+  });
+
+  it('никогда не достигает connected, сколько бы времени ни прошло', () => {
+    const driver = createMockDriver();
+    const statuses: ConnStatus[] = [];
+
+    driver.subscribe(['EURUSD']);
+    driver.connect(
+      () => {},
+      (s) => statuses.push(s),
+    );
+    vi.advanceTimersByTime(60_000);
+
+    expect(statuses).not.toContain('connected');
+    expect(statuses.at(-1)).toBe('simulated');
   });
 });

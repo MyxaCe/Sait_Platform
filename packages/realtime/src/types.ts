@@ -1,4 +1,12 @@
-export type ConnStatus = 'connecting' | 'connected' | 'reconnecting' | 'offline';
+/**
+ * Состояние фида. `simulated` — данные не настоящие: цены синтезированы, к
+ * рынку отношения не имеют. Это НЕ подвид `connected`: подключённость и
+ * подлинность — разные вопросы, и их склейка породила B-018 (мок рапортовал
+ * `connected`, индикатор горел «Данные в реальном времени» над случайным
+ * блужданием). Подлинность решает RealtimeService по наличию адреса источника,
+ * драйвера об этом не спрашивают — самоназвание драйвера подделывается даром.
+ */
+export type ConnStatus = 'connecting' | 'connected' | 'reconnecting' | 'offline' | 'simulated';
 
 export type InstrumentCategory =
   | 'forex'

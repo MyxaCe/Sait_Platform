@@ -34,7 +34,9 @@
     "connecting": "Connecting…",
     "reconnecting": "Reconnecting…",
     "offline": "No connection",
-    "tickerAria": "Real-time quotes"
+    "tickerAria": "Real-time quotes",
+    "simulated": "Demo data: not real market prices",
+    "noData": "no data"
   },
   "categories": {
     "all": "All",

@@ -27,7 +27,11 @@
     "tickerAria": "Live quotes",
     "connected": "Online",
     "connecting": "Connecting…",
-    "disconnected": "Offline"
+    "disconnected": "Offline",
+    "reconnecting": "Reconnecting…",
+    "offline": "No connection",
+    "simulated": "Demo data: not real market prices",
+    "noData": "no data"
   },
   "auth": {
     "loginTitle": "Sign in",

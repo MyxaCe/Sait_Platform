@@ -27,7 +27,11 @@
     "tickerAria": "Живые котировки",
     "connected": "Онлайн",
     "connecting": "Подключение…",
-    "disconnected": "Оффлайн"
+    "disconnected": "Оффлайн",
+    "reconnecting": "Переподключение…",
+    "offline": "Нет соединения",
+    "simulated": "Демо-данные: цены не рыночные",
+    "noData": "нет данных"
   },
   "auth": {
     "loginTitle": "Вход в кабинет",

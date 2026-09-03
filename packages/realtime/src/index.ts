@@ -8,4 +8,5 @@ export {
 } from './data';
 export { useQuotesStore } from './store';
 export { realtime } from './service';
-export { useRealtimeQuotes, useConnectionStatus } from './hooks';
+export { useRealtimeQuotes, useConnectionStatus, useQuoteViews, type QuoteView } from './hooks';
+export { quoteState, type QuoteState, type FreshnessInput } from './freshness';

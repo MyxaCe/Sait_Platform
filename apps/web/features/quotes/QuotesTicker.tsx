@@ -4,7 +4,7 @@ import { useTranslations } from 'next-intl';
 import {
   DEFAULT_TICKER_SYMBOLS,
   useConnectionStatus,
-  useRealtimeQuotes,
+  useQuoteViews,
 } from '@broker/realtime';
 import { TickerTape } from '@broker/ui';
 import { formatPrice } from '@broker/utils';
@@ -16,14 +16,16 @@ import { formatPrice } from '@broker/utils';
  */
 export function QuotesTicker({ symbols = DEFAULT_TICKER_SYMBOLS }: { symbols?: string[] }) {
   const tConn = useTranslations('connection');
-  const quotes = useRealtimeQuotes(symbols);
+  // Порог свежести придёт от MDS (КОНТРАКТЫ.md §5б) — здесь не выдумываем
+  const views = useQuoteViews(symbols);
   const status = useConnectionStatus();
 
-  const items = quotes.map((q) => ({
+  const items = views.map(({ quote: q, state }) => ({
     symbol: q.symbol,
     price: formatPrice(q.price, q.digits),
     changePercent: q.changePercent,
     href: `/instruments/${q.category}/${q.symbol.toLowerCase()}`,
+    state,
   }));
 
   return (
@@ -32,6 +34,7 @@ export function QuotesTicker({ symbols = DEFAULT_TICKER_SYMBOLS }: { symbols?: s
       status={status}
       ariaLabel={tConn('tickerAria')}
       connectionLabel={tConn(status)}
+      noDataLabel={tConn('noData')}
     />
   );
 }

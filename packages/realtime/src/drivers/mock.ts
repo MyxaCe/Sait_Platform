@@ -6,8 +6,11 @@ const CONNECT_DELAY_MS = 400;
 
 /**
  * Мок-фид: случайное блуждание цен вокруг базовых значений.
- * Полностью повторяет контракт боевого socket.io-драйвера,
- * поэтому переход на реальный фид не трогает ни стор, ни UI.
+ * Повторяет контракт боевого socket.io-драйвера везде, КРОМЕ статуса:
+ * достигать `connected` он не имеет права — цены синтетические, и выдавать
+ * их за рыночные нельзя (B-018). Раньше повторял и статус тоже, отчего был
+ * неотличим от боевого фида. Гарантия при этом не здесь, а в RealtimeService:
+ * что драйвер сообщает о себе сам — не доказательство.
  */
 export function createMockDriver(): FeedDriver {
   const defs = new Map(SYMBOL_UNIVERSE.map((d) => [d.symbol, d]));
@@ -64,7 +67,7 @@ export function createMockDriver(): FeedDriver {
       emitStatus = onStatus;
       emitStatus('connecting');
       setTimeout(() => {
-        emitStatus?.('connected');
+        emitStatus?.('simulated');
         // Мгновенный снапшот всех подписок, дальше — тики
         const snapshot = [...subscribed].map(toQuote).filter((q): q is Quote => q !== null);
         if (snapshot.length) emitBatch?.(snapshot);
