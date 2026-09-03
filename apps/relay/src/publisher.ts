@@ -30,29 +30,55 @@ export class AmqpPublisher implements Publisher {
 
   private async ensureChannel(): Promise<ConfirmChannel> {
     if (this.channel) return this.channel;
-    this.connection = await amqplib.connect(this.url);
-    this.connection.on('close', () => {
+    const connection = await amqplib.connect(this.url);
+    connection.on('close', () => {
       this.connection = null;
       this.channel = null;
     });
-    this.channel = await this.connection.createConfirmChannel();
-    await this.channel.assertExchange(this.exchange, 'topic', { durable: true });
-    return this.channel;
+
+    try {
+      const channel = await connection.createConfirmChannel();
+      // ПАССИВНОЕ объявление (REL-03). Два следствия, и второе важнее:
+      //  1. `exchange.declare` требует `configure` ВСЕГДА, даже когда обменник
+      //     уже есть — с ним честный publish-only невозможен;
+      //  2. пропавшая инфраструктура становится немедленным отказом вместо
+      //     тихого пересоздания. `assertExchange` молча создал бы обменник
+      //     заново, и мы бы не узнали, что шину переставили под нами.
+      // Обменник создаёт владелец шины один раз, релей его только требует.
+      await channel.checkExchange(this.exchange);
+
+      // Канал умирает отдельно от соединения (ошибка уровня канала его
+      // закрывает). Без сброса кеша следующая публикация ушла бы в мёртвый
+      // канал и падала бы вечно с посторонней ошибкой.
+      channel.on('close', () => {
+        this.channel = null;
+      });
+      channel.on('error', () => {
+        this.channel = null;
+      });
+
+      this.connection = connection;
+      this.channel = channel;
+      return channel;
+    } catch (error) {
+      // checkExchange на отсутствующем обменнике закрывает канал. Гарантия, что
+      // мёртвый канал не осядет в поле, — это ПОРЯДОК выше: `this.channel`
+      // присваивается только после успешной проверки. Обнулять здесь нечего, и
+      // строчка `this.channel = null` была бы недоказуемой: её удаление не
+      // роняет ни один тест, потому что она ничего не меняет.
+      await connection.close().catch(() => {});
+      throw error;
+    }
   }
 
   async publish(routingKey: string, envelope: EventEnvelope): Promise<void> {
     const channel = await this.ensureChannel();
-    channel.publish(
-      this.exchange,
-      routingKey,
-      Buffer.from(JSON.stringify(envelope)),
-      {
-        persistent: true,
-        contentType: 'application/json',
-        messageId: envelope.event_id,
-        timestamp: Math.floor(Date.parse(envelope.occurred_at) / 1000),
-      },
-    );
+    channel.publish(this.exchange, routingKey, Buffer.from(JSON.stringify(envelope)), {
+      persistent: true,
+      contentType: 'application/json',
+      messageId: envelope.event_id,
+      timestamp: Math.floor(Date.parse(envelope.occurred_at) / 1000),
+    });
     await channel.waitForConfirms();
   }
 
