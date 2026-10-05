@@ -25,7 +25,7 @@
   },
   "connection": {
     "tickerAria": "Живые котировки",
-    "connected": "Онлайн",
+    "connected": "Соединение установлено",
     "connecting": "Подключение…",
     "disconnected": "Оффлайн",
     "reconnecting": "Переподключение…",

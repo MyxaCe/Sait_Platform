@@ -18,6 +18,7 @@ services:
       interval: 5s
       timeout: 3s
       retries: 20
+    restart: unless-stopped
 
   cms-db:
     image: postgres:16-alpine
@@ -32,6 +33,7 @@ services:
       interval: 5s
       timeout: 3s
       retries: 20
+    restart: unless-stopped
 
   mds:
     build:
@@ -59,6 +61,11 @@ services:
       SEED_ADMIN_EMAIL: ${SEED_ADMIN_EMAIL}
       SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD}
       DEFAULT_SITE: apex-ru
+    # Одноразовая джоба: отработала — вышла с 0. Политика "no" ОСОЗНАННА:
+    # любой перезапуск сделает миграции бесконечным циклом, а cms ждёт её
+    # через service_completed_successfully. Не «чинить» на unless-stopped.
+    # Причина записана: OPS-03, TD-OPS-001 в docs/Техдолг.md команды deploy.
+    restart: "no"
     depends_on:
       cms-db:
         condition: service_healthy

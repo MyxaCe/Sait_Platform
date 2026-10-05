@@ -30,7 +30,7 @@
     "generic": "Failed to send. Please try again."
   },
   "connection": {
-    "connected": "Real-time data",
+    "connected": "Connection established",
     "connecting": "Connecting…",
     "reconnecting": "Reconnecting…",
     "offline": "No connection",
@@ -150,7 +150,7 @@
     "metaDescription": "Real-time quotes: Forex, metals, crypto, indices, stocks and energies. Spreads from 0.0 pips.",
     "searchPlaceholder": "Search: EURUSD, Apple, Gold…",
     "searchAria": "Search instruments",
-    "statusLive": "Real-time quotes",
+    "statusLive": "Feed connection established",
     "statusConnecting": "Connecting to feed…",
     "counter": "{filtered} of {total} instruments",
     "colInstrument": "Instrument",
