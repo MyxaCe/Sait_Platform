@@ -87,7 +87,18 @@
     "colChange": "Change",
     "trade": "Trade",
     "marketsEmpty": "No data — try another tab",
-    "promoTitle": "Promotions"
+    "promoTitle": "Promotions",
+    "marketsClosedEmptyTitle": "No instruments selected yet",
+    "marketsClosedEmptyText": "The list of permitted instruments for this site is empty — until something is added to it, no trading instruments are shown. The site owner makes the selection in the CMS.",
+    "marketsClosedUnavailableTitle": "Permitted instruments list unavailable",
+    "marketsClosedUnavailableText": "The site settings could not be retrieved, so no instruments are shown: access stays closed until the list arrives rather than opening up to everything. This is a failure and is fixed on the platform side.",
+    "marketsCatalogTitle": "Quotes temporarily unavailable",
+    "marketsCatalogText": "Instrument access is configured, but the market data service is not responding right now. The list will appear once the connection is restored.",
+    "marketsNoMatchTitle": "No quoted instruments",
+    "marketsNoMatchText": "Instruments are selected for this site, but none of them are currently quoted by the data source.",
+    "marketsNoTabsTitle": "No tabs enabled",
+    "marketsNoTabsText": "The Markets module is enabled, but all of its tabs are switched off in the site settings — there is nothing to show.",
+    "marketsReason": "reason: {reason}"
   },
   "dashboard": {
     "greeting": "Hello, {name}!",
@@ -133,11 +144,19 @@
     "hint": "Verification requires an identity document and a proof of address. PDF, JPG or PNG up to 10 MB.",
     "upload": "Upload document",
     "kind": "Document type",
-    "kinds": { "identity": "Identity document", "address": "Proof of address", "other": "Other" },
+    "kinds": {
+      "identity": "Identity document",
+      "address": "Proof of address",
+      "other": "Other"
+    },
     "file": "File",
     "uploaded": "Document uploaded",
     "empty": "No documents yet",
-    "statuses": { "uploaded": "Under review", "approved": "Approved", "rejected": "Rejected" }
+    "statuses": {
+      "uploaded": "Under review",
+      "approved": "Approved",
+      "rejected": "Rejected"
+    }
   },
   "notifications": {
     "title": "Notifications",

@@ -28,10 +28,10 @@ export default async function HomePage({ params }: { params: { locale: string } 
   const needs = (type: CabinetHomeModule['type']) =>
     modules.some((m) => m.type === type && m.enabled);
 
-  const [demo, verification, instruments, promos] = await Promise.all([
+  const [demo, verification, markets, promos] = await Promise.all([
     needs('balance') ? getDemoAccount(user.id) : null,
     needs('onboarding') ? getVerificationStatus(user.id) : ('none' as const),
-    needs('markets') ? getMarketInstruments() : [],
+    needs('markets') ? getMarketInstruments() : null,
     needs('promotions') ? getPromotions(params.locale) : [],
   ]);
 
@@ -47,7 +47,11 @@ export default async function HomePage({ params }: { params: { locale: string } 
           case 'balance':
             return <BalanceModule key={i} config={module} demo={demo} />;
           case 'markets':
-            return <MarketsModule key={i} config={module} instruments={instruments} />;
+            // `markets === null` только когда модуль выключен, а выключенные
+            // отсеяны строкой выше — ветка недостижима и существует ради
+            // типа. Модуль НЕ исчезает ни в одном состоянии данных: о том,
+            // почему он пуст, он рассказывает сам (Р-025, п. 3).
+            return markets ? <MarketsModule key={i} config={module} data={markets} /> : null;
           case 'promotions':
             return <PromotionsModule key={i} items={promos} locale={params.locale} />;
           default:

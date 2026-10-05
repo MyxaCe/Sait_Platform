@@ -1,10 +1,12 @@
+import { getTranslations } from 'next-intl/server';
 import { DEFAULT_TICKER_SYMBOLS } from '@broker/realtime';
 import { SiteFooter } from '@/components/layout/SiteFooter';
 import { SiteHeader } from '@/components/layout/SiteHeader';
+import { AccessNotice } from '@/features/instruments/AccessNotice';
 import { QuotesTicker } from '@/features/quotes/QuotesTicker';
 import { getCms } from '@/lib/cms';
 import { getMdsSymbols } from '@/lib/mds';
-import { getTenantAllowList } from '@/lib/tenant';
+import { accessNotice, getTenantAccess, isSymbolAllowed } from '@/lib/tenant';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -23,10 +25,18 @@ export default async function MarketingLayout({ children, params }: LayoutProps)
 
   // Тикер: инструменты страницы ∩ ДОСТУП сайта (allow-list карточки сайта,
   // ADR-028) ∩ реально стримящееся в MDS (замершие мок-цены рядом
-  // с живыми — обман, ADR-024)
-  const [mdsSymbols, allowList] = await Promise.all([getMdsSymbols(), getTenantAllowList()]);
+  // с живыми — обман, ADR-024).
+  //
+  // Граница fail-closed (Р-025): закрыта — тикера нет вовсе, и на его месте
+  // стоит строка с причиной. Пустая бегущая строка молча исчезла бы с
+  // каждой страницы сайта — это то же «отказ выглядит как отсутствие
+  // функции», только размазанное по всей витрине.
+  const [mdsSymbols, access] = await Promise.all([getMdsSymbols(), getTenantAccess()]);
+  const notice = accessNotice(access);
+  const t = await getTranslations({ locale, namespace: 'instruments' });
+
   const allowed = new Set(
-    instruments.items.map((i) => i.symbol).filter((s) => !allowList || allowList.has(s)),
+    instruments.items.map((i) => i.symbol).filter((s) => isSymbolAllowed(access, s)),
   );
   const tickerSymbols = mdsSymbols
     ? [...mdsSymbols].filter((s) => allowed.has(s))
@@ -35,7 +45,16 @@ export default async function MarketingLayout({ children, params }: LayoutProps)
   return (
     <div className="flex min-h-svh flex-col">
       <SiteHeader brandName={brand.name} logo={brand.logo} nav={navigation.header} />
-      <QuotesTicker symbols={tickerSymbols} />
+      {notice ? (
+        <AccessNotice
+          variant="strip"
+          state={notice.state}
+          text={t(notice.stripKey)}
+          reason={notice.reason}
+        />
+      ) : (
+        <QuotesTicker symbols={tickerSymbols} />
+      )}
       <main className="flex-1">{children}</main>
       <SiteFooter
         columns={navigation.footer.columns}

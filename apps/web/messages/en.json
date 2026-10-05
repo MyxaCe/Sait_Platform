@@ -177,7 +177,14 @@
     "panelLive": "Real time",
     "panelConnecting": "Connecting…",
     "tradeSymbol": "Trade {symbol}",
-    "tryOnDemo": "Try on demo"
+    "tryOnDemo": "Try on demo",
+    "accessEmptyTitle": "No instruments selected yet",
+    "accessEmptyText": "The list of permitted instruments for this site is empty: until something is added to it, no trading instruments are shown. This is a site setting, not a failure — the owner makes the selection in the CMS.",
+    "accessEmptyStrip": "No instruments selected for this site yet — quotes are not shown",
+    "accessUnavailableTitle": "Permitted instruments list unavailable",
+    "accessUnavailableText": "The site settings could not be retrieved, so no instruments are shown. Access stays closed until the list arrives rather than opening up to everything: otherwise a neighbour failing would turn into a permission. This is a failure and is fixed on the platform side.",
+    "accessUnavailableStrip": "Permitted instruments list unavailable — quotes are not shown",
+    "accessReason": "reason: {reason}"
   },
   "accounts": {
     "title": "Account Types & Pricing",

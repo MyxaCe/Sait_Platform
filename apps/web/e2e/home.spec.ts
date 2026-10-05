@@ -6,10 +6,19 @@ test('главная: hero, бегущая строка котировок и CT
   await expect(page.getByRole('heading', { level: 1 })).toContainText(
     'Торгуйте на мировых рынках',
   );
-  // Бегущая строка с котировками присутствует и содержит инструменты
+  // Место бегущей строки занято: либо котировки, либо причина их отсутствия.
+  // В CI сайт поднят без CMS, граница доступа закрыта (ADR-029) — тикера нет,
+  // и на его месте стоит строка с причиной. Молча пустого места быть не может
+  // ни в одном из двух состояний, и проверяем мы именно это.
   const ticker = page.getByLabel('Котировки в реальном времени');
-  await expect(ticker).toBeVisible();
-  await expect(ticker.getByText('EURUSD').first()).toBeVisible();
+  const closed = page.getByTestId('access-notice').first();
+  if (await ticker.count()) {
+    await expect(ticker).toBeVisible();
+    await expect(ticker.getByText('EURUSD').first()).toBeVisible();
+  } else {
+    await expect(closed).toBeVisible();
+    await expect(closed).toHaveAttribute('data-access-state', /empty|unavailable/);
+  }
 
   // Главный CTA ведёт на регистрацию
   await expect(

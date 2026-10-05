@@ -4,12 +4,13 @@ import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { findSymbol, SYMBOL_UNIVERSE } from '@broker/realtime';
 import { Badge, Container, Section } from '@broker/ui';
 import { Link } from '@/i18n/navigation';
+import { AccessNotice } from '@/features/instruments/AccessNotice';
 import { CATEGORY_LABELS_STATIC } from '@/features/instruments/categories';
 import { LiveQuotePanel } from '@/features/instruments/LiveQuotePanel';
 import { getCms } from '@/lib/cms';
 import { getMdsIcons } from '@/lib/mds';
 import { SITE_URL } from '@/lib/site';
-import { getTenantAllowList } from '@/lib/tenant';
+import { accessNotice, getTenantAccess, isSymbolAllowed } from '@/lib/tenant';
 
 interface PageParams {
   params: { locale: string; category: string; symbol: string };
@@ -46,18 +47,51 @@ export default async function InstrumentPage({ params }: PageParams) {
   // Контент из CMS + ДОСТУП сайта (allow-list карточки сайта, ADR-028):
   // инструмент вне контента ИЛИ вне доступа недоступен,
   // даже если есть в realtime-справочнике
-  const [{ items }, allowList] = await Promise.all([
+  const [{ items }, access] = await Promise.all([
     getCms('instruments', { locale }),
-    getTenantAllowList(),
+    getTenantAccess(),
   ]);
   const meta = items.find((i) => i.symbol === def.symbol);
   if (!meta) notFound();
-  if (allowList && !allowList.has(def.symbol)) notFound();
+
+  const t = await getTranslations('instruments');
+  const notice = accessNotice(access);
+
+  // Два РАЗНЫХ отказа, и 404 годится только для одного из них
+  // (КОНТРАКТЫ.md §4б: «403 — список говорит нет; 503 — списка нет вовсе»):
+  //
+  //  - список получен, символа в нём нет → `404`. Список высказался,
+  //    инструмент этим сайтом не предлагается, и это окончательно;
+  //  - списка нет или он пуст → страница с объяснением. `404` здесь
+  //    соврал бы: «такой страницы нет» вместо «мы не смогли узнать, что
+  //    можно показать». Отказ, выглядящий как отсутствие функции, —
+  //    ровно тот класс, который закрывает Р-025.
+  if (!notice && !isSymbolAllowed(access, def.symbol)) notFound();
+
+  if (notice) {
+    return (
+      <Section className="py-10 md:py-14">
+        <Container>
+          <h1 className="text-3xl font-semibold tracking-tight text-primary sm:text-4xl">
+            {def.name} <span className="text-secondary">({def.symbol})</span>
+          </h1>
+          <div className="mt-6 max-w-2xl">
+            <AccessNotice
+              state={notice.state}
+              title={t(notice.titleKey)}
+              text={t(notice.textKey)}
+              reason={notice.reason}
+              reasonLabel={notice.reason && t('accessReason', { reason: notice.reason })}
+            />
+          </div>
+        </Container>
+      </Section>
+    );
+  }
 
   // Иконка: загруженная в CMS приоритетнее, иначе — монета из MDS
   const iconUrl = meta.icon?.url ?? (await getMdsIcons())[def.symbol];
 
-  const t = await getTranslations('instruments');
   const categoryLabel = CATEGORY_LABELS_STATIC[locale]![def.category];
 
   // Микроразметка хлебных крошек — дублирует видимую навигацию для поисковиков
