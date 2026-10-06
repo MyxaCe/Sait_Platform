@@ -115,6 +115,61 @@ describe('getCms · CMS отвалилась в рантайме (CMS_API_URL з
 });
 
 /**
+ * Переезд на CMS v2 (Р-040). Форма ответа бренда расширена: шесть слотов
+ * картинок вместо двух и `primaryColor: string | null`.
+ *
+ * Проверка именно на уровне СВЯЗКИ, а не схемы: дефект здесь выглядел бы
+ * не как ошибка разбора, а как «витрина показывает не тот бренд».
+ * Строгая схема отвергла бы весь ответ из-за одного пустого поля,
+ * `cmsFetch` подставил бы фикстуру, и наружу вышли бы чужое имя и чужой
+ * логотип — при живой CMS и без единой ошибки в логе страницы.
+ */
+describe('getCms · бренд из CMS v2', () => {
+  beforeEach(() => {
+    vi.stubEnv('CMS_API_URL', 'http://cms.test');
+  });
+
+  const V2_BRAND = {
+    name: 'Из CMS v2',
+    logo: null,
+    favicon: null,
+    primaryColor: null,
+    socials: [],
+  };
+
+  it('primaryColor: null → бренд остаётся боевым, подмены фикстурой нет', async () => {
+    stubFetch(() => Promise.resolve(Response.json(V2_BRAND)));
+
+    const { getCms } = await import('./cms');
+    const brand = await getCms('brand', { locale: 'ru' });
+
+    expect(brand.name).toBe('Из CMS v2');
+    expect(brand.primaryColor).toBeNull();
+  });
+
+  it('неизвестные поля v2 отбрасываются, известные разобраны (строго/мягко)', async () => {
+    // Потребитель парсит мягко: шесть слотов картинок и прочие новые поля
+    // появятся раньше, чем витрина научится их показывать.
+    stubFetch(() =>
+      Promise.resolve(
+        Response.json({
+          ...V2_BRAND,
+          primaryColor: '#0b5fff',
+          logoDark: { url: 'http://cms.test/d.png', width: 1, height: 1, alt: 'd', mimeType: 'image/png' },
+          emailLogo: null,
+        }),
+      ),
+    );
+
+    const { getCms } = await import('./cms');
+    const brand = await getCms('brand', { locale: 'ru' });
+
+    expect(brand.primaryColor).toBe('#0b5fff');
+    expect(brand).not.toHaveProperty('logoDark');
+  });
+});
+
+/**
  * Отдельный класс: ломается не CMS, а сама страховка. Фикстура строится
  * синхронно ДО ухода в сеть, поэтому её исключение летит мимо try/catch
  * внутри cmsFetch — и роняет страницу, к которой боевая CMS отношения

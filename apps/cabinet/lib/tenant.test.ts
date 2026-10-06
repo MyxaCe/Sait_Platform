@@ -1,24 +1,27 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   getTenantConfig,
-  getTenantStartBalanceCents,
+  getTenantStartBalance,
   isSymbolAllowed,
   type TenantAccess,
 } from './tenant';
 
 /**
- * Граница доступа кабинета к инструментам — решение штаба Р-025.
+ * Граница доступа кабинета к инструментам — решения штаба Р-025, Р-029 и
+ * Р-040.
  *
- * **Парная копия `apps/web/lib/tenant.test.ts`.** Таблица «вход → состояние»
- * здесь дословно та же: расхождение двух реализаций на одних и тех же
- * данных и было дефектом Р-025 (витрина на пустом списке показывала всё,
- * кабинет прятал модуль), и держать копии в соответствии должен тест, а не
- * память. Любое расхождение красит один из двух файлов.
+ * **Копий больше нет.** Решение переехало в `@broker/tenant` (PKG-04), и
+ * этот файл из «парной копии» стал проверкой того, что кабинет границу
+ * ВЫЗЫВАЕТ. Таблица «вход → состояние» осталась дословно той же, что у
+ * витрины, — теперь она доказывает не соответствие двух реализаций, а
+ * то, что обе стороны спрашивают одну.
  *
- * Отдельно проверяется второе поле конфига — стартовый демо-баланс. У него
- * политика ПРОТИВОПОЛОЖНАЯ: умолчание законно, потому что параметр удобства
- * ничего не разрешает. Два поля одного ответа живут по разным правилам, и
- * тест это фиксирует, чтобы их не «привели к единообразию».
+ * Отдельно проверяется второе поле конфига — стартовый демо-баланс. Его
+ * политика ПЕРЕВЁРНУТА решением Р-040: умолчание отменено, `null`
+ * означает отказ. Прежнее обоснование («демо-деньги — параметр удобства,
+ * умолчание ничего не разрешает») записано в `packages/tenant/src/balance.ts`
+ * как отменённое, а не вычеркнуто: отличить отменённое от забытого можно
+ * только по записанному намерению.
  */
 
 const ALL_STATES: TenantAccess[] = [
@@ -28,9 +31,11 @@ const ALL_STATES: TenantAccess[] = [
   { state: 'unavailable', reason: 'http-error' },
   { state: 'unavailable', reason: 'network' },
   { state: 'unavailable', reason: 'malformed' },
+  { state: 'unavailable', reason: 'expired' },
 ];
 
-const DEFAULT_BALANCE = 1_000_000;
+/** Сумма, которую подставляла legacy. Ни одно состояние не вправе её дать. */
+const LEGACY_DEFAULT = 1_000_000;
 
 beforeEach(() => {
   vi.spyOn(console, 'error').mockImplementation(() => {});
@@ -150,36 +155,85 @@ describe('механизм границы', () => {
   });
 });
 
-describe('стартовый демо-баланс живёт по ДРУГОМУ правилу', () => {
-  it('CMS отдала значение → берём его', async () => {
-    stubFetch(() => Promise.resolve(Response.json({ demoStartBalanceCents: 500_000, instruments: [] })));
+describe('стартовый демо-баланс: отказ вместо умолчания (Р-040)', () => {
+  it('CMS назвала сумму → берём её', async () => {
+    stubFetch(() =>
+      Promise.resolve(Response.json({ demoStartBalanceCents: 500_000, instruments: [] })),
+    );
 
-    expect(await getTenantStartBalanceCents()).toBe(500_000);
+    expect(await getTenantStartBalance()).toEqual({ state: 'set', cents: 500_000 });
   });
 
-  it('CMS недоступна → умолчание $10 000, и это НЕ fail-open', async () => {
+  it('CMS ответила null → `unset`, и это НЕ сумма', async () => {
+    stubFetch(() =>
+      Promise.resolve(Response.json({ demoStartBalanceCents: null, instruments: [] })),
+    );
+
+    // Открыть демо-счёт на сумму, которую никто не назначал, хуже, чем не
+    // открыть: за неё никто не отвечает, а терминал читает тот же конфиг.
+    expect(await getTenantStartBalance()).toEqual({ state: 'unset' });
+  });
+
+  it('CMS недоступна → `unavailable`, и это отличимо от «не задан»', async () => {
     stubFetch(() => Promise.reject(new Error('ECONNREFUSED')));
 
-    // Умолчание для демо-денег законно: параметр удобства ничего не
-    // разрешает. Для allow-list такое же умолчание было бы разрешением —
-    // отсюда разные политики у двух полей одного ответа.
-    expect(await getTenantStartBalanceCents()).toBe(DEFAULT_BALANCE);
+    // Два отказа запрещают одинаково, а чинятся в разных местах: первый —
+    // полем карточки сайта, второй — соседом или сетью.
+    expect(await getTenantStartBalance()).toEqual({ state: 'unavailable', reason: 'network' });
   });
 
-  it('мусор в поле баланса → умолчание, а не NaN и не 0', async () => {
-    stubFetch(() => Promise.resolve(Response.json({ demoStartBalanceCents: 'NaN', instruments: [] })));
+  it('мусор в поле → `unavailable:malformed`, а не ноль и не умолчание', async () => {
+    stubFetch(() =>
+      Promise.resolve(Response.json({ demoStartBalanceCents: 'NaN', instruments: [] })),
+    );
 
-    // «Успешный разбор не означает пригодного значения»: Number('NaN')
+    // «Успешный разбор не означает пригодного значения»: `Number('NaN')`
     // разбирается, а дальше превращается в ноль. Ноль здесь — счёт без денег.
-    expect(await getTenantStartBalanceCents()).toBe(DEFAULT_BALANCE);
+    expect(await getTenantStartBalance()).toEqual({ state: 'unavailable', reason: 'malformed' });
   });
 
-  it('баланс приходит даже когда граница доступа закрыта', async () => {
+  it('баланс разбирается независимо от границы доступа', async () => {
     stubFetch(() => Promise.resolve(Response.json({ demoStartBalanceCents: 777_000 })));
 
     const config = await getTenantConfig();
 
     expect(config.access.state).toBe('unavailable');
-    expect(config.demoStartBalanceCents).toBe(777_000);
+    expect(config.startBalance).toEqual({ state: 'set', cents: 777_000 });
+  });
+
+  it('РАСТЯЖКА: ни одно состояние конфига не даёт умолчания legacy', async () => {
+    const bodies: unknown[] = [
+      { demoStartBalanceCents: null, instruments: [] },
+      { demoStartBalanceCents: 'NaN', instruments: [] },
+      { instruments: [] },
+    ];
+
+    for (const body of bodies) {
+      stubFetch(() => Promise.resolve(Response.json(body)));
+      const balance = await getTenantStartBalance();
+
+      expect(balance.state).not.toBe('set');
+      expect(balance).not.toEqual({ state: 'set', cents: LEGACY_DEFAULT });
+    }
+
+    stubFetch(() => Promise.reject(new Error('ECONNREFUSED')));
+    expect((await getTenantStartBalance()).state).toBe('unavailable');
+  });
+});
+
+describe('кабинет вызывает границу со своими параметрами', () => {
+  it('ключ доставки и окно ревалидации доходят до запроса', async () => {
+    vi.stubEnv('CMS_API_KEY', 'secret');
+    const mock = stubFetch(() => Promise.resolve(Response.json({ instruments: [] })));
+
+    await getTenantConfig();
+
+    const [url, init] = (mock.mock.calls[0] as unknown[]) as [
+      string,
+      RequestInit & { next?: { revalidate?: number } },
+    ];
+    expect(url).toBe('http://cms.test/cms/sites/apex-ru');
+    expect((init.headers as Record<string, string>)['X-API-Key']).toBe('secret');
+    expect(init.next?.revalidate).toBe(300);
   });
 });

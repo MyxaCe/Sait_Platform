@@ -10,7 +10,7 @@ import { getPool } from './db';
 import { isRateLimited } from './rate-limit';
 import { hashPassword, verifyPassword } from './auth/password';
 import { registerUser } from './auth/register';
-import { getTenantStartBalanceCents } from './tenant';
+import { getTenantStartBalance } from './tenant';
 import {
   changePasswordSchema,
   loginSchema,
@@ -71,7 +71,13 @@ export async function registerAction(_prev: ActionState, formData: FormData): Pr
 
   const result = await registerUser(parsed.data);
   if (!result.ok) {
-    return { fieldErrors: { email: 'emailExists' } };
+    // Три причины отказа — три разных ответа формы. Прежде здесь любой
+    // отказ превращался в «email занят»: один беззвучный исход на
+    // несколько причин, ровно тот класс, который закрывает Р-025.
+    if (result.reason === 'emailExists') {
+      return { fieldErrors: { email: 'emailExists' } };
+    }
+    return { error: result.reason };
   }
   await createSession(result.userId);
   redirect(homePath(parsed.data.locale));
@@ -207,13 +213,29 @@ export async function uploadDocumentAction(_prev: ActionState, formData: FormDat
  * Сброс демо-счёта к стартовому балансу тенанта (из CMS). Пока баланс —
  * единственное состояние проекции; с приходом позиций/сделок (консюмер Т3)
  * сброс будет чистить и их. Чисто наша сторона, терминалу не отправляется.
+ *
+ * При незаданной сумме сброс ОТКАЗЫВАЕТ (Р-040): записать в счёт число,
+ * которого никто не назначал, — та же ошибка, что открыть на нём счёт,
+ * только уже существующему клиенту и поверх его баланса.
+ *
+ * Барьер стоит здесь, а не только в интерфейсе: кнопка в
+ * `BalanceModule` задизейблена с подписью, но экшен вызывается запросом,
+ * а не кнопкой.
  */
 export async function resetDemoAccountAction(): Promise<void> {
   const user = await getSessionUser();
   if (!user) return;
   if (isRateLimited(`demo-reset:${user.id}`, 5, 60_000)) return;
 
-  const startBalanceCents = await getTenantStartBalanceCents();
+  const startBalance = await getTenantStartBalance();
+  if (startBalance.state !== 'set') {
+    console.error(
+      `[demo-reset] отказ: стартовый демо-баланс не назначен (${startBalance.state})`,
+      { userId: user.id, state: startBalance.state },
+    );
+    return;
+  }
+  const startBalanceCents = startBalance.cents;
   await getPool().query(
     `UPDATE demo_accounts SET balance_cents = $1 WHERE user_id = $2`,
     [startBalanceCents, user.id],

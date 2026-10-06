@@ -3,6 +3,7 @@ import { Button } from '@broker/ui';
 import type { CabinetHomeModule } from '@broker/api-client';
 import { resetDemoAccountAction } from '@/lib/actions';
 import type { DemoAccount } from '@/lib/data';
+import type { TenantStartBalance } from '@/lib/tenant';
 
 type BalanceConfig = Extract<CabinetHomeModule, { type: 'balance' }>;
 
@@ -10,13 +11,20 @@ type BalanceConfig = Extract<CabinetHomeModule, { type: 'balance' }>;
  * Модуль «Общая стоимость»: демо-баланс + кнопки операций (состав из CMS).
  * Фиатные операции появятся с платёжным провайдером — кнопки честно
  * задизейблены с подписью, а не спрятаны (пользователь видит будущее).
+ *
+ * Тем же способом показан и недоступный сброс демо-счёта: когда владелец
+ * не назначил стартовую сумму (Р-040), кнопка остаётся на месте и
+ * говорит, почему не работает. Спрятать её значило бы выдать отказ за
+ * отсутствие функции — то, что запрещает Р-025, п. 3.
  */
 export async function BalanceModule({
   config,
   demo,
+  startBalance,
 }: {
   config: BalanceConfig;
   demo: DemoAccount | null;
+  startBalance: TenantStartBalance;
 }) {
   const t = await getTranslations('home');
   const format = await getFormatter();
@@ -50,14 +58,34 @@ export async function BalanceModule({
         </div>
       )}
       {/* Сброс демо-счёта к стартовому балансу — работает без платёжки
-          (server action, прогрессивное улучшение без JS) */}
-      {demo && (
-        <form action={resetDemoAccountAction} className="mt-3">
-          <Button type="submit" size="sm" variant="ghost">
-            {t('btnResetDemo')}
-          </Button>
-        </form>
-      )}
+          (server action, прогрессивное улучшение без JS). Сумму назначает
+          владелец в CMS; не назначена — сбрасывать не к чему, и об этом
+          написано рядом с кнопкой. */}
+      {demo &&
+        (startBalance.state === 'set' ? (
+          <form action={resetDemoAccountAction} className="mt-3">
+            <Button type="submit" size="sm" variant="ghost">
+              {t('btnResetDemo')}
+            </Button>
+          </form>
+        ) : (
+          <div
+            className="mt-3"
+            data-demo-reset="blocked"
+            /* Машинный признак причины — не переведённая строка: по ней
+               отличают состояния проверки, а перевод её испортит. */
+            data-reason={startBalance.state === 'unset' ? 'unset' : startBalance.reason}
+          >
+            <Button size="sm" variant="ghost" disabled>
+              {t('btnResetDemo')}
+            </Button>
+            <p className="mt-1 text-xs text-secondary">
+              {startBalance.state === 'unset'
+                ? t('resetUnsetNote')
+                : t('resetUnavailableNote')}
+            </p>
+          </div>
+        ))}
     </section>
   );
 }

@@ -25,7 +25,13 @@ const nextConfig = {
   // standalone — только для Docker-сборки (docker/web.Dockerfile);
   // локальный `next start` работает в обычном режиме
   output: process.env.BUILD_STANDALONE ? 'standalone' : undefined,
-  transpilePackages: ['@broker/ui', '@broker/utils', '@broker/realtime', '@broker/api-client'],
+  transpilePackages: [
+    '@broker/ui',
+    '@broker/utils',
+    '@broker/realtime',
+    '@broker/api-client',
+    '@broker/tenant',
+  ],
   images: {
     formats: ['image/avif', 'image/webp'],
     deviceSizes: [320, 428, 768, 1024, 1440, 1920, 2560],

@@ -2,7 +2,16 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { accessNotice, getTenantAccess, isSymbolAllowed, type TenantAccess } from './tenant';
 
 /**
- * Граница доступа витрины к инструментам (ADR-028) — решение штаба Р-025.
+ * Граница доступа витрины к инструментам (ADR-028) — решения штаба Р-025,
+ * Р-029 и Р-030.
+ *
+ * **Что здесь проверяется после выноса в `@broker/tenant`.** Решение
+ * живёт в пакете и покрыто там своими тестами; этот файл проверяет, что
+ * витрина его ВЫЗЫВАЕТ и вызывает со своими параметрами. Разница не
+ * умозрительная: класс «написано и не вызывается» модульными тестами не
+ * ловится в принципе — функция-то исправна. Парная копия кабинета
+ * (`apps/cabinet/lib/tenant.test.ts`) делает то же со своей стороны,
+ * только теперь она стережёт вызов, а не вторую реализацию.
  *
  * Проверяется ТРИ состояния по отдельности, и в каждом два вопроса:
  * «что именно произошло» (состояния обязаны быть различимы) и «снята ли
@@ -10,12 +19,16 @@ import { accessNotice, getTenantAccess, isSymbolAllowed, type TenantAccess } fro
  * закрыт `accessNotice`: исчерпывающий разбор, в котором каждому закрытому
  * состоянию соответствует своё объяснение.
  *
- * Мутации, от которых набор обязан покраснеть (прогнаны, см. ADR-029):
+ * Мутации, от которых набор обязан покраснеть (прогнаны, см. ADR-029 и
+ * ADR-030):
  *   1. `length === 0 → null` (fail-open на пустом списке — исходный дефект);
  *   2. `isSymbolAllowed` разрешает при `state !== 'allowed'`;
  *   3. отсутствующее `instruments` считается пустым списком;
  *   4. `empty` и `unavailable` снова сливаются в одно значение;
- *   5. недоступность границы перестаёт кричать в лог.
+ *   5. недоступность границы перестаёт кричать в лог;
+ *   6. адаптер витрины не передаёт теги ревалидации (вебхук перестаёт
+ *      работать, поведение при этом выглядит прежним);
+ *   7. срок годности от источника не применяется.
  */
 
 const ALL_STATES: TenantAccess[] = [
@@ -245,5 +258,70 @@ describe('механизм границы', () => {
     );
     expect(new Set(reasons).size).toBe(reasons.length);
     expect(reasons).not.toContain(undefined);
+  });
+});
+
+/* ------------------------------------------------------------------ */
+/* Срок годности списка — от источника (Р-030)                         */
+/* ------------------------------------------------------------------ */
+
+describe('срок годности списка приходит от источника', () => {
+  /** Ответ с заголовками: `Date` — якорь срока, он от источника. */
+  function withAge(ageSeconds: number, cacheControl: string) {
+    const date = new Date(Date.now() - ageSeconds * 1000).toUTCString();
+    return () =>
+      Promise.resolve(
+        Response.json({ instruments: ['BTCUSD'] }, { headers: { date, 'cache-control': cacheControl } }),
+      );
+  }
+
+  it('СВЯЗКА: источник назвал 60 с, ответу 120 с → граница закрыта, причина `expired`', async () => {
+    stubFetch(withAge(120, 'public, max-age=60'));
+
+    const access = await getTenantAccess();
+
+    // «Продолжаем по последнему известному» запрещено: список меняется
+    // ровно потому, что меняются разрешения. Мутация «не применять срок»
+    // красит этот тест и ни одного модульного в пакете.
+    expect(access).toEqual({ state: 'unavailable', reason: 'expired' });
+    expect(isSymbolAllowed(access, 'BTCUSD')).toBe(false);
+    // Закрытая граница объясняет себя — и `expired` отличим от прочих причин
+    expect(accessNotice(access)?.reason).toBe('expired');
+  });
+
+  it('тот же ответ внутри срока — граница открыта', async () => {
+    stubFetch(withAge(5, 'public, max-age=60'));
+
+    expect(isSymbolAllowed(await getTenantAccess(), 'BTCUSD')).toBe(true);
+  });
+
+  it('сегодняшний источник срока не называет (`no-store`) → действует наше окно', async () => {
+    // Так отвечает legacy на `/v1/cms/sites/{slug}`; v2 на доставке
+    // отвечает `private, no-cache`. Обе директивы — про переиспользование
+    // ответа посредником, а не про срок действия разрешений, и читать их
+    // как срок нельзя. Пункт Р-030 закрыт наполовину, см. TD-015.
+    stubFetch(withAge(10 ** 6, 'no-store'));
+
+    expect(isSymbolAllowed(await getTenantAccess(), 'BTCUSD')).toBe(true);
+  });
+});
+
+/* ------------------------------------------------------------------ */
+/* Адаптер витрины: свои параметры запроса                             */
+/* ------------------------------------------------------------------ */
+
+describe('витрина вызывает границу со своими параметрами', () => {
+  it('теги инвалидации карточки сайта доходят до запроса', async () => {
+    const mock = stubFetch(() => Promise.resolve(Response.json({ instruments: [] })));
+
+    await getTenantAccess();
+
+    // Без тегов вебхук CMS перестаёт обновлять границу, а поведение
+    // выглядит прежним до первой правки allow-list.
+    const init = (mock.mock.calls[0] as unknown[])[1] as {
+      next?: { tags?: string[]; revalidate?: number };
+    };
+    expect(init.next?.tags).toEqual(['cms:brand', 'cms:brand:apex-ru']);
+    expect(init.next?.revalidate).toBe(300);
   });
 });

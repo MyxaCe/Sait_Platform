@@ -8,7 +8,12 @@
 
 export interface ChromeBrand {
   name: string;
-  primaryColor: string;
+  /**
+   * `null` — цвет не задан. В CMS v2 это штатное значение (Р-040), и
+   * кабинет остаётся на палитре токенов: акцент не инжектируется вовсе.
+   * Решение, а не побочное свойство — см. `app/[locale]/layout.tsx`.
+   */
+  primaryColor: string | null;
   logo: { url: string; width: number; height: number; alt: string } | null;
   socials: { name: string; url: string }[];
 }
@@ -48,11 +53,16 @@ export async function cmsGet(resource: string, locale: string): Promise<unknown 
 
 export async function getChromeBrand(locale: string): Promise<ChromeBrand | null> {
   const data = (await cmsGet('brand', locale)) as Record<string, unknown> | null;
-  if (!data || typeof data.name !== 'string' || typeof data.primaryColor !== 'string') return null;
+  // Незаданный цвет НЕ отменяет бренд целиком. Прежде отменял: условие
+  // требовало строки, и после переезда на v2 (`primaryColor: null` —
+  // штатное значение) кабинет потерял бы заодно имя, логотип и соцсети.
+  // Отсутствие одного необязательного поля не доказывает отсутствия
+  // остальных.
+  if (!data || typeof data.name !== 'string') return null;
   const logo = data.logo as ChromeBrand['logo'] | null;
   return {
     name: data.name,
-    primaryColor: data.primaryColor,
+    primaryColor: typeof data.primaryColor === 'string' ? data.primaryColor : null,
     logo: logo && typeof logo.url === 'string' ? logo : null,
     socials: Array.isArray(data.socials) ? (data.socials as ChromeBrand['socials']) : [],
   };

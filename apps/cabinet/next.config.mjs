@@ -10,7 +10,13 @@ const nextConfig = {
   experimental: { instrumentationHook: true },
   // standalone — только для Docker-сборки (docker/cabinet.Dockerfile)
   output: process.env.BUILD_STANDALONE ? 'standalone' : undefined,
-  transpilePackages: ['@broker/ui', '@broker/utils', '@broker/realtime', '@broker/api-client'],
+  transpilePackages: [
+    '@broker/ui',
+    '@broker/utils',
+    '@broker/realtime',
+    '@broker/api-client',
+    '@broker/tenant',
+  ],
   headers: async () => [
     {
       source: '/(.*)',

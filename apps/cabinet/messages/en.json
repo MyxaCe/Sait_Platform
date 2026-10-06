@@ -98,7 +98,9 @@
     "marketsNoMatchText": "Instruments are selected for this site, but none of them are currently quoted by the data source.",
     "marketsNoTabsTitle": "No tabs enabled",
     "marketsNoTabsText": "The Markets module is enabled, but all of its tabs are switched off in the site settings — there is nothing to show.",
-    "marketsReason": "reason: {reason}"
+    "marketsReason": "reason: {reason}",
+    "resetUnsetNote": "Reset unavailable: the demo starting amount has not been set in the site settings.",
+    "resetUnavailableNote": "Reset unavailable: the site settings could not be retrieved."
   },
   "dashboard": {
     "greeting": "Hello, {name}!",
@@ -191,6 +193,8 @@
     "unsupportedFormat": "PDF, JPG and PNG are supported",
     "fileTooLarge": "File is larger than 10 MB",
     "invalidRequest": "Invalid request",
-    "bot": "Submission error"
+    "bot": "Submission error",
+    "startBalanceUnset": "The account cannot be opened right now: the demo starting amount has not been set. We do not substitute one — please contact support, it is fixed in the site settings.",
+    "startBalanceUnavailable": "The account cannot be opened right now: the site settings could not be retrieved. Please try again later — your form data is not lost."
   }
 }

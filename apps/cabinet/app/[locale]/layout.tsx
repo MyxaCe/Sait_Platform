@@ -40,9 +40,12 @@ export default async function RootLayout({ children, params }: LayoutProps) {
   setRequestLocale(locale);
   const messages = await getMessages();
 
-  // Бренд из CMS (тот же тенант, что у сайта): акцент поверх токенов
+  // Бренд из CMS (тот же тенант, что у сайта): акцент поверх токенов.
+  // Цвет не задан (в v2 это штатное `null`) — остаёмся на палитре
+  // токенов СОЗНАТЕЛЬНО: у кабинета нет витринной задачи держать
+  // фирменный цвет, он за логином. Остальной бренд при этом на месте.
   const brand = await getChromeBrand(locale);
-  const accentChannels = brand ? hexToRgbChannels(brand.primaryColor) : null;
+  const accentChannels = brand?.primaryColor ? hexToRgbChannels(brand.primaryColor) : null;
 
   return (
     <html lang={locale} data-theme="dark" className={inter.variable}>

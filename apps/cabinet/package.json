@@ -12,6 +12,7 @@
   "dependencies": {
     "@broker/api-client": "workspace:*",
     "@broker/realtime": "workspace:*",
+    "@broker/tenant": "workspace:*",
     "@broker/ui": "workspace:*",
     "@broker/utils": "workspace:*",
     "@sentry/nextjs": "^8.42.0",

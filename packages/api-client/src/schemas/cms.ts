@@ -4,11 +4,22 @@ import { hexColorSchema, isoDateTimeSchema, mediaSchema } from './common';
 /* ------------------------------------------------------------------ */
 /* GET /v1/cms/brand                                                   */
 /* ------------------------------------------------------------------ */
+/**
+ * `primaryColor` допускает `null` — аддитивная правка контракта по
+ * решению штаба Р-040. В legacy это всегда строка с умолчанием, в CMS v2
+ * — `string | null`, где `null` значит «фирменный цвет не задан».
+ *
+ * Расширение, а не ослабление: строгая схема отвергла бы весь ответ
+ * бренда из-за одного пустого поля, и потребитель молча свалился бы на
+ * фикстуру — витрина показала бы чужое имя и чужой логотип, а не просто
+ * осталась без цвета. Запасной цвет потребитель держит свой
+ * (`apps/web/lib/brand.ts`), в контракт он не входит.
+ */
 export const brandSchema = z.object({
   name: z.string().min(1),
   logo: mediaSchema.nullable(),
   favicon: mediaSchema.nullable(),
-  primaryColor: hexColorSchema,
+  primaryColor: hexColorSchema.nullable(),
   socials: z.array(z.object({ name: z.string(), url: z.string().url() })),
 });
 export type Brand = z.infer<typeof brandSchema>;

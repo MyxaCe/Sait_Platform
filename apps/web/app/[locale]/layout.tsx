@@ -8,7 +8,7 @@ import { ContentAutoRefresh } from '@/components/ContentAutoRefresh';
 import { PreviewBanner } from '@/components/PreviewBanner';
 import { OrganizationJsonLd } from '@/components/seo/OrganizationJsonLd';
 import { routing } from '@/i18n/routing';
-import { hexToRgbChannels } from '@/lib/brand';
+import { hexToRgbChannels, resolvePrimaryColor } from '@/lib/brand';
 import { getCms } from '@/lib/cms';
 import { SITE_NAME, SITE_URL } from '@/lib/site';
 import { Providers } from './providers';
@@ -115,9 +115,13 @@ export default async function RootLayout({ children, params }: LayoutProps) {
   setRequestLocale(locale);
   const messages = await getMessages();
 
-  // Бренд из CMS (тег cms:brand): акцентный цвет инжектируется поверх токенов
+  // Бренд из CMS (тег cms:brand): акцентный цвет инжектируется поверх
+  // токенов. В v2 цвет может быть `null` — тогда идёт наш запасной
+  // (WEB-05): страница без фирменного цвета была бы тихим регрессом
+  // переезда, заметным не раньше, чем кто-нибудь посмотрит на макет.
   const brand = await getCms('brand', { locale: locale as 'ru' | 'en' });
-  const accentChannels = hexToRgbChannels(brand.primaryColor);
+  const primary = resolvePrimaryColor(brand.primaryColor);
+  const accentChannels = hexToRgbChannels(primary.color);
 
   // В preview страница динамическая, rendered-at меняется на каждый запрос —
   // автообновление там не имеет смысла (тот же try/catch, что в generateMetadata)
@@ -131,7 +135,7 @@ export default async function RootLayout({ children, params }: LayoutProps) {
   return (
     // suppressHydrationWarning: next-themes меняет data-theme до гидрации
     <html lang={locale} suppressHydrationWarning className={inter.variable}>
-      <body className="bg-base font-sans text-primary">
+      <body className="bg-base font-sans text-primary" data-brand-color={primary.source}>
         {accentChannels && (
           <style>{`:root{--accent:${accentChannels};}`}</style>
         )}

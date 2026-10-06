@@ -13,6 +13,7 @@ import {
   getPromotions,
   getVerificationStatus,
 } from '@/lib/home';
+import { getTenantStartBalance } from '@/lib/tenant';
 
 /**
  * Главная кабинета (ADR-026): модули из per-site конфига CMS —
@@ -28,11 +29,14 @@ export default async function HomePage({ params }: { params: { locale: string } 
   const needs = (type: CabinetHomeModule['type']) =>
     modules.some((m) => m.type === type && m.enabled);
 
-  const [demo, verification, markets, promos] = await Promise.all([
+  const [demo, verification, markets, promos, startBalance] = await Promise.all([
     needs('balance') ? getDemoAccount(user.id) : null,
     needs('onboarding') ? getVerificationStatus(user.id) : ('none' as const),
     needs('markets') ? getMarketInstruments() : null,
     needs('promotions') ? getPromotions(params.locale) : [],
+    // Состояние стартовой суммы нужно самому модулю: кнопка сброса
+    // обязана объяснить, почему не работает, а не исчезнуть.
+    getTenantStartBalance(),
   ]);
 
   return (
@@ -45,7 +49,9 @@ export default async function HomePage({ params }: { params: { locale: string } 
           case 'onboarding':
             return <OnboardingModule key={i} config={module} verification={verification} />;
           case 'balance':
-            return <BalanceModule key={i} config={module} demo={demo} />;
+            return (
+              <BalanceModule key={i} config={module} demo={demo} startBalance={startBalance} />
+            );
           case 'markets':
             // `markets === null` только когда модуль выключен, а выключенные
             // отсеяны строкой выше — ветка недостижима и существует ради
