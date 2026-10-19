@@ -17,9 +17,52 @@ const withSerwist = withSerwistInit({
 // статичны): для Docker пробрасывается build-arg'ом FRAME_ANCESTORS.
 const frameAncestors = process.env.FRAME_ANCESTORS ?? "'self' http://localhost:3001";
 
+/**
+ * Переменные, действующие ПО ПРИРОДЕ СБОРКИ (WEB-09, B-030).
+ *
+ * `NEXT_PUBLIC_*` компилятор впекает в браузерный бандл, `FRAME_ANCESTORS`
+ * уезжает в статический заголовок, `BUILD_STANDALONE` выбирает форму
+ * вывода. В готовом образе `process.env` их уже не содержит — и отпечаток
+ * в `/api/health`, который читает окружение рантайма, говорил про них
+ * «не задано» о значениях, которые ДЕЙСТВУЮТ. Поле, способное соврать,
+ * хуже отсутствующего.
+ *
+ * Отсюда снимок: `env` инлайнится компилятором на сборке в оба бандла,
+ * поэтому ручка здоровья получает факт сборки как факт сборки, а не
+ * пытается узнать его из рантайма, где его нет.
+ *
+ * **Да, это значение замерзает в образе — и здесь это правильно.** Правило
+ * «вычисленное на сборке замерзает» запрещает замораживать то, что
+ * описывает РАНТАЙМ (момент старта процесса, B-010). Здесь описывается
+ * сама сборка, и замороженный снимок — единственная честная форма.
+ *
+ * Отпечаток булев: ручка не место утечки, а имена уже в `.env.example`.
+ */
+const BUILD_SCOPED_ENV = [
+  'NEXT_PUBLIC_CABINET_URL',
+  'NEXT_PUBLIC_SITE_URL',
+  'NEXT_PUBLIC_SENTRY_DSN',
+  'NEXT_PUBLIC_WS_URL',
+  'FRAME_ANCESTORS',
+  'BUILD_STANDALONE',
+];
+
+const buildFingerprint = JSON.stringify(
+  Object.fromEntries(
+    BUILD_SCOPED_ENV.map((name) => [
+      name,
+      typeof process.env[name] === 'string' && process.env[name].length > 0,
+    ]),
+  ),
+);
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  // Снимок сборочных переменных для отпечатка в /api/health (WEB-09).
+  // Инлайнится на сборке — именно поэтому и отвечает на вопрос «что было
+  // задано, когда собирали», а не «что лежит в окружении сейчас».
+  env: { BUILD_CONFIG_FINGERPRINT: buildFingerprint },
   // instrumentation.ts (инициализация серверного Sentry) в Next 14.2 — за флагом
   experimental: { instrumentationHook: true },
   // standalone — только для Docker-сборки (docker/web.Dockerfile);
