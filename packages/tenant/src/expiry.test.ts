@@ -25,7 +25,7 @@ describe('источник назвал срок', () => {
       headers({ date: new Date(ORIGIN).toUTCString(), 'cache-control': 'public, max-age=60' }),
     );
 
-    expect(expiry).toEqual({ state: 'named', expiresAt: ORIGIN + 60_000 });
+    expect(expiry).toEqual({ state: 'named', expiresAt: ORIGIN + 60_000, source: 'response-headers' });
   });
 
   it('s-maxage перекрывает max-age: наш ISR-слой — общий кеш', () => {
@@ -36,7 +36,7 @@ describe('источник назвал срок', () => {
       }),
     );
 
-    expect(expiry).toEqual({ state: 'named', expiresAt: ORIGIN + 30_000 });
+    expect(expiry).toEqual({ state: 'named', expiresAt: ORIGIN + 30_000, source: 'response-headers' });
   });
 
   it('Expires в будущем — тоже названный срок', () => {
@@ -47,7 +47,7 @@ describe('источник назвал срок', () => {
       }),
     );
 
-    expect(expiry).toEqual({ state: 'named', expiresAt: ORIGIN + 120_000 });
+    expect(expiry).toEqual({ state: 'named', expiresAt: ORIGIN + 120_000, source: 'response-headers' });
   });
 
   it('РАСТЯЖКА: срок — абсолютный момент источника, а не «сейчас плюс N»', () => {
@@ -61,7 +61,7 @@ describe('источник назвал срок', () => {
     // окно, отсчитанное от момента разбора, обнуляется при каждом чтении
     // из кеша данных, и список не истекает никогда.
     expect(readListExpiry(h)).toEqual(readListExpiry(h));
-    expect(readListExpiry(h)).toEqual({ state: 'named', expiresAt: ORIGIN + 60_000 });
+    expect(readListExpiry(h)).toEqual({ state: 'named', expiresAt: ORIGIN + 60_000, source: 'response-headers' });
   });
 });
 
@@ -103,7 +103,7 @@ describe('источник о сроке промолчал', () => {
 
 describe('истёкший список означает «закрыто»', () => {
   const allowed = readAccess(['BTCUSD']);
-  const named = { state: 'named', expiresAt: ORIGIN + 60_000 } as const;
+  const named = { state: 'named', expiresAt: ORIGIN + 60_000, source: 'response-headers' } as const;
 
   it('до срока — список действует', () => {
     expect(applyListExpiry(allowed, named, ORIGIN + 59_000)).toBe(allowed);
