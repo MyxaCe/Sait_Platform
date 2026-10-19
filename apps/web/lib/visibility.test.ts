@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import cases from './contracts/visibility-cases.v1.json';
@@ -179,6 +179,38 @@ describe('копия таблицы', () => {
 /* ------------------------------------------------------------------ */
 /* 4. Свойства, которых в таблице нет, но на них держится прочтение     */
 /* ------------------------------------------------------------------ */
+
+describe('версия таблицы', () => {
+  it('v1 всё ещё новейшая — либо сверка объявлена НЕВЫПОЛНЕННОЙ', () => {
+    /**
+     * Сверка содержимого закреплена за ИМЕНЕМ ФАЙЛА `...v1.json`. Выпусти
+     * CMS таблицу версией выше отдельным файлом — наша копия осталась бы
+     * зелёной и устаревшей молча: тест, закреплённый за преходящим
+     * фактом, перестаёт проверять, не покраснев.
+     *
+     * Поэтому отдельно сторожим появление соседней версии. Новый случай
+     * в таблице — это изменение ПРАВИЛА, а не правка фикстуры, и узнать
+     * о нём надо до выкатки, а не после.
+     */
+    const dir = path.dirname(SOURCE);
+    if (!existsSync(dir)) {
+      console.warn(
+        `[WEB-10] ПРОВЕРКА ВЕРСИИ НЕ ВЫПОЛНЕНА: ${dir} недоступен. ` +
+          'Появление visibility-cases.v2.json отсюда не видно.',
+      );
+      expect(existsSync(dir)).toBe(false);
+      return;
+    }
+
+    const versions = readdirSync(dir)
+      .map((name) => /^visibility-cases\.v(\d+)\.json$/.exec(name))
+      .filter((m): m is RegExpExecArray => m !== null)
+      .map((m) => Number(m[1]));
+
+    expect(versions.length).toBeGreaterThan(0);
+    expect(Math.max(...versions)).toBe(1);
+  });
+});
 
 /* ------------------------------------------------------------------ */
 /* 3б. Барьер, который таблица НЕ различает                             */
