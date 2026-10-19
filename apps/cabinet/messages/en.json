@@ -37,7 +37,8 @@
     "loginTitle": "Sign in",
     "loginSubtitle": "Your trading account, documents and notifications",
     "registerTitle": "Open an account",
-    "registerSubtitle": "2 minutes — and a $10,000 demo account is yours",
+    "registerSubtitle": "2 minutes — and your demo account is ready",
+    "registerSubtitleWithAmount": "2 minutes — and a {amount} demo account is yours",
     "email": "Email",
     "password": "Password",
     "firstName": "First name",
@@ -46,9 +47,9 @@
     "country": "Country",
     "accountType": "Account type",
     "accountTypes": {
-      "standard": "Standard — from $100",
-      "pro": "Pro — from $1,000",
-      "ecn": "ECN Prime — from $5,000"
+      "standard": "Standard",
+      "pro": "Pro",
+      "ecn": "ECN Prime"
     },
     "loginButton": "Sign in",
     "registerButton": "Open account",
@@ -66,7 +67,7 @@
     "stepVerificationDone": "Identity confirmed.",
     "stepVerificationCta": "Get verified",
     "stepDepositTitle": "Fund your account",
-    "stepDepositText": "Your $10,000 demo account is already funded. Real deposits open once the payment provider is connected.",
+    "stepDepositText": "Your demo account is already funded. Real deposits open once the payment provider is connected.",
     "stepTradeTitle": "First trade",
     "stepTradeText": "Open the terminal and make your first trade with demo funds — risk-free.",
     "stepTradeCta": "Open a trade",
@@ -166,7 +167,7 @@
     "markAll": "Mark all as read",
     "markRead": "Read",
     "types": {
-      "welcome": "Welcome! Your {accountType} account application has been received; a $10,000 demo account is already open.",
+      "welcome": "Welcome! Your {accountType} account application has been received; your demo account is already open.",
       "documentUploaded": "Document “{filename}” has been uploaded and sent for review.",
       "demoReset": "Demo account has been reset to the starting balance.",
       "tradeExecuted": "Trade executed: {side} {volume} {symbol}."
