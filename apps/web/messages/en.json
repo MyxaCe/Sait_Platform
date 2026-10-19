@@ -184,6 +184,8 @@
     "accessUnavailableTitle": "Permitted instruments list unavailable",
     "accessUnavailableText": "The site settings could not be retrieved, so no instruments are shown. Access stays closed until the list arrives rather than opening up to everything: otherwise a neighbour failing would turn into a permission. This is a failure and is fixed on the platform side.",
     "accessUnavailableStrip": "Permitted instruments list unavailable — quotes are not shown",
+    "quotesUnavailableStrip": "Quote source unavailable - prices are not shown",
+    "quotesEmptyStrip": "None of the permitted instruments is streaming right now - prices are not shown",
     "accessReason": "reason: {reason}"
   },
   "accounts": {
