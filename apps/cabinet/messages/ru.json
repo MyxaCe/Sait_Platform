@@ -37,7 +37,8 @@
     "loginTitle": "Вход в кабинет",
     "loginSubtitle": "Торговый счёт, документы и уведомления",
     "registerTitle": "Открытие счёта",
-    "registerSubtitle": "2 минуты — и демо-счёт на $10 000 уже ваш",
+    "registerSubtitle": "2 минуты — и демо-счёт уже ваш",
+    "registerSubtitleWithAmount": "2 минуты — и демо-счёт на {amount} уже ваш",
     "email": "Email",
     "password": "Пароль",
     "firstName": "Имя",
@@ -46,9 +47,9 @@
     "country": "Страна",
     "accountType": "Тип счёта",
     "accountTypes": {
-      "standard": "Standard — от $100",
-      "pro": "Pro — от $1 000",
-      "ecn": "ECN Prime — от $5 000"
+      "standard": "Standard",
+      "pro": "Pro",
+      "ecn": "ECN Prime"
     },
     "loginButton": "Войти",
     "registerButton": "Открыть счёт",
@@ -66,7 +67,7 @@
     "stepVerificationDone": "Личность подтверждена.",
     "stepVerificationCta": "Пройти верификацию",
     "stepDepositTitle": "Пополнение счёта",
-    "stepDepositText": "Демо-счёт на $10 000 уже пополнен. Пополнение реальными средствами откроется после подключения платёжного провайдера.",
+    "stepDepositText": "Демо-счёт уже пополнен. Пополнение реальными средствами откроется после подключения платёжного провайдера.",
     "stepTradeTitle": "Первая сделка",
     "stepTradeText": "Откройте терминал и совершите первую сделку на демо-средствах — без риска.",
     "stepTradeCta": "Открыть сделку",
@@ -166,7 +167,7 @@
     "markAll": "Прочитать все",
     "markRead": "Прочитано",
     "types": {
-      "welcome": "Добро пожаловать! Заявка на счёт {accountType} принята, демо-счёт с $10 000 уже открыт.",
+      "welcome": "Добро пожаловать! Заявка на счёт {accountType} принята, демо-счёт уже открыт.",
       "documentUploaded": "Документ «{filename}» загружен и передан на проверку.",
       "demoReset": "Демо-счёт сброшен к стартовому балансу.",
       "tradeExecuted": "Сделка исполнена: {side} {volume} {symbol}."
