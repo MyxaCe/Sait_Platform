@@ -34,7 +34,25 @@ if (!databaseUrl) {
 
 const tenant = process.env.SITE_SLUG ?? 'apex-ru';
 const pool = new Pool({ connectionString: databaseUrl, max: 3 });
-const subscriber = createSubscriber();
+/**
+ * Отказ шины после успешного старта. Молчать здесь нельзя: процесс жив,
+ * контейнер `Up`, keep-alive-таймер тикает — а сообщения не читаются.
+ * Здоровье процесса не означает наличия связи, и «тихо простаивающий
+ * консюмер» мы уже один раз принимали за исправный.
+ *
+ * Выход ненулевым кодом отдаёт переподключение политике перезапуска:
+ * своего реконнекта у подписчика нет, и делать вид, что он есть,
+ * хуже, чем выйти громко. Сознательно не сделано: собственный реконнект
+ * с backoff — отдельная задача, он потребует различать «шина моргнула»
+ * и «обменника больше нет», а это разные решения.
+ */
+const subscriber = createSubscriber((where, error) => {
+  console.error(`[consumer] ${where} error: ${error.message} — подписка мертва, выходим`);
+  Sentry.captureException(error, { tags: { component: 'consumer', kind: 'bus-fatal', where } });
+  clearInterval(keepAlive);
+  process.exitCode = 1;
+  void subscriber.close().then(() => pool.end()).then(() => process.exit(1));
+});
 
 /**
  * Счётчики разбора (CON-03). Раньше «чужое» и «наше сломанное» были одинаково

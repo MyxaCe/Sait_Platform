@@ -1,7 +1,7 @@
 import * as Sentry from '@sentry/node';
 import { Pool } from 'pg';
-import { eventEnvelopeSchema, scrubSentryEvent } from '@broker/api-client';
-import { nextDelayMs } from './backoff';
+import { scrubSentryEvent } from '@broker/api-client';
+import { BATCH_SIZE, POLL_INTERVAL_MS, processBatch } from './outbox';
 import { createPublisher } from './publisher';
 
 // GlitchTip (site-bff /2): ошибки воркера. Без DSN — выключен. Скраббинг до отправки.
@@ -23,17 +23,6 @@ if (process.env.SENTRY_DSN) {
  * повторно; потребители дедуплицируют по event_id (контракт платформы).
  */
 
-const POLL_INTERVAL_MS = 1_000;
-const BATCH_SIZE = 20;
-
-interface OutboxRow {
-  id: string;
-  event_id: string;
-  routing_key: string;
-  payload: unknown;
-  attempts: number;
-}
-
 const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl) {
   console.error('[relay] DATABASE_URL is required');
@@ -44,49 +33,21 @@ const pool = new Pool({ connectionString: databaseUrl, max: 3 });
 const publisher = createPublisher();
 let running = true;
 
-async function processBatch(): Promise<number> {
+/**
+ * Пер-строчная логика повторов живёт в `outbox.ts` (REL-04): здесь она
+ * была непроверяема на уровне связки — импорт этого файла поднимает пул
+ * и запускает `main()`. Трекер ошибок остаётся здесь и уходит туда
+ * параметром.
+ */
+async function runBatch(): Promise<number> {
   const client = await pool.connect();
   try {
-    await client.query('BEGIN');
-    const { rows } = await client.query<OutboxRow>(
-      `SELECT id, event_id, routing_key, payload, attempts
-         FROM outbox
-        WHERE published_at IS NULL AND next_attempt_at <= now()
-        ORDER BY id
-        LIMIT $1
-        FOR UPDATE SKIP LOCKED`,
-      [BATCH_SIZE],
-    );
-
-    for (const row of rows) {
-      try {
-        const envelope = eventEnvelopeSchema.parse(row.payload);
-        await publisher.publish(row.routing_key, envelope);
-        await client.query(`UPDATE outbox SET published_at = now() WHERE id = $1`, [row.id]);
-      } catch (error) {
-        const attempts = row.attempts + 1;
-        const delay = nextDelayMs(attempts);
-        const message = error instanceof Error ? error.message : String(error);
-        console.error(
-          `[relay] publish failed event_id=${row.event_id} attempt=${attempts} retry_in=${delay}ms: ${message}`,
-        );
-        Sentry.captureException(error, { tags: { component: 'relay', routing_key: row.routing_key } });
-        await client.query(
-          `UPDATE outbox
-              SET attempts = $2,
-                  next_attempt_at = now() + ($3 || ' milliseconds')::interval,
-                  last_error = $4
-            WHERE id = $1`,
-          [row.id, attempts, String(delay), message.slice(0, 500)],
-        );
-      }
-    }
-
-    await client.query('COMMIT');
-    return rows.length;
-  } catch (error) {
-    await client.query('ROLLBACK').catch(() => {});
-    throw error;
+    return await processBatch(client, publisher, {
+      onPublishError: (error, row) =>
+        Sentry.captureException(error, {
+          tags: { component: 'relay', routing_key: row.routing_key },
+        }),
+    });
   } finally {
     client.release();
   }
@@ -96,7 +57,7 @@ async function main() {
   console.info('[relay] started (poll every %dms, batch %d)', POLL_INTERVAL_MS, BATCH_SIZE);
   while (running) {
     try {
-      const processed = await processBatch();
+      const processed = await runBatch();
       if (processed === 0) {
         await new Promise((r) => setTimeout(r, POLL_INTERVAL_MS));
       }
