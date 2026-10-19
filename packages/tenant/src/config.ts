@@ -25,7 +25,12 @@ import {
   type TenantStartBalance,
   type TenantStartBalanceUnavailableReason,
 } from './balance';
-import { applyListExpiry, readListExpiry, type TenantListExpiry } from './expiry';
+import {
+  applyListExpiry,
+  readConfigExpiry,
+  readListExpiry,
+  type TenantListExpiry,
+} from './expiry';
 
 export interface TenantConfig {
   readonly access: TenantAccess;
@@ -66,6 +71,10 @@ function defaultReport(reason: TenantAccessUnavailableReason, detail: unknown): 
   );
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
 function both(
   reason: TenantStartBalanceUnavailableReason,
 ): { access: TenantAccess; startBalance: TenantStartBalance } {
@@ -99,9 +108,27 @@ export async function fetchTenantConfig(request: TenantConfigRequest): Promise<T
     const data = (await res.json()) as {
       instruments?: unknown;
       demoStartBalanceCents?: unknown;
+      settings?: unknown;
     };
 
-    const expiry = readListExpiry(res.headers);
+    /**
+     * Срок берётся из ТЕЛА, и только если тело о нём молчит — из
+     * заголовков (Р-042, WEB-06).
+     *
+     * Порядок именно такой, а не «минимум из двух». Поле
+     * `settings.instrumentsExpiresAt` — утверждение источника о
+     * действительности РАЗРЕШЕНИЙ; `Cache-Control` — о переиспользовании
+     * ОТВЕТА посредником. Это разные величины, и закрывать границу по
+     * второй, когда есть первая, значило бы мерить соседнее.
+     *
+     * `unnamed` от поля означает «ответ не `site-config.v1`» — тогда
+     * заголовки остаются единственным, что у нас есть. `malformed`
+     * означает «контракт обещал срок и не дал», и заголовками это не
+     * лечится: смотреть их дальше значило бы искать способ не закрыть
+     * границу, которую контракт велел закрыть.
+     */
+    const fromConfig = readConfigExpiry((data as { settings?: unknown }).settings);
+    const expiry = fromConfig.state === 'unnamed' ? readListExpiry(res.headers) : fromConfig;
     const parsed = readAccess(data.instruments);
     if (parsed.state === 'unavailable') onUnavailable(parsed.reason, { slug, got: typeof data.instruments });
 
@@ -110,6 +137,14 @@ export async function fetchTenantConfig(request: TenantConfigRequest): Promise<T
     const access = applyListExpiry(parsed, expiry, now());
     if (access.state === 'unavailable' && access.reason === 'expired') {
       onUnavailable('expired', { slug, expiresAt: expiry.state === 'named' ? expiry.expiresAt : null });
+    }
+    // Нечитаемый обязательный срок — инцидент выдачи, а не рутина, и
+    // молча закрытая граница здесь была бы скрытой аварией (R-15).
+    if (access.state === 'unavailable' && access.reason === 'expiry-malformed') {
+      onUnavailable('expiry-malformed', {
+        slug,
+        got: isRecord(data.settings) ? typeof data.settings['instrumentsExpiresAt'] : 'no-settings',
+      });
     }
 
     return { access, startBalance: readStartBalance(data.demoStartBalanceCents), expiry };

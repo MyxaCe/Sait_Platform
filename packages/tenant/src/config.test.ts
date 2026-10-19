@@ -142,7 +142,11 @@ describe('срок годности списка применяется на э�
     // красит ни одного модульного: функция-то исправна, её просто никто
     // не зовёт. Ради этой разницы проверка и написана на уровне связки.
     expect(config.access).toEqual({ state: 'unavailable', reason: 'expired' });
-    expect(config.expiry).toEqual({ state: 'named', expiresAt: ORIGIN + 60_000 });
+    expect(config.expiry).toEqual({
+      state: 'named',
+      expiresAt: ORIGIN + 60_000,
+      source: 'response-headers',
+    });
     expect(console.error).toHaveBeenCalled();
   });
 

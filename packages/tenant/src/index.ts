@@ -30,6 +30,7 @@ export {
 export {
   applyListExpiry,
   EDITORIAL_REUSE_WINDOW_SECONDS,
+  readConfigExpiry,
   readListExpiry,
   type ExpiryHeaders,
   type TenantListExpiry,

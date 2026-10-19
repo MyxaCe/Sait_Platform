@@ -25,14 +25,32 @@
  * истекает никогда. Поэтому якорь — заголовок `Date` ответа; без него
  * срок считается неназванным.
  *
- * **Чего здесь сегодня нет.** Ни один из двух источников срока не
- * называет: legacy на `/v1/cms/sites/{slug}` отдаёт `Cache-Control:
- * no-store`, v2 на доставке — `private, no-cache` с `ETag`; в
- * `site-config.v1` поля со сроком нет вовсе (проверено по схеме
- * контракта в репозитории CMS, не по описанию). То есть ветка `named`
- * существует и проверена, но на сегодняшних источниках не исполняется —
- * это названо вслух в отчёте штабу и в TD-015, чтобы «написано и не
- * вызывается» не стало открытием через полгода.
+ * **Третье: срок называет ПОЛЕ ТЕЛА, а заголовки — запасной путь.**
+ * С CMS-11 (Р-042) `site-config.v1` отдаёт `settings.instrumentsExpiresAt`
+ * — обязательный момент ISO-8601, отсчитанный от выдачи ответа, а не от
+ * `builtAt` релиза. Это прямое утверждение источника о действительности
+ * разрешений, и оно сильнее любого заголовка кеширования, который
+ * говорит о переиспользовании ОТВЕТА. Поэтому поле перекрывает
+ * заголовки, а не усредняется с ними: брать минимум из двух значило бы
+ * закрывать границу по величине, которая измеряет соседнее.
+ *
+ * **Четвёртое: отсутствие обязательного поля — это закрыто, а не
+ * «молчание».** Так предписывает схема контракта, и причина отдельная —
+ * `expiry-malformed`. Но правило действует ТОЛЬКО на ответ
+ * `site-config.v1`: у ответа, где объекта `settings` нет вовсе, этот
+ * контракт ничего не обещал, и требовать от него поле значило бы
+ * закрыть границу за несоблюдение договора, которого не заключали.
+ *
+ * **Чего здесь сегодня нет — и это надо держать на виду.** Витрина и
+ * кабинет читают НЕ `site-config.v1`, а legacy `GET /v1/cms/sites/{slug}`
+ * (плоские `instruments` и `demoStartBalanceCents`, отдельный сервис
+ * `cms-legacy`). Поля со сроком там нет и не планируется — проверено по
+ * коду обоих репозиториев, а не по описанию. То есть ветка
+ * `source: 'config-field'` написана и проверена, но **на контуре не
+ * исполняется ни разу**, пока потребители не переедут на
+ * `GET /v1/sites/{slug}/config` (DEBT-017 у CMS). Названо вслух здесь и
+ * в отчёте штабу, чтобы «написано и не вызывается» не стало открытием
+ * через полгода: этот класс мы ловили уже четырежды.
  */
 
 import { UNAVAILABLE, type TenantAccess } from './access';
@@ -58,13 +76,29 @@ export const EDITORIAL_REUSE_WINDOW_SECONDS = 300;
  * полем: умолчание — утверждение о том, чего мы не знаем.
  */
 export type TenantListExpiry =
-  /** Источник назвал момент, после которого списку верить нельзя. */
-  | { readonly state: 'named'; readonly expiresAt: number }
-  /** Источник срока не назвал. Действует наше редакционное окно, и это
-   *  открытый пункт Р-030, а не закрытый (TD-015). */
-  | { readonly state: 'unnamed' };
+  /** Источник назвал момент, после которого списку верить нельзя.
+   *
+   *  `source` говорит, ЧЕМ он его назвал. Поле не косметика: заголовок и
+   *  поле тела — разные механизмы с разной надёжностью, и «срок есть»
+   *  без указания откуда не даёт отличить работающий контракт от
+   *  случайно подходящего заголовка посредника. Индикатор обязан гореть
+   *  от того, что он называет. */
+  | {
+      readonly state: 'named';
+      readonly expiresAt: number;
+      readonly source: 'config-field' | 'response-headers';
+    }
+  /** Источник срока не назвал, и не был обязан: ответ не `site-config.v1`
+   *  либо в нём нет ни одного заголовка со сроком. Действует наше
+   *  редакционное окно — открытый пункт Р-030 (TD-015). */
+  | { readonly state: 'unnamed' }
+  /** Ответ `site-config.v1`, обязательное поле со сроком есть, но
+   *  прочитать его нельзя. Это НЕ молчание: источник обязался назвать
+   *  срок. Граница закрывается с причиной `expiry-malformed`. */
+  | { readonly state: 'malformed' };
 
 const UNNAMED: TenantListExpiry = { state: 'unnamed' };
+const MALFORMED: TenantListExpiry = { state: 'malformed' };
 
 /** Заголовки ответа. Минимум, который нужен, — чтобы тест не поднимал fetch. */
 export interface ExpiryHeaders {
@@ -106,17 +140,101 @@ export function readListExpiry(headers: ExpiryHeaders): TenantListExpiry {
     // Без `Date` окно не к чему привязать: отсчёт от «сейчас» обнулялся бы
     // при каждом чтении из кеша, и список не истекал бы никогда.
     if (!Number.isFinite(originTime)) return UNNAMED;
-    return { state: 'named', expiresAt: originTime + seconds * 1000 };
+    return { state: 'named', expiresAt: originTime + seconds * 1000, source: 'response-headers' };
   }
 
   const expires = Date.parse(headers.get('expires') ?? '');
   // `Expires` в прошлом — такая же директива «не переиспользовать», как
   // `no-cache`, и про срок действия разрешений она не говорит ничего.
   if (Number.isFinite(expires) && (!Number.isFinite(originTime) || expires > originTime)) {
-    return { state: 'named', expiresAt: expires };
+    return { state: 'named', expiresAt: expires, source: 'response-headers' };
   }
 
   return UNNAMED;
+}
+
+/**
+ * Строгий ISO-8601 с обязательными датой, временем и зоной.
+ *
+ * `Date.parse` один на этом месте недостаточен: он разбирает `"2026"`,
+ * `"Dec 2026"` и прочее, чего схема (`"format": "date-time"`) не
+ * обещала, — и тогда «срок» получился бы из строки, означающей совсем
+ * другое. Разбор и приведение — разные барьеры; здесь оба.
+ */
+const ISO_INSTANT =
+  /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/;
+
+/**
+ * Существует ли такая дата в календаре.
+ *
+ * Нужна потому, что `Date.parse` на несуществующей дате **не отказывает,
+ * а переносит**: `2026-02-30T00:00:00Z` разбирается успешно и даёт 2
+ * марта. То есть проверка «это вообще момент?» проходит, а величина по
+ * дороге молча становится другой — родня `"NaN"`, которое разбирается
+ * как число и приводится к нулю. Разбор и приведение — разные барьеры,
+ * и второй умеет портить то, что первый пропустил.
+ *
+ * Для срока годности перенос не безобиден: он всегда сдвигает момент
+ * ВПЕРЁД, то есть продлевает жизнь списку, который источник описал
+ * неправильно. Ошибка направленная, а не случайная.
+ */
+function isRealCalendarDate(year: number, month: number, day: number): boolean {
+  if (month < 1 || month > 12 || day < 1) return false;
+  const leap = (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
+  const lengths = [31, leap ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+  return day <= (lengths[month - 1] as number);
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+/**
+ * Срок годности, названный источником в ТЕЛЕ ответа `site-config.v1`
+ * (Р-042, поле `settings.instrumentsExpiresAt`).
+ *
+ * Принимает объект `settings` целиком, а не готовую строку: решение
+ * «поля нет» обязано приниматься здесь. Передай вызывающий
+ * `settings?.instrumentsExpiresAt`, и «объекта settings не было» стало бы
+ * неотличимо от «поле отсутствует» — то есть legacy-ответ закрывал бы
+ * границу за несоблюдение контракта, которого он не подписывал.
+ *
+ * Три исхода:
+ *
+ *  - `settings` не объект → `unnamed`. Это не `site-config.v1`, срока
+ *    здесь никто не обещал, дальше смотрят заголовки.
+ *  - `settings` есть, поле отсутствует / не строка / не ISO-момент →
+ *    `malformed`, то есть ЗАКРЫТО. Поле обязательное у схемы, и контракт
+ *    прямо предписывает читать его отсутствие как истёкший срок.
+ *  - строка разобралась → `named` с абсолютным моментом.
+ *
+ * Момент **абсолютный и берётся как есть** — ни к чему не привязывается.
+ * Это и есть смысл выбора CMS: срок отсчитан от выдачи ответа, а не от
+ * `builtAt` релиза. Привязка к времени сборки закрывала бы витрину
+ * давно не публиковавшегося сайта при исправных разрешениях, а гейт,
+ * который невозможно удовлетворить, отключают. И по той же причине его
+ * нельзя пересчитывать от «сейчас»: ответ, пришедший из кеша данных
+ * Next, обнулял бы окно, и список не истекал бы никогда.
+ */
+export function readConfigExpiry(settings: unknown): TenantListExpiry {
+  if (!isRecord(settings)) return UNNAMED;
+
+  const raw = settings['instrumentsExpiresAt'];
+  if (typeof raw !== 'string') return MALFORMED;
+
+  const shape = ISO_INSTANT.exec(raw);
+  if (!shape) return MALFORMED;
+
+  // Форма верна — проверяем величину. `2026-02-30` формой проходит, в
+  // календаре не существует, а `Date.parse` его молча переносит вперёд.
+  const [, year, month, day, hour, minute, second] = shape.map(Number) as number[];
+  if (!isRealCalendarDate(year as number, month as number, day as number)) return MALFORMED;
+  if ((hour as number) > 23 || (minute as number) > 59 || (second as number) > 60) return MALFORMED;
+
+  const expiresAt = Date.parse(raw);
+  if (!Number.isFinite(expiresAt)) return MALFORMED;
+
+  return { state: 'named', expiresAt, source: 'config-field' };
 }
 
 /**
@@ -135,6 +253,10 @@ export function applyListExpiry(
   nowMs: number,
 ): TenantAccess {
   if (access.state === 'unavailable') return access;
+  // Обязательное поле есть и нечитаемо — закрыто, и причина СВОЯ. Не
+  // `expired`: там список состарился, здесь источник не сказал, когда он
+  // состарится. Чинят это разные люди в разных местах.
+  if (expiry.state === 'malformed') return UNAVAILABLE['expiry-malformed'];
   if (expiry.state === 'unnamed') return access;
   return nowMs > expiry.expiresAt ? UNAVAILABLE.expired : access;
 }
