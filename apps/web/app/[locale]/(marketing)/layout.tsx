@@ -2,11 +2,9 @@ import { getTranslations } from 'next-intl/server';
 import { DEFAULT_TICKER_SYMBOLS } from '@broker/realtime';
 import { SiteFooter } from '@/components/layout/SiteFooter';
 import { SiteHeader } from '@/components/layout/SiteHeader';
-import { AccessNotice } from '@/features/instruments/AccessNotice';
-import { QuotesTicker } from '@/features/quotes/QuotesTicker';
+import { TickerGate } from '@/features/quotes/TickerGate';
 import { getCms } from '@/lib/cms';
 import { getMdsSymbols } from '@/lib/mds';
-import { accessNotice, getTenantAccess, isSymbolAllowed } from '@/lib/tenant';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -23,38 +21,38 @@ export default async function MarketingLayout({ children, params }: LayoutProps)
     getCms('instruments', { locale }),
   ]);
 
-  // Тикер: инструменты страницы ∩ ДОСТУП сайта (allow-list карточки сайта,
-  // ADR-028) ∩ реально стримящееся в MDS (замершие мок-цены рядом
-  // с живыми — обман, ADR-024).
+  // Тикер: инструменты страницы ∩ реально стримящееся в MDS (замершие
+  // мок-цены рядом с живыми — обман, ADR-024). Это ВСЁ, что можно
+  // посчитать на сборке.
   //
-  // Граница fail-closed (Р-025): закрыта — тикера нет вовсе, и на его месте
-  // стоит строка с причиной. Пустая бегущая строка молча исчезла бы с
-  // каждой страницы сайта — это то же «отказ выглядит как отсутствие
-  // функции», только размазанное по всей витрине.
-  const [mdsSymbols, access] = await Promise.all([getMdsSymbols(), getTenantAccess()]);
-  const notice = accessNotice(access);
+  // Третий сомножитель — ДОСТУП сайта (allow-list карточки сайта,
+  // ADR-028) — спрашивается в рантайме и потому здесь не спрашивается
+  // вовсе (WEB-07). Прежде макет звал `getTenantAccess()` прямо тут, и
+  // на сборке, где `CMS_API_URL` нет, ответ «не настроено» замерзал в
+  // разметке каждой из 156 страниц: витрина сообщала поломку там, где её
+  // не было. Спросить границу рантайм-вызовом прямо отсюда тоже нельзя —
+  // это увело бы в динамику всю витрину, а она остаётся редакционной
+  // границей (Р-030, п. 2).
+  //
+  // Поэтому вопрос задаёт островок `TickerGate` через
+  // `GET /api/tenant/access`. Fail-closed сохранён на той стороне: пока
+  // ответа нет — тикера нет, и ни одно состояние его не открывает молча.
+  const mdsSymbols = await getMdsSymbols();
   const t = await getTranslations({ locale, namespace: 'instruments' });
 
-  const allowed = new Set(
-    instruments.items.map((i) => i.symbol).filter((s) => isSymbolAllowed(access, s)),
-  );
-  const tickerSymbols = mdsSymbols
-    ? [...mdsSymbols].filter((s) => allowed.has(s))
-    : DEFAULT_TICKER_SYMBOLS.filter((s) => allowed.has(s));
+  const pageSymbols = new Set(instruments.items.map((i) => i.symbol));
+  const tickerCandidates = mdsSymbols
+    ? [...mdsSymbols].filter((s) => pageSymbols.has(s))
+    : DEFAULT_TICKER_SYMBOLS.filter((s) => pageSymbols.has(s));
 
   return (
     <div className="flex min-h-svh flex-col">
       <SiteHeader brandName={brand.name} logo={brand.logo} nav={navigation.header} />
-      {notice ? (
-        <AccessNotice
-          variant="strip"
-          state={notice.state}
-          text={t(notice.stripKey)}
-          reason={notice.reason}
-        />
-      ) : (
-        <QuotesTicker symbols={tickerSymbols} />
-      )}
+      <TickerGate
+        candidates={tickerCandidates}
+        emptyText={t('accessEmptyStrip')}
+        unavailableText={t('accessUnavailableStrip')}
+      />
       <main className="flex-1">{children}</main>
       <SiteFooter
         columns={navigation.footer.columns}

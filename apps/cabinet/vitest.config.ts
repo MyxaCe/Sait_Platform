@@ -14,6 +14,10 @@ export default defineConfig({
   },
   test: {
     environment: 'node',
-    include: ['features/**/*.test.ts', 'lib/**/*.test.ts'],
+    // `app/**` — ради CAB-02: барьеры выпуска SSO-токена (живая сессия,
+    // rate limit, ненастроенность) стоят в ручке, а не в `lib`. Пока
+    // прогон их не видел, проверка, отключённая в том режиме, где идут
+    // тесты, не существовала.
+    include: ['features/**/*.test.ts', 'lib/**/*.test.ts', 'app/**/*.test.ts'],
   },
 });
