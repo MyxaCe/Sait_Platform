@@ -1,0 +1,93 @@
+/**
+ * Что показать на месте бегущей строки — решение, вынесенное из
+ * компонента (WEB-08, Р-050).
+ *
+ * **Почему отдельной функцией.** Это единственное место, где три
+ * независимых источника сводятся в один видимый результат, и именно
+ * здесь жило умолчание: не прочитали каталог — показали зашитый список.
+ * Внутри компонента такое решение проверяется только отрисовкой, а
+ * чистой функции DOM не нужен — дешёвая проверка та, которую продолжают
+ * запускать.
+ *
+ * **Три сомножителя, и ни один не заменяется умолчанием:**
+ *
+ *  1. `candidates` — инструменты страницы из CMS. Редакционный контент,
+ *     считается на сборке законно: он и есть содержимое витрины.
+ *  2. `access` — граница доступа тенанта, рантайм (WEB-07). Регуляторный
+ *     фильтр, fail-closed.
+ *  3. `catalog` — что реально стримится в MDS, рантайм (WEB-08). Защита
+ *     от замерших выдуманных цен рядом с живыми (ADR-024).
+ *
+ * Пересечение, а не замена: отсутствие любого из трёх ответов закрывает
+ * строку, а не открывает её.
+ */
+
+export interface TickerAccess {
+  state: 'allowed' | 'empty' | 'unavailable';
+  reason?: string;
+  symbols: string[];
+}
+
+export interface TickerCatalog {
+  state: 'available' | 'unavailable';
+  reason?: string;
+  symbols: string[];
+}
+
+export type TickerDecision =
+  | { kind: 'ticker'; symbols: string[] }
+  | { kind: 'notice'; state: 'empty' | 'unavailable'; reason: string };
+
+/**
+ * Причины каталога уезжают в разметку с префиксом `quotes:`.
+ *
+ * Иначе `data-access-reason="not-configured"` означал бы то «CMS не
+ * настроена», то «MDS не настроен» — один машинный признак на два разных
+ * диагноза. Fail-closed спасает разрешение, но не диагноз: это дословно
+ * B-026, и повторять его на соседнем поле не будем.
+ */
+export const QUOTES_REASON_PREFIX = 'quotes:';
+
+/** Пересечения нет вовсе: разрешено и стримится, но не на этой витрине. */
+export const NO_OVERLAP_REASON = `${QUOTES_REASON_PREFIX}no-overlap`;
+
+export function decideTicker(
+  candidates: string[],
+  access: TickerAccess,
+  catalog: TickerCatalog,
+): TickerDecision {
+  // 1. Граница доступа — первой. Она регуляторная, и её диагноз важнее:
+  //    «инструменты не выбраны» и «список недоступен» — то, ради чего
+  //    заведён WEB-07. Каталог MDS не может её ни открыть, ни объяснить.
+  if (access.state !== 'allowed') {
+    return { kind: 'notice', state: access.state, reason: access.reason ?? 'unknown' };
+  }
+
+  // 2. Каталога нет — строки нет. ЗДЕСЬ стоял `DEFAULT_TICKER_SYMBOLS`:
+  //    зашитый список показывался как «вот что у нас торгуется», хотя
+  //    известно было только «мы не смогли спросить, что транслируется».
+  //    Подставить сюда что бы то ни было — вернуть дефект Р-050.
+  if (catalog.state !== 'available') {
+    return {
+      kind: 'notice',
+      state: 'unavailable',
+      reason: `${QUOTES_REASON_PREFIX}${catalog.reason ?? 'unknown'}`,
+    };
+  }
+
+  const allowed = new Set(access.symbols);
+  const streaming = new Set(catalog.symbols);
+  const symbols = candidates.filter((s) => allowed.has(s) && streaming.has(s));
+
+  // 3. Оба ответа получены, пересечение пусто. Это ЗНАНИЕ, а не отказ, и
+  //    подписывается оно иначе: показывать нечего, потому что нечего, а
+  //    не потому, что не узнали. Пустой список в ленту отдавать нельзя —
+  //    `TickerTape` при нуле элементов возвращает `null`, и строка
+  //    молча исчезает: «ничего не показано» неотличимо от «строки тут
+  //    нет».
+  if (symbols.length === 0) {
+    return { kind: 'notice', state: 'empty', reason: NO_OVERLAP_REASON };
+  }
+
+  return { kind: 'ticker', symbols };
+}
