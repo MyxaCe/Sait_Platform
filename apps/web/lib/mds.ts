@@ -1,3 +1,5 @@
+import { parseQuotesState, type QuotesState } from '@broker/realtime';
+
 /**
  * Каталог MDS (ADR-024): какие символы РЕАЛЬНО стримятся живыми ценами.
  *
@@ -181,4 +183,54 @@ export async function getMdsIcons(): Promise<Record<string, string>> {
     if (item.symbol && item.icon) icons[item.symbol] = `${base}${item.icon}`;
   }
   return icons;
+}
+
+/**
+ * Состояние котировок MDS: `unavailable[]` с причиной по символу и
+ * `missing[]` (WEB-12, Р-074).
+ *
+ * **Две оси в одном ответе, и смешивать их нельзя.** Снаружи — ось канала
+ * (`not-configured` · `network` · `http-error` · `malformed`): почему мы
+ * вообще не получили ответа. Внутри — ось символа, её называет MDS по
+ * каждому инструменту. Схлопнутые, они отправляют чинить наугад: «сеть
+ * легла» и «у одного символа молчит источник» — разные неполадки у разных
+ * людей.
+ *
+ * **Кеша здесь нет, в отличие от каталога.** Каталог меняется редко, и окно
+ * в 300 с ему уместно; состояние котировок — это ровно то, что устаревает,
+ * и замороженный ответ был бы тем самым дефектом, ради которого §5б
+ * написан.
+ */
+export type MdsQuotesOutcome =
+  | { state: 'available'; quotes: QuotesState }
+  | { state: 'unavailable'; reason: Exclude<MdsCatalogUnavailableReason, 'empty'> };
+
+export async function getMdsQuotesState(): Promise<MdsQuotesOutcome> {
+  const url = process.env.MDS_HTTP_URL;
+  if (!url) return { state: 'unavailable', reason: 'not-configured' };
+  try {
+    const res = await fetch(`${url.replace(/\/$/, '')}/v1/quotes`, {
+      cache: 'no-store',
+      signal: AbortSignal.timeout(2_000),
+    });
+    if (!res.ok) return { state: 'unavailable', reason: 'http-error' };
+
+    // Разбор тела — в своём `try`, по той же причине, что у каталога:
+    // нечитаемый JSON иначе назвался бы `network`, то есть «не
+    // дозвонились», хотя дозвонились и ответ получили.
+    let body: unknown;
+    try {
+      body = await res.json();
+    } catch {
+      return { state: 'unavailable', reason: 'malformed' };
+    }
+
+    // Пустые списки — законный ответ: он означает «источник ничего не
+    // сказал», а не «всё свежо» (§5г, требование 1). Поэтому `empty`
+    // среди причин здесь нет: отсутствие состояния неотличимо от
+    // состояния «нечего сообщить», и выдумывать разницу мы не вправе.
+    return { state: 'available', quotes: parseQuotesState(body) };
+  } catch {
+    return { state: 'unavailable', reason: 'network' };
+  }
 }

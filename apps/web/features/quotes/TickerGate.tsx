@@ -61,7 +61,27 @@ export interface TickerGateProps {
  * Непрочитанное выдаётся за отсутствующее ровно тогда, когда его
  * сливают с одним из двух остальных.
  */
-type Answers = { access: TickerAccess; catalog: TickerCatalog };
+/**
+ * Третий вопрос — состояние котировок по символам (WEB-12, Р-074).
+ *
+ * Отдельная ручка по той же причине, по которой каталог отделён от
+ * границы доступа: три ответа отказывают независимо и чинятся разными
+ * людьми. От каталога он отделён ещё и сроком годности — каталог
+ * кешируется на 300 с, состояние котировок кешировать нельзя вовсе.
+ *
+ * **Ленту он не закрывает, и это сознательно.** Граница доступа и каталог
+ * решают, какие символы показывать вообще; этот ответ решает, каким из
+ * показанных нельзя верить. Не смогли спросить — значит про отдельные
+ * символы ничего не знаем, и вердикт даёт `quoteState` по тому, что у
+ * него есть. Закрыть ленту целиком из-за недоступности ЭТОГО ответа
+ * значило бы отказать шире заданного вопроса.
+ */
+interface QuotesAnswer {
+  unavailable: { symbol?: unknown }[];
+  missing: unknown[];
+}
+
+type Answers = { access: TickerAccess; catalog: TickerCatalog; quotes: QuotesAnswer };
 type GateState = { kind: 'pending' } | { kind: 'answered'; answers: Answers };
 
 /**
@@ -104,8 +124,14 @@ export function TickerGate({
         { state: 'unavailable', reason: 'network', symbols: [] },
         signal,
       ),
+      // Не ответила — пустые списки. Это «ничего не знаем про отдельные
+      // символы», а не «все свежи»: вердикт всё равно остаётся за
+      // `quoteState`, который без списка судит по тому, что видит сам.
+      ask<QuotesAnswer>('/api/quotes/state', { unavailable: [], missing: [] }, signal),
     ])
-      .then(([access, catalog]) => setGate({ kind: 'answered', answers: { access, catalog } }))
+      .then(([access, catalog, quotes]) =>
+        setGate({ kind: 'answered', answers: { access, catalog, quotes } }),
+      )
       .catch(() => {
         /* отменён размонтированием — состояние трогать уже нельзя */
       });
@@ -119,7 +145,20 @@ export function TickerGate({
 
   const decision = decideTicker(candidates, gate.answers.access, gate.answers.catalog);
 
-  if (decision.kind === 'ticker') return <QuotesTicker symbols={decision.symbols} />;
+  if (decision.kind === 'ticker') {
+    // `missing[]` входит наравне с `unavailable[]`: «источник не сказал о
+    // символе ничего» — это тоже «цены нет».
+    const stale = new Set<string>([
+      ...gate.answers.quotes.unavailable
+        .map((u) => u.symbol)
+        .filter((s): s is string => typeof s === 'string' && s.length > 0),
+      ...gate.answers.quotes.missing.filter(
+        (s): s is string => typeof s === 'string' && s.length > 0,
+      ),
+    ]);
+
+    return <QuotesTicker symbols={decision.symbols} staleSymbols={stale} />;
+  }
 
   // Какая из двух границ закрылась, видно по машинной причине: у
   // каталога котировок она с префиксом `quotes:`.

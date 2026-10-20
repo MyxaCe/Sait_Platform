@@ -16,10 +16,21 @@ import { formatPrice } from '@broker/utils';
  * котировки. Решение, какие символы показывать, принимает `decideTicker`
  * по рантайм-ответам; компонент его не угадывает.
  */
-export function QuotesTicker({ symbols }: { symbols: string[] }) {
+export function QuotesTicker({
+  symbols,
+  staleSymbols,
+}: {
+  symbols: string[];
+  /**
+   * Символы, которые ИСТОЧНИК объявил недоступными: `unavailable[]` плюс
+   * `missing[]` ответа `/v1/quotes` (WEB-12). Приезжает готовым
+   * множеством от островка — сам компонент в сеть не ходит.
+   */
+  staleSymbols?: ReadonlySet<string>;
+}) {
   const tConn = useTranslations('connection');
   // Порог свежести придёт от MDS (КОНТРАКТЫ.md §5б) — здесь не выдумываем
-  const views = useQuoteViews(symbols);
+  const views = useQuoteViews(symbols, { staleSymbols });
   const status = useConnectionStatus();
 
   const items = views.map(({ quote: q, state }) => ({
