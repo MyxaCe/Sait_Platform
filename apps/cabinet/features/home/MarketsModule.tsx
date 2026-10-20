@@ -8,6 +8,7 @@ import { formatPrice } from '@broker/utils';
 import { Link } from '@/i18n/navigation';
 import type { CabinetHomeModule } from '@broker/api-client';
 import type { MarketInstrument, MarketsData } from '@/lib/home';
+import { selectGainers } from './markets-gainers';
 import { describeNotice } from './markets-notice';
 
 type MarketsConfig = Extract<CabinetHomeModule, { type: 'markets' }>;
@@ -62,7 +63,7 @@ export function MarketsModule({ config, data }: { config: MarketsConfig; data: M
         case 'newListing':
           return quotes.filter((q) => config.newListingSymbols.includes(q.symbol));
         case 'gainers':
-          return [...quotes].filter((q) => q.changePercent > 0).sort((a, b) => b.changePercent - a.changePercent);
+          return selectGainers(quotes);
         default:
           return quotes;
       }
