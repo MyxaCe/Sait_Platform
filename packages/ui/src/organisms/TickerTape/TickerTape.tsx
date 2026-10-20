@@ -13,8 +13,15 @@ export type QuoteDisplayState = 'live' | 'simulated' | 'unavailable';
 
 export interface TickerItem {
   symbol: string;
-  /** Уже отформатированная цена — форматирование остаётся за приложением */
-  price: string;
+  /**
+   * Уже отформатированная цена — форматирование остаётся за приложением.
+   *
+   * `null` — настоящего чтения ещё НЕ БЫЛО (стартовый снапшот справочника).
+   * Это не то же, что «цена устарела»: устаревшую мы гасим и помечаем
+   * (Р-070), а несуществующую показать нечем. Решает приложение: только
+   * оно знает, читалась ли цена на самом деле.
+   */
+  price: string | null;
   /**
    * `null` — изменение неизвестно при известной цене. Не путать с
    * `state: 'unavailable'`: там нет самой котировки и прочерк встаёт на место
@@ -35,6 +42,12 @@ export interface TickerTapeProps {
   connectionLabel?: string;
   /** Локализованная подпись на месте отсутствующей цены */
   noDataLabel?: string;
+  /**
+   * Локализованная метка при погашенной цене: число настоящее, но оно
+   * последнее известное, а не текущее. Без неё гашение превратилось бы в
+   * показ старой цены как текущей — то самое, что Р-070 запрещает.
+   */
+  lastKnownLabel?: string;
   className?: string;
 }
 
@@ -50,6 +63,7 @@ export function TickerTape({
   ariaLabel = 'Котировки в реальном времени',
   connectionLabel,
   noDataLabel = 'нет данных',
+  lastKnownLabel = 'последняя известная',
   className,
 }: TickerTapeProps) {
   if (items.length === 0) return null;
@@ -58,20 +72,49 @@ export function TickerTape({
 
   const renderItems = (ariaHidden: boolean) =>
     items.map((item) => {
-      // Данных нет — на месте цены прочерк, а не последнее известное значение
+      /*
+       * Отказ ГАСИТ число и ставит метку, но не стирает его (Р-070, PKG-06).
+       *
+       * Прежняя цена была верна на момент последнего успешного чтения.
+       * Неправдой было бы показать её как ТЕКУЩУЮ — а не показать вовсе.
+       * Стереть её значит заменить одно правдоподобное утверждение другим:
+       * пустая полоса читается как «котировок нет».
+       *
+       * Но гасить можно только НАСТОЯЩЕЕ чтение. Если его ещё не было,
+       * гасить нечего, и тогда прочерк — единственный честный ответ. Иначе
+       * мы выдали бы за «последнюю известную цену» зашитую базовую: ровно
+       * тот дефект, который §5г нашёл внутри себя, когда справочник с
+       * `ts = 0` рисовался как котировки.
+       */
       const unavailable = item.state === 'unavailable';
       const content = unavailable ? (
         <>
           <span className="font-medium text-primary">{item.symbol}</span>
-          <span className="tabular-nums text-secondary" title={noDataLabel}>
-            —
-          </span>
-          <span className="text-[11px] uppercase tracking-wide text-secondary">{noDataLabel}</span>
+          {item.price === null ? (
+            <>
+              <span className="tabular-nums text-secondary" title={noDataLabel}>
+                —
+              </span>
+              <span className="text-[11px] uppercase tracking-wide text-secondary">
+                {noDataLabel}
+              </span>
+            </>
+          ) : (
+            <>
+              <span className="tabular-nums text-secondary opacity-50" title={lastKnownLabel}>
+                {item.price}
+              </span>
+              <span className="text-[11px] uppercase tracking-wide text-secondary">
+                {lastKnownLabel}
+              </span>
+            </>
+          )}
         </>
       ) : (
         <>
           <span className="font-medium text-primary">{item.symbol}</span>
-          <span className="tabular-nums text-secondary">{item.price}</span>
+          {/* Живой цены может не быть и здесь — тогда прочерк, не пустота. */}
+          <span className="tabular-nums text-secondary">{item.price ?? '—'}</span>
           <PriceChange value={item.changePercent} noDataLabel={noDataLabel} />
         </>
       );

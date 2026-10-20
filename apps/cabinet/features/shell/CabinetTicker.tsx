@@ -1,7 +1,12 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { DEFAULT_TICKER_SYMBOLS, useConnectionStatus, useQuoteViews } from '@broker/realtime';
+import {
+  DEFAULT_TICKER_SYMBOLS,
+  displayPrice,
+  useConnectionStatus,
+  useQuoteViews,
+} from '@broker/realtime';
 import { TickerTape } from '@broker/ui';
 import { formatPrice } from '@broker/utils';
 
@@ -13,7 +18,8 @@ export function CabinetTicker() {
 
   const items = views.map(({ quote: q, state }) => ({
     symbol: q.symbol,
-    price: formatPrice(q.price, q.digits),
+    // То же правило, что у витрины, и ровно поэтому оно в пакете (PKG-06).
+    price: displayPrice(q, formatPrice),
     changePercent: q.changePercent,
     state,
   }));
@@ -25,6 +31,7 @@ export function CabinetTicker() {
       ariaLabel={tConn('tickerAria')}
       connectionLabel={tConn(status)}
       noDataLabel={tConn('noData')}
+      lastKnownLabel={tConn('lastKnown')}
     />
   );
 }

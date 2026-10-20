@@ -31,7 +31,8 @@
     "reconnecting": "Reconnecting…",
     "offline": "No connection",
     "simulated": "Demo data: not real market prices",
-    "noData": "no data"
+    "noData": "no data",
+    "lastKnown": "last known"
   },
   "auth": {
     "loginTitle": "Sign in",

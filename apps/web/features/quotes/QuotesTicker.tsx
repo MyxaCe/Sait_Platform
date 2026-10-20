@@ -1,7 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { useConnectionStatus, useQuoteViews } from '@broker/realtime';
+import { displayPrice, useConnectionStatus, useQuoteViews } from '@broker/realtime';
 import { TickerTape } from '@broker/ui';
 import { formatPrice } from '@broker/utils';
 
@@ -35,7 +35,9 @@ export function QuotesTicker({
 
   const items = views.map(({ quote: q, state }) => ({
     symbol: q.symbol,
-    price: formatPrice(q.price, q.digits),
+    // Правило «настоящего чтения ещё не было» — общее для витрины и
+    // кабинета, поэтому живёт в пакете, а не повторяется здесь (PKG-06).
+    price: displayPrice(q, formatPrice),
     changePercent: q.changePercent,
     href: `/instruments/${q.category}/${q.symbol.toLowerCase()}`,
     state,
@@ -48,6 +50,7 @@ export function QuotesTicker({
       ariaLabel={tConn('tickerAria')}
       connectionLabel={tConn(status)}
       noDataLabel={tConn('noData')}
+      lastKnownLabel={tConn('lastKnown')}
     />
   );
 }
