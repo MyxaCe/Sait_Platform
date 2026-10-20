@@ -46,15 +46,27 @@ export interface QuoteView {
  * порог принадлежит источнику (MDS), выдуманный здесь начнёт молча
  * расходиться с тем, по которому источник считает сам.
  *
- * Сознательно НЕ сделано: приём списка протухших символов от MDS — формат
- * ответа ещё не согласован (КОНТРАКТЫ.md §5б). Место под него есть
- * (staleSymbols в quoteState), проводки нет.
+ * `staleSymbols` — список, который ИСТОЧНИК объявил недоступными
+ * (`unavailable[]` + `missing[]` ответа `/v1/quotes`). Проводка появилась
+ * в WEB-12: формат согласован обеими сторонами (Р-074), и до этого здесь
+ * сознательно стояла только заготовка — изобретать формат в одностороннем
+ * порядке было запрещено обоим (§5г, требование 3).
+ *
+ * Не задан — значит «не спрашивали». Пустое множество — «источник ничего
+ * не сказал». Ни то, ни другое не означает «всё свежо», и `quoteState`
+ * трактует их одинаково осторожно.
  */
-export function useQuoteViews(symbols: string[], staleAfterMs?: number): QuoteView[] {
+export interface QuoteViewOptions {
+  staleAfterMs?: number;
+  staleSymbols?: ReadonlySet<string>;
+}
+
+export function useQuoteViews(symbols: string[], options: QuoteViewOptions = {}): QuoteView[] {
   const quotes = useRealtimeQuotes(symbols);
   const feedStatus = useConnectionStatus();
+  const { staleAfterMs, staleSymbols } = options;
   return quotes.map((quote) => ({
     quote,
-    state: quoteState(quote, { feedStatus, staleAfterMs }),
+    state: quoteState(quote, { feedStatus, staleAfterMs, staleSymbols }),
   }));
 }
