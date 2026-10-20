@@ -33,7 +33,7 @@ describe('SSO handoff-JWT', () => {
   it('токен валидируется по нашему же JWKS со всеми claims контракта', async () => {
     const { issueHandoffToken, publicJwks, SSO_AUDIENCE, SSO_ISSUER } = await import('./jwt');
 
-    const token = await issueHandoffToken('user-123');
+    const { token } = await issueHandoffToken('user-123');
     const jwks = createLocalJWKSet(await publicJwks());
 
     const { payload, protectedHeader } = await jwtVerify(token, jwks, {
@@ -46,7 +46,15 @@ describe('SSO handoff-JWT', () => {
     expect(payload.sub).toBe('user-123');
     expect(payload.tenant).toBe('apex-ru');
     expect(typeof payload.jti).toBe('string');
-    expect((payload.exp ?? 0) - (payload.iat ?? 0)).toBeLessThanOrEqual(60);
+
+    // Было `(payload.exp ?? 0) - (payload.iat ?? 0)`: та же подстановка нуля,
+    // которую мы ищем по всему проекту, только в ассерте. Без `exp` разность
+    // становилась большим отрицательным числом, «≤ 60» выполнялось, и
+    // проверка срока оставалась ЗЕЛЁНОЙ на токене без срока. Сначала требуем
+    // наличие claims, потом сравниваем.
+    expect(typeof payload.exp).toBe('number');
+    expect(typeof payload.iat).toBe('number');
+    expect(payload.exp! - payload.iat!).toBeLessThanOrEqual(60);
   });
 
   it('jti свой на каждый выпуск — иначе одноразовость терминала бессильна', async () => {
@@ -57,7 +65,9 @@ describe('SSO handoff-JWT', () => {
     const { decodeJwt } = await import('jose');
 
     const ids = await Promise.all(
-      Array.from({ length: 25 }, () => issueHandoffToken('user-123').then((t) => decodeJwt(t).jti)),
+      Array.from({ length: 25 }, () =>
+        issueHandoffToken('user-123').then(({ token }) => decodeJwt(token).jti),
+      ),
     );
 
     expect(new Set(ids).size).toBe(ids.length);
@@ -69,7 +79,7 @@ describe('SSO handoff-JWT', () => {
     // записать и не применить. Часы двигаются параметром `currentDate`,
     // а не ожиданием — иначе тест либо висит минуту, либо не гоняется.
     const { issueHandoffToken, publicJwks, SSO_AUDIENCE, SSO_ISSUER } = await import('./jwt');
-    const token = await issueHandoffToken('user-123');
+    const { token } = await issueHandoffToken('user-123');
     const jwks = createLocalJWKSet(await publicJwks());
     const verify = (atMs: number) =>
       jwtVerify(token, jwks, {
@@ -92,12 +102,12 @@ describe('SSO handoff-JWT', () => {
     process.env.SITE_SLUG = 'apex-de';
     vi.resetModules();
     const german = await import('./jwt');
-    expect(decodeJwt(await german.issueHandoffToken('user-123')).tenant).toBe('apex-de');
+    expect(decodeJwt((await german.issueHandoffToken('user-123')).token).tenant).toBe('apex-de');
 
     process.env.SITE_SLUG = 'apex-ru';
     vi.resetModules();
     const russian = await import('./jwt');
-    const token = await russian.issueHandoffToken('user-123');
+    const { token } = await russian.issueHandoffToken('user-123');
     expect(decodeJwt(token).tenant).toBe('apex-ru');
 
     // Растяжка: у выпуска ОДИН аргумент — идентификатор пользователя.
@@ -122,5 +132,73 @@ describe('SSO handoff-JWT', () => {
 
     const jwks = createLocalJWKSet(await publicJwks());
     await expect(jwtVerify(forged, jwks)).rejects.toThrow();
+  });
+});
+
+/**
+ * CAB-07 · кабинет обязан называть срок жизни токена ВСЕГДА, и названное
+ * число обязано быть правдой.
+ *
+ * Терминал теперь fail-closed (Р-100): сессию без названного срока он не
+ * принимает вовсе. Цена ужесточения названа вслух — если кабинет в каком-то
+ * режиме срок не отдаёт, человек не войдёт. Поэтому проверяется не только
+ * «поле присутствует», но и «поле не врёт»: по нему терминал планирует тихое
+ * продление ДО истечения, и срок больше настоящего означает сессию, умершую
+ * посреди работы.
+ */
+describe('CAB-07 · срок жизни назван и соответствует самому токену', () => {
+  it('выпуск отдаёт срок вместе с токеном', async () => {
+    const { issueHandoffToken } = await import('./jwt');
+
+    const handoff = await issueHandoffToken('user-123');
+
+    expect(typeof handoff.expiresIn).toBe('number');
+    expect(handoff.expiresIn).toBeGreaterThan(0);
+  });
+
+  it('названный срок равен настоящему `exp − iat` выпущенного токена', async () => {
+    // Главное свойство. Раньше ручка повторяла константу отдельной строкой,
+    // и совпадение держалось на договорённости: правка срока в подписи без
+    // правки той строки разошлась бы молча.
+    const { issueHandoffToken } = await import('./jwt');
+    const { decodeJwt } = await import('jose');
+
+    const { token, expiresIn } = await issueHandoffToken('user-123');
+    const { exp, iat } = decodeJwt(token);
+
+    expect(exp! - iat!).toBe(expiresIn);
+  });
+
+  it('токен без `exp` — отказ, а не ноль секунд', async () => {
+    // Ноль здесь читался бы как «истекает немедленно»: терминал начал бы
+    // просить новый токен без остановки — отказ, замаскированный под
+    // нагрузку, видимый только по счётчикам соседа (его же TRM-24).
+    const { tokenLifetimeSeconds, TokenWithoutExpiryError } = await import('./jwt');
+    const { SignJWT } = await import('jose');
+    const { privateKey } = generateKeyPairSync('rsa', { modulusLength: 2048 });
+    const { importPKCS8 } = await import('jose');
+    const key = await importPKCS8(privateKey.export({ type: 'pkcs8', format: 'pem' }) as string, 'RS256');
+
+    const noExp = await new SignJWT({})
+      .setProtectedHeader({ alg: 'RS256' })
+      .setIssuedAt()
+      .sign(key);
+
+    expect(() => tokenLifetimeSeconds(noExp)).toThrow(TokenWithoutExpiryError);
+  });
+
+  it('токен без `iat` — тоже отказ: разность не из чего считать', async () => {
+    const { tokenLifetimeSeconds, TokenWithoutExpiryError } = await import('./jwt');
+    const { SignJWT } = await import('jose');
+    const { privateKey } = generateKeyPairSync('rsa', { modulusLength: 2048 });
+    const { importPKCS8 } = await import('jose');
+    const key = await importPKCS8(privateKey.export({ type: 'pkcs8', format: 'pem' }) as string, 'RS256');
+
+    const noIat = await new SignJWT({})
+      .setProtectedHeader({ alg: 'RS256' })
+      .setExpirationTime('60s')
+      .sign(key);
+
+    expect(() => tokenLifetimeSeconds(noIat)).toThrow(TokenWithoutExpiryError);
   });
 });

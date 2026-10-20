@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { exportJWK, importPKCS8, SignJWT, type JWK } from 'jose';
+import { decodeJwt, exportJWK, importPKCS8, SignJWT, type JWK } from 'jose';
 import { requireTenantSlug } from '@broker/tenant';
 
 /**
@@ -61,9 +61,46 @@ export function tenantSlug(): string {
   return requireTenantSlug(process.env.SITE_SLUG, 'выдача SSO-токена');
 }
 
-export async function issueHandoffToken(userId: string): Promise<string> {
+/** Токен вместе с его СОБСТВЕННЫМ сроком жизни — одной величиной, не двумя. */
+export interface HandoffToken {
+  token: string;
+  /** Секунды, посчитанные из `exp − iat` выпущенного токена. */
+  expiresIn: number;
+}
+
+/** Выпущенный токен не назвал срок — выпускать его нельзя (Р-100). */
+export class TokenWithoutExpiryError extends Error {
+  constructor(missing: string) {
+    super(`выпущенный handoff-токен не называет срок жизни: нет ${missing}`);
+    this.name = 'TokenWithoutExpiryError';
+  }
+}
+
+/**
+ * Срок жизни токена, прочитанный ИЗ НЕГО САМОГО.
+ *
+ * Отдельной функцией, потому что это единственное место, где «сколько живёт
+ * токен» становится числом для внешнего мира. Пока число бралось из
+ * константы рядом с подписью, оно совпадало с настоящим сроком только по
+ * договорённости: правка в одной строке и неправка в другой разошлись бы
+ * молча, а кабинет продолжал бы уверенно называть срок — неверный.
+ *
+ * Отсутствие `exp` или `iat` — отказ, а не умолчание. Ноль здесь означал бы
+ * «истекает немедленно», и терминал, по контракту продлевающий сессию до
+ * истечения, начал бы просить новый токен без остановки: отказ, замаскированный
+ * под нагрузку, видимый только по счётчикам соседа (ровно это терминал у себя
+ * и чинил в TRM-24).
+ */
+export function tokenLifetimeSeconds(token: string): number {
+  const { exp, iat } = decodeJwt(token);
+  if (typeof exp !== 'number') throw new TokenWithoutExpiryError('exp');
+  if (typeof iat !== 'number') throw new TokenWithoutExpiryError('iat');
+  return exp - iat;
+}
+
+export async function issueHandoffToken(userId: string): Promise<HandoffToken> {
   const { privateKey } = await getKeys();
-  return new SignJWT({ tenant: tenantSlug() })
+  const token = await new SignJWT({ tenant: tenantSlug() })
     .setProtectedHeader({ alg: 'RS256', kid: SSO_KEY_ID, typ: 'JWT' })
     .setIssuer(SSO_ISSUER)
     .setAudience(SSO_AUDIENCE)
@@ -72,6 +109,10 @@ export async function issueHandoffToken(userId: string): Promise<string> {
     .setIssuedAt()
     .setExpirationTime(`${SSO_TOKEN_TTL_SECONDS}s`)
     .sign(privateKey);
+
+  // Срок читается из подписанного токена, а не повторяется константой:
+  // разойтись им теперь негде.
+  return { token, expiresIn: tokenLifetimeSeconds(token) };
 }
 
 export async function publicJwks(): Promise<{ keys: JWK[] }> {
