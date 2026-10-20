@@ -15,7 +15,12 @@ export interface TickerItem {
   symbol: string;
   /** Уже отформатированная цена — форматирование остаётся за приложением */
   price: string;
-  changePercent: number;
+  /**
+   * `null` — изменение неизвестно при известной цене. Не путать с
+   * `state: 'unavailable'`: там нет самой котировки и прочерк встаёт на место
+   * цены, здесь цена настоящая и прочерк встаёт только на место изменения.
+   */
+  changePercent: number | null;
   href?: string;
   /** Не задано → 'live' (обратная совместимость с существующими вызовами) */
   state?: QuoteDisplayState;
@@ -67,7 +72,7 @@ export function TickerTape({
         <>
           <span className="font-medium text-primary">{item.symbol}</span>
           <span className="tabular-nums text-secondary">{item.price}</span>
-          <PriceChange value={item.changePercent} />
+          <PriceChange value={item.changePercent} noDataLabel={noDataLabel} />
         </>
       );
       const itemClass = 'flex shrink-0 items-center gap-2 text-sm';

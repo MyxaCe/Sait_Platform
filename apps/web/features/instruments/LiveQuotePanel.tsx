@@ -49,7 +49,13 @@ export function LiveQuotePanel({ def }: { def: SymbolDef }) {
         >
           {formatPrice(price, def.digits)}
         </span>
-        <PriceChange value={quote?.changePercent ?? 0} className="text-base" />
+        {/*
+          Было `?? 0` — подстановка, прямо запрещённая контрактом: на крупной
+          цифре страницы инструмента она показывала уверенное «0.00%». Нулём
+          подменялись сразу два разных незнания — котировки ещё нет и
+          изменение не пришло, — и оба читались как «цена не изменилась».
+        */}
+        <PriceChange value={quote?.changePercent ?? null} className="text-base" />
       </div>
 
       <dl className="mt-6 grid grid-cols-2 gap-4 border-t border-border pt-6 text-sm">

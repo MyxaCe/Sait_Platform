@@ -25,6 +25,29 @@ describe('quotes store', () => {
     expect(quotes.EURUSD?.ts).toBe(0);
   });
 
+  it('в начальном снапшоте изменение пустое, а не ноль', () => {
+    // Цена в снапшоте настоящая (базовая, ради SSR без скачка вёрстки), а
+    // изменения до первого тика ещё нет. Ноль здесь был утверждением «цена
+    // не изменилась», сделанным до прихода каких-либо данных: на первом
+    // рендере вся витрина уверенно показывала «0.00%».
+    const { quotes } = useQuotesStore.getState();
+
+    for (const def of SYMBOL_UNIVERSE) {
+      expect(quotes[def.symbol]?.changePercent).toBeNull();
+    }
+  });
+
+  it('`ts` обнуляемым не стал — по нему решается свежесть', () => {
+    // Назван в контракте явно, чтобы не «дозакрыли» ради единообразия:
+    // величину, по которой решается «считать ли цену текущей», отдавать
+    // с «неизвестно» некому интерпретировать.
+    const { quotes } = useQuotesStore.getState();
+
+    for (const def of SYMBOL_UNIVERSE) {
+      expect(typeof quotes[def.symbol]?.ts).toBe('number');
+    }
+  });
+
   it('applyBatch обновляет только пришедшие символы', () => {
     const before = useQuotesStore.getState().quotes.BTCUSD;
     useQuotesStore.getState().applyBatch([testQuote]);

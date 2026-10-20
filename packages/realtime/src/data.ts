@@ -89,7 +89,10 @@ export function createInitialQuotes(): Record<string, Quote> {
       category: def.category,
       price: def.basePrice,
       digits: def.digits,
-      changePercent: 0,
+      // До первого тика изменение неизвестно. Ноль здесь был утверждением
+      // «цена не изменилась», сделанным до того, как пришли хоть какие-то
+      // данные, — и на первом рендере витрина уверенно показывала «0.00%».
+      changePercent: null,
       ts: 0,
     };
   }
