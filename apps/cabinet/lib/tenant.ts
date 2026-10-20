@@ -24,7 +24,7 @@ import {
   EDITORIAL_REUSE_WINDOW_SECONDS,
   fetchTenantConfig,
   isSymbolAllowed,
-  tenantSlug,
+  readTenantSlug,
   type TenantConfig,
   type TenantStartBalance,
 } from '@broker/tenant';
@@ -41,8 +41,10 @@ export type {
 export async function getTenantConfig(): Promise<TenantConfig> {
   return fetchTenantConfig({
     baseUrl: process.env.CMS_API_URL,
-    // Пустая строка — «не задано», а не слаг (WEB-11).
-    slug: tenantSlug(process.env.SITE_SLUG),
+    // Слага может не быть на сборке — тогда граница закрыта
+    // (`not-configured`), а не открыта на чужого тенанта. У живого
+    // процесса слаг обязан быть: гейт в `instrumentation.ts` (PKG-05).
+    slug: readTenantSlug(process.env.SITE_SLUG),
     apiKey: process.env.CMS_API_KEY || undefined,
     fetchInit: { next: { revalidate: EDITORIAL_REUSE_WINDOW_SECONDS } } as RequestInit,
   });

@@ -15,6 +15,22 @@ export async function POST() {
   if (!isSsoConfigured()) {
     return NextResponse.json({ error: 'sso_not_configured' }, { status: 503 });
   }
+  /**
+   * Тенант обязан быть НАЗВАН до выпуска подписи (PKG-05).
+   *
+   * Проверяется здесь, хотя гейт старта уже не пустил бы процесс без
+   * слага: токен — это подпись, и у подписи не бывает «наверное».
+   * Отказ назван машинным кодом рядом с `sso_not_configured`, а не
+   * прилетает необработанным исключением: 500 без кода отправляет
+   * разбираться в чужой лог, а терминалу нужен различимый исход.
+   */
+  let tenant: string;
+  try {
+    tenant = tenantSlug();
+  } catch {
+    console.error('[sso] SITE_SLUG не задан — токен не выпускаем (PKG-05)');
+    return NextResponse.json({ error: 'tenant_not_configured' }, { status: 503 });
+  }
   const user = await getSessionUser();
   if (!user) {
     return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
@@ -25,7 +41,7 @@ export async function POST() {
 
   const token = await issueHandoffToken(user.id);
   return NextResponse.json(
-    { token, tenant: tenantSlug(), expiresIn: SSO_TOKEN_TTL_SECONDS },
+    { token, tenant, expiresIn: SSO_TOKEN_TTL_SECONDS },
     { headers: { 'Cache-Control': 'no-store' } },
   );
 }

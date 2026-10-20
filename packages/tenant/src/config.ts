@@ -43,7 +43,13 @@ export interface TenantConfig {
 export interface TenantConfigRequest {
   /** `CMS_API_URL`. Пустой или незаданный — `not-configured`, в сеть не идём. */
   readonly baseUrl: string | undefined;
-  readonly slug: string;
+  /**
+   * Слаг тенанта. `null` — неизвестен (сборка, PKG-05): в сеть не
+   * идём и возвращаем `not-configured`. Запрос без слага ушёл бы к CMS
+   * как `?site=`, а она отдала бы САЙТ ПО УМОЛЧАНИЮ — то есть чужой
+   * allow-list под видом нашего.
+   */
+  readonly slug: string | null;
   readonly apiKey?: string | undefined;
   /**
    * Параметры запроса, специфичные для потребителя: у Next это
@@ -94,6 +100,9 @@ export async function fetchTenantConfig(request: TenantConfigRequest): Promise<T
   const unnamed: TenantListExpiry = { state: 'unnamed' };
 
   if (!base) return { ...both('not-configured'), expiry: unnamed };
+  // Слага нет — мы не знаем, чей конфиг просить. Это та же
+  // ненастроенность, что отсутствие адреса CMS, и так же fail-closed.
+  if (slug === null) return { ...both('not-configured'), expiry: unnamed };
 
   try {
     const res = await fetch(`${base}/cms/sites/${slug}`, {

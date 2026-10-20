@@ -221,6 +221,40 @@ describe('поле тела старше заголовков', () => {
   });
 });
 
+describe('слаг не назван · в CMS не идём вовсе (PKG-05)', () => {
+  it('slug: null → not-configured, и СЕТЬ НЕ ТРОНУТА', () => {
+    /**
+     * Добавлено после мутационного прогона: мутация «снять проверку
+     * слага из `fetchTenantConfig`» красила **ноль** тестов — связки на
+     * этот вход не было вовсе. Нулевой результат мутации был про
+     * слабость набора, а не про крепость кода.
+     *
+     * Запрос без слага ушёл бы к CMS как `?site=`, а она отдала бы САЙТ
+     * ПО УМОЛЧАНИЮ — чужой allow-list под видом нашего, с кодом 200 и
+     * без единой ошибки.
+     */
+    const mock = vi.fn(() => Promise.resolve(Response.json({ instruments: ['BTCUSD'] })));
+    vi.stubGlobal('fetch', mock);
+
+    return fetchTenantConfig({ baseUrl: 'http://cms.test', slug: null }).then((config) => {
+      expect(config.access).toEqual({ state: 'unavailable', reason: 'not-configured' });
+      expect(mock).not.toHaveBeenCalled();
+    });
+  });
+
+  it('ПАРНАЯ: со слагом в сеть идём и границу открываем', () => {
+    // Без парной проверка прошла бы и у реализации, которая не ходит в
+    // CMS никогда.
+    const mock = vi.fn(() => Promise.resolve(Response.json({ instruments: ['BTCUSD'] })));
+    vi.stubGlobal('fetch', mock);
+
+    return fetchTenantConfig({ baseUrl: 'http://cms.test', slug: 'apex-ru' }).then((config) => {
+      expect(config.access.state).toBe('allowed');
+      expect(mock).toHaveBeenCalledTimes(1);
+    });
+  });
+});
+
 /* ------------------------------------------------------------------ */
 /* 4. Растяжка: сегодняшний контур не должен погаснуть                  */
 /* ------------------------------------------------------------------ */

@@ -2,7 +2,7 @@ import { unstable_cache } from 'next/cache';
 import { draftMode } from 'next/headers';
 import type { z } from 'zod';
 import { CMS_RESPONSE_SCHEMAS, cmsFetch, type Locale } from '@broker/api-client';
-import { tenantSlug } from '@broker/tenant';
+import { readTenantSlug } from '@broker/tenant';
 import { CMS_MOCK } from './cms-mock';
 
 /**
@@ -42,10 +42,20 @@ export async function getCms<K extends Resource>(
 
   if (process.env.CMS_API_URL) {
     // Мульти-тенантная CMS: сайт явно называет себя (без site CMS взяла бы дефолт)
-    // `tenantSlug`, а не `?? 'apex-ru'`: пустой SITE_SLUG уходил в CMS
-    // как `?site=`, и она отдавала САЙТ ПО УМОЛЧАНИЮ — чужой бренд при
-    // живой CMS и без единой ошибки (WEB-11).
-    const siteParams = { site: tenantSlug(process.env.SITE_SLUG), ...params };
+    // Слага нет — в CMS НЕ идём вовсе (PKG-05). Запрос с `?site=`
+    // возвращал бы сайт по умолчанию, то есть чужой бренд при живой
+    // CMS и без единой ошибки. Отдаём фикстуры: это уже существующий
+    // честный путь «CMS не настроена», и он ничего не утверждает о
+    // чужом тенанте.
+    const slug = readTenantSlug(process.env.SITE_SLUG);
+    if (slug === null) {
+      console.error(
+        `[getCms] SITE_SLUG не задан — ресурс ${resource} берём из фикстур, ` +
+          'в CMS не идём: запрос без слага вернул бы чужой сайт (PKG-05).',
+      );
+      return schema.parse(buildLocal()) as z.infer<(typeof CMS_RESPONSE_SCHEMAS)[K]>;
+    }
+    const siteParams = { site: slug, ...params };
     // Фикстура строится ДО вызова, значит её исключение летит мимо try/catch
     // внутри cmsFetch (баг B-017): сломанная фикстура роняла страницу даже при
     // живой CMS, к которой не успевали сходить. Страховка не имеет права быть

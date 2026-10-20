@@ -63,6 +63,9 @@ describe('getCms · CMS не настроена (CMS_API_URL пуст)', () => {
 describe('getCms · CMS отвалилась в рантайме (CMS_API_URL задан)', () => {
   beforeEach(() => {
     vi.stubEnv('CMS_API_URL', 'http://cms.test');
+    // Тенант обязан быть назван: без слага в CMS не ходим вовсе
+    // (PKG-05), и эти сценарии проверяли бы не тот путь.
+    vi.stubEnv('SITE_SLUG', 'apex-ru');
   });
 
   it('соединение отклонено → фикстуры, страница живёт', async () => {
@@ -127,6 +130,9 @@ describe('getCms · CMS отвалилась в рантайме (CMS_API_URL з
 describe('getCms · бренд из CMS v2', () => {
   beforeEach(() => {
     vi.stubEnv('CMS_API_URL', 'http://cms.test');
+    // Тенант обязан быть назван: без слага в CMS не ходим вовсе
+    // (PKG-05), и эти сценарии проверяли бы не тот путь.
+    vi.stubEnv('SITE_SLUG', 'apex-ru');
   });
 
   const V2_BRAND = {
@@ -178,6 +184,9 @@ describe('getCms · бренд из CMS v2', () => {
 describe('getCms · сломана сама фикстура', () => {
   beforeEach(() => {
     vi.stubEnv('CMS_API_URL', 'http://cms.test');
+    // Тенант обязан быть назван: без слага в CMS не ходим вовсе
+    // (PKG-05), и эти сценарии проверяли бы не тот путь.
+    vi.stubEnv('SITE_SLUG', 'apex-ru');
     vi.doMock('./cms-mock', () => ({
       CMS_MOCK: {
         faq: () => {
@@ -205,5 +214,56 @@ describe('getCms · сломана сама фикстура', () => {
 
     const { getCms } = await import('./cms');
     await expect(getCms('faq', { locale: 'ru' })).rejects.toThrow();
+  });
+});
+
+describe('getCms · слаг не назван (PKG-05)', () => {
+  beforeEach(() => {
+    vi.stubEnv('CMS_API_URL', 'http://cms.test');
+  });
+
+  it('SITE_SLUG пуст → фикстуры, и в CMS НЕ ходим вовсе', async () => {
+    /**
+     * Запрос без слага ушёл бы как `?site=`, а мульти-тенантная CMS
+     * отдала бы **сайт по умолчанию** — чужой бренд и чужой контент с
+     * кодом 200 и без единой ошибки на странице. Поэтому адрес без
+     * слага не собирается: отдаём фикстуры, то есть уже существующий
+     * честный путь «CMS не настроена».
+     */
+    vi.stubEnv('SITE_SLUG', '');
+    const fetchMock = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
+
+    const { getCms } = await import('./cms');
+    const brand = await getCms('brand', { locale: 'ru' });
+
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(brand.name).toBeTruthy();
+  });
+
+  it('ПАРНАЯ: со слагом в CMS идём', async () => {
+    // Без парной проверка прошла бы и у реализации, которая не ходит в
+    // CMS никогда.
+    vi.stubEnv('SITE_SLUG', 'apex-ru');
+    const fetchMock = vi.fn(() => Promise.reject(new Error('ECONNREFUSED')));
+    vi.stubGlobal('fetch', fetchMock);
+
+    const { getCms } = await import('./cms');
+    await getCms('brand', { locale: 'ru' });
+
+    expect(fetchMock).toHaveBeenCalled();
+  });
+
+  it('слаг уходит в запрос как есть, а не подменяется умолчанием', async () => {
+    vi.stubEnv('SITE_SLUG', 'apex-uk');
+    const fetchMock = vi.fn(() => Promise.reject(new Error('ECONNREFUSED')));
+    vi.stubGlobal('fetch', fetchMock);
+
+    const { getCms } = await import('./cms');
+    await getCms('brand', { locale: 'ru' });
+
+    const url = String((fetchMock.mock.calls[0] as unknown[])[0]);
+    expect(url).toContain('site=apex-uk');
+    expect(url).not.toContain('apex-ru');
   });
 });
