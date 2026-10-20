@@ -6,6 +6,8 @@
  * просто без брендирования. Обновление — revalidate 5 мин.
  */
 
+import { tenantSlug } from '@broker/tenant';
+
 export interface ChromeBrand {
   name: string;
   /**
@@ -29,7 +31,8 @@ function cmsUrl(): string | null {
 }
 
 function siteSlug(): string {
-  return process.env.SITE_SLUG ?? 'apex-ru';
+  // Пустая строка — «не задано», а не слаг (WEB-11).
+  return tenantSlug(process.env.SITE_SLUG);
 }
 
 export async function cmsGet(resource: string, locale: string): Promise<unknown | null> {

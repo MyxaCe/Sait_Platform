@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { exportJWK, importPKCS8, SignJWT, type JWK } from 'jose';
+import { tenantSlug as resolveTenantSlug } from '@broker/tenant';
 
 /**
  * SSO handoff-токены для терминала (ADR-023, решение B финализации):
@@ -52,7 +53,10 @@ export function isSsoConfigured(): boolean {
 
 /** Тенант этого кабинета (slug сайта из реестра CMS). */
 export function tenantSlug(): string {
-  return process.env.SITE_SLUG ?? 'apex-ru';
+  // Пустая строка — «не задано», а не слаг. Здесь цена выше всего:
+  // токен назвал бы ЧУЖОГО тенанта, и это не видно ни в одном логе
+  // (WEB-11).
+  return resolveTenantSlug(process.env.SITE_SLUG);
 }
 
 export async function issueHandoffToken(userId: string): Promise<string> {
