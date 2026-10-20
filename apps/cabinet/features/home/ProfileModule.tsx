@@ -19,7 +19,8 @@ export async function ProfileModule({ user }: { user: SessionUser }) {
       <div className="min-w-0">
         <h1 className="truncate text-xl font-semibold">{user.fullName}</h1>
         <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-secondary">
-          <span className="rounded-md bg-primary/5 px-2 py-0.5">UID {user.uid}</span>
+          {/* Прочерк, а не ноль: «UID 0» выглядит как настоящий номер. */}
+          <span className="rounded-md bg-primary/5 px-2 py-0.5">UID {user.uid ?? '—'}</span>
           <span className="rounded-md bg-accent/15 px-2 py-0.5 font-medium text-accent">
             VIP {user.vipLevel}
           </span>

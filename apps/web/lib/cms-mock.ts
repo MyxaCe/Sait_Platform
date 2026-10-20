@@ -134,6 +134,25 @@ export const CMS_MOCK: Record<string, MockBuilder> = {
     CMS_RESPONSE_SCHEMAS.accounts.parse({
       items: getAccountPlans(locale).map((plan) => {
         const pricing = ACCOUNT_PRICING.find((p) => p.id === plan.id);
+        /*
+         * Ноль здесь был бы утверждением «торговля бесплатна» (Р-086,
+         * QA-05) — на странице тарифов, в запасных фикстурах, то есть
+         * ровно тогда, когда CMS недоступна и проверить некому.
+         *
+         * И отличить его было бы нельзя: у тарифа Standard комиссия —
+         * НАСТОЯЩИЙ ноль ($0 в его же признаках). Подставленный ноль
+         * выглядел бы точно так же, как законный.
+         *
+         * Поэтому отказ, а не умолчание. План без цены — ошибка фикстур
+         * (`ACCOUNT_PRICING` обязан покрывать все планы), и она должна
+         * падать громко на сборке, а не доезжать до посетителя ценой.
+         */
+        if (!pricing) {
+          throw new Error(
+            `[cms-mock] у тарифа «${plan.id}» нет записи в ACCOUNT_PRICING: ` +
+              'цену не выдумываем — ноль читался бы как «бесплатно» (QA-05)',
+          );
+        }
         return {
           id: plan.id,
           name: plan.name,
@@ -142,8 +161,8 @@ export const CMS_MOCK: Record<string, MockBuilder> = {
           featured: plan.featured ?? false,
           features: plan.features,
           pricing: {
-            spreadPips: pricing?.spreadPips ?? 0,
-            commissionPerLotRT: pricing?.commissionPerLotRT ?? 0,
+            spreadPips: pricing.spreadPips,
+            commissionPerLotRT: pricing.commissionPerLotRT,
           },
         };
       }),

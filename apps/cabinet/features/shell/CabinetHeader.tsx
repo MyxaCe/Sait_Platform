@@ -40,7 +40,8 @@ export async function CabinetHeader({
       <div className="flex items-center gap-3">
         <div className="hidden text-right sm:block">
           <p className="max-w-48 truncate text-sm text-primary">{user.fullName}</p>
-          <p className="text-xs text-secondary">UID {user.uid}</p>
+          {/* Прочерк, а не ноль: «UID 0» выглядит как настоящий номер. */}
+          <p className="text-xs text-secondary">UID {user.uid ?? '—'}</p>
         </div>
         <span className="grid size-9 shrink-0 place-items-center rounded-full bg-accent/20 text-sm font-semibold text-accent">
           {user.fullName.charAt(0).toUpperCase()}
