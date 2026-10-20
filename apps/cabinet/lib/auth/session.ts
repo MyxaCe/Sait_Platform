@@ -11,8 +11,16 @@ import { SESSION_COOKIE, SESSION_TTL_DAYS } from './constants';
 
 export interface SessionUser {
   id: string;
-  /** Публичный номер пользователя (показывается в ЛК, ADR-026) */
-  uid: number;
+  /**
+   * Публичный номер пользователя (показывается в ЛК, ADR-026).
+   *
+   * `null` — номера нет. Это аномалия строки, а не состояние: колонка
+   * `NOT NULL`, последовательность начинается со 100001. Но подставить
+   * вместо него ноль нельзя: «UID 0» выглядит как настоящий номер, и
+   * человек процитирует его поддержке как факт — отправив и себя, и
+   * поддержку искать несуществующий счёт.
+   */
+  uid: number | null;
   email: string;
   fullName: string;
   locale: 'ru' | 'en';
@@ -62,13 +70,32 @@ export async function getSessionUser(): Promise<SessionUser | null> {
   );
   const row = result.rows[0];
   if (!row) return null;
+  /*
+   * Ноль вместо номера не подставляем (Р-086, QA-05). Грабля, из-за которой
+   * одного удаления `?? 0` было бы мало: `Number(null)` это **0**, то есть
+   * приведение подставляет ноль само. Поэтому проверка стоит ДО него.
+   *
+   * Колонка `NOT NULL`, так что пустое значение означает сломанную строку, а
+   * не «пользователь без номера». Называем это в логе — молча показать
+   * прочерк значило бы потерять аномалию.
+   */
+  if (row.uid === null || row.uid === undefined) {
+    console.error(
+      `[auth] у пользователя ${row.id} нет uid, хотя колонка NOT NULL: ` +
+        'показываем прочерк, номер не выдумываем (QA-05)',
+    );
+  }
+
   return {
     id: row.id,
-    uid: Number(row.uid ?? 0),
+    uid: row.uid === null || row.uid === undefined ? null : Number(row.uid),
     email: row.email,
     fullName: row.full_name,
     locale: row.locale === 'en' ? 'en' : 'ru',
-    vipLevel: Number(row.vip_level ?? 0),
+    // `vip_level` — `INT NOT NULL DEFAULT 0`, и ноль здесь НАСТОЯЩЕЕ
+    // значение: «уровня нет». Это не подстановка, и прочерк был бы здесь
+    // неправдой наоборот. Приведение оставлено осознанно.
+    vipLevel: Number(row.vip_level),
     createdAt: row.created_at,
   };
 }
