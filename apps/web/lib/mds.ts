@@ -20,13 +20,30 @@ interface MdsInstrumentItem {
   icon?: string | null;
 }
 
-/** Почему каталога нет. Разные причины — разные адресаты починки. */
+/**
+ * Почему каталога нет. Разные причины — разные адресаты починки.
+ *
+ * **Пять, а не три** (Р-070). Первая версия складывала «не дозвонились»,
+ * «ответил не-2xx» и «ответил непонятным телом» в одно `unreachable` —
+ * а это три разные неполадки у трёх разных людей: сеть, сосед, контракт.
+ * Схлопнутые, они отправляют чинить наугад, и именно против этого Р-070
+ * требует различать «не ответил» и «ответил не тем».
+ *
+ * Имена взяты те же, что у `TenantAccessUnavailableReason` в
+ * `@broker/tenant`: один словарь причин на платформу дешевле двух
+ * похожих.
+ */
 export type MdsCatalogUnavailableReason =
   /** `MDS_HTTP_URL` не задан в окружении ОТВЕЧАЮЩЕГО процесса. */
   | 'not-configured'
-  /** Адрес есть, MDS не ответил или ответил не-2xx / нечитаемым телом. */
-  | 'unreachable'
-  /** MDS ответил, но ни одного символа в ответе нет. */
+  /** Не дозвонились вовсе: соединение отклонено, таймаут, обрыв. */
+  | 'network'
+  /** Ответил, но не-2xx: сосед жив, каталог не отдал. */
+  | 'http-error'
+  /** Ответил 2xx, но тела мы не поняли — поля `items` нет либо оно не
+   *  массив. Это НЕ пустой каталог: источник ничего не сказал. */
+  | 'malformed'
+  /** Ответил и честно сказал: сейчас не транслируется ничего. */
   | 'empty';
 
 export type MdsCatalog =
@@ -35,7 +52,7 @@ export type MdsCatalog =
 
 type FetchOutcome =
   | { ok: true; items: MdsInstrumentItem[] }
-  | { ok: false; reason: 'not-configured' | 'unreachable' };
+  | { ok: false; reason: Exclude<MdsCatalogUnavailableReason, 'empty'> };
 
 async function fetchMdsInstruments(): Promise<FetchOutcome> {
   // Читается из окружения ТОГО процесса, который сейчас отвечает. На
@@ -52,25 +69,95 @@ async function fetchMdsInstruments(): Promise<FetchOutcome> {
       next: { revalidate: 300 },
       signal: AbortSignal.timeout(2_000),
     });
-    if (!res.ok) return { ok: false, reason: 'unreachable' };
-    const data = (await res.json()) as { items?: MdsInstrumentItem[] };
+    // Ответил, но не тем: сосед жив, каталог не отдал.
+    if (!res.ok) return { ok: false, reason: 'http-error' };
+
+    // Разбор тела — в СВОЁМ try. Иначе нечитаемый JSON улетал бы во
+    // внешний `catch` и назывался бы `network`, то есть «не
+    // дозвонились» — при том, что дозвонились и ответ получили.
+    // Глушитель, поставленный ради ожидаемой сетевой ошибки, глотает и
+    // ошибку формы ответа — ровно ту, ради которой проверка написана.
+    let data: { items?: MdsInstrumentItem[] };
+    try {
+      data = (await res.json()) as { items?: MdsInstrumentItem[] };
+    } catch {
+      return { ok: false, reason: 'malformed' };
+    }
+
     // `items` нет в ответе — это НЕ пустой каталог: мы не поняли ответ.
-    if (!Array.isArray(data.items)) return { ok: false, reason: 'unreachable' };
+    if (!Array.isArray(data.items)) return { ok: false, reason: 'malformed' };
     return { ok: true, items: data.items };
   } catch {
-    return { ok: false, reason: 'unreachable' };
+    // Досюда доходят только отказы транспорта: соединение отклонено,
+    // таймаут, обрыв. Форма ответа разобрана выше и сюда не попадает.
+    return { ok: false, reason: 'network' };
   }
+}
+
+/**
+ * Состояние прошлого ответа — чтобы писать в лог НА СМЕНЕ СОСТОЯНИЯ, а
+ * не на каждый запрос (Р-070).
+ *
+ * Строка на каждый тик перестаёт читаться так же быстро, как молчание:
+ * при опросе раз в несколько секунд поток одинаковых сообщений
+ * проматывают, и настоящая смена причины тонет среди повторов. Поэтому
+ * повторы считаются и называются ЧИСЛОМ при восстановлении — «сколько
+ * раз подряд» это диагностика, а не шум.
+ *
+ * Живёт в модуле, то есть у каждого экземпляра своё. Это правильно:
+ * состояние описывает связь ЭТОГО процесса с MDS, а не факт о мире.
+ */
+let lastReason: MdsCatalogUnavailableReason | null | undefined;
+let repeats = 0;
+
+/** Сбрасывается тестами: модульное состояние иначе течёт между ними. */
+export function __resetCatalogLogState(): void {
+  lastReason = undefined;
+  repeats = 0;
+}
+
+function reportCatalogState(reason: MdsCatalogUnavailableReason | null): void {
+  if (reason === lastReason) {
+    repeats += 1;
+    return;
+  }
+
+  if (reason === null) {
+    // Восстановление. Число повторов называем здесь — иначе «сколько
+    // это длилось» останется неизвестным.
+    console.info(
+      `[mds] каталог снова доступен (предыдущее состояние: ${lastReason ?? 'неизвестно'}` +
+        `${repeats > 0 ? `, повторов подряд: ${repeats}` : ''})`,
+    );
+  } else {
+    console.error(
+      `[mds] каталог недоступен: ${reason}. Строка котировок закрыта, ` +
+        'выдуманные символы не подставляются (Р-050).',
+    );
+  }
+
+  lastReason = reason;
+  repeats = 0;
 }
 
 export async function getMdsCatalog(): Promise<MdsCatalog> {
   const outcome = await fetchMdsInstruments();
-  if (!outcome.ok) return { state: 'unavailable', reason: outcome.reason };
+  if (!outcome.ok) {
+    reportCatalogState(outcome.reason);
+    return { state: 'unavailable', reason: outcome.reason };
+  }
+
   const symbols = new Set(
     outcome.items.map((i) => i.symbol).filter((s): s is string => Boolean(s)),
   );
   // Пустой каталог — это ответ «сейчас не транслируется ничего», а не
   // разрешение показать что-нибудь своё.
-  if (symbols.size === 0) return { state: 'unavailable', reason: 'empty' };
+  if (symbols.size === 0) {
+    reportCatalogState('empty');
+    return { state: 'unavailable', reason: 'empty' };
+  }
+
+  reportCatalogState(null);
   return { state: 'available', symbols };
 }
 

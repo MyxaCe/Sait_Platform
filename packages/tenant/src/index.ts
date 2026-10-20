@@ -36,6 +36,8 @@ export {
   type TenantListExpiry,
 } from './expiry';
 
+export { DEFAULT_TENANT_SLUG, tenantSlug } from './slug';
+
 export {
   fetchTenantConfig,
   type TenantConfig,

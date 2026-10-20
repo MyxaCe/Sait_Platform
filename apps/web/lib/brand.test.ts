@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { FALLBACK_PRIMARY_COLOR, hexToRgbChannels, resolvePrimaryColor } from './brand';
 
 /**
- * Запасной фирменный цвет витрины — WEB-05, решение штаба Р-040.
+ * Запасной фирменный цвет витрины — WEB-14, решение штаба Р-040.
  *
  * Проверяются два разных утверждения, и второе важнее первого:
  *   1. `null` от источника даёт наш цвет, а не пустоту;

@@ -2,6 +2,7 @@ import { unstable_cache } from 'next/cache';
 import { draftMode } from 'next/headers';
 import type { z } from 'zod';
 import { CMS_RESPONSE_SCHEMAS, cmsFetch, type Locale } from '@broker/api-client';
+import { tenantSlug } from '@broker/tenant';
 import { CMS_MOCK } from './cms-mock';
 
 /**
@@ -41,7 +42,10 @@ export async function getCms<K extends Resource>(
 
   if (process.env.CMS_API_URL) {
     // Мульти-тенантная CMS: сайт явно называет себя (без site CMS взяла бы дефолт)
-    const siteParams = { site: process.env.SITE_SLUG ?? 'apex-ru', ...params };
+    // `tenantSlug`, а не `?? 'apex-ru'`: пустой SITE_SLUG уходил в CMS
+    // как `?site=`, и она отдавала САЙТ ПО УМОЛЧАНИЮ — чужой бренд при
+    // живой CMS и без единой ошибки (WEB-11).
+    const siteParams = { site: tenantSlug(process.env.SITE_SLUG), ...params };
     // Фикстура строится ДО вызова, значит её исключение летит мимо try/catch
     // внутри cmsFetch (баг B-017): сломанная фикстура роняла страницу даже при
     // живой CMS, к которой не успевали сходить. Страховка не имеет права быть

@@ -62,26 +62,34 @@
  * `other-jurisdiction` означает «знаем, и ему нельзя» — это не чинится
  * вовсе. Один исход, два разных диагноза.
  */
-export type VisibilityCode =
-  /** Видно: ограничений нет либо они пусты после разбора. */
-  | 'no-restrictions'
-  /** Видно: юрисдикция посетителя в списке разрешённых. */
-  | 'allowed'
-  /** Скрыто: ограничение есть, а юрисдикция посетителя неизвестна. */
-  | 'visitor-unknown'
-  /** Скрыто: юрисдикция известна и в список не входит. */
-  | 'other-jurisdiction';
+export type VisibilityReason =
+  /** Ограничение есть, а юрисдикция посетителя неизвестна (не задана
+   *  либо пустая строка). Чинится знанием о посетителе. */
+  | 'jurisdiction-unknown'
+  /** Юрисдикция известна, и в списке ограничений её нет. Чинится
+   *  составом списка. */
+  | 'jurisdiction-not-listed';
 
 export interface VisibilityVerdict {
   readonly visible: boolean;
-  /** Почему скрыто. `null` — видно. Подпись для человека, не контракт. */
-  readonly reason: string | null;
   /**
-   * Машинный признак барьера. Отдельно от `reason` сознательно: в
-   * атрибут, по которому отличают состояния, однажды уже попала
-   * ПЕРЕВЕДЁННАЯ строка, и машинный признак оказался локализованным.
+   * МАШИННЫЙ код отказа, как его называет контракт. `null` — видно.
+   *
+   * Отдельно от подписи сознательно и теперь ещё и по контракту:
+   * «код отказа и подпись для человека — два разных поля», и признак,
+   * по которому проверка отличает состояния, не должен ходить через
+   * перевод. У нас это уже было багом: в `data-access-reason` однажды
+   * легла переведённая строка.
    */
-  readonly code: VisibilityCode;
+  readonly reason: VisibilityReason | null;
+  /**
+   * Подпись для человека. Не контракт — её можно и нужно переводить.
+   *
+   * Имя поля согласовано с остальными реализациями (штаб, 19.10):
+   * машинный код зовётся `reason`, человеческая строка — `explanation`.
+   * Один словарь на три реализации дешевле трёх похожих.
+   */
+  readonly explanation: string | null;
 }
 
 /**
@@ -114,26 +122,26 @@ export function visibilityIn(
 ): VisibilityVerdict {
   const list = readJurisdictions(restrictions);
 
-  if (list.length === 0) return { visible: true, reason: null, code: 'no-restrictions' };
+  if (list.length === 0) return { visible: true, reason: null, explanation: null };
 
   // Пустая строка — та же незаданность, а не особая юрисдикция.
   if (jurisdiction === null || jurisdiction === '') {
     return {
       visible: false,
-      reason: `Ограничено юрисдикциями (${list.join(', ')}), а юрисдикция не задана: неизвестность не разрешение.`,
-      code: 'visitor-unknown',
+      reason: 'jurisdiction-unknown',
+      explanation: `Ограничено юрисдикциями (${list.join(', ')}), а юрисдикция не задана: неизвестность не разрешение.`,
     };
   }
 
   // Сравнение посимвольное и регистрозависимое. Приведение регистра
   // пришлось бы повторять в каждой реализации, и первая же, которая его
   // забудет, разойдётся с остальными молча.
-  if (list.includes(jurisdiction)) return { visible: true, reason: null, code: 'allowed' };
+  if (list.includes(jurisdiction)) return { visible: true, reason: null, explanation: null };
 
   return {
     visible: false,
-    reason: `Ограничено юрисдикциями (${list.join(', ')}) — в «${jurisdiction}» не показывается.`,
-    code: 'other-jurisdiction',
+    reason: 'jurisdiction-not-listed',
+    explanation: `Ограничено юрисдикциями (${list.join(', ')}) — в «${jurisdiction}» не показывается.`,
   };
 }
 

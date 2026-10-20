@@ -7,7 +7,17 @@ import type { z } from 'zod';
  */
 
 export interface CmsFetchOptions<T> {
-  schema: z.ZodType<T>;
+  /**
+   * Вход схемы — `unknown`, а не `T` (WEB-11).
+   *
+   * `z.ZodType<T>` это `ZodType<T, ZodTypeDef, T>`, то есть «вход равен
+   * выходу». Схемы с нормализацией — а бренд теперь читает две разные
+   * формы ответа и приводит их к одной — под такой тип не подходят.
+   * Разбирается всегда `await response.json()`, то есть `unknown`, и
+   * тип обязан это говорить: иначе потребитель не может привести форму
+   * соседа к своей, не солгав компилятору.
+   */
+  schema: z.ZodType<T, z.ZodTypeDef, unknown>;
   locale?: 'ru' | 'en';
   /** Теги для revalidateTag() из вебхука /api/revalidate */
   tags?: string[];

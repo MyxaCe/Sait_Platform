@@ -24,6 +24,7 @@ import {
   EDITORIAL_REUSE_WINDOW_SECONDS,
   fetchTenantConfig,
   isSymbolAllowed,
+  tenantSlug,
   type TenantConfig,
   type TenantStartBalance,
 } from '@broker/tenant';
@@ -40,7 +41,8 @@ export type {
 export async function getTenantConfig(): Promise<TenantConfig> {
   return fetchTenantConfig({
     baseUrl: process.env.CMS_API_URL,
-    slug: process.env.SITE_SLUG ?? 'apex-ru',
+    // Пустая строка — «не задано», а не слаг (WEB-11).
+    slug: tenantSlug(process.env.SITE_SLUG),
     apiKey: process.env.CMS_API_KEY || undefined,
     fetchInit: { next: { revalidate: EDITORIAL_REUSE_WINDOW_SECONDS } } as RequestInit,
   });

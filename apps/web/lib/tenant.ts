@@ -53,6 +53,7 @@ import {
   fetchTenantConfig,
   isAccessClosed,
   isSymbolAllowed,
+  tenantSlug,
   type TenantAccess,
 } from '@broker/tenant';
 
@@ -75,7 +76,8 @@ export async function getTenantAccess(): Promise<TenantAccess> {
    */
   noStore();
 
-  const slug = process.env.SITE_SLUG ?? 'apex-ru';
+  // Пустая строка — это «не задано», а не слаг (WEB-11).
+  const slug = tenantSlug(process.env.SITE_SLUG);
   const { access } = await fetchTenantConfig({
     baseUrl: process.env.CMS_API_URL,
     slug,

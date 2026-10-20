@@ -117,7 +117,7 @@ export default async function RootLayout({ children, params }: LayoutProps) {
 
   // Бренд из CMS (тег cms:brand): акцентный цвет инжектируется поверх
   // токенов. В v2 цвет может быть `null` — тогда идёт наш запасной
-  // (WEB-05): страница без фирменного цвета была бы тихим регрессом
+  // (WEB-14): страница без фирменного цвета была бы тихим регрессом
   // переезда, заметным не раньше, чем кто-нибудь посмотрит на макет.
   const brand = await getCms('brand', { locale: locale as 'ru' | 'en' });
   const primary = resolvePrimaryColor(brand.primaryColor);
