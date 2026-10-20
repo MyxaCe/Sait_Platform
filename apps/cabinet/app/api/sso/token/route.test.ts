@@ -22,7 +22,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
  * вызывался ни разу».
  */
 
-const issueHandoffToken = vi.hoisted(() => vi.fn(async () => 'signed.jwt.token'));
+const issueHandoffToken = vi.hoisted(() =>
+  vi.fn(async () => ({ token: 'signed.jwt.token', expiresIn: 60 })),
+);
 const getSessionUser = vi.hoisted(() => vi.fn());
 
 vi.mock('@/lib/sso/jwt', async () => {
@@ -40,7 +42,7 @@ async function post() {
 
 beforeEach(async () => {
   vi.resetModules();
-  issueHandoffToken.mockClear();
+  issueHandoffToken.mockClear().mockResolvedValue({ token: 'signed.jwt.token', expiresIn: 60 });
   getSessionUser.mockReset().mockResolvedValue(USER);
   vi.stubEnv('SSO_PRIVATE_KEY_B64', 'ZmFrZS1rZXk=');
   vi.stubEnv('SITE_SLUG', 'apex-ru');
@@ -58,6 +60,35 @@ describe('POST /api/sso/token · живая сессия', () => {
 
     expect(res.status).toBe(200);
     await expect(res.json()).resolves.toMatchObject({ tenant: 'apex-ru', expiresIn: 60 });
+  });
+
+  it('CAB-07 · срок берётся ОТ ВЫПУСКА, а не повторяется константой', async () => {
+    // Решающая проверка задачи. Пока ручка писала `expiresIn:
+    // SSO_TOKEN_TTL_SECONDS` отдельной строкой, ответ не зависел от того,
+    // на сколько токен подписан на самом деле: правка одной строки без
+    // правки другой расходилась молча. Выпуск здесь называет 42 — ответ
+    // обязан сказать 42, а не 60.
+    issueHandoffToken.mockResolvedValue({ token: 'signed.jwt.token', expiresIn: 42 });
+
+    const res = await post();
+
+    await expect(res.json()).resolves.toMatchObject({ expiresIn: 42 });
+  });
+
+  it('CAB-07 · выпуск без срока → 503 с названным кодом, токен не отдан', async () => {
+    // Fail-closed и с нашей стороны тоже (Р-100). Терминал сессию без
+    // срока не примет, поэтому отдать токен «хотя бы какой-то» означало бы
+    // отправить человека в дверь, которая всё равно заперта, — но уже без
+    // внятной причины на нашей стороне.
+    const { TokenWithoutExpiryError } = await import('@/lib/sso/jwt');
+    issueHandoffToken.mockRejectedValue(new TokenWithoutExpiryError('exp'));
+
+    const res = await post();
+
+    expect(res.status).toBe(503);
+    const body = await res.json();
+    expect(body).toEqual({ error: 'token_without_expiry' });
+    expect(body.token).toBeUndefined();
   });
 
   it('погашенная сессия НЕ выпускает токен', async () => {
