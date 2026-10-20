@@ -36,7 +36,8 @@
     "offline": "No connection",
     "tickerAria": "Real-time quotes",
     "simulated": "Demo data: not real market prices",
-    "noData": "no data"
+    "noData": "no data",
+    "lastKnown": "last known"
   },
   "categories": {
     "all": "All",

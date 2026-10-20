@@ -14,6 +14,7 @@ export {
   SYMBOL_UNAVAILABLE_REASONS,
   isSymbolUnavailableReason,
   parseQuotesState,
+  displayPrice,
   staleSymbolsOf,
   type SymbolUnavailableReason,
   type SymbolUnavailable,
