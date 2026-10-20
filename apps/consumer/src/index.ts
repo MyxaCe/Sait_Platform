@@ -6,6 +6,7 @@ import { Pool } from 'pg';
 import { scrubSentryEvent } from '@broker/api-client';
 import { applyTerminalEvent, classifyMessage } from './projection.js';
 import { createSubscriber } from './subscriber.js';
+import { assertTenantSlugAtStartup } from '@broker/tenant';
 
 // GlitchTip (site-bff /2): ошибки консюмера. Без DSN — выключен. Скраббинг до отправки.
 if (process.env.SENTRY_DSN) {
@@ -33,20 +34,27 @@ if (!databaseUrl) {
 }
 
 /**
- * Тенант этого консюмера. Пустая строка — «не задано», а не слаг
- * (WEB-11).
+ * Тенант этого консюмера — ОБЯЗАТЕЛЕН (PKG-05).
  *
- * `?? 'apex-ru'` отсекал только `undefined`: при `SITE_SLUG=` фильтр
- * сравнивал бы события с пустым слагом, не совпадал ни с чем и тихо
- * отбрасывал ВСЁ — консюмер выглядел бы живым и не делал ничего. Ровно
- * этот класс чинится здесь же в витрине и кабинете.
+ * Прежде здесь стояло `?? 'apex-ru'`, и это было хуже, чем выглядело:
+ * `??` не отсекает пустую строку, а консюмер с пустым слагом не падает
+ * и не шумит — он **тихо отбрасывает все события**, потому что ни одно
+ * не совпадёт с пустым тенантом. Процесс жив, контейнер `Up`, лог
+ * чистый, проекция не наполняется. Отказ, неотличимый от простоя.
  *
- * **Копия `tenantSlug()` из `@broker/tenant`, и это осознанно.** Пакета
- * в зависимостях консюмера нет, а заводить его ради одной строки —
- * менять lockfile и тянуть в шинный процесс пакет про границу доступа.
- * Связь закреплена тестом `tenant-slug.test.ts`: разойдётся — покраснеет.
+ * Теперь незаданный слаг — отказ на старте, рядом с проверкой
+ * `DATABASE_URL`: тот же вид отказа у тех же ворот, а не новый способ
+ * умирать. Слаг печатается в лог запуска — по нему различают два
+ * экземпляра на одной машине.
  */
-const tenant = (process.env.SITE_SLUG ?? '').trim() || 'apex-ru';
+let tenant: string;
+try {
+  tenant = assertTenantSlugAtStartup('старт консюмера');
+} catch (error) {
+  console.error(`[consumer] ${(error as Error).message}`);
+  process.exit(1);
+}
+console.info(`[consumer] тенант: ${tenant}`);
 const pool = new Pool({ connectionString: databaseUrl, max: 3 });
 /**
  * Отказ шины после успешного старта. Молчать здесь нельзя: процесс жив,

@@ -53,7 +53,7 @@ import {
   fetchTenantConfig,
   isAccessClosed,
   isSymbolAllowed,
-  tenantSlug,
+  readTenantSlug,
   type TenantAccess,
 } from '@broker/tenant';
 
@@ -76,8 +76,12 @@ export async function getTenantAccess(): Promise<TenantAccess> {
    */
   noStore();
 
-  // Пустая строка — это «не задано», а не слаг (WEB-11).
-  const slug = tenantSlug(process.env.SITE_SLUG);
+  // Слага может не быть на СБОРКЕ, и это законно: образ один на много
+  // тенантов. `null` уходит в пакет и даёт закрытую границу
+  // (`not-configured`), а не чужой allow-list. У работающего процесса
+  // слаг обязан быть — это проверяет гейт в `instrumentation.ts`
+  // (PKG-05).
+  const slug = readTenantSlug(process.env.SITE_SLUG);
   const { access } = await fetchTenantConfig({
     baseUrl: process.env.CMS_API_URL,
     slug,

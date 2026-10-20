@@ -102,6 +102,9 @@ importers:
       '@broker/api-client':
         specifier: workspace:*
         version: link:../../packages/api-client
+      '@broker/tenant':
+        specifier: workspace:*
+        version: link:../../packages/tenant
       '@sentry/node':
         specifier: ^8.42.0
         version: 8.55.2

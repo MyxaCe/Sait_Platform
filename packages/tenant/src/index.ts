@@ -36,7 +36,12 @@ export {
   type TenantListExpiry,
 } from './expiry';
 
-export { DEFAULT_TENANT_SLUG, tenantSlug } from './slug';
+export {
+  assertTenantSlugAtStartup,
+  MissingTenantSlugError,
+  readTenantSlug,
+  requireTenantSlug,
+} from './slug';
 
 export {
   fetchTenantConfig,

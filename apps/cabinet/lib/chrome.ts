@@ -6,7 +6,7 @@
  * просто без брендирования. Обновление — revalidate 5 мин.
  */
 
-import { tenantSlug } from '@broker/tenant';
+import { readTenantSlug } from '@broker/tenant';
 
 export interface ChromeBrand {
   name: string;
@@ -30,17 +30,34 @@ function cmsUrl(): string | null {
   return base ? base.replace(/\/$/, '') : null;
 }
 
-function siteSlug(): string {
-  // Пустая строка — «не задано», а не слаг (WEB-11).
-  return tenantSlug(process.env.SITE_SLUG);
+function siteSlug(): string | null {
+  // Слага может не быть на сборке — тогда хрома из CMS нет и кабинет
+  // рисует свой статический фолбэк. Подставлять чужой слаг нельзя:
+  // кабинет показал бы чужой бренд (PKG-05).
+  return readTenantSlug(process.env.SITE_SLUG);
 }
 
 export async function cmsGet(resource: string, locale: string): Promise<unknown | null> {
   const base = cmsUrl();
   if (!base) return null;
+
+  // АДРЕС БЕЗ СЛАГА НЕ СОБИРАЕТСЯ ВОВСЕ (PKG-05, приём `terminal`).
+  // `?site=` — не «без фильтра», а «сайт по умолчанию»: CMS ответила бы
+  // 200 с чужим брендом, и кабинет показал бы его как свой. Строка
+  // запроса, собранная из пустого значения, выглядит исправной — это и
+  // делает её опасной.
+  const slug = siteSlug();
+  if (slug === null) {
+    console.error(
+      `[chrome] SITE_SLUG не задан — хром из CMS не запрашиваем (${resource}): ` +
+        'запрос без слага вернул бы чужой бренд (PKG-05).',
+    );
+    return null;
+  }
+
   try {
     const res = await fetch(
-      `${base}/cms/${resource}?site=${siteSlug()}&locale=${locale === 'en' ? 'en' : 'ru'}`,
+      `${base}/cms/${resource}?site=${encodeURIComponent(slug)}&locale=${locale === 'en' ? 'en' : 'ru'}`,
       {
         headers: process.env.CMS_API_KEY ? { 'X-API-Key': process.env.CMS_API_KEY } : {},
         next: { revalidate: 300 },
