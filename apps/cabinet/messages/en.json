@@ -171,7 +171,7 @@
       "welcome": "Welcome! Your {accountType} account application has been received; your demo account is already open.",
       "documentUploaded": "Document “{filename}” has been uploaded and sent for review.",
       "demoReset": "Demo account has been reset to the starting balance.",
-      "tradeExecuted": "Trade executed: {side} {volume} {symbol}."
+      "tradeExecuted": "Trade executed: {side, select, buy {buy} sell {sell} other {{side}}} {volume} {symbol} at {price}."
     }
   },
   "trade": {

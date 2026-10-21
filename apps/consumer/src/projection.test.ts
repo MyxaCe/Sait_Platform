@@ -165,4 +165,38 @@ describe('applyTerminalEvent', () => {
     expect(calls.some((c) => c.sql.includes('INSERT INTO demo_trades'))).toBe(true);
     expect(calls.some((c) => c.sql.includes("'tradeExecuted'"))).toBe(true);
   });
+
+  it('уведомление о сделке несёт ЦЕНУ, а не только символ и объём (CAB-08)', async () => {
+    // «Сделка исполнена: buy 0.1 EURUSD» — факт сделки без её сути:
+    // человеку не сказали, что произошло с деньгами.
+    //
+    // Проверяется здесь, а не в кабинете: цену, которой не прислали,
+    // кабинет может показать единственным способом — никак, и выглядит
+    // это его недочётом. Мутация «убрать цену из проекции» не красила
+    // ни один тест ни там, ни тут.
+    const { db, calls } = fakeDb();
+    const ev = parsed(
+      envelope('terminal.trade.executed', {
+        tenant: 'apex-ru',
+        userId: 'u1',
+        tradeId: 't2',
+        symbol: 'ETHUSD',
+        side: 'sell',
+        volume: 1,
+        price: 1900,
+        executedAt: '2026-07-27T10:00:00.000Z',
+      }),
+    )!;
+    await applyTerminalEvent(db, 'e4', ev, cfg);
+
+    const notification = calls.find((c) => c.sql.includes("'tradeExecuted'"));
+    expect(notification, 'уведомление о сделке не создано вовсе').toBeDefined();
+
+    const params = JSON.parse(String(notification?.params[2])) as Record<string, unknown>;
+
+    // Ассерт печатает полученное (Р-101): «нет цены» без набора полей
+    // отправляет искать её по всей проекции.
+    expect(params.price, `в параметрах уведомления нет цены: ${JSON.stringify(params)}`).toBe(1900);
+    expect(params.symbol).toBe('ETHUSD');
+  });
 });

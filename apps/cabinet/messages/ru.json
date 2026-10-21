@@ -171,7 +171,7 @@
       "welcome": "Добро пожаловать! Заявка на счёт {accountType} принята, демо-счёт уже открыт.",
       "documentUploaded": "Документ «{filename}» загружен и передан на проверку.",
       "demoReset": "Демо-счёт сброшен к стартовому балансу.",
-      "tradeExecuted": "Сделка исполнена: {side} {volume} {symbol}."
+      "tradeExecuted": "Сделка исполнена: {side, select, buy {покупка} sell {продажа} other {{side}}} {volume} {symbol} по {price}."
     }
   },
   "trade": {

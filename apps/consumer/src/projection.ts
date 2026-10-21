@@ -161,7 +161,23 @@ export async function applyTerminalEvent(
         [
           cfg.newId(),
           d.userId,
-          JSON.stringify({ symbol: d.symbol, side: d.side, volume: d.volume }),
+          /*
+           * Цена кладётся в уведомление (CAB-08). Без неё сообщение
+           * «Сделка исполнена: buy 0.1 EURUSD» не говорит, что произошло
+           * с деньгами: человеку показывали факт сделки и умалчивали её
+           * суть.
+           *
+           * Уровень и признак разрыва (Р-193) сюда ещё НЕ кладутся: поля
+           * согласованы по смыслу, но имён у них пока нет — имя признака
+           * называет терминал (§4г). Появятся имена — встанут здесь же,
+           * рядом с ценой.
+           */
+          JSON.stringify({
+            symbol: d.symbol,
+            side: d.side,
+            volume: d.volume,
+            price: d.price,
+          }),
         ],
       );
       break;
