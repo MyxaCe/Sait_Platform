@@ -77,6 +77,11 @@ services:
       CMS_API_KEY: dev-cms-api-key
       # Терминал (dev-origin от их команды; iframe грузит браузер — localhost ок)
       NEXT_PUBLIC_TERMINAL_URL: http://localhost:8888
+      # Тот же терминал, но адрес СЕРВЕРНЫЙ: историю сделок кабинет
+      # читает сам, из контейнера, и браузерный localhost ведёт туда
+      # в никуда (CAB-09). Пара та же, что у MDS: NEXT_PUBLIC_* для
+      # браузера, обычная переменная для процесса.
+      TERMINAL_HTTP_URL: http://host.docker.internal:8888
       SITE_SLUG: apex-ru
       # SSO для терминала (ADR-023). Значение НЕ живёт в репозитории: это
       # приватный ключ подписи токенов доступа, а репозиторий публичный.
