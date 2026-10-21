@@ -5,16 +5,50 @@ import { expect, test } from '@playwright/test';
  * регистрация → /trade → iframe терминала → postMessage sso.token →
  * терминал валидирует JWT по JWKS и чеканит сессию (POST /v1/session 2xx).
  * Требует: кабинет (:3002), терминал (:8888) с SSO_DISABLED=0.
- * Гейт: CABINET_URL + TERMINAL_URL.
+ *
+ * ## WEB-18 · тест был мёртв дважды, и обе смерти выглядели безобидно
+ *
+ * **Смерть первая — пропуск.** Без `CABINET_URL`/`TERMINAL_URL` он просто
+ * не исполнялся. Пропущенный шаг в зелёном прогоне неотличим от
+ * пройденного — Р-128, записанное про мою же проверку статусов.
+ *
+ * **Смерть вторая — падение не в том месте.** Ожидалось слово
+ * «здравствуйте» после регистрации. Ключ `greeting` остался в переводах,
+ * а компонент, который его рисовал, исчез; тест валился ДО обмена
+ * токеном. Регистрация при этом проходила.
+ *
+ * **И главное: ни одна из двух смертей не сказала бы, что терминал не
+ * встроен вовсе.** Настоящая поломка (WEB-19: адрес терминала не попадал
+ * в сборку кабинета, фрейма не было, за токеном никто не ходил) лежала за
+ * ними обеими. Поэтому проверка идёт ступенями, и каждая называет СВОЙ
+ * отказ: иначе «фрейма нет» и «фрейм есть, токен не доехал» снова
+ * слиплись бы в один безымянный таймаут на двадцать секунд.
  */
+
 const CABINET = process.env.CABINET_URL;
 const TERMINAL = process.env.TERMINAL_URL;
+const GATED = !CABINET || !TERMINAL;
 
 test.describe('SSO: кабинет → терминал', () => {
-  test.skip(!CABINET || !TERMINAL, 'CABINET_URL/TERMINAL_URL не заданы');
+  /**
+   * В прогоне пропуск запрещён. Локально он законен — поднимать два
+   * соседних сервиса ради одного файла никто не станет, — но в CI
+   * «пропущено» обязано отличаться от «пройдено», а отличить их может
+   * только отказ.
+   */
+  test.beforeAll(() => {
+    if (GATED && process.env.CI) {
+      throw new Error(
+        'CABINET_URL/TERMINAL_URL не заданы в прогоне: сквозной вход НЕ ПРОВЕРЕН. ' +
+          'Пропуск здесь неотличим от успеха, поэтому это отказ, а не skip (WEB-18, Р-128).',
+      );
+    }
+  });
+
+  test.skip(GATED && !process.env.CI, 'локально: CABINET_URL/TERMINAL_URL не заданы');
 
   test('handoff-токен превращается в сессию терминала', async ({ page }) => {
-    // Свежий пользователь
+    // --- Ступень 1: регистрация --------------------------------------
     await page.goto(`${CABINET}/register`);
     await page.getByLabel(/имя/i).first().fill('ССО');
     await page.getByLabel(/фамилия/i).fill('Прогонов');
@@ -23,26 +57,56 @@ test.describe('SSO: кабинет → терминал', () => {
     await page.getByLabel(/страна/i).fill('Кипр');
     await page.getByLabel(/пароль/i).fill('secret1234!');
     await page.getByRole('button', { name: /открыть счёт/i }).click();
-    await expect(page.getByText(/здравствуйте/i)).toBeVisible({ timeout: 15_000 });
 
-    // Дальше всё делает машина: iframe → sso.token → их /v1/session
-    const tokenIssued = page.waitForResponse(
+    // Признак успеха — то, что регистрация ДЕЛАЕТ (создаёт сессию и
+    // уводит с формы), а не конкретное слово на экране. Прежняя редакция
+    // ждала текст, уехавший вместе с компонентом, и падала здесь же.
+    await expect(page, 'регистрация не увела с формы: сессия не создана').not.toHaveURL(
+      /\/register/,
+      { timeout: 15_000 },
+    );
+
+    // --- Ступень 2: страница торговли ВСТРАИВАЕТ терминал -------------
+    // Ради этой ступени задача и заведена. Без неё отсутствие фрейма
+    // выглядит как молчаливый таймаут ожидания токена, то есть как
+    // проблема с токеном, которой нет.
+    await page.goto(`${CABINET}/trade`);
+
+    const frame = page.locator('iframe');
+    await expect(
+      frame,
+      'на странице торговли нет фрейма: адрес терминала не попал в сборку кабинета (WEB-19)',
+    ).toHaveCount(1, { timeout: 15_000 });
+
+    await expect(
+      frame,
+      'фрейм есть, но ведёт не на терминал — проверь NEXT_PUBLIC_TERMINAL_URL',
+    ).toHaveAttribute('src', new RegExp(`^${TERMINAL}`));
+
+    // --- Ступень 3: кабинет выпускает токен ---------------------------
+    // Ожидание ставится ПОСЛЕ того, как фрейм подтверждён: иначе его
+    // таймаут снова означал бы сразу две разные поломки.
+    const issued = await page.waitForResponse(
       (r) => r.url().includes('/api/sso/token') && r.request().method() === 'POST',
       { timeout: 20_000 },
     );
-    const terminalSession = page.waitForResponse(
+    expect(issued.status(), 'кабинет не выпустил handoff-токен').toBe(200);
+
+    // CAB-07: срок жизни обязателен — терминал fail-closed и сессию без
+    // названного срока не примет (Р-100). Проверяется здесь, потому что
+    // иначе отказ случится на ЧУЖОЙ стороне и будет выглядеть их отказом.
+    const body = (await issued.json()) as { expiresIn?: unknown };
+    expect(typeof body.expiresIn, 'в ответе кабинета нет срока жизни токена (CAB-07)').toBe(
+      'number',
+    );
+
+    // --- Ступень 4: терминал принял токен и открыл сессию -------------
+    const session = await page.waitForResponse(
       (r) => r.url().startsWith(`${TERMINAL}/v1/session`) && r.request().method() === 'POST',
       { timeout: 20_000 },
     );
-
-    await page.goto(`${CABINET}/trade`);
-
-    const issued = await tokenIssued;
-    expect(issued.status(), 'кабинет выпустил handoff-токен').toBe(200);
-
-    const session = await terminalSession;
-    expect(session.ok(), `терминал принял токен и открыл сессию (HTTP ${session.status()})`).toBe(true);
-    // Дальше bearer используют только ТОРГОВЫЕ ручки терминала (просмотр публичен),
-    // а сделки из этого теста не кликаем — UI терминала не наш контракт.
+    expect(session.ok(), `терминал не принял токен (HTTP ${session.status()})`).toBe(true);
+    // Дальше bearer используют только ТОРГОВЫЕ ручки терминала (просмотр
+    // публичен), а сделки отсюда не кликаем — UI терминала не наш контракт.
   });
 });

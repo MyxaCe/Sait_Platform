@@ -25,6 +25,15 @@ ENV NEXT_PUBLIC_WS_URL=$NEXT_PUBLIC_WS_URL
 # GlitchTip клиентский DSN (site-web /1) — вшивается в браузерный бандл
 ARG NEXT_PUBLIC_SENTRY_DSN=""
 ENV NEXT_PUBLIC_SENTRY_DSN=$NEXT_PUBLIC_SENTRY_DSN
+# Адрес терминала для встраивания (WEB-19). Обязан быть именно АРГУМЕНТОМ
+# СБОРКИ: страница торговли читает его в серверном компоненте, который
+# рендерится на сборке, и переменная окружения контейнера до него не
+# доезжает. В компоузе она стояла только в `environment` — образ собирался
+# без адреса, страница уходила в ветку «скоро будет», и терминал не
+# встраивался ВООБЩЕ: ни фрейма, ни запроса за токеном.
+# Пусто — честное «скоро», а не пустой фрейм.
+ARG NEXT_PUBLIC_TERMINAL_URL=""
+ENV NEXT_PUBLIC_TERMINAL_URL=$NEXT_PUBLIC_TERMINAL_URL
 RUN pnpm --filter @broker/cabinet build
 
 FROM node:22-alpine AS runner

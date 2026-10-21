@@ -20,6 +20,14 @@ export default defineConfig({
     command: process.env.CI ? 'pnpm start' : 'pnpm dev',
     url: 'http://localhost:3000',
     reuseExistingServer: !process.env.CI,
-    timeout: 120_000,
+    /*
+     * В CI сервер уже собран (`pnpm start`) и поднимается быстро. Локально
+     * это ХОЛОДНЫЙ `next dev`, и в две минуты он не укладывается: прогон
+     * падал с «Timed out waiting 120000ms from config.webServer», то есть
+     * по причине, не имеющей отношения ни к одному проверяемому свойству.
+     * Отказ, не относящийся к предмету проверки, — тоже мёртвый тест
+     * (WEB-18).
+     */
+    timeout: process.env.CI ? 120_000 : 300_000,
   },
 });
