@@ -97,3 +97,39 @@ describe('describeSlippage · величина', () => {
     ).toEqual({ kind: 'against', amount: 1.5 });
   });
 });
+
+describe('describeSlippage · уровня нет (CAB-10)', () => {
+  it('уровень пустой → `unknown`, а не «исполнено ровно»', () => {
+    // Главное свойство третьего состояния. Сделка могла быть закрыта по
+    // команде (уровня не было) или до появления поля (не знаем). В обоих
+    // случаях утверждать «исполнено по уровню» нельзя — а именно это и
+    // получилось бы, подставь мы цену исполнения вместо уровня.
+    expect(
+      describeSlippage({ execution: 1.085, level: null, side: 'sell', ...EURUSD }),
+    ).toEqual({ kind: 'unknown', amount: 0 });
+  });
+
+  it('уровень не передан вовсе → тоже `unknown`', () => {
+    expect(
+      describeSlippage({ execution: 1.085, level: undefined, side: 'sell', ...EURUSD }),
+    ).toEqual({ kind: 'unknown', amount: 0 });
+  });
+
+  it('`unknown` отличим от `none` — это разные утверждения', () => {
+    // «Исполнено ровно по уровню» и «про уровень ничего не известно»
+    // человеку говорят разное. Слить их — то же, что показать прочерк
+    // нулём (Р-118).
+    const unknown = describeSlippage({ execution: 1.085, level: null, side: 'sell', ...EURUSD });
+    const none = describeSlippage({ execution: 1.085, level: 1.085, side: 'sell', ...EURUSD });
+
+    expect(unknown.kind).not.toBe(none.kind);
+  });
+
+  it('ноль уровня — это уровень, а не его отсутствие', () => {
+    // Растяжка против `!level`: ноль ложен в булевом смысле, и проверка
+    // «если не задан» отправила бы законный уровень в `unknown`.
+    expect(describeSlippage({ execution: 0, level: 0, side: 'sell', digits: 2 }).kind).toBe(
+      'none',
+    );
+  });
+});
