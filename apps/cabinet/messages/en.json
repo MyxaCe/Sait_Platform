@@ -21,7 +21,8 @@
     "profile": "Profile",
     "security": "Security",
     "documents": "Documents",
-    "notifications": "Notifications"
+    "notifications": "Notifications",
+    "history": "Trade history"
   },
   "connection": {
     "tickerAria": "Live quotes",
@@ -198,5 +199,18 @@
     "bot": "Submission error",
     "startBalanceUnset": "The account cannot be opened right now: the demo starting amount has not been set. We do not substitute one — please contact support, it is fixed in the site settings.",
     "startBalanceUnavailable": "The account cannot be opened right now: the site settings could not be retrieved. Please try again later — your form data is not lost."
+  },
+  "history": {
+    "title": "Trade history",
+    "empty": "No closed trades yet.",
+    "unavailable": "History is unavailable — the terminal did not answer. This is our fault, not an absence of trades.",
+    "reason": "Reason: {reason}",
+    "columns": "{side} {volume} {symbol}",
+    "prices": "Entry {entry} → close {exit}",
+    "result": "Result: {pnl}",
+    "slippageAgainst": "Closed {amount} worse than your level {level}: a stop fills at the first observed price, not at the level.",
+    "slippageFavour": "Closed {amount} better than your level {level}.",
+    "slippageNone": "Closed exactly at your level {level}.",
+    "gap": "The price moved across a gap at that moment — there were no prices in between."
   }
 }

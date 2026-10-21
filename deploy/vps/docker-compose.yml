@@ -153,6 +153,11 @@ services:
       CMS_API_URL: http://cms:3001/v1
       CMS_API_KEY: ${CMS_API_KEY}
       SITE_SLUG: apex-ru
+      # Серверный адрес терминала для чтения истории сделок (CAB-09).
+      # Умолчания нет сознательно: терминал — чужая зона, и адрес
+      # здесь зависит от развёртывания. Не задан → страница истории
+      # честно говорит «не настроено», а не ходит наугад.
+      TERMINAL_HTTP_URL: ${TERMINAL_HTTP_URL:-}
       SSO_PRIVATE_KEY_B64: ${SSO_PRIVATE_KEY_B64}
       # GlitchTip серверный DSN (site-bff /2)
       SENTRY_DSN: ${SENTRY_DSN_BFF}
