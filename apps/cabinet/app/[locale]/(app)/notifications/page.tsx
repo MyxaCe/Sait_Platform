@@ -2,6 +2,7 @@ import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/serve
 import { cn } from '@broker/ui';
 import { getSessionUser } from '@/lib/auth/session';
 import { listNotifications } from '@/lib/data';
+import { displayParams } from '@/lib/notification-params';
 import { markAllReadAction, markNotificationReadAction } from '@/lib/actions';
 
 export default async function NotificationsPage({ params }: { params: { locale: string } }) {
@@ -38,13 +39,25 @@ export default async function NotificationsPage({ params }: { params: { locale: 
                   n.readAt ? 'border-border bg-elevated opacity-70' : 'border-accent/40 bg-elevated',
                 )}
               >
+                {/*
+                  Параметры готовятся ДО подстановки (CAB-08): негодные
+                  превращают предложение в разметку со скобками, и человек
+                  видит поломку вместо сообщения. `null` означает «этим
+                  шаблоном показать нечего» — тогда показываем тип, как и
+                  для незнакомых типов.
+                */}
                 <p className="text-sm">
-                  {t.has(`types.${n.type}` as never)
-                    ? (t as unknown as (key: string, params?: Record<string, unknown>) => string)(
-                        `types.${n.type}`,
-                        n.params,
-                      )
-                    : n.type}
+                  {(() => {
+                    const params = displayParams(n.type, n.params);
+                    return t.has(`types.${n.type}` as never) && params !== null
+                      ? (
+                          t as unknown as (
+                            key: string,
+                            params?: Record<string, unknown>,
+                          ) => string
+                        )(`types.${n.type}`, params)
+                      : n.type;
+                  })()}
                 </p>
                 <div className="mt-2 flex items-center justify-between">
                   <span className="text-xs text-secondary">
