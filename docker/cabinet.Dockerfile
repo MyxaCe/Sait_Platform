@@ -19,21 +19,16 @@ RUN pnpm install --frozen-lockfile
 FROM deps AS build
 COPY . .
 ENV BUILD_STANDALONE=1
-# Адрес MDS для браузера (живые котировки модуля «Рынки»); пусто — мок
-ARG NEXT_PUBLIC_WS_URL=""
-ENV NEXT_PUBLIC_WS_URL=$NEXT_PUBLIC_WS_URL
+# Публичные адреса в сборку НЕ попадают (WEB-22, Р-220): образ не знает
+# домена, адреса подставляет `docker/runtime-config.sh` при запуске.
+# Обязательные без значения не дают стартовать; `WS_URL` необязателен —
+# пустой означает «живого фида нет, работает мок».
+ENV NEXT_PUBLIC_SITE_URL=https://runtime-site-url.invalid
+ENV NEXT_PUBLIC_TERMINAL_URL=https://runtime-terminal-url.invalid
+ENV NEXT_PUBLIC_WS_URL=https://runtime-ws-url.invalid
 # GlitchTip клиентский DSN (site-web /1) — вшивается в браузерный бандл
 ARG NEXT_PUBLIC_SENTRY_DSN=""
 ENV NEXT_PUBLIC_SENTRY_DSN=$NEXT_PUBLIC_SENTRY_DSN
-# Адрес терминала для встраивания (WEB-19). Обязан быть именно АРГУМЕНТОМ
-# СБОРКИ: страница торговли читает его в серверном компоненте, который
-# рендерится на сборке, и переменная окружения контейнера до него не
-# доезжает. В компоузе она стояла только в `environment` — образ собирался
-# без адреса, страница уходила в ветку «скоро будет», и терминал не
-# встраивался ВООБЩЕ: ни фрейма, ни запроса за токеном.
-# Пусто — честное «скоро», а не пустой фрейм.
-ARG NEXT_PUBLIC_TERMINAL_URL=""
-ENV NEXT_PUBLIC_TERMINAL_URL=$NEXT_PUBLIC_TERMINAL_URL
 RUN pnpm --filter @broker/cabinet build
 
 FROM node:22-alpine AS runner
@@ -43,6 +38,10 @@ RUN addgroup -S app && adduser -S app -G app
 COPY --from=build --chown=app:app /repo/apps/cabinet/.next/standalone ./
 COPY --from=build --chown=app:app /repo/apps/cabinet/.next/static ./apps/cabinet/.next/static
 RUN mkdir -p /app/uploads && chown app:app /app/uploads
+# Подстановка адресов из окружения — до старта сервера (WEB-22).
+COPY --chown=app:app docker/runtime-config.sh /usr/local/bin/runtime-config
+RUN chmod +x /usr/local/bin/runtime-config
 USER app
 EXPOSE 3002
+ENTRYPOINT ["/usr/local/bin/runtime-config"]
 CMD ["node", "apps/cabinet/server.js"]

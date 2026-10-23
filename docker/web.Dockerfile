@@ -23,12 +23,20 @@ ENV BUILD_STANDALONE=1
 # headers() Next фиксируются на сборке — на VPS передать реальный origin CMS
 ARG FRAME_ANCESTORS="'self' http://localhost:3001"
 ENV FRAME_ANCESTORS=$FRAME_ANCESTORS
-# Адрес кабинета вшивается в клиентский бандл (кнопки Войти/Открыть счёт)
-ARG NEXT_PUBLIC_CABINET_URL="http://localhost:3002"
-ENV NEXT_PUBLIC_CABINET_URL=$NEXT_PUBLIC_CABINET_URL
-# Адрес MDS для браузера: задан → живые котировки (socket.io), пусто → мок
-ARG NEXT_PUBLIC_WS_URL=""
-ENV NEXT_PUBLIC_WS_URL=$NEXT_PUBLIC_WS_URL
+# Публичные адреса в сборку НЕ попадают (WEB-22, Р-220).
+#
+# Next впекает `NEXT_PUBLIC_*` в бандл. Пока адреса приходили аргументами
+# сборки, образ знал домен — и тег по хешу коммита переставал означать
+# «эта ревизия кода»: он означал «эта ревизия И этот домен». Домен
+# временный, его сменят, а пересборка ради смены адреса обесценивает тег.
+#
+# Поэтому собираемся с плейсхолдерами, а настоящие адреса подставляет
+# `docker/runtime-config.sh` при запуске, из окружения контейнера.
+# Обязательные без значения не дают стартовать; `WS_URL` необязателен —
+# пустой означает «живого фида нет, работает мок», и это законный режим.
+ENV NEXT_PUBLIC_SITE_URL=https://runtime-site-url.invalid
+ENV NEXT_PUBLIC_CABINET_URL=https://runtime-cabinet-url.invalid
+ENV NEXT_PUBLIC_WS_URL=https://runtime-ws-url.invalid
 # GlitchTip клиентский DSN (site-web, проект /1) — вшивается в браузерный бандл
 ARG NEXT_PUBLIC_SENTRY_DSN=""
 ENV NEXT_PUBLIC_SENTRY_DSN=$NEXT_PUBLIC_SENTRY_DSN
@@ -41,6 +49,10 @@ RUN addgroup -S app && adduser -S app -G app
 COPY --from=build --chown=app:app /repo/apps/web/.next/standalone ./
 COPY --from=build --chown=app:app /repo/apps/web/.next/static ./apps/web/.next/static
 COPY --from=build --chown=app:app /repo/apps/web/public ./apps/web/public
+# Подстановка адресов из окружения — до старта сервера (WEB-22).
+COPY --chown=app:app docker/runtime-config.sh /usr/local/bin/runtime-config
+RUN chmod +x /usr/local/bin/runtime-config
 USER app
 EXPOSE 3000
+ENTRYPOINT ["/usr/local/bin/runtime-config"]
 CMD ["node", "apps/web/server.js"]
