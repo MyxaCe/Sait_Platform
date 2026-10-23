@@ -6,9 +6,15 @@ import { Link, usePathname } from '@/i18n/navigation';
 import { Button, Container, cn } from '@broker/ui';
 import { LangSwitcher } from './LangSwitcher';
 import { ThemeToggle } from './ThemeToggle';
+import { envOr } from '@broker/utils';
 
 /** Вход и открытие счёта живут в кабинете (ADR-022) — отдельное приложение. */
-const CABINET_URL = (process.env.NEXT_PUBLIC_CABINET_URL ?? 'http://localhost:3002').replace(/\/$/, '');
+// Пустая строка — не отсутствие (WEB-21): пустой build-arg перекрывал
+// умолчание, `href` получал '' и кнопка входа вела на саму витрину.
+const CABINET_URL = envOr(process.env.NEXT_PUBLIC_CABINET_URL, 'http://localhost:3002').replace(
+  /\/$/,
+  '',
+);
 
 function cabinetHref(path: '/login' | '/register', locale: string): string {
   return `${CABINET_URL}${locale === 'en' ? '/en' : ''}${path}`;

@@ -7,6 +7,7 @@
  */
 
 import { readTenantSlug } from '@broker/tenant';
+import { envOr } from '@broker/utils';
 
 export interface ChromeBrand {
   name: string;
@@ -96,7 +97,8 @@ export async function getChromeFooter(locale: string): Promise<ChromeFooter | nu
 
 /** Абсолютная ссылка футера кабинета на страницу САЙТА (с учётом локали). */
 export function siteHref(href: string, locale: string): string {
-  const site = (process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000').replace(/\/$/, '');
+  // Пустая строка — не отсутствие (WEB-21).
+  const site = envOr(process.env.NEXT_PUBLIC_SITE_URL, 'http://localhost:3000').replace(/\/$/, '');
   const localized = locale === 'en' ? `/en${href === '/' ? '' : href}` : href;
   return `${site}${localized || '/'}`;
 }
