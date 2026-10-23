@@ -183,7 +183,6 @@ jobs:
           tags: ${{ steps.ref.outputs.ref }}:${{ steps.ref.outputs.tag }}
           build-args: ${{ steps.public.outputs.args }}
           labels: |
-            org.opencontainers.image.revision=${{ github.sha }}
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
             org.opencontainers.image.version=${{ github.sha }}
             com.broker.public-addresses=${{ steps.public.outputs.state }}
