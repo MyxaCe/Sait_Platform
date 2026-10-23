@@ -17,6 +17,7 @@ import {
   profileSchema,
   registerSchema,
 } from './auth/schemas';
+import { envOr } from '@broker/utils';
 import {
   createSession,
   destroyCurrentSession,
@@ -186,7 +187,9 @@ export async function uploadDocumentAction(_prev: ActionState, formData: FormDat
   if (!ALLOWED_MIME.has(file.type)) return { fieldErrors: { file: 'unsupportedFormat' } };
   if (file.size > MAX_DOC_BYTES) return { fieldErrors: { file: 'fileTooLarge' } };
 
-  const uploadDir = process.env.UPLOAD_DIR ?? path.join(process.cwd(), 'uploads');
+  // Пустая строка — не отсутствие (WEB-21): пустой UPLOAD_DIR уводил бы
+  // запись файлов в корень рабочего каталога.
+  const uploadDir = envOr(process.env.UPLOAD_DIR, path.join(process.cwd(), 'uploads'));
   await mkdir(uploadDir, { recursive: true });
   const ext = file.type === 'application/pdf' ? 'pdf' : file.type === 'image/png' ? 'png' : 'jpg';
   const storedName = `${randomUUID()}.${ext}`;

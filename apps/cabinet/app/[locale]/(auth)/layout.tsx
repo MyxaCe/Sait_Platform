@@ -1,5 +1,6 @@
 import { getLocale, getTranslations } from 'next-intl/server';
 import { getChromeBrand } from '@/lib/chrome';
+import { envOr } from '@broker/utils';
 
 /** Публичная зона: центрированная карточка; бренд — из CMS (ADR-025). */
 export default async function AuthLayout({ children }: { children: React.ReactNode }) {
@@ -25,7 +26,7 @@ export default async function AuthLayout({ children }: { children: React.ReactNo
         {children}
       </div>
       <a
-        href={process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'}
+        href={envOr(process.env.NEXT_PUBLIC_SITE_URL, 'http://localhost:3000')}
         className="mt-6 text-sm text-secondary hover:text-primary"
       >
         ← {t('backToSite')}
