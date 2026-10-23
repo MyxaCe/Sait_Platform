@@ -88,7 +88,7 @@ jobs:
       - name: Запрет latest
         run: |
           set -uo pipefail
-          out=$(docker manifest inspect "$IMAGE_REF:latest" 2>&1) && rc=0 || rc=$?
+          out=$(docker manifest inspect "ghcr.io/actions/actions-runner:latest" 2>&1) && rc=0 || rc=$?
           if [ "$rc" -eq 0 ]; then
             echo "::error::в реестре есть $IMAGE_REF:latest — плавающий тег запрещён платформой, удалите версию пакета"
             exit 1
