@@ -60,7 +60,7 @@ jobs:
           set -euo pipefail
           owner=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
           ref="ghcr.io/${owner}/${IMAGE}"
-          tag="${{ github.sha }}"
+          tag="5acefa5b8328b8c17e70fe6e5656e9a074d7717c"
 
           # ГЕЙТ ФОРМЫ ТЕГА. Работает над вычисленным значением, а не над
           # текстом файла: любой плавающий тег, откуда бы он ни взялся,
