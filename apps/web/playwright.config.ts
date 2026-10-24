@@ -2,6 +2,18 @@ import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({
   testDir: './e2e',
+  /*
+   * Межзонный сценарий входа сюда НЕ входит (разбор красной основной,
+   * 24.10). Ему нужны кабинет и терминал — две чужие службы, которых в
+   * этом прогоне нет и не будет: он поднимает одну витрину.
+   *
+   * У сценария свой конфиг (`playwright.sso.config.ts`) и своя команда
+   * `test:e2e:sso`, которую гоняют, когда обе стороны подняты.
+   *
+   * Держать его здесь значило требовать от прогона того, чего он не
+   * может дать, — а гейт, который невозможно удовлетворить, отключают.
+   */
+  testIgnore: ['**/cabinet-sso.spec.ts'],
   fullyParallel: true,
   retries: process.env.CI ? 2 : 0,
   reporter: process.env.CI ? 'github' : 'list',
