@@ -213,6 +213,12 @@ export async function applyTerminalEvent(
             side: d.side,
             volume: d.volume,
             price: d.price,
+            // Уровень и разрыв (WEB-20, Р-193). Отсутствие — `null`, а не
+            // ноль и не `false`: у рыночного закрытия уровня нет вовсе, а
+            // про разрыв у старых сделок мы не знаем. Подставить сюда
+            // значение значило бы ответить за то, чего не видели.
+            level: d.level ?? null,
+            acrossGap: d.acrossGap ?? null,
           }),
         ],
       );

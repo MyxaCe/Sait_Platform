@@ -174,7 +174,9 @@
       "demoReset": "Демо-счёт сброшен к стартовому балансу.",
       "tradeExecuted": "Сделка исполнена: {side, select, buy {покупка} sell {продажа} other {{side}}} {volume} {symbol} по {price}.",
       "marginCalled": "Уровень маржи {level} %. До принудительного закрытия на {stopOut} % осталось {remaining} %. Средства {equity}, задействованная маржа {usedMargin}.",
-      "marginCalledNoStopOut": "Уровень маржи {level} %. Порог принудительного закрытия не задан — закрытия по марже не будет. Средства {equity}, задействованная маржа {usedMargin}."
+      "marginCalledNoStopOut": "Уровень маржи {level} %. Порог принудительного закрытия не задан — закрытия по марже не будет. Средства {equity}, задействованная маржа {usedMargin}.",
+      "tradeExecutedWorse": "Сделка исполнена: {side, select, buy {покупка} sell {продажа} other {{side}}} {volume} {symbol} по {price}. Это на {slippage} хуже вашего уровня {level}: стоп исполняется по первой наблюдённой цене, а не по уровню.",
+      "tradeExecutedBetter": "Сделка исполнена: {side, select, buy {покупка} sell {продажа} other {{side}}} {volume} {symbol} по {price}. Это на {slippage} лучше вашего уровня {level}."
     }
   },
   "trade": {

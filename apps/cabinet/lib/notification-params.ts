@@ -1,4 +1,5 @@
 import { findSymbol } from '@broker/realtime';
+import { describeSlippage } from './slippage';
 
 /**
  * Подготовка параметров уведомления к показу (CAB-08).
@@ -52,18 +53,44 @@ function isNonEmptyString(value: unknown): value is string {
  * шаблон, а не повод показать его наполовину.
  */
 export function tradeExecutedParams(raw: RawParams): Record<string, string> | null {
-  const { symbol, side, volume, price } = raw;
+  const { symbol, side, volume, price, level, acrossGap } = raw;
 
   if (!isNonEmptyString(symbol)) return null;
   if (side !== 'buy' && side !== 'sell') return null;
   if (!isFiniteNumber(volume)) return null;
   if (!isFiniteNumber(price)) return null;
 
+  /*
+   * Проскальзывание в уведомлении (WEB-20).
+   *
+   * Правило показа написано в `lib/slippage.ts` и впервые применилось в
+   * истории сделок (CAB-09). Здесь оно доходит до уведомления — того
+   * места, где человек узнаёт о закрытии ПЕРВЫМ.
+   *
+   * Уровня может не быть (рыночное закрытие, сделка старше поля) —
+   * тогда вердикт `unknown`, и о проскальзывании мы молчим: сказать
+   * «исполнено по уровню» было бы утверждением о том, чего не знаем.
+   */
+  const digits = findSymbol(symbol)?.digits ?? 2;
+  const verdict = describeSlippage({
+    execution: price,
+    level: isFiniteNumber(level) ? level : null,
+    side,
+    digits,
+  });
+
   return {
     symbol,
     side,
     volume: String(volume),
     price: formatPriceForSymbol(price, symbol),
+    level: isFiniteNumber(level) ? formatPriceForSymbol(level, symbol) : '',
+    slippage: verdict.kind === 'none' || verdict.kind === 'unknown'
+      ? ''
+      : formatPriceForSymbol(verdict.amount, symbol),
+    slippageKind: verdict.kind,
+    // Разрыв трёхзначен: называем его только когда источник сказал «был».
+    acrossGap: acrossGap === true ? 'yes' : 'no',
   };
 }
 
@@ -145,5 +172,14 @@ export function marginCalledParams(raw: RawParams): MarginParams | null {
  */
 export function notificationKey(type: string, params: Record<string, unknown> | null): string {
   if (type === 'marginCalled' && params?.hasStopOut === 'no') return 'marginCalledNoStopOut';
+  if (type === 'tradeExecuted') {
+    // Проскальзывание против клиента ОБЪЯСНЯЕТСЯ, а не просто
+    // называется: без второй половины фразы закрытие хуже уровня
+    // читается как наша ошибка. Выигрыш клиента называется тоже —
+    // у лимитного разрыв играет за него, и молчать об этом значило бы
+    // приписать себе чужую удачу.
+    if (params?.slippageKind === 'against') return 'tradeExecutedWorse';
+    if (params?.slippageKind === 'favour') return 'tradeExecutedBetter';
+  }
   return type;
 }
