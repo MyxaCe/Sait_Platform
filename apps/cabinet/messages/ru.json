@@ -172,7 +172,9 @@
       "welcome": "Добро пожаловать! Заявка на счёт {accountType} принята, демо-счёт уже открыт.",
       "documentUploaded": "Документ «{filename}» загружен и передан на проверку.",
       "demoReset": "Демо-счёт сброшен к стартовому балансу.",
-      "tradeExecuted": "Сделка исполнена: {side, select, buy {покупка} sell {продажа} other {{side}}} {volume} {symbol} по {price}."
+      "tradeExecuted": "Сделка исполнена: {side, select, buy {покупка} sell {продажа} other {{side}}} {volume} {symbol} по {price}.",
+      "marginCalled": "Уровень маржи {level} %. До принудительного закрытия на {stopOut} % осталось {remaining} %. Средства {equity}, задействованная маржа {usedMargin}.",
+      "marginCalledNoStopOut": "Уровень маржи {level} %. Порог принудительного закрытия не задан — закрытия по марже не будет. Средства {equity}, задействованная маржа {usedMargin}."
     }
   },
   "trade": {

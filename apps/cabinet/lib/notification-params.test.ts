@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { displayParams, formatPriceForSymbol, tradeExecutedParams } from './notification-params';
+import {
+  displayParams,
+  formatPriceForSymbol,
+  marginCalledParams,
+  notificationKey,
+  tradeExecutedParams,
+} from './notification-params';
 
 /**
  * CAB-08 · уведомление об исполненной сделке называет цену (Р-193).
@@ -81,5 +87,83 @@ describe('displayParams', () => {
     expect(displayParams('documentUploaded', { filename: 'паспорт.pdf' })).toEqual({
       filename: 'паспорт.pdf',
     });
+  });
+});
+
+describe('маржин-колл: видно и уровень, и сколько осталось', () => {
+  const ok = {
+    marginLevelPct: 97,
+    stopOutLevelPct: 50,
+    equityCents: 8071001,
+    usedMarginCents: 8320619,
+  };
+
+  it('называет достигнутый уровень, порог и остаток', () => {
+    // Довод терминала: «ваш уровень 97 %» ничего не говорит тому, кто не
+    // помнит порог. Из предупреждения должно быть видно, сколько
+    // осталось.
+    expect(marginCalledParams(ok)).toMatchObject({
+      level: '97',
+      stopOut: '50',
+      remaining: '47',
+      hasStopOut: 'yes',
+    });
+  });
+
+  it('центы превращаются в деньги, как у сделок', () => {
+    // Целое 8071001 — это 80710.01, а не восемь миллионов.
+    expect(marginCalledParams(ok)).toMatchObject({
+      equity: '80710.01',
+      usedMargin: '83206.19',
+    });
+  });
+
+  it('порога нет → это НЕ ноль процентов', () => {
+    // Главное свойство. Ноль означал бы «закроют при нулевой марже» —
+    // конкретную и очень плохую новость. Отсутствие означает, что
+    // закрытия не будет вовсе.
+    const { stopOutLevelPct, ...noStop } = ok;
+    void stopOutLevelPct;
+
+    expect(marginCalledParams(noStop)).toMatchObject({
+      hasStopOut: 'no',
+      stopOut: '',
+      remaining: '',
+    });
+  });
+
+  it('`null` порога читается так же, как его отсутствие', () => {
+    // Проекция кладёт именно `null`, когда события пришло без порога.
+    expect(marginCalledParams({ ...ok, stopOutLevelPct: null })).toMatchObject({
+      hasStopOut: 'no',
+    });
+  });
+
+  it('НОЛЬ порога — это порог, а не его отсутствие', () => {
+    // Растяжка против проверки на истинность: `!stopOutLevelPct`
+    // отправил бы законный ноль в «порога нет», и человек не узнал бы о
+    // закрытии при нулевой марже.
+    expect(marginCalledParams({ ...ok, stopOutLevelPct: 0 })).toMatchObject({
+      hasStopOut: 'yes',
+      stopOut: '0',
+      remaining: '97',
+    });
+  });
+
+  it('без уровня маржи показывать нечего', () => {
+    const { marginLevelPct, ...broken } = ok;
+    void marginLevelPct;
+
+    expect(marginCalledParams(broken)).toBeNull();
+  });
+
+  it('шаблон выбирается по наличию порога', () => {
+    expect(notificationKey('marginCalled', marginCalledParams(ok))).toBe('marginCalled');
+
+    const { stopOutLevelPct, ...noStop } = ok;
+    void stopOutLevelPct;
+    expect(notificationKey('marginCalled', marginCalledParams(noStop))).toBe(
+      'marginCalledNoStopOut',
+    );
   });
 });

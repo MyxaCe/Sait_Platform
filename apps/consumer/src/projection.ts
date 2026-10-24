@@ -182,6 +182,37 @@ export async function applyTerminalEvent(
       );
       break;
     }
+    case 'terminal.margin.called': {
+      const d = event.data;
+      /*
+       * Маржин-колл — предупреждение ДО принудительного закрытия.
+       *
+       * Уровней два, и это не избыточность: «ваш уровень 97 %» ничего не
+       * говорит человеку, который не помнит порог. Из предупреждения
+       * должно быть видно, СКОЛЬКО ОСТАЛОСЬ.
+       *
+       * Порог опционален, и его отсутствие — НЕ ноль: ноль означал бы
+       * «закроют при нулевой марже», конкретную и очень плохую новость.
+       * Поэтому кладём `null`, а не подставляем число (Р-118).
+       *
+       * Центы и проценты уходят целыми, как пришли: преобразование —
+       * забота показа, у него есть точность и локаль.
+       */
+      await db.query(
+        `INSERT INTO notifications (id, user_id, type, params) VALUES ($1, $2, 'marginCalled', $3)`,
+        [
+          cfg.newId(),
+          d.userId,
+          JSON.stringify({
+            marginLevelPct: d.marginLevelPct,
+            stopOutLevelPct: d.stopOutLevelPct ?? null,
+            equityCents: d.equityCents,
+            usedMarginCents: d.usedMarginCents,
+          }),
+        ],
+      );
+      break;
+    }
   }
   return 'applied';
 }

@@ -172,7 +172,9 @@
       "welcome": "Welcome! Your {accountType} account application has been received; your demo account is already open.",
       "documentUploaded": "Document “{filename}” has been uploaded and sent for review.",
       "demoReset": "Demo account has been reset to the starting balance.",
-      "tradeExecuted": "Trade executed: {side, select, buy {buy} sell {sell} other {{side}}} {volume} {symbol} at {price}."
+      "tradeExecuted": "Trade executed: {side, select, buy {buy} sell {sell} other {{side}}} {volume} {symbol} at {price}.",
+      "marginCalled": "Margin level {level}%. {remaining}% left before forced close-out at {stopOut}%. Equity {equity}, used margin {usedMargin}.",
+      "marginCalledNoStopOut": "Margin level {level}%. No forced close-out level is set, so no margin close-out will happen. Equity {equity}, used margin {usedMargin}."
     }
   },
   "trade": {

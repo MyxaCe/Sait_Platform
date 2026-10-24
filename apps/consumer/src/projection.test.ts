@@ -200,3 +200,71 @@ describe('applyTerminalEvent', () => {
     expect(params.symbol).toBe('ETHUSD');
   });
 });
+
+describe('terminal.margin.called', () => {
+  const event = (extra: Record<string, unknown> = {}) =>
+    parsed(
+      envelope('terminal.margin.called', {
+        tenant: 'apex-ru',
+        userId: 'u1',
+        marginLevelPct: 97,
+        stopOutLevelPct: 50,
+        equityCents: 8071001,
+        usedMarginCents: 8320619,
+        ...extra,
+      }),
+    );
+
+  it('событие распознаётся, а не пропускается как чужое', () => {
+    // Зеркало Р-204: тогда наш потребитель был построен, а издателя не
+    // было, и мы узнали через полтора месяца. Теперь издатель готов, и
+    // незнакомое имя молча отбрасывалось бы — а владелец считает
+    // недошедшее уведомление ДЕФЕКТОМ, а не «клиент не заметил».
+    expect(event()).not.toBeNull();
+  });
+
+  it('пишет уведомление с обоими уровнями и деньгами', async () => {
+    const { db, calls } = fakeDb();
+    expect(await applyTerminalEvent(db, 'm1', event()!, cfg)).toBe('applied');
+
+    const notification = calls.find((c) => c.sql.includes("'marginCalled'"));
+    expect(notification, 'уведомление о марже не создано').toBeDefined();
+
+    const params = JSON.parse(String(notification?.params[2])) as Record<string, unknown>;
+    expect(params).toEqual({
+      marginLevelPct: 97,
+      stopOutLevelPct: 50,
+      equityCents: 8071001,
+      usedMarginCents: 8320619,
+    });
+  });
+
+  it('порога нет → `null`, а не ноль', async () => {
+    // Ноль означал бы «закроют при нулевой марже» — конкретную и очень
+    // плохую новость. Отсутствие означает, что закрытия нет вовсе.
+    const { db, calls } = fakeDb();
+    const ev = parsed(
+      envelope('terminal.margin.called', {
+        tenant: 'apex-ru',
+        userId: 'u1',
+        marginLevelPct: 97,
+        equityCents: 100,
+        usedMarginCents: 100,
+      }),
+    )!;
+    await applyTerminalEvent(db, 'm2', ev, cfg);
+
+    const notification = calls.find((c) => c.sql.includes("'marginCalled'"));
+    const params = JSON.parse(String(notification?.params[2])) as Record<string, unknown>;
+
+    expect(params.stopOutLevelPct).toBeNull();
+    expect(params.stopOutLevelPct).not.toBe(0);
+  });
+
+  it('чужой тенант пропускается и здесь', async () => {
+    const { db } = fakeDb();
+    const ev = event({ tenant: 'other-site' })!;
+
+    expect(await applyTerminalEvent(db, 'm3', ev, cfg)).toBe('skipped-tenant');
+  });
+});

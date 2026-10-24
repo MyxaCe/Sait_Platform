@@ -58,6 +58,27 @@ export const terminalBalanceChangedSchema = z.object({
   positions: z.array(terminalPositionSchema).optional(),
 });
 
+/* terminal.margin.called — предупреждение о марже, до принудительного закрытия */
+export const terminalMarginCalledSchema = z.object({
+  ...accountKey,
+  /** Достигнутый уровень маржи, целые проценты. */
+  marginLevelPct: z.number().int(),
+  /**
+   * Уровень принудительного закрытия, целые проценты. **Опционально.**
+   *
+   * Порог может быть не задан вовсе — тогда закрытия нет, и сказать
+   * «до закрытия осталось столько-то» нечего. Это **не ноль процентов**:
+   * ноль означал бы «закроют при нулевой марже», то есть конкретную и
+   * очень плохую новость. Отсутствие и значение — разные утверждения
+   * (Р-118, и то же правило про пустую строку из WEB-21).
+   */
+  stopOutLevelPct: z.number().int().optional(),
+  /** Средства счёта, целые центы. */
+  equityCents: z.number().int(),
+  /** Задействованная маржа, целые центы. */
+  usedMarginCents: z.number().int(),
+});
+
 /* terminal.trade.executed — исполненная сделка (для ленты и P&L) */
 export const terminalTradeExecutedSchema = z.object({
   ...accountKey,
@@ -75,6 +96,7 @@ export const TERMINAL_EVENT_SCHEMAS = {
   'terminal.account.opened': terminalAccountOpenedSchema,
   'terminal.balance.changed': terminalBalanceChangedSchema,
   'terminal.trade.executed': terminalTradeExecutedSchema,
+  'terminal.margin.called': terminalMarginCalledSchema,
 } as const;
 
 export type TerminalEventName = keyof typeof TERMINAL_EVENT_SCHEMAS;
@@ -84,11 +106,13 @@ export const TERMINAL_EVENT_VERSION = 1;
 export type TerminalAccountOpened = z.infer<typeof terminalAccountOpenedSchema>;
 export type TerminalBalanceChanged = z.infer<typeof terminalBalanceChangedSchema>;
 export type TerminalTradeExecuted = z.infer<typeof terminalTradeExecutedSchema>;
+export type TerminalMarginCalled = z.infer<typeof terminalMarginCalledSchema>;
 
 export type ParsedTerminalEvent =
   | { name: 'terminal.account.opened'; data: TerminalAccountOpened }
   | { name: 'terminal.balance.changed'; data: TerminalBalanceChanged }
-  | { name: 'terminal.trade.executed'; data: TerminalTradeExecuted };
+  | { name: 'terminal.trade.executed'; data: TerminalTradeExecuted }
+  | { name: 'terminal.margin.called'; data: TerminalMarginCalled };
 
 /**
  * Лениво парсит терминальное событие из конверта: неизвестный `event`
