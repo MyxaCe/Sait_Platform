@@ -3,27 +3,32 @@ import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 /**
- * WEB-19 · адрес терминала впекается на СБОРКЕ, и это проверяется (B-030).
+ * Адрес терминала доезжает до кабинета — и правило сменилось дважды.
  *
- * **Что было.** `NEXT_PUBLIC_TERMINAL_URL` стоял в компоузе только в
- * `environment`. Страница торговли читает его в серверном компоненте,
- * который рендерится на сборке, — переменная окружения контейнера до него
- * не доезжает. Образ собирался без адреса, страница уходила в ветку
- * «скоро будет», и терминал **не встраивался вообще**: ни фрейма, ни
- * запроса за токеном. Первый живой вход был невозможен, и выглядело это
- * не как поломка, а как «ещё не сделали».
+ * **WEB-19.** Переменной не было ни в аргументах сборки, ни в окружении
+ * компоуза контура: кабинет не встраивал терминал вовсе, страница
+ * торговли показывала «скоро будет». Тогда проверка требовала
+ * **аргумент сборки** — Next впекает `NEXT_PUBLIC_*` в бандл.
  *
- * **Почему проверка по тексту.** Поведением это не ловится ни одним
- * тестом зоны: код страницы исправен, ветка выбрана по пустому значению
- * ровно так, как написано. Дефект живёт в сборке, а не в коде, —
- * тот же класс, что B-030, где отпечаток врал про значение, вшитое при
- * сборке.
+ * **WEB-22 (Р-220) это требование отменил.** Аргумент сборки означал,
+ * что образ знает домен, и тег по хешу коммита переставал означать
+ * ревизию кода. Теперь в сборку идёт **плейсхолдер**, а настоящий адрес
+ * подставляется при запуске из окружения.
  *
- * **Чего эта проверка НЕ утверждает.** Кабинет читает ещё
- * `NEXT_PUBLIC_SITE_URL` и `NEXT_PUBLIC_SENTRY_ENV`, и они аргументами
- * сборки не объявлены. Законно это или такой же тихий дефект — я не
- * проверяла, и писать сюда утверждение, которого не проверяла, нельзя:
- * сторож, красящий законное, отключают первым. Вопрос вынесен штабу.
+ * Правило поэтому обратное прежнему: адреса в `build.args` быть **не
+ * должно**, в `environment` — должен.
+ *
+ * ## Почему смена правила не обнаружилась сразу
+ *
+ * Когда WEB-22 переносил адрес, прежняя проверка обязана была
+ * покраснеть — и не покраснела. У задачи `test` в turbo входами
+ * считаются файлы **своего пакета**; `docker/` и компоузы в них не
+ * входили, и кеш отдал старый зелёный результат: проверка не
+ * исполнилась вовсе.
+ *
+ * Закрыто `globalDependencies` в `turbo.json`. Для проверок, читающих
+ * весь репозиторий (они живут в `@broker/utils`), дыра шире и вынесена
+ * штабу: там правка в `apps/**` не сбрасывает кеш пакета.
  */
 
 const ROOT = path.resolve(__dirname, '../../..');
@@ -31,51 +36,51 @@ const read = (relative: string) => readFileSync(path.join(ROOT, relative), 'utf8
 
 const DOCKERFILE = 'docker/cabinet.Dockerfile';
 const VAR = 'NEXT_PUBLIC_TERMINAL_URL';
+const PLACEHOLDER = 'runtime-terminal-url.invalid';
 
 /**
- * Компоузов, собирающих кабинет, в зоне ДВА, и это не формальность: я
- * починила сначала только корневой и решила, что закрыла задачу. Контур
- * же поднимается из `deploy/vps`, то есть правка не меняла ничего там,
- * где дефект и жил. Проверка перечисляет оба — иначе «починено» снова
- * будет означать «починено в одном из двух».
+ * Компоузов, собирающих кабинет, два, и это не формальность: однажды я
+ * починила только корневой и решила, что закрыла задачу, — контур же
+ * поднимается из `deploy/vps`.
  */
 const COMPOSE_FILES = ['docker-compose.yml', 'deploy/vps/docker-compose.yml'];
 
-/** Текст без комментариев — иначе проверку зеленит объяснение рядом с ней. */
 const withoutComments = (text: string, marker: string) =>
   text
     .split('\n')
     .filter((line) => !line.trim().startsWith(marker))
     .join('\n');
 
-describe('WEB-19 · адрес терминала объявлен аргументом сборки', () => {
-  it('Dockerfile объявляет ARG и прокидывает его в ENV до сборки', () => {
+describe('адрес терминала: плейсхолдер в сборке, значение в окружении', () => {
+  it('Dockerfile кладёт в сборку ПЛЕЙСХОЛДЕР, а не адрес', () => {
     const code = withoutComments(read(DOCKERFILE), '#');
 
-    expect(code).toMatch(new RegExp(`ARG ${VAR}`));
-    expect(code).toMatch(new RegExp(`ENV ${VAR}=\\$${VAR}`));
+    expect(code).toContain(`ENV ${VAR}=https://${PLACEHOLDER}`);
   });
 
-  it('ARG объявлен ДО шага сборки, иначе он в неё не попадёт', () => {
-    // Порядок здесь — не стиль: `ARG` после `RUN ... build` не повлиял бы
-    // ни на что, а выглядел бы точно так же правильно.
+  it('Dockerfile НЕ объявляет адрес аргументом сборки (Р-220)', () => {
+    // Прежнее требование, отменённое: аргумент означал бы, что образ
+    // знает домен, и смена домена требовала бы пересборки.
     const code = withoutComments(read(DOCKERFILE), '#');
-    const arg = code.indexOf(`ARG ${VAR}`);
-    const build = code.indexOf('pnpm --filter @broker/cabinet build');
 
-    expect(arg).toBeGreaterThan(-1);
-    expect(build).toBeGreaterThan(-1);
-    expect(arg).toBeLessThan(build);
+    expect(code).not.toMatch(new RegExp(`ARG ${VAR}`));
   });
 
-  it.each(COMPOSE_FILES)('%s передаёт адрес в build.args, а не только в environment', (file) => {
-    // Именно этим дефект и был в корневом компоузе: значение
-    // присутствовало в файле, глазами читалось как настроенное, и до
-    // сборки не доезжало. В компоузе контура его не было вовсе.
+  it.each(COMPOSE_FILES)('%s задаёт адрес в environment', (file) => {
     const compose = withoutComments(read(file), '#');
     const cabinet = compose.slice(compose.indexOf('\n  cabinet:'));
-    const args = cabinet.slice(cabinet.indexOf('args:'), cabinet.indexOf('environment:'));
+    const env = cabinet.slice(cabinet.indexOf('environment:'));
 
-    expect(args).toContain(VAR);
+    expect(env).toContain(VAR);
+  });
+
+  it.each(COMPOSE_FILES)('%s НЕ задаёт адрес в build.args', (file) => {
+    const compose = withoutComments(read(file), '#');
+    const cabinet = compose.slice(compose.indexOf('\n  cabinet:'));
+    const argsStart = cabinet.indexOf('args:');
+    if (argsStart === -1) return; // блока args нет вовсе — тем более нечего проверять
+
+    const args = cabinet.slice(argsStart, cabinet.indexOf('environment:'));
+    expect(args).not.toContain(VAR);
   });
 });

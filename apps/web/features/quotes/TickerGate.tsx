@@ -162,7 +162,12 @@ export function TickerGate({
 
   // Какая из двух границ закрылась, видно по машинной причине: у
   // каталога котировок она с префиксом `quotes:`.
-  const fromQuotes = decision.reason.startsWith('quotes:');
+  //
+  // Причины может не быть вовсе (WEB-26): у «список получен и пуст» её
+  // не бывает. Это состояние границы ДОСТУПА, поэтому подпись берётся
+  // её — и это не умолчание, а единственный путь, по которому сюда
+  // приходят без причины.
+  const fromQuotes = decision.reason?.startsWith('quotes:') ?? false;
   const text = fromQuotes
     ? decision.state === 'empty'
       ? quotesEmptyText

@@ -74,7 +74,44 @@ describe('decideTicker · каталога нет — строки нет', () =
       STREAMING(['EURUSD', 'BTCUSD']),
     );
 
-    expect(decision).toEqual({ kind: 'notice', state: 'empty', reason: 'unknown' });
+    expect(decision).toMatchObject({ kind: 'notice', state: 'empty' });
+  });
+
+  it('у состояния «пусто» причины НЕТ, и выдумывать её нельзя (WEB-26)', () => {
+    // Прежде здесь стояло `reason: 'unknown'`, и полоса писала
+    // «котировки не показываются (unknown)». Это утверждение, что
+    // причина была, а мы её не поняли, — тогда как список получен и
+    // пуст, и пустота ЕСТЬ ответ. Тот же довод, что у пустого
+    // `changePercent`: отсутствие значения и значение — разные
+    // утверждения (Р-118).
+    const decision = decideTicker(['EURUSD'], { state: 'empty', symbols: [] }, STREAMING(['EURUSD']));
+
+    expect(decision.kind).toBe('notice');
+    expect(decision.kind === 'notice' && decision.reason).toBeUndefined();
+  });
+
+  it('у недоступности причина ЕСТЬ и доезжает как есть', () => {
+    // Растяжка: «не выдумывать» не значит «не показывать». Там, где
+    // источник причину назвал, она обязана дойти до разметки.
+    const decision = decideTicker(
+      ['EURUSD'],
+      { state: 'unavailable', reason: 'expired', symbols: [] },
+      STREAMING(['EURUSD']),
+    );
+
+    expect(decision).toMatchObject({ kind: 'notice', state: 'unavailable', reason: 'expired' });
+  });
+
+  it('причина каталога без значения не превращается в голый префикс', () => {
+    // `quotes:` без причины — признак, который ничего не называет, но
+    // выглядит названным.
+    const decision = decideTicker(
+      ['EURUSD'],
+      { state: 'allowed', symbols: ['EURUSD'] },
+      { state: 'unavailable', symbols: [] },
+    );
+
+    expect(decision.kind === 'notice' && decision.reason).toBeUndefined();
   });
 });
 

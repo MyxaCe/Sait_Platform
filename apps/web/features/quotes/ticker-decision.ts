@@ -36,7 +36,24 @@ export interface TickerCatalog {
 
 export type TickerDecision =
   | { kind: 'ticker'; symbols: string[] }
-  | { kind: 'notice'; state: 'empty' | 'unavailable'; reason: string };
+  | {
+      kind: 'notice';
+      state: 'empty' | 'unavailable';
+      /**
+       * Машинная причина — **либо её нет** (WEB-26).
+       *
+       * У состояния «пусто» причины не бывает: список получен и пуст,
+       * пустота и ЕСТЬ ответ. Прежде здесь стояло `?? 'unknown'`, и
+       * полоса писала «котировки не показываются (unknown)» — то есть
+       * утверждала, что причина была, но мы её не поняли. Это разные
+       * вещи, и вторая обвиняет нас в непонимании там, где понимать
+       * нечего.
+       *
+       * Тот же довод, что у пустого `changePercent` (Р-118): отсутствие
+       * значения и значение — разные утверждения.
+       */
+      reason?: string;
+    };
 
 /**
  * Причины каталога уезжают в разметку с префиксом `quotes:`.
@@ -60,7 +77,10 @@ export function decideTicker(
   //    «инструменты не выбраны» и «список недоступен» — то, ради чего
   //    заведён WEB-07. Каталог MDS не может её ни открыть, ни объяснить.
   if (access.state !== 'allowed') {
-    return { kind: 'notice', state: access.state, reason: access.reason ?? 'unknown' };
+    // Причину НЕ выдумываем (WEB-26): у `empty` её не бывает по форме
+    // ответа, и `'unknown'` на этом месте утверждал бы, что причина
+    // была, а мы её не разобрали.
+    return { kind: 'notice', state: access.state, reason: access.reason };
   }
 
   // 2. Каталога нет — строки нет. ЗДЕСЬ стоял `DEFAULT_TICKER_SYMBOLS`:
@@ -71,7 +91,10 @@ export function decideTicker(
     return {
       kind: 'notice',
       state: 'unavailable',
-      reason: `${QUOTES_REASON_PREFIX}${catalog.reason ?? 'unknown'}`,
+      // Префикс навешивается только на НАСТОЯЩУЮ причину. Без неё
+      // получился бы голый `quotes:` — признак, который ничего не
+      // называет, но выглядит названным.
+      reason: catalog.reason ? `${QUOTES_REASON_PREFIX}${catalog.reason}` : undefined,
     };
   }
 
