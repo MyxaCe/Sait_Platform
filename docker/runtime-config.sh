@@ -48,11 +48,18 @@ CANDIDATES="$(find "$ROOT" -type d -name node_modules -prune -o -type f   \( -na
 # законный режим (так устроен и локальный стенд). Требовать его значило
 # бы запретить запуск без MDS. Обязательные же без адреса дают ссылки в
 # никуда, и там отказ — единственный честный исход.
+# Третий режим — `fallback:<значение>`: переменной нет, но пустота
+# недопустима, и подставляется НАЗВАННОЕ безопасное значение. Нужен там,
+# где промах даёт не нерабочую ссылку, а РАЗРЕШЕНИЕ (Р-224): список
+# встраивающих без значения обязан означать «никому», а не «всем» и не
+# пустую строку, от которой заголовок станет недействительным.
+#
 # Разделитель — «|», а не «:»: двоеточие есть в самой схеме адреса.
 PAIRS="https://runtime-site-url.invalid|NEXT_PUBLIC_SITE_URL|required
 https://runtime-cabinet-url.invalid|NEXT_PUBLIC_CABINET_URL|required
 https://runtime-terminal-url.invalid|NEXT_PUBLIC_TERMINAL_URL|required
-https://runtime-ws-url.invalid|NEXT_PUBLIC_WS_URL|optional"
+https://runtime-ws-url.invalid|NEXT_PUBLIC_WS_URL|optional
+https://runtime-frame-ancestors.invalid|FRAME_ANCESTORS|fallback:'none'"
 
 printf '%s\n' "$PAIRS" | while IFS='|' read -r placeholder var need; do
   [ -z "$placeholder" ] && continue
@@ -64,8 +71,23 @@ printf '%s\n' "$PAIRS" | while IFS='|' read -r placeholder var need; do
 ' "$CANDIDATES" | xargs -r grep -l "$placeholder" 2>/dev/null || true)"
   [ -z "$files" ] && continue
 
-  raw="$(eval printf '%s' "\${$var:-}")"
+  # `printenv`, а не `eval`: eval переразбирает строку и СКЛЕИВАЕТ слова.
+  # На списке встраивающих это ловится сразу — «'self' https://cms»
+  # превращалось в «'self'https://cms», то есть в один негодный токен.
+  # Заголовок при этом остаётся синтаксически целым и просто никого не
+  # пускает: отказ, выглядящий как настройка.
+  raw="$(printenv "$var" 2>/dev/null || true)"
   value="$(printf '%s' "$raw" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')"
+
+  # Названное безопасное значение вместо пустоты.
+  case "$need" in
+    fallback:*)
+      if [ -z "$value" ]; then
+        value="${need#fallback:}"
+        echo "[runtime-config] $var не задана — подставляем безопасное: $value"
+      fi
+      ;;
+  esac
 
   if [ -z "$value" ] && [ "$need" = required ]; then
     echo "[runtime-config] $var не задана, а сборка её ждёт ($placeholder)." >&2

@@ -101,10 +101,6 @@ services:
       dockerfile: docker/web.Dockerfile
       args:
         # Здесь остаётся только то, что НЕ меняется между средами (Р-220).
-        # `FRAME_ANCESTORS` содержит адрес CMS и по этому правилу тоже
-        # просится в рантайм, но это заголовок безопасности (CSP) —
-        # вынесено штабу отдельным вопросом, а не передвинуто молча.
-        FRAME_ANCESTORS: "'self' http://${VPS_HOST}:3001"
         NEXT_PUBLIC_SENTRY_DSN: ${SENTRY_DSN_WEB}
     environment:
       # Публичные адреса приходят ОКРУЖЕНИЕМ (WEB-22, Р-220): образ не
@@ -113,6 +109,9 @@ services:
       NEXT_PUBLIC_SITE_URL: http://${VPS_HOST}:3000
       NEXT_PUBLIC_CABINET_URL: http://${VPS_HOST}:3002
       NEXT_PUBLIC_WS_URL: http://${VPS_HOST}:3003
+      # Кому разрешено встраивать витрину (WEB-23, Р-224). Не задан —
+      # НИКОМУ: здесь промах даёт не нерабочую ссылку, а разрешение.
+      FRAME_ANCESTORS: "'self' http://${VPS_HOST}:3001"
       DATABASE_URL: postgres://broker:${SITE_DB_PASSWORD}@site-db:5432/broker_site
       MDS_HTTP_URL: http://mds:3003
       CMS_API_URL: http://cms:3001/v1
