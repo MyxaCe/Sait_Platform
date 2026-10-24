@@ -4,15 +4,17 @@ import { randomUUID } from 'node:crypto';
 import * as Sentry from '@sentry/node';
 import { Pool } from 'pg';
 import { scrubSentryEvent } from '@broker/api-client';
+import { envOr, readEnv } from '@broker/utils';
 import { applyTerminalEvent, classifyMessage } from './projection.js';
 import { createSubscriber } from './subscriber.js';
 import { assertTenantSlugAtStartup } from '@broker/tenant';
 
 // GlitchTip (site-bff /2): ошибки консюмера. Без DSN — выключен. Скраббинг до отправки.
-if (process.env.SENTRY_DSN) {
+const sentryDsn = readEnv(process.env.SENTRY_DSN);
+if (sentryDsn) {
   Sentry.init({
-    dsn: process.env.SENTRY_DSN,
-    environment: process.env.SENTRY_ENV ?? 'test',
+    dsn: sentryDsn,
+    environment: envOr(process.env.SENTRY_ENV, 'test'),
     tracesSampleRate: 0,
     sendDefaultPii: false,
     beforeSend: (event) =>
@@ -27,7 +29,7 @@ if (process.env.SENTRY_DSN) {
  * подключение реальной шины = установка env (кредлы — созвон §10 с CRM).
  */
 
-const databaseUrl = process.env.DATABASE_URL;
+const databaseUrl = readEnv(process.env.DATABASE_URL);
 if (!databaseUrl) {
   console.error('[consumer] DATABASE_URL is required');
   process.exit(1);

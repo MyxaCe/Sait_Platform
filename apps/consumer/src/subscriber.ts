@@ -1,4 +1,5 @@
 import amqplib, { type ChannelModel, type Channel } from 'amqplib';
+import { envOr, readEnv } from '@broker/utils';
 
 /**
  * Подписчик на шину платформы (зеркало publisher релея).
@@ -140,10 +141,19 @@ export class AmqpSubscriber implements Subscriber {
 }
 
 export function createSubscriber(onFatal?: FatalHandler): Subscriber {
-  const url = process.env.BUS_URL;
+  // `readEnv`: пробельный `BUS_URL` — строка истинная, и подписчик
+  // поднимался бы на несуществующем адресе вместо честного простоя.
+  const url = readEnv(process.env.BUS_URL);
   if (!url) return new NullSubscriber();
-  const exchange = process.env.BUS_EXCHANGE ?? 'platform.events';
-  const queue = process.env.BUS_QUEUE ?? 'cabinet.terminal-projection';
-  const bindingKey = process.env.BUS_BINDING_KEY ?? 'terminal.#';
+  // Все три пустыми не ломаются, а МЕНЯЮТ СМЫСЛ, и каждое по-своему:
+  // пустой обменник — это обменник AMQP по умолчанию; пустое имя
+  // очереди просит брокер придумать случайное, и события уедут в
+  // очередь, которую никто больше не читает и которая исчезнет при
+  // разрыве; пустой ключ привязки под topic-обменником не совпадает ни
+  // с одним `terminal.*`. Итог во всех трёх случаях один: подписка
+  // поднялась, отказа нет, событий нет (WEB-24, Р-225).
+  const exchange = envOr(process.env.BUS_EXCHANGE, 'platform.events');
+  const queue = envOr(process.env.BUS_QUEUE, 'cabinet.terminal-projection');
+  const bindingKey = envOr(process.env.BUS_BINDING_KEY, 'terminal.#');
   return new AmqpSubscriber(url, exchange, queue, bindingKey, onFatal);
 }
