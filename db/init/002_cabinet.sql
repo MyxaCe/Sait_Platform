@@ -29,7 +29,13 @@ CREATE INDEX IF NOT EXISTS sessions_expires_idx ON sessions (expires_at);
 -- Демо-счёт: $10 000 при регистрации; реальные счета придут из CRM (фаза 2)
 CREATE TABLE IF NOT EXISTS demo_accounts (
   user_id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
-  balance_cents BIGINT NOT NULL DEFAULT 1000000,
+  -- Умолчания НЕТ сознательно (WEB-29, Р-040).
+  --
+  -- `DEFAULT 1000000` тихо выдавал десять тысяч долларов любому, кто
+  -- вставит строку без этой колонки. Оба создателя передают сумму явно,
+  -- поэтому умолчание мертво — но оно отменяло бы отказ регистрации при
+  -- незаданной сумме тенанта, и отменяло бы молча.
+  balance_cents BIGINT NOT NULL,
   currency TEXT NOT NULL DEFAULT 'USD',
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );

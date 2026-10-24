@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { applyTerminalEvent, classifyMessage, type Querier } from './projection.js';
 
@@ -266,5 +267,76 @@ describe('terminal.margin.called', () => {
     const ev = event({ tenant: 'other-site' })!;
 
     expect(await applyTerminalEvent(db, 'm3', ev, cfg)).toBe('skipped-tenant');
+  });
+});
+
+describe('WEB-29 · баланс не теряется, когда счёта ещё нет', () => {
+  /** Та же подделка, но обновление баланса не находит строки. */
+  function dbWithoutAccount() {
+    const calls: { sql: string; params: unknown[] }[] = [];
+    const claimed = new Set<string>();
+    const db: Querier = {
+      async query(sql, params = []) {
+        calls.push({ sql, params });
+        if (sql.includes('INSERT INTO processed_events')) {
+          const id = String(params[0]);
+          if (claimed.has(id)) return { rows: [], rowCount: 0 };
+          claimed.add(id);
+          return { rows: [], rowCount: 1 };
+        }
+        // Строки пользователя нет: событие обогнало account.opened.
+        if (sql.includes('UPDATE demo_accounts')) return { rows: [], rowCount: 0 };
+        return { rows: [], rowCount: 1 };
+      },
+    };
+    return { db, calls };
+  }
+
+  const balanceEvent = parsed(
+    envelope('terminal.balance.changed', {
+      tenant: 'apex-ru',
+      userId: 'u-нет-такого',
+      balanceCents: 1234567,
+    }),
+  )!;
+
+  it('ноль обновлённых строк — ОТКАЗ, а не applied', async () => {
+    // Главное свойство. Прежде функция возвращала `applied`, event_id
+    // оставался в processed_events, и повторную доставку гасил дедуп:
+    // событие о деньгах терялось окончательно при зелёном консюмере.
+    const { db } = dbWithoutAccount();
+
+    await expect(applyTerminalEvent(db, 'ev-1', balanceEvent, cfg)).rejects.toThrow(
+      /не записан/,
+    );
+  });
+
+  it('в отказе названы пользователь и событие', async () => {
+    // Ассерт печатает полученное (Р-101), и отказ обязан называть место:
+    // «баланс не записан» без имён отправляет искать по всей проекции.
+    const { db } = dbWithoutAccount();
+
+    await expect(applyTerminalEvent(db, 'ev-2', balanceEvent, cfg)).rejects.toThrow(
+      /u-нет-такого[\s\S]*ev-2|ev-2[\s\S]*u-нет-такого/,
+    );
+  });
+
+  it('когда строка есть — обычный applied, отказ не мешает работе', async () => {
+    // Растяжка: проверка не должна превращать исправный путь в отказ.
+    const { db } = fakeDb();
+
+    expect(await applyTerminalEvent(db, 'ev-3', balanceEvent, cfg)).toBe('applied');
+  });
+
+  it('повторная доставка возможна: заявку на дедуп уносит откат транзакции', async () => {
+    // Здесь проверяется не код проекции, а её ДОГОВОР с вызывающим:
+    // проекция бросает, `index.ts` делает ROLLBACK, и заявка исчезает
+    // вместе с ним. Если кто-то уберёт транзакцию, событие снова начнёт
+    // теряться — поэтому требование записано тестом, а не комментарием.
+    const index = readFileSync(new URL('./index.ts', import.meta.url), 'utf8');
+
+    expect(index).toContain("client.query('BEGIN')");
+    expect(index).toContain("client.query('ROLLBACK')");
+    expect(index).toMatch(/catch[\s\S]*ROLLBACK/);
   });
 });

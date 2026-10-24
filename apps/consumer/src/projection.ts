@@ -30,6 +30,23 @@ export type ProjectionOutcome =
   'applied' | 'skipped-duplicate' | 'skipped-tenant' | 'skipped-unknown';
 
 /**
+ * Баланс пришёл на счёт, которого у нас нет (WEB-29).
+ *
+ * Это не «нечего делать», а «сделать не удалось»: деньги есть, а строки
+ * нет. Бросаем, чтобы транзакция откатилась вместе с заявкой на дедуп и
+ * событие можно было доставить ещё раз.
+ */
+export class BalanceAccountMissingError extends Error {
+  constructor(userId: string, eventId: string) {
+    super(
+      `demo_accounts: нет строки пользователя ${userId}, баланс из события ${eventId} ` +
+        'не записан. Событие не помечается обработанным — его доставят снова.',
+    );
+    this.name = 'BalanceAccountMissingError';
+  }
+}
+
+/**
  * Итог разбора сообщения. ТРИ разных исхода там, где раньше был один `null`
  * (баг B-020): «чужое» и «наше сломанное» требуют противоположных действий, а
  * молчаливый пропуск обоих терял наши же события без следа.
@@ -119,10 +136,29 @@ export async function applyTerminalEvent(
     }
     case 'terminal.balance.changed': {
       const d = event.data;
-      await db.query(`UPDATE demo_accounts SET balance_cents = $1 WHERE user_id = $2`, [
-        d.balanceCents,
-        d.userId,
-      ]);
+      /*
+       * Ноль обновлённых строк — ОТКАЗ, а не успех (WEB-29).
+       *
+       * Строки может не быть: событие обогнало `account.opened`, или
+       * регистрация шла другим путём. Прежде `rowCount` здесь не
+       * смотрели, функция возвращала `applied`, а `event_id` оставался в
+       * `processed_events` — и повторная доставка гасилась дедупом.
+       * Событие о ДЕНЬГАХ терялось окончательно, при зелёном консюмере и
+       * чистом логе. Отказ, неотличимый от успеха, с ценой в деньгах.
+       *
+       * Почему достаточно бросить. Вся проекция идёт внутри транзакции
+       * (`BEGIN` … `COMMIT` в `index.ts`), и откат уносит вместе с собой
+       * заявку на дедуп. Значит сообщение уйдёт в DLX, а его повторная
+       * доставка уже НЕ будет отброшена: гасить её станет нечему.
+       * Отдельно удалять заявку не нужно — и не нужно её переживать.
+       */
+      const updated = await db.query(
+        `UPDATE demo_accounts SET balance_cents = $1 WHERE user_id = $2`,
+        [d.balanceCents, d.userId],
+      );
+      if ((updated.rowCount ?? 0) === 0) {
+        throw new BalanceAccountMissingError(d.userId, eventId);
+      }
       // Снапшот позиций (если пришёл) заменяем целиком — проекция идемпотентна
       if (d.positions) {
         await db.query(`DELETE FROM demo_positions WHERE user_id = $1`, [d.userId]);
