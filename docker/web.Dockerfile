@@ -21,8 +21,9 @@ COPY . .
 ENV BUILD_STANDALONE=1
 # Кто может встраивать сайт в iframe (Preview-вкладка админки CMS);
 # headers() Next фиксируются на сборке — на VPS передать реальный origin CMS
-ARG FRAME_ANCESTORS="'self' http://localhost:3001"
-ENV FRAME_ANCESTORS=$FRAME_ANCESTORS
+# Список встраивающих — тоже в рантайм (WEB-23, Р-224), и плейсхолдер
+# здесь безопасен сам по себе: промах подстановки никого не пускает.
+ENV FRAME_ANCESTORS=https://runtime-frame-ancestors.invalid
 # Публичные адреса в сборку НЕ попадают (WEB-22, Р-220).
 #
 # Next впекает `NEXT_PUBLIC_*` в бандл. Пока адреса приходили аргументами

@@ -30,10 +30,45 @@ import { describe, expect, it } from 'vitest';
 const ROOT = path.resolve(__dirname, '../../..');
 const SCAN = ['apps/web', 'apps/cabinet', 'packages'];
 const SKIP = new Set(['node_modules', '.next', '.turbo', 'dist', 'coverage']);
-const CODE_EXT = new Set(['.ts', '.tsx']);
+/*
+ * `.mjs` добавлен после WEB-23: в `next.config.mjs` жила та же
+ * подстановка `??`, и сканер её не видел — слепое пятно было в самом
+ * стороже. Заголовок безопасности как раз там и собирается.
+ */
+const CODE_EXT = new Set(['.ts', '.tsx', '.mjs']);
 
-/** `process.env.X ?? …` — умолчание, которое пустую строку пропускает. */
-const ENV_NULLISH_DEFAULT = /process\.env\.[A-Za-z_][A-Za-z0-9_]*\s*\?\?/;
+/**
+ * `process.env.X ?? <содержательное умолчание>`.
+ *
+ * `?? ''` сюда НЕ входит, и это не послабление: пустая строка не
+ * умолчание, она отсутствие. Такая запись ничего не маскирует — она
+ * лишь убирает `undefined`, и обработать пустоту всё равно обязан
+ * следующий шаг. Опасен `??`, за которым стоит ЗНАЧЕНИЕ: тогда пустая
+ * строка проходит мимо него и выдаёт себя за заданную.
+ *
+ * Проверено на живом случае: в `next.config.mjs` список встраивающих
+ * читается как `(process.env.FRAME_ANCESTORS ?? '').trim()` и пустоту
+ * обрабатывает явно, строкой ниже.
+ */
+const ENV_NULLISH = /process\.env\.[A-Za-z_][A-Za-z0-9_]*\s*\?\?\s*/;
+
+/**
+ * Проверка функцией, а не одним выражением, намеренно.
+ *
+ * Первая попытка написала отрицание внутри регулярного выражения — и оно
+ * обмануло само себя: `\s*` отступает назад, проверка «дальше не пустая
+ * строка» примерялась к пробелу и проходила. Выражение выглядело верным
+ * и пропускало ровно то, что должно было ловить.
+ */
+export function ENV_NULLISH_DEFAULT_test(line: string): boolean {
+  const m = ENV_NULLISH.exec(line);
+  if (!m) return false;
+  const rest = line.slice(m.index + m[0].length);
+  // Пустая строка после `??` — не умолчание, а снятие `undefined`.
+  return !(rest.startsWith("''") || rest.startsWith('""'));
+}
+
+const ENV_NULLISH_DEFAULT = { test: ENV_NULLISH_DEFAULT_test };
 
 function isComment(line: string): boolean {
   const t = line.trim();
@@ -92,6 +127,10 @@ describe('WEB-21 · пустая строка не проходит за нез�
 
     // Честные записи не трогает.
     expect(caught("const u = envOr(process.env.NEXT_PUBLIC_CABINET_URL, 'http://x');")).toBe(false);
+    // `?? ''` — не умолчание, а снятие `undefined`; пустоту обрабатывают
+    // следующей строкой, и это законно.
+    expect(caught("const raw = (process.env.FRAME_ANCESTORS ?? '').trim();")).toBe(false);
+    expect(caught('const raw = (process.env.X ?? "").trim();')).toBe(false);
     expect(caught('const key = process.env.CMS_API_KEY || undefined;')).toBe(false);
     expect(caught("if (!process.env.MDS_HTTP_URL) return 'not-configured';")).toBe(false);
     expect(caught("    // было process.env.X ?? '…' — так нельзя")).toBe(false);
