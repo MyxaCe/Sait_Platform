@@ -10,8 +10,8 @@ import {
   type Quote,
 } from '@broker/realtime';
 import { Button, ConnectionDot, Input, PriceChange, cn } from '@broker/ui';
-import { formatPrice } from '@broker/utils';
 import { CATEGORY_ORDER } from './categories';
+import { QuotePrice, priceReading } from './QuotePrice';
 import { usePriceFlash } from './usePriceFlash';
 
 type CategoryFilter = InstrumentCategory | 'all';
@@ -100,7 +100,12 @@ export function InstrumentsBrowser({ symbols, icons = {} }: InstrumentsBrowserPr
       {/* Mobile: список карточек-строк */}
       <ul className="mt-4 divide-y divide-border overflow-hidden rounded-2xl border border-border md:hidden">
         {filtered.map((q) => (
-          <MobileRow key={q.symbol} quote={q} iconUrl={icons[q.symbol]} />
+          <MobileRow
+              key={q.symbol}
+              quote={q}
+              iconUrl={icons[q.symbol]}
+              noDataLabel={tConn('noData')}
+            />
         ))}
       </ul>
 
@@ -124,6 +129,7 @@ export function InstrumentsBrowser({ symbols, icons = {} }: InstrumentsBrowserPr
                 iconUrl={icons[q.symbol]}
                 categoryLabel={tCat(q.category)}
                 tradeLabel={tCommon('trade')}
+                noDataLabel={tConn('noData')}
               />
             ))}
           </tbody>
@@ -171,8 +177,16 @@ function InstrumentIcon({ symbol, iconUrl }: { symbol: string; iconUrl?: string 
   );
 }
 
-function MobileRow({ quote, iconUrl }: { quote: Quote; iconUrl?: string }) {
-  const flash = usePriceFlash(quote.price);
+function MobileRow({
+  quote,
+  iconUrl,
+  noDataLabel,
+}: {
+  quote: Quote;
+  iconUrl?: string;
+  noDataLabel: string;
+}) {
+  const flash = usePriceFlash(priceReading(quote));
   return (
     <li className={cn('transition-colors duration-500', flash && FLASH_CLASSES[flash])}>
       <Link href={instrumentHref(quote)} className="flex items-center justify-between gap-3 px-4 py-3.5">
@@ -184,7 +198,9 @@ function MobileRow({ quote, iconUrl }: { quote: Quote; iconUrl?: string }) {
           </div>
         </div>
         <div className="text-right">
-          <p className="tabular-nums text-primary">{formatPrice(quote.price, quote.digits)}</p>
+          <p className="tabular-nums text-primary">
+            <QuotePrice quote={quote} noDataLabel={noDataLabel} />
+          </p>
           <PriceChange value={quote.changePercent} className="text-xs" />
         </div>
       </Link>
@@ -197,13 +213,15 @@ function DesktopRow({
   iconUrl,
   categoryLabel,
   tradeLabel,
+  noDataLabel,
 }: {
   quote: Quote;
   iconUrl?: string;
   categoryLabel: string;
   tradeLabel: string;
+  noDataLabel: string;
 }) {
-  const flash = usePriceFlash(quote.price);
+  const flash = usePriceFlash(priceReading(quote));
   return (
     <tr
       className={cn(
@@ -222,7 +240,7 @@ function DesktopRow({
       </td>
       <td className="px-6 py-3.5 text-secondary">{categoryLabel}</td>
       <td className="px-6 py-3.5 text-right tabular-nums text-primary">
-        {formatPrice(quote.price, quote.digits)}
+        <QuotePrice quote={quote} noDataLabel={noDataLabel} />
       </td>
       <td className="px-6 py-3.5 text-right">
         <PriceChange value={quote.changePercent} />

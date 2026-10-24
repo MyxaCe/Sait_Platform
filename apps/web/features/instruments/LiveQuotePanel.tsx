@@ -8,6 +8,7 @@ import {
 } from '@broker/realtime';
 import { Button, ConnectionDot, PriceChange, cn } from '@broker/ui';
 import { formatPrice } from '@broker/utils';
+import { QuotePrice, priceReading } from './QuotePrice';
 import { usePriceFlash } from './usePriceFlash';
 
 /** Примерный спред по категориям (доля цены) — до подключения реального фида bid/ask */
@@ -25,12 +26,33 @@ export function LiveQuotePanel({ def }: { def: SymbolDef }) {
   const tConn = useTranslations('connection');
   const [quote] = useRealtimeQuotes([def.symbol]);
   const status = useConnectionStatus();
-  const price = quote?.price ?? def.basePrice;
-  const flash = usePriceFlash(price);
 
-  const halfSpread = (price * SPREAD_FACTOR[def.category]) / 2;
-  const bid = formatPrice(price - halfSpread, def.digits);
-  const ask = formatPrice(price + halfSpread, def.digits);
+  /*
+    Было `quote?.price ?? def.basePrice` — подстановка справочной цены
+    на место живой, самой крупной цифрой страницы (WEB-17). `basePrice`
+    из справочника означает «инструмент такой существует», а не «он
+    стоит столько»: это не старая котировка, а цифра из описания, и
+    показать её как цену значит утверждать сделку, которой не было.
+
+    Гейт ОДИН — общее правило `displayPrice`. Число для bid/ask берётся
+    только тогда, когда правило согласилось показать цену: написать
+    здесь `quote.ts !== 0` значило бы завести второй источник того же
+    условия, и при переносе порога наружу он остался бы прежним.
+  */
+  const reading = priceReading(quote);
+
+  const flash = usePriceFlash(reading);
+
+  /*
+    Bid и ask СЧИТАЮТСЯ из цены, значит без цены их нет. Раньше они
+    считались из подставленной и выглядели как настоящие котировки на
+    покупку и продажу — по ним можно принять решение.
+  */
+  const halfSpread = reading === null ? null : (reading * SPREAD_FACTOR[def.category]) / 2;
+  const bid =
+    reading === null || halfSpread === null ? null : formatPrice(reading - halfSpread, def.digits);
+  const ask =
+    reading === null || halfSpread === null ? null : formatPrice(reading + halfSpread, def.digits);
 
   return (
     <div className="rounded-3xl border border-border bg-card p-6 sm:p-8">
@@ -47,7 +69,7 @@ export function LiveQuotePanel({ def }: { def: SymbolDef }) {
             flash === 'down' && 'text-negative',
           )}
         >
-          {formatPrice(price, def.digits)}
+          <QuotePrice quote={quote} noDataLabel={tConn('noData')} />
         </span>
         {/*
           Было `?? 0` — подстановка, прямо запрещённая контрактом: на крупной
@@ -61,11 +83,15 @@ export function LiveQuotePanel({ def }: { def: SymbolDef }) {
       <dl className="mt-6 grid grid-cols-2 gap-4 border-t border-border pt-6 text-sm">
         <div>
           <dt className="text-secondary">Bid</dt>
-          <dd className="mt-1 tabular-nums text-negative">{bid}</dd>
+          <dd className="mt-1 tabular-nums text-negative">
+            {bid ?? <span className="text-secondary" title={tConn('noData')}>—</span>}
+          </dd>
         </div>
         <div>
           <dt className="text-secondary">Ask</dt>
-          <dd className="mt-1 tabular-nums text-positive">{ask}</dd>
+          <dd className="mt-1 tabular-nums text-positive">
+            {ask ?? <span className="text-secondary" title={tConn('noData')}>—</span>}
+          </dd>
         </div>
       </dl>
 
