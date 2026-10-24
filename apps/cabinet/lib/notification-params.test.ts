@@ -39,11 +39,18 @@ describe('негодные параметры не превращаются в �
   const ok = { symbol: 'EURUSD', side: 'buy', volume: 0.1, price: 1.08425 };
 
   it('полный набор проходит', () => {
+    // Набор сверяется исчерпывающе нарочно: лишнее поле в параметрах
+    // уедет в шаблон молча, а недостающее оставит в тексте скобки.
     expect(tradeExecutedParams(ok)).toEqual({
       symbol: 'EURUSD',
       side: 'buy',
       volume: '0.1',
       price: '1.08425',
+      // Уровня в этом событии нет — о проскальзывании молчим (WEB-20).
+      level: '',
+      slippage: '',
+      slippageKind: 'unknown',
+      acrossGap: 'no',
     });
   });
 
@@ -165,5 +172,52 @@ describe('маржин-колл: видно и уровень, и сколько
     expect(notificationKey('marginCalled', marginCalledParams(noStop))).toBe(
       'marginCalledNoStopOut',
     );
+  });
+});
+
+describe('WEB-20 · проскальзывание доходит до уведомления', () => {
+  const base = { symbol: 'EURUSD', side: 'sell', volume: 0.1, price: 1.082 };
+
+  it('хуже уровня — названо и ОБЪЯСНЕНО', () => {
+    // Без второй половины фразы закрытие хуже уровня читается как наша
+    // ошибка. Шаблон выбирается тот, где причина названа.
+    const params = tradeExecutedParams({ ...base, level: 1.085 });
+
+    expect(params).toMatchObject({ slippageKind: 'against', slippage: '0.00300', level: '1.08500' });
+    expect(notificationKey('tradeExecuted', params)).toBe('tradeExecutedWorse');
+  });
+
+  it('лучше уровня — тоже названо', () => {
+    // У лимитного разрыв играет ЗА клиента. Промолчать значило бы
+    // приписать себе чужую удачу.
+    const params = tradeExecutedParams({ ...base, level: 1.08 });
+
+    expect(params).toMatchObject({ slippageKind: 'favour' });
+    expect(notificationKey('tradeExecuted', params)).toBe('tradeExecutedBetter');
+  });
+
+  it('ровно по уровню — обычный шаблон, лишних слов нет', () => {
+    const params = tradeExecutedParams({ ...base, level: 1.082 });
+
+    expect(params).toMatchObject({ slippageKind: 'none', slippage: '' });
+    expect(notificationKey('tradeExecuted', params)).toBe('tradeExecuted');
+  });
+
+  it('уровня нет → молчим о проскальзывании, а не утверждаем «по уровню»', () => {
+    // Главное свойство. Рыночное закрытие или сделка старше поля: мы не
+    // знаем уровня, и сказать «исполнено по уровню» было бы
+    // утверждением о том, чего не знаем.
+    const params = tradeExecutedParams({ ...base, level: null });
+
+    expect(params).toMatchObject({ slippageKind: 'unknown', slippage: '', level: '' });
+    expect(notificationKey('tradeExecuted', params)).toBe('tradeExecuted');
+  });
+
+  it('разрыв трёхзначен: называем только подтверждённый', () => {
+    expect(tradeExecutedParams({ ...base, acrossGap: true })).toMatchObject({ acrossGap: 'yes' });
+    // «Проверяли, не было» и «не знаем» одинаково молчат — утверждать
+    // разрыв можно только когда источник его подтвердил.
+    expect(tradeExecutedParams({ ...base, acrossGap: false })).toMatchObject({ acrossGap: 'no' });
+    expect(tradeExecutedParams({ ...base, acrossGap: null })).toMatchObject({ acrossGap: 'no' });
   });
 });

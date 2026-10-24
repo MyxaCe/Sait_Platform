@@ -340,3 +340,59 @@ describe('WEB-29 · баланс не теряется, когда счёта е
     expect(index).toMatch(/catch[\s\S]*ROLLBACK/);
   });
 });
+
+describe('WEB-20 · уровень и разрыв доезжают в уведомление честно', () => {
+  const trade = (extra: Record<string, unknown> = {}) =>
+    parsed(
+      envelope('terminal.trade.executed', {
+        tenant: 'apex-ru',
+        userId: 'u1',
+        tradeId: 't-slip',
+        symbol: 'EURUSD',
+        side: 'sell',
+        volume: 0.1,
+        price: 1.082,
+        executedAt: '2026-10-24T10:00:00.000Z',
+        ...extra,
+      }),
+    )!;
+
+  async function paramsOf(ev: ReturnType<typeof trade>, id: string) {
+    const { db, calls } = fakeDb();
+    await applyTerminalEvent(db, id, ev, cfg);
+    const notification = calls.find((c) => c.sql.includes("'tradeExecuted'"));
+    return JSON.parse(String(notification?.params[2])) as Record<string, unknown>;
+  }
+
+  it('уровень и разрыв доезжают, когда они есть', async () => {
+    const params = await paramsOf(trade({ level: 1.085, acrossGap: true }), 's1');
+
+    expect(params.level).toBe(1.085);
+    expect(params.acrossGap).toBe(true);
+  });
+
+  it('уровня нет → `null`, а НЕ ноль', async () => {
+    // Ноль здесь означал бы уровень «ноль» — цену, которой не бывает, и
+    // проскальзывание размером во всю цену. Отсутствие означает, что
+    // закрытие было не по уровню.
+    const params = await paramsOf(trade(), 's2');
+
+    expect(params.level).toBeNull();
+    expect(params.level).not.toBe(0);
+  });
+
+  it('разрыв неизвестен → `null`, а не `false`', async () => {
+    // `false` утверждал бы, что разрыв проверяли и его не было, —
+    // ответ за прошлое, которого мы не видели.
+    const params = await paramsOf(trade(), 's3');
+
+    expect(params.acrossGap).toBeNull();
+  });
+
+  it('«проверяли, не было» сохраняется как `false`, а не теряется', async () => {
+    // Растяжка к предыдущему: это знание, и оно отличается от незнания.
+    const params = await paramsOf(trade({ acrossGap: false }), 's4');
+
+    expect(params.acrossGap).toBe(false);
+  });
+});

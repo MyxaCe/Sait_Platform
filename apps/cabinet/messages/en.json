@@ -174,7 +174,9 @@
       "demoReset": "Demo account has been reset to the starting balance.",
       "tradeExecuted": "Trade executed: {side, select, buy {buy} sell {sell} other {{side}}} {volume} {symbol} at {price}.",
       "marginCalled": "Margin level {level}%. {remaining}% left before forced close-out at {stopOut}%. Equity {equity}, used margin {usedMargin}.",
-      "marginCalledNoStopOut": "Margin level {level}%. No forced close-out level is set, so no margin close-out will happen. Equity {equity}, used margin {usedMargin}."
+      "marginCalledNoStopOut": "Margin level {level}%. No forced close-out level is set, so no margin close-out will happen. Equity {equity}, used margin {usedMargin}.",
+      "tradeExecutedWorse": "Trade executed: {side, select, buy {buy} sell {sell} other {{side}}} {volume} {symbol} at {price}. That is {slippage} worse than your level {level}: a stop fills at the first observed price, not at the level.",
+      "tradeExecutedBetter": "Trade executed: {side, select, buy {buy} sell {sell} other {{side}}} {volume} {symbol} at {price}. That is {slippage} better than your level {level}."
     }
   },
   "trade": {
