@@ -43,24 +43,35 @@ export function DownloadApp() {
                   </span>
                   <span className="text-sm font-semibold text-primary">Apex Capital</span>
                 </div>
+                {/*
+                  Макет телефона БЕЗ цен (WEB-25).
+
+                  Здесь стояли четыре зашитые котировки с процентами и
+                  цветом — и одна из них промахивалась мимо рынка на 18 %.
+                  Для иллюстрации это обычная декорация, но стоит она на
+                  домене, где сайт называет себя регулируемым брокером, и
+                  в двух сантиметрах от полосы «котировки не показываются».
+                  Человек, знающий рынок, видит расхождение за секунду.
+
+                  Подпись «пример» не спасла бы: правдоподобное число
+                  читается как утверждение независимо от того, что
+                  написано рядом. Это ровно тот довод, по которому мы
+                  весь месяц убирали «0.00%».
+
+                  Поэтому цен нет вовсе — вместо них нейтральные полосы:
+                  каркас интерфейса, который ничего не утверждает о рынке.
+                  Символы оставлены: эти четыре инструмента у нас
+                  действительно есть, проверено по справочнику.
+                */}
                 <div className="mt-4 space-y-2.5">
-                  {[
-                    ['EURUSD', '1.08423', '+0.14%', true],
-                    ['XAUUSD', '2 417.50', '+0.62%', true],
-                    ['BTCUSD', '67 450', '−1.08%', false],
-                    ['NAS100', '19 870.5', '+0.45%', true],
-                  ].map(([sym, price, change, up]) => (
+                  {['EURUSD', 'XAUUSD', 'BTCUSD', 'NAS100'].map((sym) => (
                     <div
-                      key={sym as string}
+                      key={sym}
                       className="flex items-center justify-between rounded-xl bg-card px-3.5 py-2.5"
                     >
                       <span className="text-xs font-medium text-primary">{sym}</span>
-                      <span className="text-xs tabular-nums text-secondary">{price}</span>
-                      <span
-                        className={`text-xs tabular-nums ${up ? 'text-positive' : 'text-negative'}`}
-                      >
-                        {change}
-                      </span>
+                      <span className="h-2 w-12 rounded-full bg-border" />
+                      <span className="h-2 w-8 rounded-full bg-border" />
                     </div>
                   ))}
                 </div>
