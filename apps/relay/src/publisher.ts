@@ -1,5 +1,6 @@
 import amqplib, { type ChannelModel, type ConfirmChannel } from 'amqplib';
 import type { EventEnvelope } from '@broker/api-client';
+import { envOr, readEnv } from '@broker/utils';
 
 /**
  * Издатель событий в шину платформы.
@@ -117,11 +118,20 @@ export class AmqpPublisher implements Publisher {
 }
 
 export function createPublisher(): Publisher {
-  const url = process.env.BUS_URL;
+  // `readEnv`, а не голое чтение: `BUS_URL='   '` — строка истинная, и
+  // проверка `!url` её пропускала. Релей строил AMQP-издателя с
+  // пробельным адресом, фолбэк «публикуем в лог» не срабатывал, и
+  // вместо названного отказа выходила невнятная ошибка подключения.
+  const url = readEnv(process.env.BUS_URL);
   if (!url) {
     console.warn('[relay] BUS_URL not set — publishing to log only');
     return new LogPublisher();
   }
-  const exchange = process.env.BUS_EXCHANGE ?? 'platform.events';
+  // Пустое имя обменника — НЕ «пусто»: в AMQP это обменник по
+  // умолчанию, и он работает. Сообщение уйдёт не в `platform.events`,
+  // а в очередь, чьё имя совпало с ключом маршрутизации, — то есть
+  // никуда, но без единой ошибки. `??` пустую строку пропускает,
+  // `envOr` считает её отсутствием (WEB-24, Р-225).
+  const exchange = envOr(process.env.BUS_EXCHANGE, 'platform.events');
   return new AmqpPublisher(url, exchange);
 }

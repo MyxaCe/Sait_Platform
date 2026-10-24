@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@broker/api-client": "workspace:*",
+    "@broker/utils": "workspace:*",
     "@sentry/node": "^8.42.0",
     "amqplib": "^0.10.4",
     "pg": "^8.12.0",

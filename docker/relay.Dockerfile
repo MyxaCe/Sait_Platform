@@ -17,6 +17,7 @@ RUN pnpm install --frozen-lockfile --filter @broker/relay...
 
 COPY packages/api-client packages/api-client
 COPY packages/config packages/config
+COPY packages/utils packages/utils
 COPY apps/relay apps/relay
 
 USER node
