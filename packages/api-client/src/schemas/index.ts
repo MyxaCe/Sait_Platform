@@ -23,6 +23,7 @@ import {
   terminalAccountOpenedSchema,
   terminalBalanceChangedSchema,
   terminalTradeExecutedSchema,
+  terminalMarginCalledSchema,
 } from './terminal-events';
 import {
   accountOpeningLeadResponseSchema,
@@ -70,6 +71,7 @@ export const EVENT_SCHEMAS = {
   'terminal.account.opened.v1': terminalAccountOpenedSchema,
   'terminal.balance.changed.v1': terminalBalanceChangedSchema,
   'terminal.trade.executed.v1': terminalTradeExecutedSchema,
+  'terminal.margin.called.v1': terminalMarginCalledSchema,
 } satisfies Record<string, z.ZodTypeAny>;
 
 export const LEAD_SCHEMAS = {

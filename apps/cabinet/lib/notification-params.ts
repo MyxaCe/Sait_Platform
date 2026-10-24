@@ -76,5 +76,74 @@ export function tradeExecutedParams(raw: RawParams): Record<string, string> | nu
  * там цена ошибки другая.
  */
 export function displayParams(type: string, raw: RawParams): Record<string, unknown> | null {
-  return type === 'tradeExecuted' ? tradeExecutedParams(raw) : raw;
+  if (type === 'tradeExecuted') return tradeExecutedParams(raw);
+  if (type === 'marginCalled') return marginCalledParams(raw);
+  return raw;
+}
+
+/**
+ * Параметры предупреждения о марже (маржин-колл).
+ *
+ * **Два уровня, и это не избыточность.** «Ваш уровень 97 %» ничего не
+ * говорит человеку, который не помнит порог. Предупреждение, из которого
+ * не видно, насколько всё плохо, — не предупреждение. Поэтому наружу
+ * уходит и достигнутый уровень, и сколько осталось до закрытия.
+ *
+ * **Порога может не быть, и это НЕ ноль процентов.** Ноль означал бы
+ * «закроют при нулевой марже» — конкретную и очень плохую новость.
+ * Отсутствие означает, что принудительного закрытия нет вовсе. Разные
+ * утверждения, и путать их нельзя (Р-118).
+ *
+ * Поэтому шаблонов два, и выбирает между ними вызывающий по полю
+ * `hasStopOut`: подставить в один шаблон «—» вместо числа значило бы
+ * оставить фразу «до закрытия осталось —», которая читается как
+ * поломка, а не как «закрытия не будет».
+ */
+export interface MarginParams extends Record<string, string> {
+  level: string;
+  equity: string;
+  usedMargin: string;
+  /** Пусто, когда порога нет: шаблон без него выбирается отдельно. */
+  stopOut: string;
+  remaining: string;
+  hasStopOut: 'yes' | 'no';
+}
+
+/** Центы → деньги. Та же величина, что у сделок: делим на сто. */
+function money(cents: number): string {
+  return (cents / 100).toFixed(2);
+}
+
+export function marginCalledParams(raw: RawParams): MarginParams | null {
+  const { marginLevelPct, stopOutLevelPct, equityCents, usedMarginCents } = raw;
+
+  if (!isFiniteNumber(marginLevelPct)) return null;
+  if (!isFiniteNumber(equityCents) || !isFiniteNumber(usedMarginCents)) return null;
+
+  // `null` и отсутствие — одно и то же: порога нет. Ноль — это порог.
+  const hasStopOut = isFiniteNumber(stopOutLevelPct);
+
+  return {
+    level: String(marginLevelPct),
+    equity: money(equityCents),
+    usedMargin: money(usedMarginCents),
+    stopOut: hasStopOut ? String(stopOutLevelPct) : '',
+    // Сколько осталось — величина, ради которой оба уровня и нужны.
+    remaining: hasStopOut ? String(marginLevelPct - (stopOutLevelPct as number)) : '',
+    hasStopOut: hasStopOut ? 'yes' : 'no',
+  };
+}
+
+/**
+ * Какой шаблон показать. Обычно он совпадает с типом, но у маржин-колла
+ * их два: с порогом закрытия и без него.
+ *
+ * Выбор живёт здесь, рядом с решением о параметрах, а не в разметке:
+ * внутри `.tsx` его нельзя было бы проверить без отрисовки, а решение
+ * это содержательное — «закрытия не будет» и «до закрытия осталось
+ * столько-то» говорят человеку противоположное.
+ */
+export function notificationKey(type: string, params: Record<string, unknown> | null): string {
+  if (type === 'marginCalled' && params?.hasStopOut === 'no') return 'marginCalledNoStopOut';
+  return type;
 }

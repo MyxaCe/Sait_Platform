@@ -2,7 +2,7 @@ import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/serve
 import { cn } from '@broker/ui';
 import { getSessionUser } from '@/lib/auth/session';
 import { listNotifications } from '@/lib/data';
-import { displayParams } from '@/lib/notification-params';
+import { displayParams, notificationKey } from '@/lib/notification-params';
 import { markAllReadAction, markNotificationReadAction } from '@/lib/actions';
 
 export default async function NotificationsPage({ params }: { params: { locale: string } }) {
@@ -49,13 +49,14 @@ export default async function NotificationsPage({ params }: { params: { locale: 
                 <p className="text-sm">
                   {(() => {
                     const params = displayParams(n.type, n.params);
-                    return t.has(`types.${n.type}` as never) && params !== null
+                    const key = notificationKey(n.type, params);
+                    return t.has(`types.${key}` as never) && params !== null
                       ? (
                           t as unknown as (
                             key: string,
                             params?: Record<string, unknown>,
                           ) => string
-                        )(`types.${n.type}`, params)
+                        )(`types.${key}`, params)
                       : n.type;
                   })()}
                 </p>
