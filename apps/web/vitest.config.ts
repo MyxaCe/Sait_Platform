@@ -1,6 +1,7 @@
 import path from 'node:path';
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vitest/config';
+import { poolOptions } from '@broker/config/vitest-pool.js';
 
 /**
  * WEB-16 · в витрине появляются компонентные проверки.
@@ -40,6 +41,8 @@ export default defineConfig({
     },
   },
   test: {
+    // Ограничение пула — общее для всех пакетов (WEB-37).
+    poolOptions,
     environment: 'node',
     // RTL вешает авто-очистку на глобальный `afterEach`.
     globals: true,
