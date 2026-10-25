@@ -165,22 +165,47 @@ export async function applyTerminalEvent(
        * доставка уже НЕ будет отброшена: гасить её станет нечему.
        * Отдельно удалять заявку не нужно — и не нужно её переживать.
        */
+      const applied =
+        moneyFromEvent({
+          field: 'balance',
+          cents: d.balanceCents,
+          minor: d.balanceMinor,
+          currency: d.currency,
+          currencyMinorUnits: d.currencyMinorUnits,
+        })?.minor ?? d.balanceCents;
+
       const updated = await db.query(
         `UPDATE demo_accounts SET balance_cents = $1 WHERE user_id = $2`,
-        [
-          moneyFromEvent({
-            field: 'balance',
-            cents: d.balanceCents,
-            minor: d.balanceMinor,
-            currency: d.currency,
-            currencyMinorUnits: d.currencyMinorUnits,
-          })?.minor ?? d.balanceCents,
-          d.userId,
-        ],
+        [applied, d.userId],
       );
       if ((updated.rowCount ?? 0) === 0) {
         throw new BalanceAccountMissingError(d.userId, eventId);
       }
+      /*
+        Сброс человек замечает только по изменившемуся числу (WEB-42).
+
+        Кабинет нажатие подтверждает, но подтверждает ровно «принято»:
+        применится ли сброс, он в тот момент не знает. Знаем мы —
+        здесь, когда событие приехало. Поэтому уведомление рождается
+        **из события**, а не из нашей отправки, и несёт сумму, которую
+        применил источник, а не ту, которую кто-то собирался применить.
+
+        Прежде кабинет писал это уведомление сам, беря число из своей
+        копии стартовой суммы, — сообщал человеку величину, которой не
+        наблюдал.
+
+        **Почему только на `reset`.** Обычное изменение баланса —
+        следствие сделки, и о ней уведомление уже есть. Сообщать о
+        каждом тике значило бы завести шум, в котором утонет
+        настоящее.
+      */
+      if (d.reason === 'reset') {
+        await db.query(
+          `INSERT INTO notifications (id, user_id, type, params) VALUES ($1, $2, 'demoReset', $3)`,
+          [cfg.newId(), d.userId, JSON.stringify({ balanceCents: applied })],
+        );
+      }
+
       // Снапшот позиций (если пришёл) заменяем целиком — проекция идемпотентна
       if (d.positions) {
         await db.query(`DELETE FROM demo_positions WHERE user_id = $1`, [d.userId]);

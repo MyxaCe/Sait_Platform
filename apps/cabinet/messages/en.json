@@ -105,7 +105,14 @@
     "resetUnsetNote": "Reset unavailable: the demo starting amount has not been set in the site settings.",
     "resetUnavailableNote": "Reset unavailable: the site settings could not be retrieved.",
     "balanceNoAccount": "Account not opened yet",
-    "balanceNoAccountNote": "The demo account opens on your first visit to the terminal — the terminal creates it, not the site."
+    "balanceNoAccountNote": "The demo account opens on your first visit to the terminal — the terminal creates it, not the site.",
+    "resetAccepted": "Accepted. The amount will update once the terminal applies the reset.",
+    "resetPositionsOpen": "Close your open positions first: a reset with them would leave a balance from one life of the account and positions from another.",
+    "resetNotDemo": "This is not a demo account — there is no starting amount to reset to.",
+    "resetRefused": "The terminal refused the reset. The reason is in the log.",
+    "resetUnavailable": "The terminal is unavailable, the reset was not sent. Try again later.",
+    "resetTooOften": "Too often. Wait a minute and press again.",
+    "resetNoSession": "Your session has expired — sign in again."
   },
   "dashboard": {
     "greeting": "Hello, {name}!",

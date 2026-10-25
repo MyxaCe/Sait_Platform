@@ -476,3 +476,82 @@ describe('шаг 2 · денежная тройка в проекции', () => 
     await expect(applyTerminalEvent(db, 'm4', ev, cfg)).rejects.toThrow(/называют одну сумму/);
   });
 });
+
+describe('WEB-42 · сброс порождает уведомление ИЗ СОБЫТИЯ', () => {
+  /*
+   * Человек замечал сброс только по изменившемуся числу. Сделка
+   * уведомление порождает, сброс — нет; непоследовательность тут
+   * дороже лишнего сообщения: получающий о сделке и не получающий о
+   * сбросе решит, что сброса не было.
+   *
+   * Рождается оно здесь, а не в кабинете, потому что здесь мы знаем,
+   * что сброс ПРИМЕНИЛСЯ. Кабинет в момент нажатия знает только, что
+   * команда принята.
+   */
+  function resetNotification(calls: { sql: string; params: unknown[] }[]) {
+    return calls.find((c) => c.sql.includes("'demoReset'"));
+  }
+
+  function balanceEvent(data: Record<string, unknown>) {
+    return parsed(envelope('terminal.balance.changed', { tenant: 'apex-ru', userId: 'u1', ...data }))!;
+  }
+
+  it('причина `reset` → уведомление есть', async () => {
+    const { db, calls } = fakeDb();
+
+    expect(
+      await applyTerminalEvent(db, 'r1', balanceEvent({ balanceCents: 1_000_000, reason: 'reset' }), cfg),
+    ).toBe('applied');
+    expect(resetNotification(calls)).toBeDefined();
+  });
+
+  it('и несёт сумму, которую применил ИСТОЧНИК', async () => {
+    // Не ту, которую кто-то собирался применить: прежде кабинет брал
+    // число из своей копии стартовой суммы и сообщал величину,
+    // которой не наблюдал.
+    const { db, calls } = fakeDb();
+    await applyTerminalEvent(db, 'r2', balanceEvent({ balanceCents: 777_000, reason: 'reset' }), cfg);
+
+    const params = resetNotification(calls)?.params[2] as string;
+    expect(JSON.parse(params)).toEqual({ balanceCents: 777_000 });
+  });
+
+  it('сумма берётся из ТРОЙКИ, когда она приехала', async () => {
+    const { db, calls } = fakeDb();
+    await applyTerminalEvent(
+      db,
+      'r3',
+      balanceEvent({
+        balanceCents: 880_000,
+        balanceMinor: 880_000,
+        currency: 'USD',
+        currencyMinorUnits: 2,
+        reason: 'reset',
+      }),
+      cfg,
+    );
+
+    const params = resetNotification(calls)?.params[2] as string;
+    expect(JSON.parse(params)).toEqual({ balanceCents: 880_000 });
+  });
+
+  it.each([['trade'], ['deposit'], ['adjustment']])(
+    'причина «%s» → уведомления НЕТ: о сделке оно уже есть, остальное было бы шумом',
+    async (reason) => {
+      const { db, calls } = fakeDb();
+      await applyTerminalEvent(db, `n-${reason}`, balanceEvent({ balanceCents: 1, reason }), cfg);
+
+      expect(resetNotification(calls)).toBeUndefined();
+    },
+  );
+
+  it('причины нет вовсе → уведомления нет', async () => {
+    // Отсутствие причины — не «сброс»: утверждать сброс по молчанию
+    // источника значило бы сообщить человеку о действии, которого
+    // никто не называл.
+    const { db, calls } = fakeDb();
+    await applyTerminalEvent(db, 'r5', balanceEvent({ balanceCents: 1 }), cfg);
+
+    expect(resetNotification(calls)).toBeUndefined();
+  });
+});
