@@ -1,6 +1,6 @@
 import * as Sentry from '@sentry/nextjs';
 import { scrubSentryEvent } from '@broker/api-client';
-import { envOr } from '@broker/utils';
+import { sentryEnvironment } from '@broker/utils';
 
 /**
  * Клиентский (браузерный) Sentry/GlitchTip — проект site-web (DSN /1).
@@ -12,7 +12,7 @@ const dsn = process.env.NEXT_PUBLIC_SENTRY_DSN;
 Sentry.init({
   dsn,
   enabled: Boolean(dsn),
-  environment: envOr(process.env.NEXT_PUBLIC_SENTRY_ENV, 'test'),
+  environment: sentryEnvironment(process.env.NEXT_PUBLIC_SENTRY_ENV),
   tracesSampleRate: 0,
   sendDefaultPii: false,
   beforeSend: (event) =>
