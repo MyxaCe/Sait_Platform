@@ -10,7 +10,7 @@ import { getPool } from './db';
 import { isRateLimited } from './rate-limit';
 import { hashPassword, verifyPassword } from './auth/password';
 import { registerUser } from './auth/register';
-import { resetDemoAccount } from './terminal/client';
+import { resetDemoAccount, type TerminalFailure } from './terminal/client';
 import { getTenantStartBalance } from './tenant';
 import {
   changePasswordSchema,
@@ -242,23 +242,59 @@ export async function uploadDocumentAction(_prev: ActionState, formData: FormDat
  * кнопка в `BalanceModule` задизейблена с подписью, но экшен
  * вызывается запросом, а не кнопкой.
  */
-export async function resetDemoAccountAction(): Promise<void> {
+/**
+ * Исход сброса — для ЧЕЛОВЕКА, а не только для лога (WEB-42).
+ *
+ * Прежде действие возвращало пустоту. Это значило, что нажатие не
+ * даёт отклика **вообще**: страница перерисовывается со старым
+ * числом (событие ещё не приехало), а отказ терминала уходит в
+ * `console.error`, то есть в серверный лог. Для человека успех и
+ * отказ выглядели одинаково — наш основной класс, в единственном
+ * месте, куда мы не смотрели: там, где нажимают кнопку.
+ *
+ * Оси те же, что у причин молчания инструментов: **не дошли** против
+ * **отказано по существу**. Схлопнутые, они отправляют чинить
+ * наугад — а здесь «чинит» сам человек, и `account_not_flat` он
+ * исправить может: закрыть позиции.
+ */
+export type DemoResetOutcome =
+  /** Ничего ещё не нажимали. */
+  | { state: 'idle' }
+  /** Терминал принял. **Не «сброшено»**: сумма приедет событием. */
+  | { state: 'accepted' }
+  /** Терминал отказал по существу. `null` — причина незнакомая. */
+  | { state: 'refused'; reason: 'not_a_demo_account' | 'account_not_flat' | null }
+  /** До терминала не дошли. */
+  | { state: 'unavailable'; reason: TerminalFailure }
+  /** Слишком часто. **Называется**, иначе человек жмёт в третью тишину. */
+  | { state: 'too-often' }
+  /** Сессии нет. */
+  | { state: 'no-session' };
+
+export async function resetDemoAccountAction(
+  /** Предыдущее состояние: его требует `useFormState`, нам оно не нужно. */
+  _previous: DemoResetOutcome,
+): Promise<DemoResetOutcome> {
   const user = await getSessionUser();
-  if (!user) return;
-  if (isRateLimited(`demo-reset:${user.id}`, 5, 60_000)) return;
+  if (!user) return { state: 'no-session' };
+  if (isRateLimited(`demo-reset:${user.id}`, 5, 60_000)) {
+    /*
+      Молчащее ограничение поверх молчащего отказа — худшее из
+      сочетаний: человек жмёт второй раз именно потому, что первый не
+      ответил, и получает за это третье молчание.
+    */
+    return { state: 'too-often' };
+  }
 
   const outcome = await resetDemoAccount(user.id);
 
   if (outcome.state === 'unavailable') {
-    // До терминала не дошли. Молчать нельзя: человек нажал и ждёт.
     console.error(`[demo-reset] терминал недоступен: ${outcome.reason}`, { userId: user.id });
-    return;
+    return { state: 'unavailable', reason: outcome.reason };
   }
   if (outcome.state === 'refused') {
-    // Отказ ПО СУЩЕСТВУ, названный терминалом: открытые позиции или не
-    // демо-счёт. Это другое, чем «не дозвонились», и чинится другим.
     console.error(`[demo-reset] терминал отказал: ${outcome.raw}`, { userId: user.id });
-    return;
+    return { state: 'refused', reason: outcome.reason };
   }
 
   /*
@@ -268,6 +304,7 @@ export async function resetDemoAccountAction(): Promise<void> {
     из события шины, когда сброс действительно применится.
   */
   revalidatePath('/', 'layout');
+  return { state: 'accepted' };
 }
 
 /* ------------------------------------------------------------------ */

@@ -1,7 +1,7 @@
 import { getFormatter, getTranslations } from 'next-intl/server';
 import { Button } from '@broker/ui';
 import type { CabinetHomeModule } from '@broker/api-client';
-import { resetDemoAccountAction } from '@/lib/actions';
+import { DemoResetForm } from './DemoResetForm';
 import type { DemoAccount } from '@/lib/data';
 import type { TenantStartBalance } from '@/lib/tenant';
 
@@ -75,11 +75,20 @@ export async function BalanceModule({
           написано рядом с кнопкой. */}
       {demo &&
         (startBalance.state === 'set' ? (
-          <form action={resetDemoAccountAction} className="mt-3">
-            <Button type="submit" size="sm" variant="ghost">
-              {t('btnResetDemo')}
-            </Button>
-          </form>
+          <DemoResetForm
+            label={t('btnResetDemo')}
+            /* Переводы передаются готовыми: клиентский компонент их не
+               ищет сам, как и остальные подписи дизайн-системы. */
+            texts={{
+              resetAccepted: t('resetAccepted'),
+              resetPositionsOpen: t('resetPositionsOpen'),
+              resetNotDemo: t('resetNotDemo'),
+              resetRefused: t('resetRefused'),
+              resetUnavailable: t('resetUnavailable'),
+              resetTooOften: t('resetTooOften'),
+              resetNoSession: t('resetNoSession'),
+            }}
+          />
         ) : (
           <div
             className="mt-3"
