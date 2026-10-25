@@ -1,6 +1,6 @@
 import * as Sentry from '@sentry/nextjs';
 import { scrubSentryEvent } from '@broker/api-client';
-import { envOr } from '@broker/utils';
+import { sentryEnvironment } from '@broker/utils';
 
 /**
  * Edge-рантайм (middleware) Sentry/GlitchTip — тот же проект site-bff.
@@ -10,7 +10,7 @@ const dsn = process.env.SENTRY_DSN;
 Sentry.init({
   dsn,
   enabled: Boolean(dsn),
-  environment: envOr(process.env.SENTRY_ENV, 'test'),
+  environment: sentryEnvironment(process.env.SENTRY_ENV),
   tracesSampleRate: 0,
   sendDefaultPii: false,
   beforeSend: (event) =>

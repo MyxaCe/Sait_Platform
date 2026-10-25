@@ -8,4 +8,4 @@ export {
   formatWeekday,
 } from './format';
 export { hexToRgbChannels } from './brand';
-export { readEnv, envOr } from './env';
+export { readEnv, envOr, sentryEnvironment, UNKNOWN_ENVIRONMENT } from './env';

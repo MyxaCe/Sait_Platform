@@ -4,7 +4,7 @@ import { randomUUID } from 'node:crypto';
 import * as Sentry from '@sentry/node';
 import { Pool } from 'pg';
 import { scrubSentryEvent } from '@broker/api-client';
-import { envOr, readEnv } from '@broker/utils';
+import { readEnv, sentryEnvironment } from '@broker/utils';
 import { assertSchemaCurrent } from '@broker/db';
 import { applyTerminalEvent, classifyMessage } from './projection.js';
 import { createSubscriber } from './subscriber.js';
@@ -15,7 +15,7 @@ const sentryDsn = readEnv(process.env.SENTRY_DSN);
 if (sentryDsn) {
   Sentry.init({
     dsn: sentryDsn,
-    environment: envOr(process.env.SENTRY_ENV, 'test'),
+    environment: sentryEnvironment(process.env.SENTRY_ENV),
     tracesSampleRate: 0,
     sendDefaultPii: false,
     beforeSend: (event) =>
