@@ -25,12 +25,37 @@ services:
       - '5432:5432'
     volumes:
       - db-data:/var/lib/postgresql/data
+      # Схемы здесь больше нет (WEB-31): она в `packages/db/migrations`
+      # и применяется шагом `migrate`. Монтирование оставлено, чтобы
+      # объяснение в `db/init/README.md` лежало там, куда придёт тот,
+      # кто станет искать схему. Postgres `.md` не исполняет.
       - ./db/init:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ['CMD-SHELL', 'pg_isready -U broker -d broker_site']
       interval: 5s
       timeout: 3s
       retries: 10
+
+  # Миграции схемы — ОТДЕЛЬНЫЙ шаг, а не часть старта приложения
+  # (WEB-31). Приложение, применяющее миграции само, становится вторым
+  # владельцем схемы: два экземпляра, поднявшиеся разом, правили бы её
+  # наперегонки. Здесь — одноразовая задача, которую запускают явно:
+  #   docker compose run --rm migrate
+  migrate:
+    profiles: [tools, full]
+    image: node:22-alpine
+    working_dir: /repo
+    volumes:
+      - .:/repo
+    environment:
+      DATABASE_URL: postgres://broker:broker_dev_password@db:5432/broker_site
+    command: >
+      sh -c "corepack enable && corepack prepare pnpm@9.15.0 --activate &&
+             pnpm install --frozen-lockfile --filter @broker/db... &&
+             pnpm --filter @broker/db migrate"
+    depends_on:
+      db:
+        condition: service_healthy
 
   web:
     profiles: [full]

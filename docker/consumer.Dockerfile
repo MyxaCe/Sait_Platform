@@ -21,11 +21,16 @@ COPY packages/utils/package.json packages/utils/
 # `pnpm install` не поставит зависимость, без исходников нечего
 # импортировать.
 COPY packages/tenant/package.json packages/tenant/
+# `@broker/db` — гейт схемы на старте (WEB-31). Вместе с манифестом
+# едут и миграции: образ, умеющий проверить схему, умеет и применить
+# её отдельным шагом выкатки.
+COPY packages/db/package.json packages/db/
 RUN pnpm install --frozen-lockfile --filter @broker/consumer...
 
 COPY packages/api-client packages/api-client
 COPY packages/config packages/config
 COPY packages/utils packages/utils
+COPY packages/db packages/db
 COPY packages/tenant packages/tenant
 COPY apps/consumer apps/consumer
 
