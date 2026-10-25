@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { FakeBroker } from './testing/fake-broker.js';
 
 /**
@@ -81,6 +81,26 @@ function attemptWrite(executed: Executed[]) {
   if (!update) return null;
   return { attempts: update.params[1], lastError: update.params[3] };
 }
+
+/**
+ * Прогрев графа модулей (WEB-33).
+ *
+ * Первый `await import(...)` в файле платит за превращение всего графа
+ * зависимостей; дальше работает кеш преобразования, и остальные
+ * импорты мгновенны. Внутри теста это время меряется **как работа
+ * кода**, и под параллельной нагрузкой упирается в предел в 5 с —
+ * краснеет первая по списку проверка безотносительно того, что она
+ * проверяет.
+ *
+ * Импорт в каждом тесте остаётся нарочным: он нужен чистому состоянию
+ * модуля после `vi.resetModules()` и подменам до загрузки. Сброс
+ * реестра модулей кеша преобразования не трогает — поэтому прогрев
+ * помогает, а свежесть состояния сохраняется.
+ */
+beforeAll(async () => {
+  await import('./outbox.js');
+  await import('./publisher.js');
+});
 
 beforeEach(() => {
   vi.resetModules();
