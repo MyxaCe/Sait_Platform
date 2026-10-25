@@ -3,6 +3,7 @@ import {
   parseTerminalEvent,
   TERMINAL_EVENT_SCHEMAS,
   type ParsedTerminalEvent,
+  moneyFromEvent,
 } from '@broker/api-client';
 
 /**
@@ -130,7 +131,19 @@ export async function applyTerminalEvent(
         `INSERT INTO demo_accounts (user_id, balance_cents, currency) VALUES ($1, $2, $3)
            ON CONFLICT (user_id) DO UPDATE SET balance_cents = EXCLUDED.balance_cents,
                                                currency = EXCLUDED.currency`,
-        [d.userId, d.balanceCents, d.currency],
+        // Тройка предпочитается старому полю (шаг 2). Разошлись —
+        // отказ, а не выбор молча: см. `moneyFromEvent`.
+        [
+          d.userId,
+          moneyFromEvent({
+            field: 'balance',
+            cents: d.balanceCents,
+            minor: d.balanceMinor,
+            currency: d.currency,
+            currencyMinorUnits: d.currencyMinorUnits,
+          })?.minor ?? d.balanceCents,
+          d.currency,
+        ],
       );
       break;
     }
@@ -154,7 +167,16 @@ export async function applyTerminalEvent(
        */
       const updated = await db.query(
         `UPDATE demo_accounts SET balance_cents = $1 WHERE user_id = $2`,
-        [d.balanceCents, d.userId],
+        [
+          moneyFromEvent({
+            field: 'balance',
+            cents: d.balanceCents,
+            minor: d.balanceMinor,
+            currency: d.currency,
+            currencyMinorUnits: d.currencyMinorUnits,
+          })?.minor ?? d.balanceCents,
+          d.userId,
+        ],
       );
       if ((updated.rowCount ?? 0) === 0) {
         throw new BalanceAccountMissingError(d.userId, eventId);
@@ -188,7 +210,14 @@ export async function applyTerminalEvent(
           d.side,
           d.volume,
           d.price,
-          d.realizedPnlCents ?? null,
+          // `null` здесь — «результата нет», а не «ноль заработано».
+          moneyFromEvent({
+            field: 'realizedPnl',
+            cents: d.realizedPnlCents,
+            minor: d.realizedPnlMinor,
+            currency: d.currency,
+            currencyMinorUnits: d.currencyMinorUnits,
+          })?.minor ?? null,
           d.executedAt,
         ],
       );

@@ -47,12 +47,28 @@ export const terminalAccountOpenedSchema = z.object({
   ...accountKey,
   currency: z.string().length(3),
   balanceCents: z.number().int().nonnegative(),
+  balanceMinor: z.number().int().nonnegative().optional(),
+  currencyMinorUnits: z.number().int().nonnegative().optional(),
 });
 
 /* terminal.balance.changed — новый реализованный баланс (+ снапшот позиций) */
 export const terminalBalanceChangedSchema = z.object({
   ...accountKey,
   balanceCents: z.number().int(),
+  /**
+   * Денежная тройка (шаг 2). **Пока необязательна** — старое поле ещё
+   * шлётся, и снимет его терминал только после нашего шага 3. Строгое
+   * поле сейчас уронило бы разбор событий, уже лежащих в очереди, и
+   * вместе с суммой потерялось бы всё событие.
+   *
+   * `currencyMinorUnits` — сколько младших единиц в одной основной.
+   * Для доллара два, для иены ноль, для динара три. Именно поэтому
+   * «центы» не универсальны: зашитая сотня врёт на обеих сторонах
+   * этого ряда.
+   */
+  balanceMinor: z.number().int().optional(),
+  currency: z.string().length(3).optional(),
+  currencyMinorUnits: z.number().int().nonnegative().optional(),
   reason: z.enum(['trade', 'deposit', 'reset', 'adjustment']).optional(),
   /** Полный снапшот открытых позиций на момент события (опционально) */
   positions: z.array(terminalPositionSchema).optional(),
@@ -89,6 +105,20 @@ export const terminalTradeExecutedSchema = z.object({
   price: z.number().nonnegative(),
   executedAt: isoDateTimeSchema,
   realizedPnlCents: z.number().int().optional(),
+  /**
+   * Денежная тройка (шаг 2). **Пока необязательна** — старое поле ещё
+   * шлётся, и снимет его терминал только после нашего шага 3. Строгое
+   * поле сейчас уронило бы разбор событий, уже лежащих в очереди, и
+   * вместе с суммой потерялось бы всё событие.
+   *
+   * `currencyMinorUnits` — сколько младших единиц в одной основной.
+   * Для доллара два, для иены ноль, для динара три. Именно поэтому
+   * «центы» не универсальны: зашитая сотня врёт на обеих сторонах
+   * этого ряда.
+   */
+  realizedPnlMinor: z.number().int().optional(),
+  currency: z.string().length(3).optional(),
+  currencyMinorUnits: z.number().int().nonnegative().optional(),
   /**
    * Уровень, который ставил человек — стоп, тейк или лимит (Р-193).
    *
