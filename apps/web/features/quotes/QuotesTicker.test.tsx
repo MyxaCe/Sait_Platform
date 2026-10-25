@@ -101,3 +101,79 @@ describe('QuotesTicker · цена, которой не было, не пока�
     expect(dash.getAttribute('title')).toBe('noData');
   });
 });
+
+describe('WEB-38 · молчащий инструмент называет себя', () => {
+  /*
+   * Обе стороны, как просил владелец: текст появляется при названной
+   * причине И не появляется, когда цена есть. Вторая половина здесь не
+   * формальность — объяснение, выскочившее там, где объяснять нечего,
+   * было бы таким же утверждением о незнаемом, как подставленное число.
+   */
+  const reasons = (r: string) => new Map<string, string | null>([['BTCUSD', r]]);
+
+  it('источник выключен → видно «пока не даём», а не просто прочерк', () => {
+    views.current = [{ quote: quote({ ts: 0 }), state: 'unavailable' }];
+
+    render(
+      <QuotesTicker
+        symbols={['BTCUSD']}
+        staleSymbols={new Set(['BTCUSD'])}
+        unavailableReasons={reasons('source-disabled')}
+      />,
+    );
+
+    // Видимой подписью, а не только тултипом: в самой ленте записано,
+    // что тултипа нет на сенсорных экранах.
+    expect(screen.getAllByText('shortLimited').length).toBeGreaterThan(0);
+  });
+
+  it('источник молчит → видно «цены нет»: это другое обещание', () => {
+    views.current = [{ quote: quote({ ts: 0 }), state: 'unavailable' }];
+
+    render(
+      <QuotesTicker
+        symbols={['BTCUSD']}
+        staleSymbols={new Set(['BTCUSD'])}
+        unavailableReasons={reasons('source-silent')}
+      />,
+    );
+
+    expect(screen.getAllByText('shortFault').length).toBeGreaterThan(0);
+    expect(screen.queryAllByText('shortLimited')).toEqual([]);
+  });
+
+  it('полная фраза доступна при наведении', () => {
+    views.current = [{ quote: quote({ ts: 0 }), state: 'unavailable' }];
+
+    render(
+      <QuotesTicker
+        symbols={['BTCUSD']}
+        staleSymbols={new Set(['BTCUSD'])}
+        unavailableReasons={reasons('source-disabled')}
+      />,
+    );
+
+    const [dash] = screen.getAllByText('—');
+    expect(dash?.getAttribute('title')).toBe('sourceDisabled');
+  });
+
+  it('ВТОРАЯ СТОРОНА: цена есть → никакого объяснения не появляется', () => {
+    views.current = [{ quote: quote(), state: 'live' }];
+
+    render(<QuotesTicker symbols={['BTCUSD']} />);
+
+    expect(screen.queryAllByText('shortLimited')).toEqual([]);
+    expect(screen.queryAllByText('shortFault')).toEqual([]);
+    expect(screen.queryAllByText('sourceDisabled')).toEqual([]);
+  });
+
+  it('цены нет, но причину источник не назвал → прежнее общее «нет данных»', () => {
+    // Не выдумываем объяснение там, где его нам не дали.
+    views.current = [{ quote: quote({ ts: 0 }), state: 'unavailable' }];
+
+    render(<QuotesTicker symbols={['BTCUSD']} />);
+
+    expect(screen.getAllByText('noData').length).toBeGreaterThan(0);
+    expect(screen.queryAllByText('shortLimited')).toEqual([]);
+  });
+});

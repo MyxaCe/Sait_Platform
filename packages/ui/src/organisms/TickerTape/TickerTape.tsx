@@ -31,6 +31,30 @@ export interface TickerItem {
   href?: string;
   /** Не задано → 'live' (обратная совместимость с существующими вызовами) */
   state?: QuoteDisplayState;
+  /**
+   * Локализованное объяснение, ПОЧЕМУ цены нет.
+   *
+   * Приходит готовой строкой: дизайн-система не знает ни переводов, ни
+   * машинных причин источника — ровно как с остальными подписями.
+   *
+   * Без неё молчащий инструмент выглядит сломанным, а не ограниченным:
+   * прочерк сам по себе ничего не объясняет, а рядом с соседними
+   * числами читается как «тут неизвестно, а там известно».
+   */
+  unavailableLabel?: string;
+  /**
+   * Короткая ВИДИМАЯ подпись вместо общего «нет данных».
+   *
+   * Полная фраза живёт в тултипе, но полагаться на него нельзя: в этом
+   * же файле строкой ниже записано, почему синтетические цены
+   * подписаны видимой полосой, а не наведением — **тултипа нет на
+   * сенсорных экранах**. Повторять здесь ту же ошибку, только текстом
+   * про недоступность, было бы странно.
+   *
+   * Поэтому различие «так устроено пока» против «у нас неполадка»
+   * видно без наведения; подробность — при наведении.
+   */
+  unavailableShort?: string;
 }
 
 export interface TickerTapeProps {
@@ -92,20 +116,26 @@ export function TickerTape({
           <span className="font-medium text-primary">{item.symbol}</span>
           {item.price === null ? (
             <>
-              <span className="tabular-nums text-secondary" title={noDataLabel}>
+              <span
+                className="tabular-nums text-secondary"
+                title={item.unavailableLabel ?? noDataLabel}
+              >
                 —
               </span>
               <span className="text-[11px] uppercase tracking-wide text-secondary">
-                {noDataLabel}
+                {item.unavailableShort ?? noDataLabel}
               </span>
             </>
           ) : (
             <>
-              <span className="tabular-nums text-secondary opacity-50" title={lastKnownLabel}>
+              <span
+                className="tabular-nums text-secondary opacity-50"
+                title={item.unavailableLabel ?? lastKnownLabel}
+              >
                 {item.price}
               </span>
               <span className="text-[11px] uppercase tracking-wide text-secondary">
-                {lastKnownLabel}
+                {item.unavailableShort ?? lastKnownLabel}
               </span>
             </>
           )}
