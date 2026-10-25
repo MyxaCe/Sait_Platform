@@ -103,7 +103,9 @@
     "marketsNoTabsText": "The Markets module is enabled, but all of its tabs are switched off in the site settings — there is nothing to show.",
     "marketsReason": "reason: {reason}",
     "resetUnsetNote": "Reset unavailable: the demo starting amount has not been set in the site settings.",
-    "resetUnavailableNote": "Reset unavailable: the site settings could not be retrieved."
+    "resetUnavailableNote": "Reset unavailable: the site settings could not be retrieved.",
+    "balanceNoAccount": "Account not opened yet",
+    "balanceNoAccountNote": "The demo account opens on your first visit to the terminal — the terminal creates it, not the site."
   },
   "dashboard": {
     "greeting": "Hello, {name}!",
