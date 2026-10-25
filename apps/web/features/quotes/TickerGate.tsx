@@ -77,7 +77,13 @@ export interface TickerGateProps {
  * значило бы отказать шире заданного вопроса.
  */
 interface QuotesAnswer {
-  unavailable: { symbol?: unknown }[];
+  /**
+   * `reason` — машинное имя из §4г, `rawReason` — имя, которого в
+   * контракте нет (WEB-26). Оба `unknown`, как и символ: это сырой
+   * ответ соседа, и доверять его форме здесь нельзя. Проверяются при
+   * раскладке в карту причин.
+   */
+  unavailable: { symbol?: unknown; reason?: unknown; rawReason?: unknown }[];
   missing: unknown[];
 }
 
@@ -148,16 +154,37 @@ export function TickerGate({
   if (decision.kind === 'ticker') {
     // `missing[]` входит наравне с `unavailable[]`: «источник не сказал о
     // символе ничего» — это тоже «цены нет».
-    const stale = new Set<string>([
-      ...gate.answers.quotes.unavailable
-        .map((u) => u.symbol)
-        .filter((s): s is string => typeof s === 'string' && s.length > 0),
-      ...gate.answers.quotes.missing.filter(
-        (s): s is string => typeof s === 'string' && s.length > 0,
-      ),
-    ]);
+    //
+    // Причина доезжает ВМЕСТЕ с символом (WEB-38). Прежде здесь
+    // строилось множество имён, и машинная причина, которую источник
+    // уже назвал, выбрасывалась — инструмент молчал, не умея сказать,
+    // почему. Карта и есть единственный список: множество для фильтра
+    // свежести выводится из её ключей, чтобы два списка не разошлись.
+    const reasons = new Map<string, string | null>();
+    for (const u of gate.answers.quotes.unavailable) {
+      if (typeof u.symbol === 'string' && u.symbol.length > 0) {
+        const named = typeof u.reason === 'string' ? u.reason : null;
+        const raw = typeof u.rawReason === 'string' ? u.rawReason : null;
+        reasons.set(u.symbol, named ?? raw);
+      }
+    }
+    for (const sym of gate.answers.quotes.missing) {
+      // «Источник не упомянул символ» — своя причина, не та же, что
+      // «источник молчит по нему»: для человека одинаково, для
+      // чинящего разные места.
+      if (typeof sym === 'string' && sym.length > 0 && !reasons.has(sym)) {
+        reasons.set(sym, 'missing');
+      }
+    }
+    const stale = new Set<string>(reasons.keys());
 
-    return <QuotesTicker symbols={decision.symbols} staleSymbols={stale} />;
+    return (
+      <QuotesTicker
+        symbols={decision.symbols}
+        staleSymbols={stale}
+        unavailableReasons={reasons}
+      />
+    );
   }
 
   // Какая из двух границ закрылась, видно по машинной причине: у

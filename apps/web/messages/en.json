@@ -64,37 +64,85 @@
       {
         "title": "Trading",
         "links": [
-          { "href": "/instruments", "label": "Trading Instruments" },
-          { "href": "/accounts", "label": "Account Types" },
-          { "href": "/education/faq", "label": "FAQ" },
-          { "href": "/promotions", "label": "Promotions & Bonuses" }
+          {
+            "href": "/instruments",
+            "label": "Trading Instruments"
+          },
+          {
+            "href": "/accounts",
+            "label": "Account Types"
+          },
+          {
+            "href": "/education/faq",
+            "label": "FAQ"
+          },
+          {
+            "href": "/promotions",
+            "label": "Promotions & Bonuses"
+          }
         ]
       },
       {
         "title": "Analytics",
         "links": [
-          { "href": "/analytics/news", "label": "Market News" },
-          { "href": "/analytics/calendar", "label": "Economic Calendar" },
-          { "href": "/education/articles", "label": "Education" },
-          { "href": "/blog", "label": "Blog" }
+          {
+            "href": "/analytics/news",
+            "label": "Market News"
+          },
+          {
+            "href": "/analytics/calendar",
+            "label": "Economic Calendar"
+          },
+          {
+            "href": "/education/articles",
+            "label": "Education"
+          },
+          {
+            "href": "/blog",
+            "label": "Blog"
+          }
         ]
       },
       {
         "title": "Company",
         "links": [
-          { "href": "/about", "label": "About Us" },
-          { "href": "/partners", "label": "Partners" },
-          { "href": "/company/careers", "label": "Careers" },
-          { "href": "/company/contacts", "label": "Contacts" }
+          {
+            "href": "/about",
+            "label": "About Us"
+          },
+          {
+            "href": "/partners",
+            "label": "Partners"
+          },
+          {
+            "href": "/company/careers",
+            "label": "Careers"
+          },
+          {
+            "href": "/company/contacts",
+            "label": "Contacts"
+          }
         ]
       },
       {
         "title": "Legal",
         "links": [
-          { "href": "/legal/privacy", "label": "Privacy Policy" },
-          { "href": "/legal/terms", "label": "Terms of Use" },
-          { "href": "/legal/risk-disclosure", "label": "Risk Disclosure" },
-          { "href": "/status", "label": "Service Status" }
+          {
+            "href": "/legal/privacy",
+            "label": "Privacy Policy"
+          },
+          {
+            "href": "/legal/terms",
+            "label": "Terms of Use"
+          },
+          {
+            "href": "/legal/risk-disclosure",
+            "label": "Risk Disclosure"
+          },
+          {
+            "href": "/status",
+            "label": "Service Status"
+          }
         ]
       }
     ],
@@ -116,12 +164,30 @@
       "title": "Why traders choose us",
       "subtitle": "Institutional-grade infrastructure, accessible to everyone.",
       "items": [
-        { "title": "Lightning-fast execution", "text": "Average order execution of 14 ms. Servers in LD4, NY4 and TY3, right next to liquidity providers." },
-        { "title": "Fair spreads", "text": "From 0.0 pips on ECN accounts. No hidden fees, no requotes — the math is fully transparent." },
-        { "title": "Security and regulation", "text": "Licenses from leading regulators, segregated client accounts and negative balance protection." },
-        { "title": "12,000+ instruments", "text": "Forex, stock CFDs, crypto, indices, metals and energies — all in one terminal." },
-        { "title": "24/7 support", "text": "Real specialists in 14 languages. Average chat response time — 40 seconds." },
-        { "title": "Instant withdrawals", "text": "92% of withdrawal requests are processed automatically within minutes." }
+        {
+          "title": "Lightning-fast execution",
+          "text": "Average order execution of 14 ms. Servers in LD4, NY4 and TY3, right next to liquidity providers."
+        },
+        {
+          "title": "Fair spreads",
+          "text": "From 0.0 pips on ECN accounts. No hidden fees, no requotes — the math is fully transparent."
+        },
+        {
+          "title": "Security and regulation",
+          "text": "Licenses from leading regulators, segregated client accounts and negative balance protection."
+        },
+        {
+          "title": "12,000+ instruments",
+          "text": "Forex, stock CFDs, crypto, indices, metals and energies — all in one terminal."
+        },
+        {
+          "title": "24/7 support",
+          "text": "Real specialists in 14 languages. Average chat response time — 40 seconds."
+        },
+        {
+          "title": "Instant withdrawals",
+          "text": "92% of withdrawal requests are processed automatically within minutes."
+        }
       ]
     },
     "download": {
@@ -297,9 +363,18 @@
     "registerTitleShort": "Open an Account",
     "registerSubtitle": "Join 1.2 million traders who already trade with us.",
     "steps": [
-      { "title": "Application", "text": "2 minutes for the form — no documents at this step" },
-      { "title": "Verification", "text": "Confirm your email and upload a document in the dashboard" },
-      { "title": "Trading", "text": "Fund your account and open your first trade" }
+      {
+        "title": "Application",
+        "text": "2 minutes for the form — no documents at this step"
+      },
+      {
+        "title": "Verification",
+        "text": "Confirm your email and upload a document in the dashboard"
+      },
+      {
+        "title": "Trading",
+        "text": "Fund your account and open your first trade"
+      }
     ],
     "trust": "Client funds are held in segregated accounts with Tier-1 banks and are never used in the company's operating activities."
   },
@@ -312,23 +387,57 @@
     "country": "Country of residence",
     "countryPlaceholder": "Select your country",
     "accountType": "Account type",
-    "accountHints": { "standard": "Deposit from $100", "pro": "Deposit from $1,000", "ecn": "Deposit from $5,000" },
+    "accountHints": {
+      "standard": "Deposit from $100",
+      "pro": "Deposit from $1,000",
+      "ecn": "Deposit from $5,000"
+    },
     "agree": "I accept the <terms>terms of use</terms> and the <risk>risk disclosure</risk>, and confirm that I am 18 years of age or older.",
     "submit": "Open Account",
     "successTitle": "Application received",
     "successText": "We've sent an email to {email}. Confirm your address to continue opening your account in the client area.",
     "haveAccount": "Already have an account?",
     "countries": [
-      { "code": "RU", "label": "Russia" },
-      { "code": "KZ", "label": "Kazakhstan" },
-      { "code": "BY", "label": "Belarus" },
-      { "code": "UZ", "label": "Uzbekistan" },
-      { "code": "AZ", "label": "Azerbaijan" },
-      { "code": "AM", "label": "Armenia" },
-      { "code": "GE", "label": "Georgia" },
-      { "code": "TR", "label": "Türkiye" },
-      { "code": "AE", "label": "UAE" },
-      { "code": "OTHER", "label": "Other country" }
+      {
+        "code": "RU",
+        "label": "Russia"
+      },
+      {
+        "code": "KZ",
+        "label": "Kazakhstan"
+      },
+      {
+        "code": "BY",
+        "label": "Belarus"
+      },
+      {
+        "code": "UZ",
+        "label": "Uzbekistan"
+      },
+      {
+        "code": "AZ",
+        "label": "Azerbaijan"
+      },
+      {
+        "code": "AM",
+        "label": "Armenia"
+      },
+      {
+        "code": "GE",
+        "label": "Georgia"
+      },
+      {
+        "code": "TR",
+        "label": "Türkiye"
+      },
+      {
+        "code": "AE",
+        "label": "UAE"
+      },
+      {
+        "code": "OTHER",
+        "label": "Other country"
+      }
     ]
   },
   "contacts": {
@@ -337,27 +446,63 @@
     "title": "Contacts & Support",
     "subtitle": "Support in 14 languages, 24/7. Pick a convenient channel or write to us using the form.",
     "channels": [
-      { "title": "Live chat", "value": "Reply within 40 seconds", "detail": "Around the clock, no days off — the chat button is in the bottom-right corner of the dashboard" },
-      { "title": "Email", "value": "support@apexcapital.example", "detail": "Reply within one business day" },
-      { "title": "Phone", "value": "+357 25 000 000", "detail": "Mon–Fri, 8:00–20:00 (UTC+2), toll-free" }
+      {
+        "title": "Live chat",
+        "value": "Reply within 40 seconds",
+        "detail": "Around the clock, no days off — the chat button is in the bottom-right corner of the dashboard"
+      },
+      {
+        "title": "Email",
+        "value": "support@apexcapital.example",
+        "detail": "Reply within one business day"
+      },
+      {
+        "title": "Phone",
+        "value": "+357 25 000 000",
+        "detail": "Mon–Fri, 8:00–20:00 (UTC+2), toll-free"
+      }
     ],
     "writeUs": "Write to us",
     "writeUsText": "We'll reply by email within one business day.",
     "offices": "Offices",
     "officesList": [
-      { "city": "Limassol", "country": "Cyprus · Headquarters", "address": "Arch. Makariou III Ave 155, 3026" },
-      { "city": "Dubai", "country": "UAE", "address": "Business Bay, Bay Square 12, office 404" },
-      { "city": "Almaty", "country": "Kazakhstan", "address": "77/7 Al-Farabi Ave, Esentai Tower, 12th floor" }
+      {
+        "city": "Limassol",
+        "country": "Cyprus · Headquarters",
+        "address": "Arch. Makariou III Ave 155, 3026"
+      },
+      {
+        "city": "Dubai",
+        "country": "UAE",
+        "address": "Business Bay, Bay Square 12, office 404"
+      },
+      {
+        "city": "Almaty",
+        "country": "Kazakhstan",
+        "address": "77/7 Al-Farabi Ave, Esentai Tower, 12th floor"
+      }
     ],
     "form": {
       "name": "Name",
       "email": "Email",
       "topic": "Topic",
       "topics": [
-        { "value": "general", "label": "General question" },
-        { "value": "account", "label": "Account & verification" },
-        { "value": "payments", "label": "Deposits & withdrawals" },
-        { "value": "partnership", "label": "Partnership" }
+        {
+          "value": "general",
+          "label": "General question"
+        },
+        {
+          "value": "account",
+          "label": "Account & verification"
+        },
+        {
+          "value": "payments",
+          "label": "Deposits & withdrawals"
+        },
+        {
+          "value": "partnership",
+          "label": "Partnership"
+        }
       ],
       "message": "Message",
       "messagePlaceholder": "Describe your question…",
@@ -381,26 +526,65 @@
     "statsCountries": "Countries served",
     "historyTitle": "Company history",
     "timeline": [
-      { "year": "2009", "text": "Company founded. First 1,000 clients and a CySEC license." },
-      { "year": "2013", "text": "ECN execution launched with direct agreements with Tier-1 liquidity providers." },
-      { "year": "2017", "text": "Offices opened in Dubai and Almaty. 100,000 active traders." },
-      { "year": "2021", "text": "Proprietary trading infrastructure: servers in LD4, NY4 and TY3, execution from 14 ms." },
-      { "year": "2024", "text": "One million active clients. Crypto trading and swap-free accounts launched." },
-      { "year": "2026", "text": "A new ecosystem: web platform, mobile PWA app and a unified client area." }
+      {
+        "year": "2009",
+        "text": "Company founded. First 1,000 clients and a CySEC license."
+      },
+      {
+        "year": "2013",
+        "text": "ECN execution launched with direct agreements with Tier-1 liquidity providers."
+      },
+      {
+        "year": "2017",
+        "text": "Offices opened in Dubai and Almaty. 100,000 active traders."
+      },
+      {
+        "year": "2021",
+        "text": "Proprietary trading infrastructure: servers in LD4, NY4 and TY3, execution from 14 ms."
+      },
+      {
+        "year": "2024",
+        "text": "One million active clients. Crypto trading and swap-free accounts launched."
+      },
+      {
+        "year": "2026",
+        "text": "A new ecosystem: web platform, mobile PWA app and a unified client area."
+      }
     ],
     "valuesTitle": "Our principles",
     "values": [
-      { "title": "Transparency", "text": "We publish average execution times, slippage and withdrawal statistics. No hidden fees." },
-      { "title": "Reliability", "text": "Segregated accounts with Tier-1 banks, negative balance protection, regular external audits." },
-      { "title": "Technology", "text": "Proprietary infrastructure next to liquidity venues and a team of 120 engineers." }
+      {
+        "title": "Transparency",
+        "text": "We publish average execution times, slippage and withdrawal statistics. No hidden fees."
+      },
+      {
+        "title": "Reliability",
+        "text": "Segregated accounts with Tier-1 banks, negative balance protection, regular external audits."
+      },
+      {
+        "title": "Technology",
+        "text": "Proprietary infrastructure next to liquidity venues and a team of 120 engineers."
+      }
     ],
     "licensesTitle": "Licenses & regulation",
     "licensesText": "The company is regulated in several jurisdictions. Client funds are held in segregated accounts and never take part in operating activities — a requirement of every one of our regulators.",
     "riskCta": "Risk Disclosure",
     "licenses": [
-      { "authority": "CySEC", "region": "European Union", "number": "No. 000/09" },
-      { "authority": "FSCA", "region": "South Africa", "number": "No. 00000" },
-      { "authority": "FSA", "region": "Seychelles", "number": "SD000" }
+      {
+        "authority": "CySEC",
+        "region": "European Union",
+        "number": "No. 000/09"
+      },
+      {
+        "authority": "FSCA",
+        "region": "South Africa",
+        "number": "No. 00000"
+      },
+      {
+        "authority": "FSA",
+        "region": "Seychelles",
+        "number": "SD000"
+      }
     ]
   },
   "partners": {
@@ -436,15 +620,37 @@
     "tierMax": "Maximum",
     "fromSpread": "of the spread",
     "tiers": [
-      { "name": "Bronze", "clients": "up to 20 active clients", "share": "25%" },
-      { "name": "Silver", "clients": "20–100 active clients", "share": "30%" },
-      { "name": "Gold", "clients": "100+ active clients", "share": "40%", "featured": true }
+      {
+        "name": "Bronze",
+        "clients": "up to 20 active clients",
+        "share": "25%"
+      },
+      {
+        "name": "Silver",
+        "clients": "20–100 active clients",
+        "share": "30%"
+      },
+      {
+        "name": "Gold",
+        "clients": "100+ active clients",
+        "share": "40%",
+        "featured": true
+      }
     ],
     "howTitle": "How to start",
     "steps": [
-      { "title": "Application", "text": "Fill in the form — a manager will contact you within one business day" },
-      { "title": "Tools", "text": "Get links, promo materials and access to the partner dashboard" },
-      { "title": "Income", "text": "Refer clients and receive payouts every day" }
+      {
+        "title": "Application",
+        "text": "Fill in the form — a manager will contact you within one business day"
+      },
+      {
+        "title": "Tools",
+        "text": "Get links, promo materials and access to the partner dashboard"
+      },
+      {
+        "title": "Income",
+        "text": "Refer clients and receive payouts every day"
+      }
     ],
     "ctaTitle": "Ready to become a partner?",
     "ctaText": "Send a request with the “Partnership” topic — a manager will prepare personal terms and estimate your potential income.",
@@ -498,7 +704,11 @@
     "title": "Blog & Press Center",
     "subtitle": "What's new in the product, the company and the industry — first-hand.",
     "backAll": "← All posts",
-    "categoryLabels": { "company": "Company", "product": "Product", "events": "Events" }
+    "categoryLabels": {
+      "company": "Company",
+      "product": "Product",
+      "events": "Events"
+    }
   },
   "careers": {
     "metaTitle": "Careers",
@@ -507,18 +717,55 @@
     "title": "Build the fintech of the future with us",
     "subtitle": "We build infrastructure that moves billions of dollars a day. We're looking for people who care about speed, reliability and an honest product.",
     "benefits": [
-      { "title": "Flexible format", "text": "Office, hybrid or fully remote — your choice" },
-      { "title": "FinTech scale", "text": "Problems at the intersection of finance and high load: millions of quotes per second" },
-      { "title": "Growth", "text": "Budget for training and conferences, internal market courses" },
-      { "title": "Care", "text": "Health insurance incl. dental, sports, 5 weeks of vacation" }
+      {
+        "title": "Flexible format",
+        "text": "Office, hybrid or fully remote — your choice"
+      },
+      {
+        "title": "FinTech scale",
+        "text": "Problems at the intersection of finance and high load: millions of quotes per second"
+      },
+      {
+        "title": "Growth",
+        "text": "Budget for training and conferences, internal market courses"
+      },
+      {
+        "title": "Care",
+        "text": "Health insurance incl. dental, sports, 5 weeks of vacation"
+      }
     ],
     "vacanciesTitle": "Open positions",
     "vacancies": [
-      { "title": "Senior Frontend Developer (React/Next.js)", "department": "Engineering", "location": "Remote / Limassol", "type": "Full-time" },
-      { "title": "Backend Developer (Go, liquidity & execution)", "department": "Engineering", "location": "Limassol", "type": "Full-time" },
-      { "title": "DevOps / SRE (trading infrastructure)", "department": "Infrastructure", "location": "Remote", "type": "Full-time" },
-      { "title": "Financial Analyst (FX markets)", "department": "Research", "location": "Almaty / remote", "type": "Full-time" },
-      { "title": "Support Specialist (Russian + English)", "department": "Client Service", "location": "Remote", "type": "2/2 shift schedule" }
+      {
+        "title": "Senior Frontend Developer (React/Next.js)",
+        "department": "Engineering",
+        "location": "Remote / Limassol",
+        "type": "Full-time"
+      },
+      {
+        "title": "Backend Developer (Go, liquidity & execution)",
+        "department": "Engineering",
+        "location": "Limassol",
+        "type": "Full-time"
+      },
+      {
+        "title": "DevOps / SRE (trading infrastructure)",
+        "department": "Infrastructure",
+        "location": "Remote",
+        "type": "Full-time"
+      },
+      {
+        "title": "Financial Analyst (FX markets)",
+        "department": "Research",
+        "location": "Almaty / remote",
+        "type": "Full-time"
+      },
+      {
+        "title": "Support Specialist (Russian + English)",
+        "department": "Client Service",
+        "location": "Remote",
+        "type": "2/2 shift schedule"
+      }
     ],
     "apply": "Apply →",
     "applySubject": "Application: {title}",
@@ -545,10 +792,26 @@
     "wsName": "Quotes (WebSocket)",
     "wsDescription": "Real-time price stream — the status of your connection",
     "services": [
-      { "name": "Website & registration", "description": "Marketing site, application forms", "uptime": "99.99%" },
-      { "name": "Trading API", "description": "Order execution, trading operations", "uptime": "99.97%" },
-      { "name": "Client area", "description": "Authentication, profile, documents", "uptime": "99.95%" },
-      { "name": "Payment gateway", "description": "Deposits and withdrawals", "uptime": "99.92%" }
+      {
+        "name": "Website & registration",
+        "description": "Marketing site, application forms",
+        "uptime": "99.99%"
+      },
+      {
+        "name": "Trading API",
+        "description": "Order execution, trading operations",
+        "uptime": "99.97%"
+      },
+      {
+        "name": "Client area",
+        "description": "Authentication, profile, documents",
+        "uptime": "99.95%"
+      },
+      {
+        "name": "Payment gateway",
+        "description": "Deposits and withdrawals",
+        "uptime": "99.92%"
+      }
     ],
     "incidentsTitle": "Incident history",
     "incidents": [
@@ -571,5 +834,18 @@
     "title": "No internet connection",
     "text": "Looks like you're offline. Quotes and news need a connection — check your network and try again.",
     "retry": "Try again"
+  },
+  "instrumentUnavailable": {
+    "sourceDisabled": "The price source for this instrument is switched off",
+    "noSource": "No price source is assigned to this instrument",
+    "notInCatalog": "This instrument is not carried by our price source",
+    "sourceSilent": "The source is connected but sends no price for this instrument",
+    "stale": "The last price is older than allowed — showing it as current would be wrong",
+    "registryUnreadable": "The instrument registry could not be read",
+    "thresholdUnset": "No freshness threshold is set — the age of the price cannot be judged",
+    "notMentioned": "The source said nothing about this instrument",
+    "technical": "The instrument is unavailable for a technical reason",
+    "shortLimited": "not offered yet",
+    "shortFault": "no price"
   }
 }
