@@ -1,5 +1,6 @@
 import path from 'node:path';
 import { defineConfig } from 'vitest/config';
+import { poolOptions } from '@broker/config/vitest-pool.js';
 
 /**
  * Зеркало `apps/web/vitest.config.ts`. Нужен ради алиаса `@` — без него
@@ -13,6 +14,8 @@ export default defineConfig({
     },
   },
   test: {
+    // Ограничение пула — общее для всех пакетов (WEB-37).
+    poolOptions,
     environment: 'node',
     // `app/**` — ради CAB-02: барьеры выпуска SSO-токена (живая сессия,
     // rate limit, ненастроенность) стоят в ручке, а не в `lib`. Пока

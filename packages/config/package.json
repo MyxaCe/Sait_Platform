@@ -5,7 +5,8 @@
   "main": "index.js",
   "files": [
     "tsconfig",
-    "tailwind-preset.js"
+    "tailwind-preset.js",
+    "vitest-pool.js"
   ],
   "devDependencies": {
     "tailwindcss": "^3.4.7"
