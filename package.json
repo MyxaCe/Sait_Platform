@@ -8,6 +8,7 @@
   "scripts": {
     "dev": "turbo dev",
     "build": "turbo build",
+    "verify": "turbo run typecheck && turbo run test && turbo run build && turbo run lint",
     "lint": "turbo lint",
     "typecheck": "turbo typecheck",
     "test": "turbo test",
