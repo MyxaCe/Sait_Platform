@@ -396,3 +396,83 @@ describe('WEB-20 · уровень и разрыв доезжают в увед�
     expect(params.acrossGap).toBe(false);
   });
 });
+
+describe('шаг 2 · денежная тройка в проекции', () => {
+  /*
+   * **Чего здесь доказать НЕЛЬЗЯ, и это выяснилось мутацией.**
+   *
+   * Сперва тут стояли проверки «в счёт едет значение тройки». Мутация
+   * «проекция снова пишет старое поле напрямую» покрасила из них одну —
+   * ту, что про расхождение. Остальные остались зелёными, и правильно:
+   * пока валюта одна, старое и новое поле ОБЯЗАНЫ совпадать, а значит
+   * по записанному значению отличить «читаем тройку» от «читаем центы»
+   * невозможно в принципе.
+   *
+   * Те проверки были пусты. Они бы прошли и без шага 2 вовсе.
+   *
+   * **Отсюда следствие, ради которого терминал и завёл свой сторож:**
+   * на шаге 2 единственное наблюдаемое доказательство, что новое поле
+   * вообще читают, — это отказ при расхождении. Ловушка «числа
+   * совпадают, значит шаги лишние» превращена в единственный
+   * оставшийся наблюдатель.
+   *
+   * Поэтому ниже: один тест на то, что тройка не ломает разбор, и один
+   * на сторож. Третьего honest-теста на этом шаге не существует; он
+   * появится на шаге 3, когда старое поле снимут и подмена станет
+   * видимой как `undefined` в счёте.
+   */
+  function balanceWritten(calls: { sql: string; params: unknown[] }[]): unknown {
+    const call = calls.find((c) => c.sql.includes('UPDATE demo_accounts SET balance_cents'));
+    if (!call) throw new Error('проекция не трогала баланс');
+    return call.params[0];
+  }
+
+  it('событие с тройкой разбирается и применяется', async () => {
+    const { db, calls } = fakeDb();
+    const ev = parsed(
+      envelope('terminal.balance.changed', {
+        tenant: 'apex-ru',
+        userId: 'u1',
+        balanceCents: 880000,
+        balanceMinor: 880000,
+        currency: 'USD',
+        currencyMinorUnits: 2,
+      }),
+    )!;
+
+    expect(await applyTerminalEvent(db, 'm1', ev, cfg)).toBe('applied');
+    expect(balanceWritten(calls)).toBe(880000);
+  });
+
+  it('тройки нет — старое поле ещё работает, событие не теряется', async () => {
+    const { db, calls } = fakeDb();
+    const ev = parsed(
+      envelope('terminal.balance.changed', {
+        tenant: 'apex-ru',
+        userId: 'u1',
+        balanceCents: 770000,
+      }),
+    )!;
+
+    expect(await applyTerminalEvent(db, 'm3', ev, cfg)).toBe('applied');
+    expect(balanceWritten(calls)).toBe(770000);
+  });
+
+  it('ЕДИНСТВЕННЫЙ наблюдатель: расхождение — отказ, а не выбор молча', async () => {
+    // Откат транзакции уносит заявку на дедуп, событие уходит в DLX и
+    // при повторной доставке уже не гасится.
+    const { db } = fakeDb();
+    const ev = parsed(
+      envelope('terminal.balance.changed', {
+        tenant: 'apex-ru',
+        userId: 'u1',
+        balanceCents: 880000,
+        balanceMinor: 123,
+        currency: 'USD',
+        currencyMinorUnits: 2,
+      }),
+    )!;
+
+    await expect(applyTerminalEvent(db, 'm4', ev, cfg)).rejects.toThrow(/называют одну сумму/);
+  });
+});
