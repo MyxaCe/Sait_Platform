@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { requireOrSkip } from './support/gates';
 
 /**
  * Живой e2e кабинета (ADR-022). Гоняется против ОТДЕЛЬНО запущенного
@@ -8,7 +9,12 @@ import { expect, test } from '@playwright/test';
 const CABINET = process.env.CABINET_URL;
 
 test.describe('Личный кабинет', () => {
-  test.skip(!CABINET, 'CABINET_URL не задан — кабинет не запущен');
+  requireOrSkip({
+    gated: !CABINET,
+    required: 'CABINET_E2E_REQUIRED',
+    what: 'сквозной сценарий кабинета',
+    missing: 'CABINET_URL не задан — кабинет не запущен',
+  });
 
   const email = `e2e-${Date.now()}@example.com`;
   const password = 'secret1234!';

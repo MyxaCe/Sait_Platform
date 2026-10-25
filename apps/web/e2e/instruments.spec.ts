@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { requireOrSkip, skipAsOtherScenario } from './support/gates';
 
 /**
  * Граница доступа витрины к инструментам (ADR-028) после решения Р-025 —
@@ -17,7 +18,7 @@ import { expect, test } from '@playwright/test';
  */
 
 test.describe('Граница закрыта (CI: сайт без CMS)', () => {
-  test.skip(Boolean(process.env.CMS_E2E), 'Контур с живой CMS — другой сценарий');
+  skipAsOtherScenario(Boolean(process.env.CMS_E2E), 'контур с живой CMS проверяется ниже');
 
   test('страница инструментов объясняет, почему списка нет, а не молчит', async ({ page }) => {
     await page.goto('/instruments');
@@ -65,7 +66,12 @@ test.describe('Граница закрыта (CI: сайт без CMS)', () => {
 });
 
 test.describe('Граница открыта (живая CMS с непустым списком)', () => {
-  test.skip(!process.env.CMS_E2E, 'CMS_E2E не задан: списка инструментов на контуре нет');
+  requireOrSkip({
+    gated: !process.env.CMS_E2E,
+    required: 'CMS_E2E_REQUIRED',
+    what: 'браузер инструментов с непустым списком',
+    missing: 'CMS_E2E не задан: живой CMS с посаженным тенантом нет',
+  });
 
   test('каталог: поиск фильтрует инструменты', async ({ page }) => {
     await page.goto('/instruments');

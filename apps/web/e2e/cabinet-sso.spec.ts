@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { requireOrSkip } from './support/gates';
 
 /**
  * Сквозной SSO-handoff в терминал (ADR-023, совместный прогон):
@@ -43,19 +44,19 @@ const GATED = !CABINET || !TERMINAL;
  * переменной, которую ставит тот, кто поднял обе стороны. Обычный
  * прогон этот файл вообще не берёт (`testIgnore` в общем конфиге).
  */
-const MUST_RUN = process.env.SSO_E2E_REQUIRED === '1';
-
 test.describe('SSO: кабинет → терминал', () => {
-  test.beforeAll(() => {
-    if (GATED && MUST_RUN) {
-      throw new Error(
-        'SSO_E2E_REQUIRED=1, но CABINET_URL/TERMINAL_URL не заданы: сквозной вход ' +
-          'НЕ ПРОВЕРЕН. Пропуск здесь неотличим от успеха, поэтому это отказ, а не skip.',
-      );
-    }
+  /*
+    Уклад вынесен в `support/gates` и распространён на остальные
+    гейтованные сценарии (WEB-30). Здесь он появился первым — и
+    остался бы вторым источником, если бы я расширил правило, не
+    тронув образец, с которого его списал.
+  */
+  requireOrSkip({
+    gated: GATED,
+    required: 'SSO_E2E_REQUIRED',
+    what: 'сквозной вход',
+    missing: 'CABINET_URL/TERMINAL_URL не заданы',
   });
-
-  test.skip(GATED && !MUST_RUN, 'CABINET_URL/TERMINAL_URL не заданы — совместный прогон не идёт');
 
   test('handoff-токен превращается в сессию терминала', async ({ page }) => {
     // --- Ступень 1: регистрация --------------------------------------
