@@ -41,6 +41,8 @@ const good: Quote = {
   price: 1.0842,
   digits: 5,
   changePercent: 0.12,
+  bid: null,
+  ask: null,
   ts: 1_700_000_000_000,
 };
 
@@ -98,18 +100,18 @@ describe('WEB-35 · сокетный драйвер', () => {
   it('незнакомое поле проходит насквозь и попадает в лог, а не в отказ', () => {
     const { batches, send } = connect();
 
-    send([{ ...good, bid: 1.084 }]);
+    send([{ ...good, bidSize: 12 }]);
 
     expect(batches).toEqual([[good]]);
-    expect(console.warn).toHaveBeenCalledWith(expect.stringContaining('field:bid'));
+    expect(console.warn).toHaveBeenCalledWith(expect.stringContaining('field:bidSize'));
   });
 
   it('об одном и том же сообщают один раз, а не четыре раза в секунду', () => {
     const { send } = connect();
 
-    send([{ ...good, bid: 1 }]);
-    send([{ ...good, bid: 2 }]);
-    send([{ ...good, bid: 3 }]);
+    send([{ ...good, bidSize: 1 }]);
+    send([{ ...good, bidSize: 2 }]);
+    send([{ ...good, bidSize: 3 }]);
 
     // Шум отключают — и вместе с ним находку.
     expect(vi.mocked(console.warn).mock.calls).toHaveLength(1);

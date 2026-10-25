@@ -18,6 +18,8 @@ const good = {
   price: 1.0842,
   digits: 5,
   changePercent: 0.12,
+  bid: 1.0841,
+  ask: 1.0843,
   ts: 1_700_000_000_000,
 };
 
@@ -30,18 +32,25 @@ describe('WEB-35 · законное проходит', () => {
     expect(novelties).toEqual([]);
   });
 
+  /*
+    Образцом незнакомого поля здесь были `bid` и `ask` — ровно до
+    WEB-36, когда их завели в модель. Замена на объёмы сторон не
+    косметическая: она показывает, что механизм сработал по
+    назначению — новость перестала быть новостью, став читаемым
+    полем. Следующий кандидат от биржи как раз они.
+  */
   it('незнакомое поле НЕ отказ — котировка проходит целиком', () => {
-    const { quotes, rejected } = parseQuoteBatch([{ ...good, bid: 1.084, ask: 1.0844 }]);
+    const { quotes, rejected } = parseQuoteBatch([{ ...good, bidSize: 12, askSize: 8 }]);
 
     expect(quotes).toEqual([good]);
     expect(rejected).toEqual([]);
   });
 
   it('но незнакомое поле названо вслух — иначе оно потерялось бы молча', () => {
-    const { novelties } = parseQuoteBatch([{ ...good, bid: 1.084, ask: 1.0844 }]);
+    const { novelties } = parseQuoteBatch([{ ...good, bidSize: 12, askSize: 8 }]);
 
     // Ровно то третье следствие, ради которого задача и заведена.
-    expect(novelties).toEqual(['field:bid', 'field:ask']);
+    expect(novelties).toEqual(['field:bidSize', 'field:askSize']);
   });
 
   it('`source` новостью не считается: про него мы знаем и решение записано', () => {
@@ -66,11 +75,11 @@ describe('WEB-35 · законное проходит', () => {
 
   it('новость называется один раз на батч, а не по разу на котировку', () => {
     const { novelties } = parseQuoteBatch([
-      { ...good, bid: 1 },
-      { ...good, symbol: 'GBPUSD', bid: 2 },
+      { ...good, bidSize: 1 },
+      { ...good, symbol: 'GBPUSD', bidSize: 2 },
     ]);
 
-    expect(novelties).toEqual(['field:bid']);
+    expect(novelties).toEqual(['field:bidSize']);
   });
 });
 
@@ -169,5 +178,65 @@ describe('WEB-35 · изменение в процентах — единств�
     expect(rejected).toEqual([
       { symbol: 'EURUSD', field: 'changePercent', reason: 'wrong-type' },
     ]);
+  });
+});
+
+describe('WEB-36 · цены покупки и продажи', () => {
+  it('приходят — читаются, а не выбрасываются', () => {
+    const [quote] = parseQuoteBatch([{ ...good, bid: 1.0841, ask: 1.0843 }]).quotes;
+
+    // До WEB-36 они доезжали до нас и терялись при разборе.
+    expect(quote?.bid).toBe(1.0841);
+    expect(quote?.ask).toBe(1.0843);
+  });
+
+  it.each([
+    ['отсутствуют', {}],
+    ['пришли пустыми', { bid: null, ask: null }],
+  ])('%s → null, и это не отказ: поставщик их может не давать вовсе', (_n, patch) => {
+    const { bid: _b, ask: _a, ...base } = good;
+    const { quotes, rejected } = parseQuoteBatch([{ ...base, ...patch }]);
+
+    expect(quotes[0]?.bid).toBeNull();
+    expect(quotes[0]?.ask).toBeNull();
+    expect(rejected).toEqual([]);
+  });
+
+  it('цена остаётся настоящей, когда книги нет', () => {
+    const { bid: _b, ask: _a, ...base } = good;
+
+    expect(parseQuoteBatch([base]).quotes[0]?.price).toBe(good.price);
+  });
+
+  it.each([
+    ['ноль', 0],
+    ['отрицательная', -1.5],
+  ])('%s цена покупки — не пусто, а утверждение, и отвергается', (_n, value) => {
+    // Нулевая цена покупки означала бы сделку по нулю.
+    const { quotes, rejected } = parseQuoteBatch([{ ...good, bid: value }]);
+
+    expect(quotes[0]?.bid).toBeNull();
+    expect(rejected).toEqual([{ symbol: 'EURUSD', field: 'bid', reason: 'unknown-value' }]);
+  });
+
+  it('негодная форма → null и запись об отказе, но котировка цела', () => {
+    // Критерий терпимости: незнание выразимо, значит цену не теряем.
+    const { quotes, rejected } = parseQuoteBatch([{ ...good, ask: 'дорого' }]);
+
+    expect(quotes[0]?.ask).toBeNull();
+    expect(quotes[0]?.price).toBe(good.price);
+    expect(quotes[0]?.bid).toBe(good.bid);
+    expect(rejected).toEqual([{ symbol: 'EURUSD', field: 'ask', reason: 'wrong-type' }]);
+  });
+
+  it('одна сторона негодна — вторая сохраняется', () => {
+    const [quote] = parseQuoteBatch([{ ...good, bid: 0 }]).quotes;
+
+    expect(quote?.bid).toBeNull();
+    expect(quote?.ask).toBe(good.ask);
+  });
+
+  it('`bid` и `ask` больше не числятся новостью: мы их читаем', () => {
+    expect(parseQuoteBatch([{ ...good, bid: 1, ask: 2 }]).novelties).toEqual([]);
   });
 });

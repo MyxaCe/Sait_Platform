@@ -10,6 +10,9 @@ function quote(symbol: string, changePercent: number | null): Quote {
     price: 100,
     digits: 2,
     changePercent,
+    // Книга заявок к отбору лидеров роста отношения не имеет (WEB-36).
+    bid: null,
+    ask: null,
     ts: 1_700_000_000_000,
   };
 }

@@ -10,6 +10,8 @@ const testQuote: Quote = {
   price: 1.09,
   digits: 5,
   changePercent: 0.5,
+  bid: null,
+  ask: null,
   ts: 1_700_000_000_000,
 };
 
