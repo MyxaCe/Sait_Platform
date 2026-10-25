@@ -153,3 +153,69 @@ describe('WEB-17 · панель инструмента', () => {
     expectNoSeedPrice();
   });
 });
+
+describe('WEB-39 · молчащий инструмент в СПИСКЕ называет себя', () => {
+  /*
+   * Здесь это важнее, чем в ленте: список показывает все разрешённые
+   * инструменты, и неторгуемый стоит РЯДОМ с работающими. Прочерк
+   * рядом с уверенным числом читается как «это неизвестно, а
+   * остальное известно».
+   */
+  it('источник выключен → видно «пока не даём»', () => {
+    feed.quotes = [quote({ ts: 0 })];
+
+    render(
+      <InstrumentsBrowser
+        symbols={['BTCUSD']}
+        unavailableReasons={{ BTCUSD: 'source-disabled' }}
+      />,
+    );
+
+    expect(screen.getAllByText('shortLimited').length).toBeGreaterThan(0);
+  });
+
+  it('источник молчит → видно «цены нет»: другое обещание', () => {
+    feed.quotes = [quote({ ts: 0 })];
+
+    render(
+      <InstrumentsBrowser symbols={['BTCUSD']} unavailableReasons={{ BTCUSD: 'source-silent' }} />,
+    );
+
+    expect(screen.getAllByText('shortFault').length).toBeGreaterThan(0);
+    expect(screen.queryAllByText('shortLimited')).toEqual([]);
+  });
+
+  it('полная фраза — при наведении', () => {
+    feed.quotes = [quote({ ts: 0 })];
+
+    render(
+      <InstrumentsBrowser
+        symbols={['BTCUSD']}
+        unavailableReasons={{ BTCUSD: 'source-disabled' }}
+      />,
+    );
+
+    const [dash] = screen.getAllByText('—');
+    expect(dash?.getAttribute('title')).toBe('sourceDisabled');
+  });
+
+  it('ВТОРАЯ СТОРОНА: цена есть → объяснения нет', () => {
+    feed.quotes = [quote({ ts: 1_700_000_000_000, price: 68100 })];
+
+    render(<InstrumentsBrowser symbols={['BTCUSD']} unavailableReasons={{}} />);
+
+    expect(screen.queryAllByText('shortLimited')).toEqual([]);
+    expect(screen.queryAllByText('shortFault')).toEqual([]);
+  });
+
+  it('цены нет, но причину не назвали → прежнее общее «нет данных»', () => {
+    feed.quotes = [quote({ ts: 0 })];
+
+    render(<InstrumentsBrowser symbols={['BTCUSD']} />);
+
+    expect(screen.queryAllByText('shortLimited')).toEqual([]);
+    expect(screen.queryAllByText('shortFault')).toEqual([]);
+    const [dash] = screen.getAllByText('—');
+    expect(dash?.getAttribute('title')).toBe('noData');
+  });
+});

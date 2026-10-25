@@ -12,6 +12,7 @@ import {
 import { Button, ConnectionDot, Input, PriceChange, cn } from '@broker/ui';
 import { CATEGORY_ORDER } from './categories';
 import { QuotePrice, priceReading } from './QuotePrice';
+import { explainUnavailable } from '../quotes/unavailable-text';
 import { usePriceFlash } from './usePriceFlash';
 
 type CategoryFilter = InstrumentCategory | 'all';
@@ -21,12 +22,24 @@ export interface InstrumentsBrowserProps {
   symbols: string[];
   /** Символ → URL иконки (CMS-загрузка приоритетнее, иначе монета из MDS) */
   icons?: Record<string, string>;
+  /**
+   * Символ → машинная причина, по которой у него нет цены (WEB-39).
+   *
+   * Обычный объект, а не `Map`: проп пересекает границу
+   * сервер/клиент, и `Map` приехал бы пустым.
+   */
+  unavailableReasons?: Record<string, string>;
 }
 
-export function InstrumentsBrowser({ symbols, icons = {} }: InstrumentsBrowserProps) {
+export function InstrumentsBrowser({
+  symbols,
+  icons = {},
+  unavailableReasons = {},
+}: InstrumentsBrowserProps) {
   const t = useTranslations('instruments');
   const tCat = useTranslations('categories');
   const tConn = useTranslations('connection');
+  const tWhy = useTranslations('instrumentUnavailable');
   const tCommon = useTranslations('common');
 
   const [category, setCategory] = useState<CategoryFilter>('all');
@@ -43,6 +56,22 @@ export function InstrumentsBrowser({ symbols, icons = {} }: InstrumentsBrowserPr
 
   const quotes = useRealtimeQuotes(symbols);
   const status = useConnectionStatus();
+
+  /*
+    Объяснение ставится ТОЛЬКО когда источник назвал причину. Нет
+    причины — `undefined`, и строка показывает прежнее общее «нет
+    данных»: текст, появившийся там, где объяснять нечего, был бы
+    таким же утверждением о незнаемом, как подставленное число.
+  */
+  const whyFor = (symbol: string): { short: string; full: string } | undefined => {
+    const reason = unavailableReasons[symbol];
+    if (reason === undefined) return undefined;
+    const e = explainUnavailable(reason);
+    return {
+      short: tWhy(e.family === 'limited' ? 'shortLimited' : 'shortFault'),
+      full: tWhy(e.key),
+    };
+  };
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -101,11 +130,12 @@ export function InstrumentsBrowser({ symbols, icons = {} }: InstrumentsBrowserPr
       <ul className="mt-4 divide-y divide-border overflow-hidden rounded-2xl border border-border md:hidden">
         {filtered.map((q) => (
           <MobileRow
-              key={q.symbol}
-              quote={q}
-              iconUrl={icons[q.symbol]}
-              noDataLabel={tConn('noData')}
-            />
+            key={q.symbol}
+            quote={q}
+            iconUrl={icons[q.symbol]}
+            noDataLabel={tConn('noData')}
+            why={whyFor(q.symbol)}
+          />
         ))}
       </ul>
 
@@ -130,6 +160,7 @@ export function InstrumentsBrowser({ symbols, icons = {} }: InstrumentsBrowserPr
                 categoryLabel={tCat(q.category)}
                 tradeLabel={tCommon('trade')}
                 noDataLabel={tConn('noData')}
+                why={whyFor(q.symbol)}
               />
             ))}
           </tbody>
@@ -177,14 +208,22 @@ function InstrumentIcon({ symbol, iconUrl }: { symbol: string; iconUrl?: string 
   );
 }
 
+/** Короткая видимая подпись и полная фраза при наведении (WEB-38/39). */
+interface UnavailableWhy {
+  short: string;
+  full: string;
+}
+
 function MobileRow({
   quote,
   iconUrl,
   noDataLabel,
+  why,
 }: {
   quote: Quote;
   iconUrl?: string;
   noDataLabel: string;
+  why?: UnavailableWhy;
 }) {
   const flash = usePriceFlash(priceReading(quote));
   return (
@@ -199,8 +238,13 @@ function MobileRow({
         </div>
         <div className="text-right">
           <p className="tabular-nums text-primary">
-            <QuotePrice quote={quote} noDataLabel={noDataLabel} />
+            <QuotePrice quote={quote} noDataLabel={why?.full ?? noDataLabel} />
           </p>
+          {why && (
+            <p className="text-[11px] text-secondary" title={why.full}>
+              {why.short}
+            </p>
+          )}
           <PriceChange value={quote.changePercent} className="text-xs" />
         </div>
       </Link>
@@ -214,12 +258,14 @@ function DesktopRow({
   categoryLabel,
   tradeLabel,
   noDataLabel,
+  why,
 }: {
   quote: Quote;
   iconUrl?: string;
   categoryLabel: string;
   tradeLabel: string;
   noDataLabel: string;
+  why?: UnavailableWhy;
 }) {
   const flash = usePriceFlash(priceReading(quote));
   return (
@@ -240,7 +286,17 @@ function DesktopRow({
       </td>
       <td className="px-6 py-3.5 text-secondary">{categoryLabel}</td>
       <td className="px-6 py-3.5 text-right tabular-nums text-primary">
-        <QuotePrice quote={quote} noDataLabel={noDataLabel} />
+        <QuotePrice quote={quote} noDataLabel={why?.full ?? noDataLabel} />
+        {/*
+          Видимой строкой, а не только тултипом: тултипа нет на
+          сенсорных экранах, и здесь это важнее, чем в ленте, — список
+          читают именно с телефона.
+        */}
+        {why && (
+          <span className="block text-[11px] font-normal text-secondary" title={why.full}>
+            {why.short}
+          </span>
+        )}
       </td>
       <td className="px-6 py-3.5 text-right">
         <PriceChange value={quote.changePercent} />

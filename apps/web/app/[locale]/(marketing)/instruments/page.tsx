@@ -4,8 +4,9 @@ import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { Container, Section } from '@broker/ui';
 import { AccessNotice } from '@/features/instruments/AccessNotice';
 import { InstrumentsBrowser } from '@/features/instruments/InstrumentsBrowser';
+import { unavailableReasonsOf } from '@/features/instruments/unavailable-map';
 import { getCms } from '@/lib/cms';
-import { getMdsIcons } from '@/lib/mds';
+import { getMdsIcons, getMdsQuotesState } from '@/lib/mds';
 import {
   accessNotice,
   getTenantAccess,
@@ -43,9 +44,16 @@ export default async function InstrumentsPage({ params }: PageProps) {
   // Контент страницы ∩ ДОСТУП сайта (allow-list карточки сайта, ADR-028).
   // Граница fail-closed (Р-025): закрыта — список пуст, и вместо него
   // стоит объяснение, а не пустая таблица «0 из 0».
-  const [{ items: pageItems }, access] = await Promise.all([
+  // Состояние котировок спрашиваем здесь же (WEB-39): страница и так
+  // динамическая и ходит за доступом, CMS и иконками. Без этого
+  // вопроса инструмент, который источник не транслирует, стоял бы в
+  // списке РЯДОМ с работающими и молчал без объяснения — а прочерк
+  // рядом с уверенным числом читается как «это неизвестно, а
+  // остальное известно».
+  const [{ items: pageItems }, access, quotes] = await Promise.all([
     getCms('instruments', { locale: params.locale === 'en' ? 'en' : 'ru' }),
     getTenantAccess(),
+    getMdsQuotesState(),
   ]);
   const notice = accessNotice(access);
   const items = pageItems.filter((i) => isSymbolAllowed(access, i.symbol));
@@ -58,17 +66,26 @@ export default async function InstrumentsPage({ params }: PageProps) {
     if (url) icons[item.symbol] = url;
   }
 
-  return <PageContent symbols={items.map((i) => i.symbol)} icons={icons} notice={notice} />;
+  return (
+    <PageContent
+      symbols={items.map((i) => i.symbol)}
+      icons={icons}
+      notice={notice}
+      unavailableReasons={unavailableReasonsOf(quotes)}
+    />
+  );
 }
 
 function PageContent({
   symbols,
   icons,
   notice,
+  unavailableReasons,
 }: {
   symbols: string[];
   icons: Record<string, string>;
   notice: AccessNoticeSpec | null;
+  unavailableReasons: Record<string, string>;
 }) {
   const t = useTranslations('instruments');
   return (
@@ -91,7 +108,11 @@ function PageContent({
               reasonLabel={notice.reason && t('accessReason', { reason: notice.reason })}
             />
           ) : (
-            <InstrumentsBrowser symbols={symbols} icons={icons} />
+            <InstrumentsBrowser
+              symbols={symbols}
+              icons={icons}
+              unavailableReasons={unavailableReasons}
+            />
           )}
         </div>
       </Container>
