@@ -32,6 +32,13 @@ export function createMockDriver(): FeedDriver {
       digits: def.digits,
       price: Number(s.price.toFixed(def.digits)),
       changePercent: (s.price / s.open - 1) * 100,
+      // Мок книгу заявок не моделирует: у случайного блуждания нет
+      // ни покупателя, ни продавца. `null` — честный ответ, а
+      // выдуманный спред вокруг выдуманной цены был бы вторым слоем
+      // выдумки, который к тому же выглядел бы как настоящая книга
+      // (WEB-36).
+      bid: null,
+      ask: null,
       ts: Date.now(),
     };
   };

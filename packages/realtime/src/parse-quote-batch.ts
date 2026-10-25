@@ -36,6 +36,8 @@ const MODELLED_FIELDS = [
   'price',
   'digits',
   'changePercent',
+  'bid',
+  'ask',
   'ts',
 ] as const;
 
@@ -91,6 +93,17 @@ function isFiniteNumber(value: unknown): value is number {
  * типа не сужает, и `digits` уезжал в котировку как `unknown`. Ровно
  * то, против чего написан весь этот файл, — только внутри него.
  */
+/**
+ * Годная цена: конечное число СТРОГО больше нуля.
+ *
+ * Ноль не «пусто», а утверждение: сделка по нулю. Отрицательная цена
+ * покупки — то же самое с другой стороны. Оба случая читаются как
+ * «этой цены нет», потому что сказать так нам есть чем.
+ */
+function isTradablePrice(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value) && value > 0;
+}
+
 function isNonNegativeInteger(value: unknown): value is number {
   return typeof value === 'number' && Number.isInteger(value) && value >= 0;
 }
@@ -173,7 +186,41 @@ function parseQuote(
     rejected.push({ symbol, field: 'changePercent', reason: 'wrong-type' });
   }
 
-  return { symbol, name, category, price, digits, changePercent, ts };
+  /*
+    `bid` и `ask` разбираются по тому же правилу, что `changePercent`, и
+    это не совпадение, а применение критерия: терпимость допустима
+    тогда и только тогда, когда у получателя есть чем сказать
+    «не знаю». У этих полей есть — они обнуляемые. Поэтому негодная
+    форма даёт `null` и запись об отказе, а не выброшенную котировку:
+    цена-то настоящая.
+
+    Ноль и отрицательное — не форма, а значение, и отвергаются как
+    значение: нулевая цена покупки означала бы сделку по нулю.
+  */
+  const bid = parseSideQuote(raw.bid, 'bid', symbol, rejected);
+  const ask = parseSideQuote(raw.ask, 'ask', symbol, rejected);
+
+  return { symbol, name, category, price, digits, changePercent, bid, ask, ts };
+}
+
+/**
+ * Одна из двух сторон книги. Отсутствие и `null` равны: поставщик,
+ * который их не даёт, не обязан слать пустые поля.
+ */
+function parseSideQuote(
+  value: unknown,
+  field: 'bid' | 'ask',
+  symbol: string,
+  rejected: RejectedQuote[],
+): number | null {
+  if (value === undefined || value === null) return null;
+  if (isTradablePrice(value)) return value;
+  rejected.push({
+    symbol,
+    field,
+    reason: typeof value === 'number' ? 'unknown-value' : 'wrong-type',
+  });
+  return null;
 }
 
 export function parseQuoteBatch(raw: unknown): QuoteBatchParse {

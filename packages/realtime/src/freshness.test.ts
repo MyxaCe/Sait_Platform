@@ -10,6 +10,8 @@ const quote = (over: Partial<Quote> = {}): Quote => ({
   category: 'forex',
   price: 1.0842,
   digits: 5,
+  bid: null,
+  ask: null,
   changePercent: 0.12,
   ts: NOW - 1_000,
   ...over,
