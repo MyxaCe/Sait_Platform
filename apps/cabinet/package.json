@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@broker/api-client": "workspace:*",
+    "@broker/db": "workspace:*",
     "@broker/realtime": "workspace:*",
     "@broker/tenant": "workspace:*",
     "@broker/ui": "workspace:*",

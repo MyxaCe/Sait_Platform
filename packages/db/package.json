@@ -1,0 +1,27 @@
+{
+  "name": "@broker/db",
+  "version": "0.0.1",
+  "private": true,
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "migrate": "node-pg-migrate up",
+    "migrate:down": "node-pg-migrate down",
+    "migrate:status": "tsx src/status.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "node-pg-migrate": "^7.6.1",
+    "pg": "^8.12.0"
+  },
+  "devDependencies": {
+    "@broker/config": "workspace:*",
+    "@types/node": "^20.14.12",
+    "@types/pg": "^8.11.6",
+    "tsx": "^4.16.2",
+    "typescript": "^5.5.4",
+    "vitest": "^2.0.5"
+  }
+}

@@ -5,6 +5,7 @@ import * as Sentry from '@sentry/node';
 import { Pool } from 'pg';
 import { scrubSentryEvent } from '@broker/api-client';
 import { envOr, readEnv } from '@broker/utils';
+import { assertSchemaCurrent } from '@broker/db';
 import { applyTerminalEvent, classifyMessage } from './projection.js';
 import { createSubscriber } from './subscriber.js';
 import { assertTenantSlugAtStartup } from '@broker/tenant';
@@ -58,6 +59,34 @@ try {
 }
 console.info(`[consumer] тенант: ${tenant}`);
 const pool = new Pool({ connectionString: databaseUrl, max: 3 });
+
+/**
+ * Гейт схемы: процесс не работает на базе, которой не знает (WEB-31).
+ *
+ * **Почему проверка, а не применение.** Применять миграции отсюда
+ * значило бы разрешить экземпляру менять схему — после работы над
+ * единственным владельцем денежной строки это шаг назад. Миграции —
+ * отдельный шаг выкатки.
+ *
+ * **Почему консюмеру это нужнее прочих.** Он пишет проекцию денег. На
+ * отставшей схеме он либо упадёт на первом же событии, либо — хуже —
+ * запишет в таблицу не того вида и отчитается об успехе. Отказ на
+ * старте виден сразу и целиком, до первого события.
+ */
+async function assertSchemaKnown(): Promise<void> {
+  try {
+    const state = await assertSchemaCurrent(pool as never);
+    if (state.ahead.length > 0) {
+      // Не отказ: штатное состояние выкатки, когда новая миграция уже
+      // прошла, а старые экземпляры ещё живы. Но называется.
+      console.warn(`[consumer] схема опережает код: ${state.ahead.join(', ')}`);
+    }
+    console.info(`[consumer] схема: применено ${state.applied.length}`);
+  } catch (error) {
+    console.error(`[consumer] ${(error as Error).message}`);
+    process.exit(1);
+  }
+}
 /**
  * Отказ шины после успешного старта. Молчать здесь нельзя: процесс жив,
  * контейнер `Up`, keep-alive-таймер тикает — а сообщения не читаются.
@@ -153,6 +182,7 @@ async function handle(raw: unknown): Promise<void> {
 const keepAlive = setInterval(() => {}, 1 << 30);
 
 async function main() {
+  await assertSchemaKnown();
   await subscriber.start(handle);
   console.info(`[consumer] started (tenant=${tenant})`);
 }

@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 
@@ -16,7 +16,21 @@ import { describe, expect, it } from 'vitest';
  */
 
 const ROOT = path.resolve(__dirname, '../../..');
-const schema = () => readFileSync(path.join(ROOT, 'db/init/002_cabinet.sql'), 'utf8');
+/*
+ * Схема переехала в `packages/db/migrations` (WEB-31): у неё теперь
+ * один источник, и `db/init` схемы не содержит.
+ *
+ * **Файл ищется по суффиксу имени, а не по полному пути.** Префикс —
+ * метка времени, которую механизм разбирает; привязка к ней сделала бы
+ * проверку хрупкой к переименованию, а хрупкий сторож краснеет на
+ * законной правке и после этого его отключают.
+ */
+function schema(): string {
+  const dir = path.join(ROOT, 'packages/db/migrations');
+  const file = readdirSync(dir).find((f) => f.endsWith('_cabinet.sql'));
+  if (!file) throw new Error('миграция со схемой кабинета не найдена');
+  return readFileSync(path.join(dir, file), 'utf8');
+}
 
 /** Строки объявления колонки, без комментариев. */
 function balanceColumn(sql: string): string {
