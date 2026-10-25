@@ -10,6 +10,7 @@ import { getPool } from './db';
 import { isRateLimited } from './rate-limit';
 import { hashPassword, verifyPassword } from './auth/password';
 import { registerUser } from './auth/register';
+import { resetDemoAccount } from './terminal/client';
 import { getTenantStartBalance } from './tenant';
 import {
   changePasswordSchema,
@@ -213,40 +214,59 @@ export async function uploadDocumentAction(_prev: ActionState, formData: FormDat
 /* ------------------------------------------------------------------ */
 
 /**
- * Сброс демо-счёта к стартовому балансу тенанта (из CMS). Пока баланс —
- * единственное состояние проекции; с приходом позиций/сделок (консюмер Т3)
- * сброс будет чистить и их. Чисто наша сторона, терминалу не отправляется.
+ * Сброс демо-счёта — **операция ТЕРМИНАЛА** (WEB-29, решение владельца).
  *
- * При незаданной сумме сброс ОТКАЗЫВАЕТ (Р-040): записать в счёт число,
- * которого никто не назначал, — та же ошибка, что открыть на нём счёт,
- * только уже существующему клиенту и поверх его баланса.
+ * > Владелец денежного числа — терминал. Кабинет — проекция.
  *
- * Барьер стоит здесь, а не только в интерфейсе: кнопка в
- * `BalanceModule` задизейблена с подписью, но экшен вызывается запросом,
- * а не кнопкой.
+ * **Чем это было.** Кабинет правил свою копию баланса сам, и следующее
+ * же событие о балансе возвращало прежнюю сумму — **сброс отменялся
+ * сам**, тихо и не сразу. Человек видел нужное число, уходил, а при
+ * следующем тике оно пропадало. Это не потеря денег, а расхождение
+ * проекции с источником, которое ничем не краснело.
+ *
+ * **Чем стало.** `POST /account/demo-reset` у терминала (`TRM-54`):
+ * операция идёт его обычным путём мутации — журнал, инварианты,
+ * сверка, исходящая очередь одной транзакцией, — и возвращается к нам
+ * событием с причиной `reset`. Отдельного пути у денег не бывает.
+ *
+ * **«Принято» не равно «применено».** Новой суммы мы здесь не знаем и
+ * не показываем: она приедет событием. Показать её сразу значило бы
+ * утверждать результат, которого мы не видели, — и это ровно то, на
+ * чём ломался прежний сброс.
+ *
+ * **Стартовую сумму здесь больше не читаем.** Её назначает владелец
+ * счёта, а им стал терминал; наш барьер Р-040 переехал туда вместе с
+ * операцией (`not_a_demo_account`).
+ *
+ * Барьер ограничения частоты остаётся здесь, а не только в интерфейсе:
+ * кнопка в `BalanceModule` задизейблена с подписью, но экшен
+ * вызывается запросом, а не кнопкой.
  */
 export async function resetDemoAccountAction(): Promise<void> {
   const user = await getSessionUser();
   if (!user) return;
   if (isRateLimited(`demo-reset:${user.id}`, 5, 60_000)) return;
 
-  const startBalance = await getTenantStartBalance();
-  if (startBalance.state !== 'set') {
-    console.error(
-      `[demo-reset] отказ: стартовый демо-баланс не назначен (${startBalance.state})`,
-      { userId: user.id, state: startBalance.state },
-    );
+  const outcome = await resetDemoAccount(user.id);
+
+  if (outcome.state === 'unavailable') {
+    // До терминала не дошли. Молчать нельзя: человек нажал и ждёт.
+    console.error(`[demo-reset] терминал недоступен: ${outcome.reason}`, { userId: user.id });
     return;
   }
-  const startBalanceCents = startBalance.cents;
-  await getPool().query(
-    `UPDATE demo_accounts SET balance_cents = $1 WHERE user_id = $2`,
-    [startBalanceCents, user.id],
-  );
-  await getPool().query(
-    `INSERT INTO notifications (id, user_id, type, params) VALUES ($1, $2, 'demoReset', $3)`,
-    [randomUUID(), user.id, JSON.stringify({ balanceCents: startBalanceCents })],
-  );
+  if (outcome.state === 'refused') {
+    // Отказ ПО СУЩЕСТВУ, названный терминалом: открытые позиции или не
+    // демо-счёт. Это другое, чем «не дозвонились», и чинится другим.
+    console.error(`[demo-reset] терминал отказал: ${outcome.raw}`, { userId: user.id });
+    return;
+  }
+
+  /*
+    Уведомления здесь больше нет. Прежде кабинет писал «счёт сброшен до
+    N» сам, и N брал из своей копии стартовой суммы — то есть сообщал
+    человеку число, которого не наблюдал. Теперь уведомление родится
+    из события шины, когда сброс действительно применится.
+  */
   revalidatePath('/', 'layout');
 }
 

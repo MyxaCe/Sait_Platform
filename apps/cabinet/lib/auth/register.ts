@@ -61,10 +61,24 @@ export async function registerUser(input: RegisterInput): Promise<RegisterResult
   const userId = randomUUID();
   const leadId = randomUUID();
   const occurredAt = new Date().toISOString();
-  // Стартовый демо-баланс — из конфига тенанта CMS (единый источник с
-  // терминалом). Сеть ДО транзакции и ДО создания пользователя: отказ
-  // обязан случиться раньше, чем появится что-то, что придётся убирать.
-  // И раньше хеширования пароля: отказ не должен стоить секунды работы.
+  /*
+    Стартовый демо-баланс — из конфига тенанта CMS (единый источник с
+    терминалом). Сеть ДО транзакции и ДО создания пользователя: отказ
+    обязан случиться раньше, чем появится что-то, что придётся
+    убирать. И раньше хеширования пароля: отказ не должен стоить
+    секунды работы.
+
+    **Смысл барьера изменился** (WEB-29). Он стоял потому, что кабинет
+    собирался записать это число в счёт: записать сумму, которой никто
+    не назначал, — то же, что открыть счёт от чужого имени. Теперь
+    счёт открывает терминал, и числа этого мы не пишем.
+
+    Барьер оставлен, но он стал ПОЛИТИКОЙ, а не защитой записи:
+    владелец сайта обязан назвать сумму прежде, чем сайт начнёт
+    принимать регистрации. Вопрос, кому теперь принадлежит стартовая
+    сумма — нам из CMS или терминалу вместе с остальными деньгами, —
+    вынесен штабу. Убрать барьер молча значило бы решить его за него.
+  */
   const startBalance = await getTenantStartBalance();
   if (startBalance.state !== 'set') {
     // Отказ без следа непроверяем: наружу уходит ключ объяснения, в лог —
@@ -77,7 +91,6 @@ export async function registerUser(input: RegisterInput): Promise<RegisterResult
       ? { ok: false, reason: 'startBalanceUnset' }
       : { ok: false, reason: 'startBalanceUnavailable', detail: startBalance.reason };
   }
-  const startBalanceCents = startBalance.cents;
   const passwordHash = await hashPassword(input.password);
 
   const leadData: LeadSubmittedData = {
@@ -110,10 +123,22 @@ export async function registerUser(input: RegisterInput): Promise<RegisterResult
       `INSERT INTO outbox (event_id, routing_key, payload, occurred_at) VALUES ($1, $2, $3, $4)`,
       [envelope.event_id, LEAD_SUBMITTED_ROUTING_KEY, JSON.stringify(envelope), occurredAt],
     );
-    await client.query(`INSERT INTO demo_accounts (user_id, balance_cents) VALUES ($1, $2)`, [
-      userId,
-      startBalanceCents,
-    ]);
+    /*
+      Денежной строки здесь больше нет (WEB-29, решение владельца).
+
+      > Владелец денежного числа — терминал. Кабинет — проекция.
+
+      Счёт заводит терминал — **лениво**, при первой операции
+      пользователя у себя (`ensure_account_opened` на входе общего
+      пути), и сообщает об этом событием `terminal.account.opened`.
+      Строка появляется у нас из проекции консюмера.
+
+      **Следствие названо, а не скрыто:** между регистрацией и первым
+      входом в терминал строки нет вовсе. Это не ноль на счету и не
+      ошибка — счёт ещё не открыт, и `BalanceModule` говорит именно
+      так. Показать здесь сумму значило бы открыть счёт от чужого
+      имени и назвать баланс, которого никто не заводил.
+    */
     await client.query(
       `INSERT INTO notifications (id, user_id, type, params) VALUES ($1, $2, $3, $4)`,
       [randomUUID(), userId, 'welcome', JSON.stringify({ accountType: input.accountType })],

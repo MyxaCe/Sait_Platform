@@ -37,6 +37,16 @@ export async function BalanceModule({
   return (
     <section className="rounded-2xl border border-border bg-elevated p-5">
       <h2 className="text-sm text-secondary">{t('balanceTitle')}</h2>
+      {/*
+        Строки счёта может не быть вовсе, и после WEB-29 это **обычное
+        состояние каждого нового пользователя**: счёт заводит терминал
+        при первом входе туда, а не сайт при регистрации.
+
+        Прежде здесь стоял безымянный прочерк. Ноль был бы ложью, но и
+        прочерк молчит: человек не знает, счёта нет, баланс неизвестен
+        или что-то сломалось. А рядом с остальными заполненными полями
+        он читается как «тут неизвестно, а остальное известно».
+      */}
       <p className="mt-2 text-3xl font-bold">
         {demo
           ? format.number(demo.balanceCents / 100, {
@@ -44,9 +54,11 @@ export async function BalanceModule({
               currency: demo.currency,
               maximumFractionDigits: 2,
             })
-          : '—'}
+          : t('balanceNoAccount')}
       </p>
-      <p className="mt-1 text-xs text-secondary">{t('balanceDemoNote')}</p>
+      <p className="mt-1 text-xs text-secondary">
+        {demo ? t('balanceDemoNote') : t('balanceNoAccountNote')}
+      </p>
       {buttons.length > 0 && (
         <div className="mt-4 flex flex-wrap items-center gap-2">
           {buttons.map((b) => (

@@ -93,3 +93,94 @@ export async function getClosedDeals(userId: string): Promise<ClosedDealsOutcome
     return { state: 'unavailable', reason: 'network' };
   }
 }
+
+/**
+ * Отказы сброса, названные ТЕРМИНАЛОМ (`TRM-54`).
+ *
+ * Отдельная ось от канальной: канальная говорит, почему мы не дошли,
+ * эта — почему операция не делается. Схлопнуть их значило бы сказать
+ * человеку «не получилось» там, где терминал сказал «нельзя, и вот
+ * почему».
+ */
+export type ResetRefusal =
+  /** Настоящие деньги к «стартовой сумме» не сбрасывают: её там нет. */
+  | 'not_a_demo_account'
+  /** Есть открытые позиции. Закрыть их самим нельзя: закрытие — сделка
+   *  с ценой и результатом, а её никто не просил. */
+  | 'account_not_flat';
+
+export type ResetOutcome =
+  /** Терминал принял. Баланс изменится, когда приедет событие шины. */
+  | { state: 'accepted' }
+  /** Терминал отказал по существу, с названной причиной. */
+  | { state: 'refused'; reason: ResetRefusal | null; raw: string | null }
+  /** До терминала не дошли или не поняли ответ. */
+  | { state: 'unavailable'; reason: TerminalFailure };
+
+const RESET_REFUSALS: readonly string[] = ['not_a_demo_account', 'account_not_flat'];
+
+/**
+ * Сброс демо-счёта (WEB-29). **Операция терминала, не наша.**
+ *
+ * > Владелец денежного числа — терминал. Кабинет — проекция.
+ *
+ * Прежде кабинет правил свою копию сам, и следующее же событие о
+ * балансе возвращало прежнюю сумму — **сброс отменялся сам**. Теперь
+ * он идёт обычным путём мутации счёта, а к нам возвращается событием.
+ *
+ * **Поэтому «принято» — не «применено».** Баланс обновится, когда
+ * приедет `terminal.balance.changed` с причиной `reset`. Показывать
+ * новую сумму сразу значило бы утверждать результат, которого мы ещё
+ * не видели, — и это ровно то, на чём ломался прежний сброс.
+ */
+export async function resetDemoAccount(userId: string): Promise<ResetOutcome> {
+  const base = process.env.TERMINAL_HTTP_URL?.replace(/\/$/, '');
+  if (!base) return { state: 'unavailable', reason: 'not-configured' };
+
+  const session = await openSession(base, userId);
+  if (
+    session === 'not-configured' ||
+    session === 'network' ||
+    session === 'http-error' ||
+    session === 'malformed'
+  ) {
+    return { state: 'unavailable', reason: session };
+  }
+
+  try {
+    const res = await fetch(`${base}/account/demo-reset`, {
+      method: 'POST',
+      headers: { authorization: `Bearer ${session}` },
+      cache: 'no-store',
+      signal: AbortSignal.timeout(TIMEOUT_MS),
+    });
+
+    if (res.ok) return { state: 'accepted' };
+
+    // Отказ по существу приходит телом с кодом. Не разобрали — это
+    // `malformed`, а НЕ «отказано без причины»: вторая формулировка
+    // утверждала бы, что терминал причины не назвал.
+    let body: unknown;
+    try {
+      body = await res.json();
+    } catch {
+      return { state: 'unavailable', reason: 'http-error' };
+    }
+
+    const code = (body as { error?: unknown } | null)?.error;
+    if (typeof code !== 'string' || code.length === 0) {
+      return { state: 'unavailable', reason: 'malformed' };
+    }
+
+    // Незнакомый код сохраняется сырым: терминал мог завести причину
+    // раньше, чем мы о ней узнали, и молчать о ней хуже, чем показать
+    // общий текст (WEB-26).
+    return {
+      state: 'refused',
+      reason: RESET_REFUSALS.includes(code) ? (code as ResetRefusal) : null,
+      raw: code,
+    };
+  } catch {
+    return { state: 'unavailable', reason: 'network' };
+  }
+}
