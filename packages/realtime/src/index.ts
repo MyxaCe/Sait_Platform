@@ -1,4 +1,10 @@
 export type { ConnStatus, FeedDriver, InstrumentCategory, Quote } from './types';
+export { INSTRUMENT_CATEGORIES } from './types';
+export {
+  parseQuoteBatch,
+  type QuoteBatchParse,
+  type RejectedQuote,
+} from './parse-quote-batch';
 export {
   SYMBOL_UNIVERSE,
   DEFAULT_TICKER_SYMBOLS,
