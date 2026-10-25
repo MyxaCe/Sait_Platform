@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { requireOrSkip } from './support/gates';
 
 /**
  * Живые котировки сайта из MDS (ADR-024). Гоняется против production-сборки
@@ -13,7 +14,12 @@ import { expect, test } from '@playwright/test';
  * невидимой: сценарий зеленел бы при полностью лежащей CMS.
  */
 test.describe('Тикер сайта ← MDS', () => {
-  test.skip(!process.env.MDS_E2E, 'MDS_E2E не задан');
+  requireOrSkip({
+    gated: !process.env.MDS_E2E,
+    required: 'MDS_E2E_REQUIRED',
+    what: 'живой тикер из MDS',
+    missing: 'MDS_E2E не задан',
+  });
 
   test('тикер живой: крипта из MDS, статус онлайн', async ({ page }) => {
     await page.goto('/');
