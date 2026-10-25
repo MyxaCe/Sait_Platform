@@ -25,9 +25,52 @@ export type RawParams = Record<string, unknown>;
  * знаки были бы тем же умолчанием, только в показе денег. Некрасиво
  * честнее неверного.
  */
-export function formatPriceForSymbol(price: number, symbol: string): string {
-  const digits = findSymbol(symbol)?.digits;
-  return digits === undefined ? String(price) : price.toFixed(digits);
+export function formatPriceForSymbol(price: number, symbol: string, digits?: number): string {
+  const d = digits ?? findSymbol(symbol)?.digits;
+  return d === undefined ? String(price) : price.toFixed(d);
+}
+
+/** Сколько знаков после запятой несёт само число. */
+function decimalsOf(value: number): number {
+  if (!Number.isFinite(value) || Number.isInteger(value)) return 0;
+  const text = String(value);
+  const dot = text.indexOf('.');
+  if (dot < 0) return 0; // экспоненциальная запись — за точность не ручаемся
+  return text.length - dot - 1;
+}
+
+/** Точность, при которой разница между ценами не исчезает. */
+const MAX_PRICE_DIGITS = 8;
+
+/**
+ * Точность показа для ОДНОГО сообщения о сделке (WEB-41).
+ *
+ * **Что случилось на живом прогоне.** У BTCUSD в справочнике витрины
+ * `digits: 0` — для бегущей строки целые доллары разумны. Стоп стоял в
+ * трёх тиках, исполнение пришло на `80850.20` против уровня
+ * `80859.97`, и сообщение округлило обе цены до целых: «по 80850»,
+ * «уровня 80860», «на 10».
+ *
+ * При проскальзывании меньше полудоллара было бы хуже: сравнение в
+ * `describeSlippage` идёт на той же точности, и разница схлопнулась бы
+ * в `none` — **проскальзывание исчезло бы из сообщения целиком,
+ * оставшись в данных**. Это не «утверждаем незнаемое», а **«знаем и не
+ * говорим»**, причём молчание выглядит как ответ.
+ *
+ * **Правило WEB-20 при этом верное, неверен был источник точности.**
+ * Называть разницу, которой не видно в самом сообщении, нельзя — но
+ * точность сообщения выбираем мы. Поэтому она берётся из чисел,
+ * которые в нём стоят: сколько знаков несут цена и уровень, столько и
+ * показываем. Цена, уровень и величина разницы печатаются ОДНОЙ
+ * точностью — иначе «по 80850.20 … на 10» противоречит само себе.
+ *
+ * Справочная точность остаётся нижней границей: она задаёт, сколько
+ * знаков человек привык видеть, и опускаться ниже неё незачем.
+ */
+export function priceDigitsFor(symbol: string, values: number[]): number {
+  const catalogue = findSymbol(symbol)?.digits ?? 2;
+  const fromValues = Math.max(0, ...values.filter(isFiniteNumber).map(decimalsOf));
+  return Math.min(Math.max(catalogue, fromValues), MAX_PRICE_DIGITS);
 }
 
 function isFiniteNumber(value: unknown): value is number {
@@ -71,7 +114,14 @@ export function tradeExecutedParams(raw: RawParams): Record<string, string> | nu
    * тогда вердикт `unknown`, и о проскальзывании мы молчим: сказать
    * «исполнено по уровню» было бы утверждением о том, чего не знаем.
    */
-  const digits = findSymbol(symbol)?.digits ?? 2;
+  /*
+    Точность берётся из САМИХ чисел, а не из справочника витрины
+    (WEB-41). У BTCUSD там `digits: 0`, и живое сообщение округлило
+    `80850.20` и `80859.97` до целых, назвав разницу «10» вместо 9.77.
+    При разнице меньше полудоллара она схлопнулась бы в `none` и
+    исчезла бы из сообщения вовсе.
+  */
+  const digits = priceDigitsFor(symbol, [price, isFiniteNumber(level) ? level : Number.NaN]);
   const verdict = describeSlippage({
     execution: price,
     level: isFiniteNumber(level) ? level : null,
@@ -83,14 +133,37 @@ export function tradeExecutedParams(raw: RawParams): Record<string, string> | nu
     symbol,
     side,
     volume: String(volume),
-    price: formatPriceForSymbol(price, symbol),
-    level: isFiniteNumber(level) ? formatPriceForSymbol(level, symbol) : '',
+    // Одна точность на цену, уровень и разницу: «по 80850.20 … на 10»
+    // противоречило бы само себе.
+    price: formatPriceForSymbol(price, symbol, digits),
+    level: isFiniteNumber(level) ? formatPriceForSymbol(level, symbol, digits) : '',
     slippage: verdict.kind === 'none' || verdict.kind === 'unknown'
       ? ''
-      : formatPriceForSymbol(verdict.amount, symbol),
+      : formatPriceForSymbol(verdict.amount, symbol, digits),
     slippageKind: verdict.kind,
-    // Разрыв трёхзначен: называем его только когда источник сказал «был».
-    acrossGap: acrossGap === true ? 'yes' : 'no',
+    /*
+      Разрыв ТРЁХЗНАЧЕН, и здесь он был сведён к двум (WEB-40).
+
+      Было `acrossGap === true ? 'yes' : 'no'`, и под `'no'` попадали
+      два разных состояния: «фид не рвался» и «вопроса не возникает».
+      У сделок, закрытых не триггером — вручную или неттингом, — ключа
+      в событии нет вовсе, и это прибито тестом у терминала.
+      Отсутствие не равно `false`.
+
+      Видимых последствий пока нет: ни один шаблон этот параметр не
+      читает. Но ловушка взведена — первая же ветвь `no {…}` сказала бы
+      про ручное закрытие, что фид не рвался, хотя его никто не
+      спрашивал.
+
+      **И `false` не означает «проскальзывания не было».** Признак
+      взводится, когда с последнего тика прошло больше тридцати секунд,
+      то есть говорит о ДЫРЕ В ФИДЕ, а не о величине скачка цены.
+      Разрыв цены при `false` — обычное проскальзывание внутри потока,
+      и его мы как раз и называем. Вердикт считается из уровня и цены
+      (`describeSlippage`) и этого признака не касается вовсе — ни
+      здесь, ни в истории сделок.
+    */
+    acrossGap: acrossGap === true ? 'yes' : acrossGap === false ? 'no' : 'notApplicable',
   };
 }
 
