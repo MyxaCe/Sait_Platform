@@ -1,6 +1,5 @@
 import * as Sentry from '@sentry/nextjs';
 import { assertTenantSlugAtStartup } from '@broker/tenant';
-import { assertSchemaCurrent } from '@broker/db';
 
 /** Next instrumentation hook кабинета: серверный/edge Sentry по рантайму. */
 /**
@@ -37,47 +36,24 @@ function assertTenantKnown(): void {
   }
 }
 
-/**
- * Гейт схемы: процесс не обслуживает на базе, которой не знает
- * (WEB-31). Устроен как гейт личности рядом — тот же вид отказа у тех
- * же ворот, а не новый способ умирать.
- *
- * **Почему не на сборке.** На сборке базы может не быть вовсе, и
- * требовать её значило бы завести гейт, который невозможно
- * удовлетворить. Тот же довод, что у слага строкой выше.
- *
- * **Почему проверка, а не применение.** Применять миграции отсюда —
- * значит разрешить экземпляру приложения менять схему; у схемы, как у
- * денежной строки, должен быть один владелец, и это шаг выкатки.
- */
-async function assertSchemaKnown(): Promise<void> {
-  if (process.env.NEXT_PHASE === 'phase-production-build') return;
-  if (process.env.NEXT_RUNTIME !== 'nodejs') return;
-
-  const url = process.env.DATABASE_URL?.trim();
-  if (!url) return; // отсутствие адреса — забота другого гейта
-
-  const { Pool } = await import('pg');
-  const pool = new Pool({ connectionString: url, max: 1 });
-  try {
-    const state = await assertSchemaCurrent(pool as never);
-    if (state.ahead.length > 0) {
-      console.warn(`[cabinet] схема опережает код: ${state.ahead.join(', ')}`);
-    }
-    console.info(`[cabinet] схема: применено ${state.applied.length}`);
-  } catch (error) {
-    console.error(`[cabinet] ${(error as Error).message}`);
-    process.exit(1);
-  } finally {
-    await pool.end().catch(() => {});
-  }
-}
-
 export async function register() {
   assertTenantKnown();
-  await assertSchemaKnown();
 
   if (process.env.NEXT_RUNTIME === 'nodejs') {
+    /*
+      Гейт схемы живёт отдельным модулем и подключается ЗДЕСЬ, внутри
+      ветки рантайма, а не вызовом выше (починка 25.10).
+
+      Он тянет `pg`, а `pg` — `path` и `fs`, которых нет в edge.
+      Проверка рантайма внутри функции рантаймовая, и сборщик
+      edge-пакета всё равно шёл в `pg`: production-сборка падала с
+      `Module not found`. Условие ЗДЕСЬ вычисляется на сборке, и в
+      edge-пакет модуль не попадает вовсе — ровно так же, как строкой
+      ниже подключается серверный Sentry.
+    */
+    const { assertSchemaKnown } = await import('./schema-gate');
+    await assertSchemaKnown();
+
     await import('./sentry.server.config');
   }
   if (process.env.NEXT_RUNTIME === 'edge') {
