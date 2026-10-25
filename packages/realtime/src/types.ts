@@ -8,13 +8,25 @@
  */
 export type ConnStatus = 'connecting' | 'connected' | 'reconnecting' | 'offline' | 'simulated';
 
-export type InstrumentCategory =
-  | 'forex'
-  | 'metals'
-  | 'crypto'
-  | 'indices'
-  | 'stocks'
-  | 'energy';
+/**
+ * Перечень категорий — ОДИН, и тип выводится из него (WEB-35).
+ *
+ * Разбору с провода нужен список во время выполнения: проверить, что
+ * приехавшая категория из согласованных. Объявить его рядом с типом
+ * значило бы завести две строки, независимо перечисляющие одно, — они
+ * разойдутся при первой же новой категории, причём молча: тип не знает
+ * о списке, список не знает о типе.
+ */
+export const INSTRUMENT_CATEGORIES = [
+  'forex',
+  'metals',
+  'crypto',
+  'indices',
+  'stocks',
+  'energy',
+] as const;
+
+export type InstrumentCategory = (typeof INSTRUMENT_CATEGORIES)[number];
 
 export interface Quote {
   symbol: string;
