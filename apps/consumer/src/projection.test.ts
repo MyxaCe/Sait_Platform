@@ -122,7 +122,7 @@ describe('applyTerminalEvent', () => {
     )!;
     const outcome = await applyTerminalEvent(db, 'e1', ev, cfg);
     expect(outcome).toBe('applied');
-    expect(calls.some((c) => c.sql.includes('UPDATE demo_accounts SET balance_cents'))).toBe(true);
+    expect(calls.some((c) => c.sql.includes('UPDATE demo_accounts') && c.sql.includes('balance_cents'))).toBe(true);
     expect(calls.some((c) => c.sql.includes('DELETE FROM demo_positions'))).toBe(true);
     expect(calls.some((c) => c.sql.includes('INSERT INTO demo_positions'))).toBe(true);
   });
@@ -286,6 +286,10 @@ describe('WEB-29 · баланс не теряется, когда счёта е
         }
         // Строки пользователя нет: событие обогнало account.opened.
         if (sql.includes('UPDATE demo_accounts')) return { rows: [], rowCount: 0 };
+        // Проба существования (WEB-43): строки нет и здесь — значит это
+        // настоящее отсутствие счёта, а не устаревшее по accountSeq событие.
+        // Без неё отказ WEB-29 не отличить от штатного отбрасывания старого.
+        if (sql.includes('SELECT 1 FROM demo_accounts')) return { rows: [], rowCount: 0 };
         return { rows: [], rowCount: 1 };
       },
     };
@@ -422,7 +426,7 @@ describe('шаг 2 · денежная тройка в проекции', () => 
    * видимой как `undefined` в счёте.
    */
   function balanceWritten(calls: { sql: string; params: unknown[] }[]): unknown {
-    const call = calls.find((c) => c.sql.includes('UPDATE demo_accounts SET balance_cents'));
+    const call = calls.find((c) => c.sql.includes('UPDATE demo_accounts') && c.sql.includes('balance_cents'));
     if (!call) throw new Error('проекция не трогала баланс');
     return call.params[0];
   }
