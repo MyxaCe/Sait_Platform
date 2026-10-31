@@ -10,6 +10,16 @@
  */
 export const ADMIN_SESSION_COOKIE = 'admin_operator_session';
 
+/**
+ * Промежуточные httpOnly-куки двух шагов TOTP (ADM-13, Р-454). ОТДЕЛЬНЫЕ от
+ * сессионной: несут не доступ, а состояние незавершённого входа/регистрации.
+ *  - CHALLENGE: «пароль проверен, жду второй фактор» (5 мин).
+ *  - ENROLL: непроверенный секрет на время регистрации (10 мин).
+ * Значения — только имена кук; node-зависимостей здесь нет (edge-safe).
+ */
+export const ADMIN_TOTP_CHALLENGE_COOKIE = 'admin_totp_challenge';
+export const ADMIN_TOTP_ENROLL_COOKIE = 'admin_totp_enroll';
+
 /** Публичные СТРАНИЦЫ поверхности: всё остальное закрыто гейтом (Р-394). */
 export const PUBLIC_PATHS = ['/login'] as const;
 

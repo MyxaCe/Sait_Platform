@@ -24,7 +24,17 @@ import type { OperatorSession } from './session';
  */
 
 export type CredentialsResult =
-  | { ok: true; session: OperatorSession }
+  | {
+      ok: true;
+      session: OperatorSession;
+      /**
+       * Секрет второго фактора или `null`, если 2FA не включена (ADM-13). НЕ
+       * попадает ни в JWT, ни в куку — остаётся на сервере, где `loginAction`
+       * решает, нужен ли второй шаг. `null` → вход завершается сразу (но
+       * защищённая зона принудит оператора пройти регистрацию TOTP).
+       */
+      totpSecret: string | null;
+    }
   | { ok: false };
 
 /**
@@ -42,6 +52,7 @@ interface OperatorRow {
   role: string;
   password_hash: string | null;
   disabled_at: Date | null;
+  totp_secret: string | null;
 }
 
 function asRole(value: string): OperatorSession['role'] | null {
@@ -54,7 +65,7 @@ export async function verifyOperatorCredentials(
 ): Promise<CredentialsResult> {
   const pool = getPool();
   const result = await pool.query(
-    `SELECT id, login, display_name, role, password_hash, disabled_at
+    `SELECT id, login, display_name, role, password_hash, disabled_at, totp_secret
        FROM operators WHERE login = $1`,
     [login],
   );
@@ -106,5 +117,6 @@ export async function verifyOperatorCredentials(
       displayName: row.display_name,
       role,
     },
+    totpSecret: row.totp_secret,
   };
 }
