@@ -71,3 +71,15 @@ export async function rejectClientAction(
 ): Promise<DecisionState> {
   return decide('rejected', formData);
 }
+
+/**
+ * Мягкий возврат на доработку (ADM-10, Р-454 I-1): `pending → resubmit_requested`.
+ * Причина ОБЯЗАТЕЛЬНА — клиент должен знать, какой документ дослать. Как и
+ * остальные решения: личность оператора — из сессии, а не из формы.
+ */
+export async function requestResubmitAction(
+  _prev: DecisionState,
+  formData: FormData,
+): Promise<DecisionState> {
+  return decide('resubmit_requested', formData);
+}

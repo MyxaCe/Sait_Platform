@@ -14,10 +14,16 @@ import { appendJournalEntry } from '../journal/journal';
  * COMMIT.
  *
  * Разрешённые оператору переходы — ТОЛЬКО из `pending`:
- *   pending → verified   (action `client.verification.verified`)
- *   pending → rejected   (action `client.verification.rejected`, с причиной)
+ *   pending → verified             (action `client.verification.verified`)
+ *   pending → rejected             (action `client.verification.rejected`, с причиной)
+ *   pending → resubmit_requested   (action `client.verification.resubmit_requested`,
+ *                                   с причиной — ADM-10, Р-454 I-1, мягкий возврат)
  * Из `unverified` решать нечего (клиент ещё не подал), `verified`/`rejected`
- * терминальны для очереди. Гард встроен в UPDATE (`WHERE state = 'pending'`):
+ * терминальны для очереди. `resubmit_requested` — не терминал: клиент, дославший
+ * документ (сторона кабинета), вернётся в `pending`; эту кабинет-загрузку строит
+ * другой агент, здесь — только операторский переход из `pending`.
+ * Все три перехода разрешены ТОЛЬКО из `pending`. Гард встроен в UPDATE
+ * (`WHERE state = 'pending'`):
  * если к моменту COMMIT клиент уже не pending (другой оператор решил первым,
  * гонка) — строк не обновилось, транзакция откатывается, решение не
  * применяется (fail-closed, оптимистичная блокировка состоянием).
@@ -26,7 +32,13 @@ import { appendJournalEntry } from '../journal/journal';
  * личность автора решения не доверяется данным формы (Р-451).
  */
 
-export type VerificationDecision = 'verified' | 'rejected';
+export type VerificationDecision = 'verified' | 'rejected' | 'resubmit_requested';
+
+/** Решения, для которых основание ОБЯЗАТЕЛЬНО (клиент должен знать, что делать). */
+const REASON_REQUIRED: ReadonlySet<VerificationDecision> = new Set<VerificationDecision>([
+  'rejected',
+  'resubmit_requested',
+]);
 
 export interface DecideInput {
   /** `operators.id` автора — из серверной сессии, НЕ из формы. */
@@ -35,15 +47,16 @@ export interface DecideInput {
   userId: string;
   decision: VerificationDecision;
   /**
-   * Основание. Для `rejected` ОБЯЗАТЕЛЬНО и непустое (клиент должен знать, что
-   * исправить); для `verified` — необязательная заметка оператора.
+   * Основание. Для `rejected` и `resubmit_requested` ОБЯЗАТЕЛЬНО и непустое
+   * (клиент должен знать, что исправить или дослать); для `verified` —
+   * необязательная заметка оператора.
    */
   reason?: string;
 }
 
 export type DecideResult =
   | { ok: true; state: VerificationDecision; journalSeq: number }
-  /** Причина нужна для отклонения, а её нет/пустая — fail-closed. */
+  /** Причина нужна для отклонения/переподачи, а её нет/пустая — fail-closed. */
   | { ok: false; reason: 'missingReason' }
   /** Клиент не в `pending` (нет строки, или уже решён, или гонка) — fail-closed. */
   | { ok: false; reason: 'notPending' };
@@ -51,6 +64,7 @@ export type DecideResult =
 const ACTIONS: Record<VerificationDecision, string> = {
   verified: 'client.verification.verified',
   rejected: 'client.verification.rejected',
+  resubmit_requested: 'client.verification.resubmit_requested',
 };
 
 export async function decideClientVerification(
@@ -58,8 +72,9 @@ export async function decideClientVerification(
   pool: { connect(): Promise<PoolClient> } = getPool(),
 ): Promise<DecideResult> {
   const reason = input.reason?.trim() ?? '';
-  if (input.decision === 'rejected' && reason.length === 0) {
-    // Отклонение без причины не пишем: Р-451 требует основание, fail-closed.
+  if (REASON_REQUIRED.has(input.decision) && reason.length === 0) {
+    // Отклонение/переподача без причины не пишутся: клиент не узнал бы, что
+    // исправить или дослать (Р-451 требует основание), fail-closed.
     return { ok: false, reason: 'missingReason' };
   }
 
