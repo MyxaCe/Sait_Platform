@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
 import { getOperatorSession } from '@/lib/auth/current';
+import { isOperatorEnrolled } from '@/lib/auth/operator-totp';
 import { LOGIN_PATH } from '@/lib/auth/constants';
 
 /**
@@ -7,10 +8,17 @@ import { LOGIN_PATH } from '@/lib/auth/constants';
  * бы сюда запрос без валидной операторской сессии. Эта проверка — defence-in-
  * depth и источник имени оператора для шапки. Если сессии нет (например,
  * middleware обошли) — редирект на вход, fail-closed (Р-394).
+ *
+ * **Обязательный второй фактор (ADM-13, Р-454 III-3).** Оператор без включённой
+ * 2FA (в т.ч. суперадмин, вошедший по паролю «с первого дня») заворачивается на
+ * `/enroll` и не видит ни одного рабочего модуля, пока не включит TOTP. Петли
+ * нет: `/enroll` живёт ВНЕ этого layout. Источник истины — база (а не claim в
+ * JWT): включил 2FA в этой же сессии — следующий переход уже проходит.
  */
 export default async function ProtectedLayout({ children }: { children: React.ReactNode }) {
   const operator = await getOperatorSession();
   if (!operator) redirect(LOGIN_PATH);
+  if (!(await isOperatorEnrolled(operator.operatorId))) redirect('/enroll');
 
   return (
     <div className="flex min-h-svh flex-col">
