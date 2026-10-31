@@ -53,6 +53,11 @@ function fakePool(initialState: VerificationState) {
         state.value = params[1] as VerificationState;
         return { rows: [{ user_id: params[0] }], rowCount: 1 };
       }
+      if (/pg_advisory_xact_lock/i.test(sql)) {
+        // Сериализация аппендов журнала (ADM-09): appendJournalEntry берёт
+        // advisory-lock перед чтением prev_hash. Фейку достаточно принять запрос.
+        return { rows: [{ pg_advisory_xact_lock: '' }], rowCount: 1 };
+      }
       if (/SELECT entry_hash FROM admin_action_journal/i.test(sql)) {
         const last = journal[journal.length - 1];
         return { rows: last ? [{ entry_hash: last.entry_hash }] : [], rowCount: last ? 1 : 0 };
