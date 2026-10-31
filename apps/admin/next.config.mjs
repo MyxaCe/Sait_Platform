@@ -5,6 +5,13 @@ const nextConfig = {
   // По образцу cabinet: образ не знает адресов, сервер стартует из server.js.
   output: process.env.BUILD_STANDALONE ? 'standalone' : undefined,
   transpilePackages: ['@broker/ui', '@broker/utils'],
+  // @node-rs/argon2 — нативный аддон (.node). Его НЕЛЬЗЯ бандлить webpack'ом:
+  // `next build` падает «Module parse failed» на бинаре. Выносим в external
+  // серверной сборки — требуется из node_modules в рантайме (standalone-трейс
+  // его включает). Кабинет этой проблемы не знал: там bcryptjs — чистый JS.
+  experimental: {
+    serverComponentsExternalPackages: ['@node-rs/argon2'],
+  },
   headers: async () => [
     {
       source: '/(.*)',
