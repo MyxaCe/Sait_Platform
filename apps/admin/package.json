@@ -8,7 +8,8 @@
     "start": "next start -p 3005",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "seed:admin": "tsx scripts/bootstrap-admin.ts"
+    "seed:admin": "tsx scripts/bootstrap-admin.ts",
+    "seed:kyc-fixture": "tsx scripts/seed-kyc-fixture.ts"
   },
   "dependencies": {
     "@broker/ui": "workspace:*",
