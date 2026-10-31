@@ -19,4 +19,5 @@ export const EXPECTED_MIGRATIONS: readonly string[] = [
   '1791245040000_trading',
   '1792800300000_drop_balance_default',
   '1793370360000_balance_account_seq',
+  '1793449440000_admin_center_foundation',
 ];
