@@ -22,4 +22,5 @@ export const EXPECTED_MIGRATIONS: readonly string[] = [
   '1793449440000_admin_center_foundation',
   '1793535840000_operator_password_hash',
   '1793622240000_kyc_documents',
+  '1793708640000_verification_resubmit_requested',
 ];
