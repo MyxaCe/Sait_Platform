@@ -28,7 +28,16 @@ export interface ProjectionConfig {
 }
 
 export type ProjectionOutcome =
-  'applied' | 'skipped-duplicate' | 'skipped-tenant' | 'skipped-unknown';
+  | 'applied'
+  | 'skipped-duplicate'
+  | 'skipped-tenant'
+  | 'skipped-unknown'
+  /**
+   * Событие о балансе устарело: его `accountSeq` не больше уже применённого.
+   * Отброшено ПРАВИЛЬНО (КОНТРАКТЫ §5, строго больший) — это не ошибка, а
+   * штатный исход гонки проекций. Заявка дедупа остаётся: событие не вернём.
+   */
+  | 'skipped-stale';
 
 /**
  * Баланс пришёл на счёт, которого у нас нет (WEB-29).
@@ -174,12 +183,59 @@ export async function applyTerminalEvent(
           currencyMinorUnits: d.currencyMinorUnits,
         })?.minor ?? d.balanceCents;
 
+      /*
+       * Перезапись остатка — ТОЛЬКО при строго большем accountSeq (WEB-43,
+       * КОНТРАКТЫ §5, Р-441). Свидетель поймал тринадцать копеек: два события
+       * о балансе применились за ~4 мс в порядке, обратном журналу. prefetch(16)
+       * и необёрнутый обработчик означают, что до шестнадцати проекций идут
+       * ОДНОВРЕМЕННО и остаток пишет та, чей UPDATE закончил последним. Слепой
+       * `UPDATE ... WHERE user_id` — last-writer-wins, и старое 10 000.00
+       * затирало свежее 9 999.87.
+       *
+       * Условие стоит В САМОМ UPDATE, а не проверкой перед ним: «прочитать
+       * номер, сравнить, записать» проигрывает гонку в окне между чтением и
+       * записью — ровно то, что мы ловим. «Записать ПРИ условии» атомарно, окна
+       * нет. Строго больший (`<`), не `≤`: при равных номерах (события одной
+       * пачки несут один номер) отбрасывание съело бы соседей по операции.
+       *
+       * accountSeq пока опционален (Р-277, выкат в два шага). Его отсутствие —
+       * NULL в $2: `$2 IS NULL` пропускает guard (упорядочить нечем, применяем
+       * как раньше), а `COALESCE($2, account_seq)` не затирает уже сохранённый
+       * номер. Guard начнёт КУСАТЬСЯ, когда терминал сошлёт номер на всех
+       * событиях (TRM-60); до тех пор гонка на непомеченных событиях остаётся,
+       * и свидетель остаётся звенящим — причина ещё не закрыта.
+       */
+      const accountSeq = d.accountSeq ?? null;
       const updated = await db.query(
-        `UPDATE demo_accounts SET balance_cents = $1 WHERE user_id = $2`,
-        [applied, d.userId],
+        `UPDATE demo_accounts
+            SET balance_cents = $1,
+                account_seq   = COALESCE($2, account_seq)
+          WHERE user_id = $3
+            AND ($2::bigint IS NULL OR account_seq IS NULL OR account_seq < $2)`,
+        [applied, accountSeq, d.userId],
       );
       if ((updated.rowCount ?? 0) === 0) {
-        throw new BalanceAccountMissingError(d.userId, eventId);
+        /*
+         * Ноль строк — ДВЕ противоположные причины, смешивать нельзя:
+         *  (а) строки нет вовсе → деньги есть, счёта нет (WEB-29): бросаем,
+         *      откат уносит заявку дедупа, сообщение доставят снова;
+         *  (б) строка есть, но её accountSeq не меньше нашего → мы ПРАВИЛЬНО
+         *      отбросили устаревшее. Это не ошибка: заявка остаётся, событие
+         *      не повторяем. Иначе устаревшее ушло бы в DLX и возвращалось бы
+         *      вечно (poison).
+         *
+         * Проба существования идёт ПОСЛЕ атомарного UPDATE и денежного значения
+         * уже не касается — UPDATE сам решил не перезаписывать; проба лишь
+         * различает «нет строки» и «строка есть, но старше».
+         */
+        const exists = await db.query(
+          `SELECT 1 FROM demo_accounts WHERE user_id = $1`,
+          [d.userId],
+        );
+        if ((exists.rowCount ?? 0) === 0) {
+          throw new BalanceAccountMissingError(d.userId, eventId);
+        }
+        return 'skipped-stale';
       }
       /*
         Сброс человек замечает только по изменившемуся числу (WEB-42).
