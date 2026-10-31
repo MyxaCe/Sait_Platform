@@ -9,6 +9,7 @@ import {
 } from '@/lib/kyc/queries';
 import { sourceOfFundsRuleText, sourceOfFundsStatus } from '@/lib/kyc/jurisdiction';
 import { DecisionForm } from './DecisionForm';
+import { ViewDocumentButton } from './ViewDocumentButton';
 
 /**
  * Карточка клиента (ADM-08, Р-451 п.4): состояние проверки, поданные документы
@@ -91,7 +92,10 @@ export default async function ClientKycCard({ params }: { params: { userId: stri
                     {d.contentType ? ` · ${d.contentType}` : ''}
                   </span>
                 </span>
-                <span className="shrink-0 text-sm text-secondary">подан {dateFmt(d.submittedAt)}</span>
+                <span className="flex shrink-0 items-center gap-4">
+                  <span className="text-sm text-secondary">подан {dateFmt(d.submittedAt)}</span>
+                  <ViewDocumentButton docId={d.id} />
+                </span>
               </li>
             ))}
           </ul>

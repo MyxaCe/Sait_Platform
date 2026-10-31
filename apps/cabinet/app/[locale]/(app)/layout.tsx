@@ -37,6 +37,7 @@ export default async function AppLayout({ children, params }: LayoutProps) {
     { href: '/profile', label: tNav('profile') },
     { href: '/security', label: tNav('security') },
     { href: '/documents', label: tNav('documents') },
+    { href: '/verification', label: tNav('verification') },
     { href: '/notifications', label: tNav('notifications'), badge: unread },
   ];
 
