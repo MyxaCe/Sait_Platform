@@ -119,6 +119,49 @@ describe('ADM-08 · решение по верификации', () => {
     expect(JSON.parse(f.journal[0]!.payload).basis).toBe('селфи нечитаемо');
   });
 
+  it('pending → resubmit_requested с причиной: мягкий возврат пишется в журнал (ADM-10)', async () => {
+    const f = fakePool('pending');
+    const res = await decideClientVerification(
+      { operatorId: OP, userId: USER, decision: 'resubmit_requested', reason: 'адрес старше 3 мес, дошлите свежий' },
+      f.pool,
+    );
+
+    expect(res.ok).toBe(true);
+    expect(f.state.value).toBe('resubmit_requested');
+    expect(f.journal).toHaveLength(1);
+    expect(f.journal[0]!.action).toBe('client.verification.resubmit_requested');
+    expect(f.journal[0]!.subject_kind).toBe('client');
+    expect(JSON.parse(f.journal[0]!.payload).basis).toBe('адрес старше 3 мес, дошлите свежий');
+    expect(JSON.parse(f.journal[0]!.payload).previousState).toBe('pending');
+    expect(f.state.lastJournalSeq).toBe(f.journal[0]!.seq);
+    expect(f.flags().committed).toBe(true);
+  });
+
+  it('resubmit_requested без причины — отказ, ничего не меняется и не пишется (fail-closed)', async () => {
+    const f = fakePool('pending');
+    const res = await decideClientVerification(
+      { operatorId: OP, userId: USER, decision: 'resubmit_requested' },
+      f.pool,
+    );
+
+    expect(res).toEqual({ ok: false, reason: 'missingReason' });
+    expect(f.state.value).toBe('pending');
+    expect(f.journal).toHaveLength(0);
+    expect(f.flags().begun).toBe(false);
+  });
+
+  it('resubmit_requested разрешён только из pending — из verified отказ notPending', async () => {
+    const f = fakePool('verified');
+    const res = await decideClientVerification(
+      { operatorId: OP, userId: USER, decision: 'resubmit_requested', reason: 'дошлите адрес' },
+      f.pool,
+    );
+    expect(res).toEqual({ ok: false, reason: 'notPending' });
+    expect(f.state.value).toBe('verified');
+    expect(f.journal).toHaveLength(0);
+    expect(f.flags().rolledBack).toBe(true);
+  });
+
   it('rejected без причины — отказ, ничего не меняется и не пишется (fail-closed)', async () => {
     const f = fakePool('pending');
     const res = await decideClientVerification({ operatorId: OP, userId: USER, decision: 'rejected' }, f.pool);

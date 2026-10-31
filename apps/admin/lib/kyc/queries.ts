@@ -10,18 +10,45 @@ import { getPool, type Queryable } from '../db';
  * попадают.
  */
 
-/** Четыре состояния из фундамента (1793449440000). Пятого нет (см. миграцию). */
-export type VerificationState = 'unverified' | 'pending' | 'verified' | 'rejected';
+/**
+ * Состояния проверки. Четыре из фундамента (1793449440000) плюс пятое
+ * `resubmit_requested` из 1793708640000 (ADM-10, Р-454 I-1) — мягкий возврат:
+ * оператор просит дослать документ, не отклоняя заявку целиком.
+ */
+export type VerificationState =
+  | 'unverified'
+  | 'pending'
+  | 'verified'
+  | 'rejected'
+  | 'resubmit_requested';
 
 export const VERIFICATION_STATES: readonly VerificationState[] = [
   'unverified',
   'pending',
   'verified',
   'rejected',
+  'resubmit_requested',
 ];
 
 /** Виды KYC-документа по Р-451 п.4 (закрытый перечень = CHECK в схеме). */
 export type KycDocKind = 'identity' | 'selfie_liveness' | 'address_proof' | 'source_of_funds';
+
+/**
+ * I-3 (Р-454 I-3): подтверждение адреса действительно ≤ 3 мес (Р-451 п.4).
+ * Старше 90 дней — визуальный флаг в карточке, НЕ блок решения: оператор видит
+ * несвежесть и сам решает, просить ли переподачу.
+ */
+export const ADDRESS_PROOF_MAX_AGE_DAYS = 90;
+
+/** Документ старше `days` дней на момент `now`. Чистая функция — тестируема. */
+export function isDocumentOlderThan(
+  submittedAt: string,
+  days: number,
+  now: Date = new Date(),
+): boolean {
+  const ageMs = now.getTime() - new Date(submittedAt).getTime();
+  return ageMs > days * 24 * 60 * 60 * 1000;
+}
 
 /** Человекочитаемые подписи видов — для карточки оператора. */
 export const DOC_KIND_LABELS: Record<KycDocKind, string> = {
@@ -63,7 +90,8 @@ function asState(value: unknown): VerificationState {
     value === 'unverified' ||
     value === 'pending' ||
     value === 'verified' ||
-    value === 'rejected'
+    value === 'rejected' ||
+    value === 'resubmit_requested'
   ) {
     return value;
   }
