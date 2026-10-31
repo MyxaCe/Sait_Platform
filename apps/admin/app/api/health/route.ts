@@ -1,6 +1,10 @@
 import { NextResponse } from 'next/server';
 
-/** Liveness центра управления. Публичный путь (гейт его не трогает). */
+/**
+ * Liveness центра управления. Единственный ПУБЛИЧНЫЙ `/api`-роут — он в явном
+ * allowlist гейта (`API_PUBLIC_PATHS`, Р-451). Остальной `/api` закрыт
+ * default-deny. Секретов не отдаёт: только отпечаток готовности гейта.
+ */
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
