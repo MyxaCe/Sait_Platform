@@ -21,6 +21,7 @@
     "profile": "Profile",
     "security": "Security",
     "documents": "Documents",
+    "verification": "Verification",
     "notifications": "Notifications",
     "history": "Trade history"
   },
@@ -169,6 +170,27 @@
     "statuses": {
       "uploaded": "Under review",
       "approved": "Approved",
+      "rejected": "Rejected"
+    }
+  },
+  "kyc": {
+    "title": "Verification",
+    "hint": "Upload your documents to complete verification. PDF, JPG or PNG up to 10 MB. Once submitted, your request goes to an operator for review.",
+    "submit": "Submit document",
+    "submitted": "Document submitted and queued for review.",
+    "kind": "Document type",
+    "kinds": {
+      "identity": "Passport / identity document",
+      "selfie_liveness": "Selfie with liveness",
+      "address_proof": "Proof of address",
+      "source_of_funds": "Source of funds"
+    },
+    "file": "File",
+    "empty": "No documents submitted yet",
+    "states": {
+      "unverified": "Not started",
+      "pending": "Under review",
+      "verified": "Verified",
       "rejected": "Rejected"
     }
   },
