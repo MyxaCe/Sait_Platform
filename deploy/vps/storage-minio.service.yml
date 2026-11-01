@@ -1,0 +1,54 @@
+# Фрагмент прод-compose витрины (`/srv/broker/site/compose.yml`): сервис
+# объектного хранилища KYC + блок storage-env для admin и cabinet (ADM-12,
+# Р-454 II-1). ПЛЕЙСХОЛДЕРЫ: реальные значения — только в `/srv/broker/site/.env`
+# (chmod 600, не в git). Этот файл — образец определения, не самостоятельный
+# compose: `minio` добавляется как сервис в существующий стек `broker-site`,
+# а блок `S3_*` вставляется в `environment:` сервисов `cabinet` и `admin`.
+#
+# ВРЕМЕННЫЙ вариант стенда: S3-ключи в env. Целевой дом ключей — Vault
+# (ратифицировано Р-454 II-1). См. storage-minio-runbook.md.
+
+services:
+  # --- Объектное хранилище KYC (MinIO) ---------------------------------
+  # S3-совместимый бэкенд, оживляющий пакет `@broker/storage`.
+  #
+  # ОБРАЗ ПО ДАЙДЖЕСТУ, НЕ `:latest`. Урок прод-CRM: `:latest` делает версию
+  # неустановимой. Образ — реальный MinIO (сборка Bitnami; официальные образы
+  # и бинарники MinIO с лета-2025 закрыты за аутентификацией/лицензией, namespace
+  # `bitnamilegacy` — последние свободные сборки, заморожены). Пин по sha256 =
+  # неизменяемая ссылка, что строже тега.
+  #
+  # S3-ПОРТ 9000 НАРУЖУ НЕ ПРОБРОШЕН: только внутренняя сеть `inside`, по ней
+  # ходят admin/cabinet (endpoint `http://minio:9000`). Консоль 9001 не
+  # публикуется вовсе (если понадобится — только `127.0.0.1:9001:9001`).
+  minio:
+    image: bitnamilegacy/minio@sha256:451fe6858cb770cc9d0e77ba811ce287420f781c7c1b806a386f6896471a349c
+    container_name: broker-minio
+    restart: unless-stopped
+    environment:
+      # Root-креды MinIO — ТОЛЬКО для админ-операций (mc). Приложение ими НЕ
+      # пользуется: у него выделенный least-privilege ключ (см. ниже / runbook).
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+      # Автосоздание KYC-бакета на пустом томе при первом старте.
+      MINIO_DEFAULT_BUCKETS: ${S3_BUCKET}
+      MINIO_SCHEME: http
+    volumes:
+      - minio-data:/bitnami/minio/data
+    networks: [inside]
+
+# --- Блок storage-env, добавляемый в cabinet И admin --------------------
+# Вставляется в `environment:` ОБОИХ сервисов `cabinet` и `admin`. Имена
+# переменных — ТОЧНО те, что читает `packages/storage/src/config.ts`
+# (`loadStorageConfig`). Пустая строка = «не задано» (fail-closed), поэтому
+# плейсхолдеры в .env обязаны быть заполнены.
+#
+#   S3_ENDPOINT: http://minio:9000      # внутренний адрес; пусто => AWS S3
+#   S3_REGION: us-east-1                # SigV4 требует значение (MinIO игнорит)
+#   S3_BUCKET: ${S3_BUCKET}             # ОБЯЗАТЕЛЬНО
+#   S3_FORCE_PATH_STYLE: "true"         # MinIO без wildcard-DNS только так
+#   S3_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID}         # ОБЯЗАТЕЛЬНО (ключ приложения)
+#   S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY} # ОБЯЗАТЕЛЬНО (секрет приложения)
+
+volumes:
+  minio-data:
