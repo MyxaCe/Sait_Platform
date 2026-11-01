@@ -4,10 +4,10 @@ import { getPool } from '../db';
 import { appendJournalEntry } from '../journal/journal';
 import {
   buildMoneyAlert,
-  noopBreakGlassAlert,
-  type BreakGlassAlertPort,
+  noopAdminAlert,
+  type AdminAlertPort,
 } from './alerts';
-import { requiresSecondApproval } from './config';
+import { BOOTSTRAP_MODE_EXPIRY_CONDITION, bootstrapMode, requiresSecondApproval } from './config';
 import { EnvEd25519KeyProvider, signMoneyCommand, type Ed25519KeyProvider } from './signing';
 import { initialStateFor, transition } from './state-machine';
 import {
@@ -30,11 +30,14 @@ import {
  * `dispatch`/`execute`/`reject` не ходят в живой терминал. `initiatorId`/роль
  * берутся из СЕССИИ вызывающим server action-ом, НЕ из формы (Р-451/Р-452).
  *
- * Ратификация Р-455:
+ * Ратификация Р-455 / Р-456:
  *  - R-1: одна подпись ЦУ; в подписываемый payload кладём id ОБОИХ аппрувов.
- *  - R-2 + поправка: порог=0 для finance_operator; admin ПОЛНОСТЬЮ освобождён
- *    от второго аппрува (draft → signed сразу, любая сумма).
- *  - R-3: инициируют admin и finance_operator; self-approval запрещён.
+ *  - R-2 + поправка (Р-456 C): освобождение admin от второго аппрува —
+ *    ВРЕМЕННОЕ, только при `bootstrap_mode=true` (пока нет реальных
+ *    finance_operator). Каждый admin-self-approval в bootstrap → алерт + запись
+ *    в журнал (`money.command.bootstrap_self_approval`). bootstrap_mode=false →
+ *    admin подчиняется dual control, self-approval блокируется стейт-машиной.
+ *  - R-3: инициируют admin и finance_operator; self-approval запрещён (вне bootstrap).
  *  - R-4: reversal обязан ссылаться на исходную команду.
  *  - R-5: break-glass — только admin, инцидент, алерт всем админам, ревью ≤24ч.
  *
@@ -47,8 +50,11 @@ export interface CommandDeps {
   pool?: { connect(): Promise<PoolClient> };
   /** Провайдер ключа ЦУ. По умолчанию из env; в тестах/Vault — свой. */
   keyProvider?: Ed25519KeyProvider;
-  /** Порт алерта всех админов при break-glass (Р-455 R-5). По умолчанию no-op. */
-  breakGlassAlert?: BreakGlassAlertPort;
+  /**
+   * Порт алерта всех админов: break-glass (Р-455 R-5) и bootstrap-self-approval
+   * (Р-456 C). По умолчанию no-op.
+   */
+  adminAlert?: AdminAlertPort;
 }
 
 export interface InitiateInput {
@@ -139,11 +145,15 @@ export async function initiateCommand(
   }
 
   const pool = deps.pool ?? getPool();
-  const alertPort = deps.breakGlassAlert ?? noopBreakGlassAlert;
+  const alertPort = deps.adminAlert ?? noopAdminAlert;
+  // Р-456 C: режим фиксируем на команде в момент инициации (не читаем конфиг
+  // позже) — так аудит видит, под каким режимом она прошла, и подпись решается
+  // по режиму рождения, а не по случайному состоянию env во время sign.
+  const bootstrap = bootstrapMode();
   const commandId = randomUUID();
   const nonce = randomUUID();
   const initiateApprovalId = randomUUID();
-  const state = initialStateFor(input.initiatorRole, input.amount.amountMinor, breakGlass);
+  const state = initialStateFor(input.initiatorRole, input.amount.amountMinor, bootstrap, breakGlass);
   const reviewDueAt = breakGlass ? new Date(Date.now() + BREAK_GLASS_REVIEW_MS).toISOString() : null;
 
   const client = await pool.connect();
@@ -153,8 +163,8 @@ export async function initiateCommand(
       `INSERT INTO money_commands
          (id, type, account_id, amount_minor, currency, scale, initiator_id, initiator_role,
           basis_ref, original_command_id, nonce, state, break_glass, break_glass_reason,
-          incident_ref, review_due_at)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)`,
+          incident_ref, review_due_at, bootstrap_mode)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)`,
       [
         commandId,
         input.type,
@@ -172,6 +182,7 @@ export async function initiateCommand(
         breakGlass ? reason : null,
         breakGlass ? incidentRef : null,
         reviewDueAt,
+        bootstrap,
       ],
     );
     await client.query(
@@ -191,6 +202,7 @@ export async function initiateCommand(
       initiateApprovalId,
       state,
       breakGlass,
+      bootstrapMode: bootstrap,
     });
     if (breakGlass) {
       await journal(client, input.initiatorId, 'money.command.break_glass', commandId, {
@@ -253,12 +265,13 @@ interface LoadedCommand {
   original_command_id: string | null;
   nonce: string;
   break_glass: boolean;
+  bootstrap_mode: boolean;
 }
 
 async function load(client: PoolClient, commandId: string): Promise<LoadedCommand | null> {
   const r = await client.query(
     `SELECT id, state, initiator_id, initiator_role, type, account_id, amount_minor, currency,
-            scale, basis_ref, original_command_id, nonce, break_glass
+            scale, basis_ref, original_command_id, nonce, break_glass, bootstrap_mode
        FROM money_commands WHERE id = $1 FOR UPDATE`,
     [commandId],
   );
@@ -327,14 +340,18 @@ async function applySignature(
 }
 
 /**
- * Подпись команды, стоящей в `draft`: `draft → signed`. Для admin — всегда
- * (Р-455 R-2-поправка). Для finance_operator из draft — только если второй
- * аппрув не требуется (при пороге 0 он сюда не попадёт); иначе
- * `secondApprovalRequired`.
+ * Подпись команды, стоящей в `draft`: `draft → signed`.
+ *  - admin ПРИ `bootstrap_mode=true` (Р-456 C) — подписывает собственную команду
+ *    сам (self-approval). Это ВРЕМЕННОЕ исключение «со следом»: пишем отдельную
+ *    запись `money.command.bootstrap_self_approval` + алертим всех админов.
+ *  - admin без bootstrap и finance_operator — только если второй аппрув не
+ *    требуется (иначе `secondApprovalRequired`; при пороге 0 в draft не попадут).
+ *  - break-glass (admin-only) — аварийный обход, со своим следом (алерт/ревью).
  */
 export async function signCommand(commandId: string, deps: CommandDeps = {}): Promise<StepResult> {
   const pool = deps.pool ?? getPool();
   const keyProvider = deps.keyProvider ?? new EnvEd25519KeyProvider();
+  const alertPort = deps.adminAlert ?? noopAdminAlert;
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
@@ -347,12 +364,17 @@ export async function signCommand(commandId: string, deps: CommandDeps = {}): Pr
       kind: 'sign',
       role: cmd.initiator_role,
       amountMinor: cmd.amount_minor,
+      bootstrapMode: cmd.bootstrap_mode,
       breakGlass: cmd.break_glass,
     });
     if (!t.ok) {
       await client.query('ROLLBACK');
       return { ok: false, reason: t.error === 'secondApprovalRequired' ? 'secondApprovalRequired' : 'illegalState' };
     }
+    // Р-456 C: подпись admin'ом собственной команды в bootstrap-режиме — это
+    // self-approval. Не break-glass (у того свой след). Легализуем со следом.
+    const bootstrapSelfApproval =
+      cmd.initiator_role === 'admin' && cmd.bootstrap_mode && !cmd.break_glass;
     const updated = await client.query(
       `UPDATE money_commands SET state = 'signed', updated_at = now()
         WHERE id = $1 AND state = 'draft' RETURNING id`,
@@ -367,9 +389,39 @@ export async function signCommand(commandId: string, deps: CommandDeps = {}): Pr
       keyVersion: keyProvider.keyVersion(),
       initiatorRole: cmd.initiator_role,
       breakGlass: cmd.break_glass,
+      bootstrapMode: cmd.bootstrap_mode,
     });
-    await client.query(`UPDATE money_commands SET last_journal_seq = $2 WHERE id = $1`, [commandId, seq]);
+    let lastSeq = seq;
+    if (bootstrapSelfApproval) {
+      // Отдельная запись: admin подтвердил сам в bootstrap — временное исключение
+      // с зафиксированным условием истечения (Р-456 C).
+      lastSeq = await journal(
+        client,
+        cmd.initiator_id,
+        'money.command.bootstrap_self_approval',
+        commandId,
+        { bootstrapMode: true, expiryCondition: BOOTSTRAP_MODE_EXPIRY_CONDITION },
+      );
+    }
+    await client.query(`UPDATE money_commands SET last_journal_seq = $2 WHERE id = $1`, [commandId, lastSeq]);
     await client.query('COMMIT');
+
+    // Алерт о self-approval — ПОСЛЕ коммита (не алертим об откате). Р-456 C:
+    // каждый bootstrap-self-approval виден админам, а не проходит молча.
+    if (bootstrapSelfApproval) {
+      const alert = buildMoneyAlert({
+        kind: 'bootstrap_self_approval',
+        commandId,
+        type: cmd.type,
+        accountId: cmd.account_id,
+        amount: { amountMinor: String(cmd.amount_minor), currency: cmd.currency, scale: cmd.scale },
+        initiatorId: cmd.initiator_id,
+        secondApproverId: null,
+        basisRef: cmd.basis_ref,
+        result: `bootstrap self-approval (истекает: ${BOOTSTRAP_MODE_EXPIRY_CONDITION})`,
+      });
+      await alertPort.alertAllAdmins(alert).catch(() => {});
+    }
     return { ok: true, state: 'signed' };
   } catch (error) {
     await client.query('ROLLBACK').catch(() => {});

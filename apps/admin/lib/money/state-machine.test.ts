@@ -15,53 +15,64 @@ afterEach(() => {
 
 describe('initialStateFor', () => {
   it('finance_operator ниже порога → draft (готова к подписи)', () => {
-    expect(initialStateFor('finance_operator', '500')).toBe('draft');
+    expect(initialStateFor('finance_operator', '500', false)).toBe('draft');
   });
   it('finance_operator выше порога → awaiting_second_approval', () => {
-    expect(initialStateFor('finance_operator', '2000')).toBe('awaiting_second_approval');
+    expect(initialStateFor('finance_operator', '2000', false)).toBe('awaiting_second_approval');
   });
-  it('Р-455 R-2-поправка: admin → draft на ЛЮБУЮ сумму (освобождён от второго аппрува)', () => {
-    expect(initialStateFor('admin', '999999')).toBe('draft');
-    expect(initialStateFor('admin', '1')).toBe('draft');
-  });
-  it('break-glass (admin-only) → draft даже при большой сумме', () => {
+  it('Р-456 C: admin ПРИ bootstrap → draft на ЛЮБУЮ сумму', () => {
     expect(initialStateFor('admin', '999999', true)).toBe('draft');
+    expect(initialStateFor('admin', '1', true)).toBe('draft');
+  });
+  it('Р-456 C: admin БЕЗ bootstrap → по порогу как finance_operator (выше порога → awaiting)', () => {
+    expect(initialStateFor('admin', '2000', false)).toBe('awaiting_second_approval');
+    expect(initialStateFor('admin', '500', false)).toBe('draft');
+  });
+  it('break-glass (admin-only) → draft даже при большой сумме и без bootstrap', () => {
+    expect(initialStateFor('admin', '999999', false, true)).toBe('draft');
   });
   it('порог = 0 (дефолт Р-452): finance_operator — любая сумма требует второго аппрува', () => {
     delete process.env.MONEY_DUAL_CONTROL_THRESHOLD_MINOR;
-    expect(initialStateFor('finance_operator', '1')).toBe('awaiting_second_approval');
+    expect(initialStateFor('finance_operator', '1', false)).toBe('awaiting_second_approval');
   });
-  it('порог = 0: admin всё равно в draft (исключение сильнее порога)', () => {
+  it('Р-456 C: порог = 0, admin БЕЗ bootstrap → awaiting (освобождение снято)', () => {
     delete process.env.MONEY_DUAL_CONTROL_THRESHOLD_MINOR;
-    expect(initialStateFor('admin', '1')).toBe('draft');
+    expect(initialStateFor('admin', '1', false)).toBe('awaiting_second_approval');
+  });
+  it('Р-456 C: порог = 0, admin ПРИ bootstrap → draft (временное исключение)', () => {
+    delete process.env.MONEY_DUAL_CONTROL_THRESHOLD_MINOR;
+    expect(initialStateFor('admin', '1', true)).toBe('draft');
   });
 });
 
 describe('переходы', () => {
   it('draft + sign finance_operator (ниже порога) → signed', () => {
-    expect(transition('draft', { kind: 'sign', role: 'finance_operator', amountMinor: '500' })).toEqual({
-      ok: true,
-      state: 'signed',
-    });
+    expect(
+      transition('draft', { kind: 'sign', role: 'finance_operator', amountMinor: '500', bootstrapMode: false }),
+    ).toEqual({ ok: true, state: 'signed' });
   });
 
   it('draft + sign finance_operator (ВЫШЕ порога, без второго) → отказ secondApprovalRequired', () => {
-    expect(transition('draft', { kind: 'sign', role: 'finance_operator', amountMinor: '2000' })).toEqual({
-      ok: false,
-      error: 'secondApprovalRequired',
-    });
-  });
-
-  it('Р-455 R-2-поправка: draft + sign admin (ВЫШЕ порога, без второго) → signed', () => {
-    expect(transition('draft', { kind: 'sign', role: 'admin', amountMinor: '2000' })).toEqual({
-      ok: true,
-      state: 'signed',
-    });
-  });
-
-  it('draft + sign (выше порога, но break-glass admin) → signed', () => {
     expect(
-      transition('draft', { kind: 'sign', role: 'admin', amountMinor: '2000', breakGlass: true }),
+      transition('draft', { kind: 'sign', role: 'finance_operator', amountMinor: '2000', bootstrapMode: false }),
+    ).toEqual({ ok: false, error: 'secondApprovalRequired' });
+  });
+
+  it('Р-456 C: draft + sign admin ПРИ bootstrap (ВЫШЕ порога) → signed (self-approval разрешён)', () => {
+    expect(
+      transition('draft', { kind: 'sign', role: 'admin', amountMinor: '2000', bootstrapMode: true }),
+    ).toEqual({ ok: true, state: 'signed' });
+  });
+
+  it('Р-456 C: draft + sign admin БЕЗ bootstrap (ВЫШЕ порога) → secondApprovalRequired (освобождение снято)', () => {
+    expect(
+      transition('draft', { kind: 'sign', role: 'admin', amountMinor: '2000', bootstrapMode: false }),
+    ).toEqual({ ok: false, error: 'secondApprovalRequired' });
+  });
+
+  it('draft + sign (выше порога, но break-glass admin) → signed (вне зависимости от bootstrap)', () => {
+    expect(
+      transition('draft', { kind: 'sign', role: 'admin', amountMinor: '2000', bootstrapMode: false, breakGlass: true }),
     ).toEqual({ ok: true, state: 'signed' });
   });
 
@@ -105,7 +116,12 @@ describe('переходы', () => {
       error: 'illegalTransition',
     });
     expect(
-      transition('awaiting_second_approval', { kind: 'sign', role: 'finance_operator', amountMinor: '500' }),
+      transition('awaiting_second_approval', {
+        kind: 'sign',
+        role: 'finance_operator',
+        amountMinor: '500',
+        bootstrapMode: false,
+      }),
     ).toEqual({
       ok: false,
       error: 'illegalTransition',
