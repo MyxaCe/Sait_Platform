@@ -26,4 +26,5 @@ export const EXPECTED_MIGRATIONS: readonly string[] = [
   '1793881440000_operator_totp',
   '1794100000000_client_block',
   '1794200000000_leverage_portfolios',
+  '1794400000000_client_aml_screening',
 ];
