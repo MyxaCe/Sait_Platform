@@ -16,28 +16,35 @@ import type { MoneyCommandState, MoneyInitiatorRole } from './types';
  */
 
 /**
- * Начальное состояние новой команды (Р-455 R-2 + поправка). РОЛЬ инициатора
- * решает путь:
- *  - `admin` → всегда `draft` (ПОЛНОСТЬЮ освобождён от второго аппрува, любая
- *    сумма; команда подпишется сразу);
+ * Начальное состояние новой команды (Р-455 R-2 + поправка, Р-456 C). РОЛЬ
+ * инициатора И bootstrap-режим решают путь:
+ *  - `admin` ПРИ `bootstrapMode=true` → `draft` на любую сумму (ВРЕМЕННОЕ
+ *    исключение Р-456: admin инициирует и подтвердит сам; каждый self-approval
+ *    — с алертом и записью, см. оркестрацию);
+ *  - `admin` ПРИ `bootstrapMode=false` → как finance_operator: по порогу (admin
+ *    больше НЕ освобождён, self-approval блокируется);
  *  - `finance_operator` → `awaiting_second_approval`, если сумма выше порога
  *    (порог=0 по Р-455 R-2 → всегда), иначе `draft`.
- * break-glass (admin-only, Р-455 R-5) не меняет состояние — admin и так в
- * `draft`; флаг несёт инцидент/алерт/ревью, а не дополнительный обход.
+ * break-glass (admin-only, Р-455 R-5) — отдельный аварийный обход, не зависит
+ * от bootstrap: admin с break-glass идёт `draft` (несёт инцидент/алерт/ревью).
  */
 export function initialStateFor(
   role: MoneyInitiatorRole,
   amountMinor: string,
+  bootstrapMode: boolean,
   breakGlass = false,
 ): MoneyCommandState {
-  if (role === 'admin') return 'draft'; // Р-455 R-2-поправка: admin без второго аппрува
-  void breakGlass; // break-glass — admin-only; для finance_operator не достижим (гард в оркестрации)
+  // break-glass (admin-only) — всегда draft: аварийный обход со своим следом.
+  if (breakGlass) return 'draft';
+  // Р-456 C: admin освобождён ТОЛЬКО во временном bootstrap-режиме.
+  if (role === 'admin' && bootstrapMode) return 'draft';
+  // Иначе (finance_operator, либо admin без bootstrap) — по порогу dual control.
   return requiresSecondApproval(amountMinor) ? 'awaiting_second_approval' : 'draft';
 }
 
 /** События, двигающие уже созданную команду. */
 export type MoneyCommandEvent =
-  | { kind: 'sign'; role: MoneyInitiatorRole; amountMinor: string; breakGlass?: boolean }
+  | { kind: 'sign'; role: MoneyInitiatorRole; amountMinor: string; bootstrapMode: boolean; breakGlass?: boolean }
   | { kind: 'secondApprove'; initiatorId: string; approverId: string }
   | { kind: 'dispatch' }
   | { kind: 'execute' }
@@ -71,11 +78,15 @@ export function transition(
   switch (state) {
     case 'draft':
       if (event.kind === 'sign') {
-        // Р-455 R-2-поправка: admin подписывает из draft на любую сумму без
-        // второго аппрува. finance_operator — только если второй аппрув не
-        // требуется (при пороге 0 он в draft не окажется; гард вглубь).
-        if (event.role === 'admin') return ok('signed');
-        if (!event.breakGlass && requiresSecondApproval(event.amountMinor)) {
+        // break-glass (admin-only) — аварийный обход, подписывается из draft.
+        if (event.breakGlass) return ok('signed');
+        // Р-456 C: admin подписывает собственную команду из draft (self-approval)
+        // ТОЛЬКО во временном bootstrap-режиме. Без bootstrap admin больше не
+        // освобождён — идёт общий гард порога (и не окажется в draft выше порога).
+        if (event.role === 'admin' && event.bootstrapMode) return ok('signed');
+        // finance_operator (и admin без bootstrap) — только если второй аппрув
+        // не требуется (при пороге 0 в draft не окажется; гард вглубь).
+        if (requiresSecondApproval(event.amountMinor)) {
           return { ok: false, error: 'secondApprovalRequired' };
         }
         return ok('signed');

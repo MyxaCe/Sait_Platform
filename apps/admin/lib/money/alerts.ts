@@ -21,6 +21,9 @@ export type MoneyAlertChannel = 'telegram' | 'email';
 /** Повод алерта — для маршрутизации и текста. */
 export type MoneyAlertKind =
   | 'break_glass'
+  // Р-456 C: admin подтвердил собственную команду в bootstrap-режиме. Временное
+  // исключение «со следом»: не молча, а алертом + записью в журнал.
+  | 'bootstrap_self_approval'
   | 'replayed_nonce'
   | 'expired_timestamp'
   | 'future_timestamp'
@@ -86,18 +89,18 @@ export interface MoneyAlertChannelPort {
 }
 
 /**
- * Порт оповещения всех админов при break-glass (Р-455 R-5). На проде за ним —
- * мультиканальная доставка (`dispatchMoneyAlert`); в скелете по умолчанию
- * no-op-порт `noopBreakGlassAlert`, чтобы оркестрация не зависела от живого
- * канала.
+ * Порт оповещения всех админов (Р-455 R-5 break-glass, Р-456 C bootstrap
+ * self-approval). На проде за ним — мультиканальная доставка
+ * (`dispatchMoneyAlert`); в скелете по умолчанию no-op-порт `noopAdminAlert`,
+ * чтобы оркестрация не зависела от живого канала.
  */
-export interface BreakGlassAlertPort {
+export interface AdminAlertPort {
   alertAllAdmins(alert: MoneyAlert): Promise<void>;
 }
 
-export const noopBreakGlassAlert: BreakGlassAlertPort = {
+export const noopAdminAlert: AdminAlertPort = {
   async alertAllAdmins() {
-    /* скелет: живого канала нет (Р-455) */
+    /* скелет: живого канала нет (Р-455/Р-456) */
   },
 };
 
