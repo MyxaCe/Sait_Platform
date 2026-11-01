@@ -43,4 +43,11 @@ describe('WEB-31 · список и каталог', () => {
     expect([...disk, '9999_lишний'].sort()).not.toEqual(disk);
     expect(disk.slice(1)).not.toEqual(disk);
   });
+
+  // ADM-02 · блокировка клиента: миграция зарегистрирована и в списке кода, и
+  // на диске (пара не разошлась именно по этой строке).
+  it('ADM-02 · миграция блокировки клиента зарегистрирована', () => {
+    expect(EXPECTED_MIGRATIONS).toContain('1794100000000_client_block');
+    expect(onDisk()).toContain('1794100000000_client_block');
+  });
 });
