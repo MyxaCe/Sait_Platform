@@ -35,4 +35,7 @@ export const EXPECTED_MIGRATIONS: readonly string[] = [
   // сломался бы. Ставим после client_block (таймстамп — по факту вливания, не ветвления).
   '1794300000000_money_commands',
   '1794400000000_client_aml_screening',
+  // Р-456 C: колонка bootstrap_mode — отдельной миграцией (1794300000000 уже
+  // накатана волной 2, править на месте нельзя — WEB-31).
+  '1794500000000_money_commands_bootstrap_mode',
 ];

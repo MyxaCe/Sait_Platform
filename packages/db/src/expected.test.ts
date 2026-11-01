@@ -63,4 +63,10 @@ describe('WEB-31 · список и каталог', () => {
     expect(EXPECTED_MIGRATIONS).toContain('1794400000000_client_aml_screening');
     expect(onDisk()).toContain('1794400000000_client_aml_screening');
   });
+
+  // Р-456 C · bootstrap_mode вынесен отдельной миграцией (не правкой applied-миграции).
+  it('Р-456 · миграция bootstrap_mode зарегистрирована', () => {
+    expect(EXPECTED_MIGRATIONS).toContain('1794500000000_money_commands_bootstrap_mode');
+    expect(onDisk()).toContain('1794500000000_money_commands_bootstrap_mode');
+  });
 });
