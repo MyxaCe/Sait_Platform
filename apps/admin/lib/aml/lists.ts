@@ -54,7 +54,20 @@ export const SANCTIONS_LISTS: readonly SanctionsList[] = [
   { id: 'eu', label: 'EU consolidated', authority: 'European Union' },
 ];
 
+/**
+ * Списки, ОБЯЗАТЕЛЬНЫЕ для исхода «clear» (Р-456 D): все три — OFSI, OFAC и
+ * EU consolidated. Отметка «совпадений нет» не принимается, пока сверка не
+ * покрыла каждый из них (не «≥1 из», а «все три»). Для исхода «escalated»
+ * достаточно одного списка — совпадение по любому уже требует эскалации.
+ */
+export const REQUIRED_LISTS_FOR_CLEAR: readonly SanctionsListId[] = ['ofsi', 'ofac', 'eu'];
+
 const SANCTIONS_LIST_IDS: ReadonlySet<string> = new Set(SANCTIONS_LISTS.map((l) => l.id));
+
+/** Покрывает ли набор все обязательные для «clear» списки (Р-456 D). */
+export function coversAllRequiredForClear(lists: readonly SanctionsListId[]): boolean {
+  return REQUIRED_LISTS_FOR_CLEAR.every((id) => lists.includes(id));
+}
 
 export function isSanctionsListId(value: unknown): value is SanctionsListId {
   return typeof value === 'string' && SANCTIONS_LIST_IDS.has(value);
