@@ -50,4 +50,11 @@ describe('WEB-31 · список и каталог', () => {
     expect(EXPECTED_MIGRATIONS).toContain('1794100000000_client_block');
     expect(onDisk()).toContain('1794100000000_client_block');
   });
+
+  // ADM-14 · ручной AML-скрининг: миграция зарегистрирована и в списке кода, и
+  // на диске (пара не разошлась именно по этой строке).
+  it('ADM-14 · миграция AML-скрининга зарегистрирована', () => {
+    expect(EXPECTED_MIGRATIONS).toContain('1794400000000_client_aml_screening');
+    expect(onDisk()).toContain('1794400000000_client_aml_screening');
+  });
 });

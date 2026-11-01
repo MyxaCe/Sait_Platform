@@ -25,4 +25,5 @@ export const EXPECTED_MIGRATIONS: readonly string[] = [
   '1793708640000_verification_resubmit_requested',
   '1793881440000_operator_totp',
   '1794100000000_client_block',
+  '1794400000000_client_aml_screening',
 ];
