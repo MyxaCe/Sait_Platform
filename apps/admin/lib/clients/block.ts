@@ -1,5 +1,5 @@
 import type { PoolClient } from 'pg';
-import { getPool } from '../db';
+import { getPool, type Queryable } from '../db';
 import { appendJournalEntry } from '../journal/journal';
 
 /**
@@ -52,6 +52,86 @@ const ACTIONS: Record<BlockAction, string> = {
   unblock: 'client.unblock',
 };
 
+/**
+ * Исход транзакционного ядра блокировки. `applied: false` — содержательного
+ * перехода не было (клиент уже в целевом состоянии): ничего не записано, и
+ * вызывающий сам решает, ошибка это (ручной блок — `alreadyInState`) или
+ * идемпотентный no-op (авто-блок при AML-эскалации на уже заблокированном).
+ */
+export type BlockTxOutcome =
+  | { applied: true; blocked: boolean; journalSeq: number }
+  | { applied: false; reason: 'alreadyInState' };
+
+/**
+ * Транзакционное ядро блокировки ВНУТРИ уже открытой транзакции (ADM-02).
+ *
+ * Вынесено из `setClientBlock`, чтобы смежная зона могла сделать блокировку
+ * ЧАСТЬЮ СВОЕЙ транзакции, не дублируя схему `client_blocks`: ADM-14
+ * (AML-эскалация → авто-блок) журналирует `client.aml_escalated` и
+ * `client.block` одним BEGIN/COMMIT. `setClientBlock` теперь тонкая обёртка
+ * над этим ядром — её SQL, поведение и контракт не изменились.
+ *
+ * Предусловия (на вызывающем): `reason` непустой; клиент существует (проверен
+ * или поймает FK). Делает ровно то же, что делал встроенный код: `SELECT …
+ * FOR UPDATE`, upsert `client_blocks`, append в журнал той же транзакцией,
+ * привязка `last_journal_seq`. Содержательного перехода нет → `applied: false`
+ * без единой записи.
+ */
+export async function applyClientBlockWithinTx(
+  db: Queryable,
+  input: { operatorId: string; userId: string; action: BlockAction; reason: string },
+): Promise<BlockTxOutcome> {
+  const targetBlocked = input.action === 'block';
+
+  // Текущее состояние: нет строки — не заблокирован. Содержательный переход
+  // обязателен (идемпотентность + защита от гонки: строку держит FOR UPDATE).
+  const cur = await db.query(`SELECT blocked FROM client_blocks WHERE user_id = $1 FOR UPDATE`, [
+    input.userId,
+  ]);
+  const currentlyBlocked = cur.rows[0] ? Boolean((cur.rows[0] as { blocked: boolean }).blocked) : false;
+  if (currentlyBlocked === targetBlocked) {
+    return { applied: false, reason: 'alreadyInState' };
+  }
+
+  await db.query(
+    `INSERT INTO client_blocks (user_id, blocked, reason, blocked_by, updated_at)
+          VALUES ($1, $2, $3, $4, now())
+     ON CONFLICT (user_id) DO UPDATE
+          SET blocked = EXCLUDED.blocked,
+              reason = EXCLUDED.reason,
+              blocked_by = EXCLUDED.blocked_by,
+              updated_at = now()`,
+    [input.userId, targetBlocked, input.reason, input.operatorId],
+  );
+
+  // Запись решения — ТОЙ ЖЕ транзакцией (журнал неизменяем базой, Р-049).
+  const entry = await appendJournalEntry(
+    {
+      operatorId: input.operatorId,
+      action: ACTIONS[input.action],
+      subjectKind: 'client',
+      subjectId: input.userId,
+      payload: { basis: input.reason, previousBlocked: currentlyBlocked },
+    },
+    db,
+  );
+
+  const seqRow = await db.query(`SELECT seq FROM admin_action_journal WHERE entry_hash = $1`, [
+    entry.entryHash,
+  ]);
+  const journalSeq = Number((seqRow.rows[0] as { seq: number | string } | undefined)?.seq);
+  if (!Number.isFinite(journalSeq)) {
+    throw new Error('не удалось получить seq записи журнала блокировки');
+  }
+
+  await db.query(`UPDATE client_blocks SET last_journal_seq = $2 WHERE user_id = $1`, [
+    input.userId,
+    journalSeq,
+  ]);
+
+  return { applied: true, blocked: targetBlocked, journalSeq };
+}
+
 export async function setClientBlock(
   input: BlockInput,
   pool: { connect(): Promise<PoolClient> } = getPool(),
@@ -62,7 +142,6 @@ export async function setClientBlock(
     return { ok: false, reason: 'missingReason' };
   }
 
-  const targetBlocked = input.action === 'block';
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
@@ -75,57 +154,19 @@ export async function setClientBlock(
       return { ok: false, reason: 'noClient' };
     }
 
-    // Текущее состояние: нет строки — не заблокирован. Содержательный переход
-    // обязателен, иначе откат (идемпотентность + защита от гонки: ниже строку
-    // держит блокировка записи, а пустой переход мы сюда просто не пускаем).
-    const cur = await client.query(`SELECT blocked FROM client_blocks WHERE user_id = $1 FOR UPDATE`, [
-      input.userId,
-    ]);
-    const currentlyBlocked = cur.rows[0] ? Boolean((cur.rows[0] as { blocked: boolean }).blocked) : false;
-    if (currentlyBlocked === targetBlocked) {
+    const outcome = await applyClientBlockWithinTx(client as unknown as Queryable, {
+      operatorId: input.operatorId,
+      userId: input.userId,
+      action: input.action,
+      reason,
+    });
+    if (!outcome.applied) {
       await client.query('ROLLBACK');
-      return { ok: false, reason: 'alreadyInState' };
+      return { ok: false, reason: outcome.reason };
     }
-
-    await client.query(
-      `INSERT INTO client_blocks (user_id, blocked, reason, blocked_by, updated_at)
-            VALUES ($1, $2, $3, $4, now())
-       ON CONFLICT (user_id) DO UPDATE
-            SET blocked = EXCLUDED.blocked,
-                reason = EXCLUDED.reason,
-                blocked_by = EXCLUDED.blocked_by,
-                updated_at = now()`,
-      [input.userId, targetBlocked, reason, input.operatorId],
-    );
-
-    // Запись решения — ТОЙ ЖЕ транзакцией (журнал неизменяем базой, Р-049).
-    const entry = await appendJournalEntry(
-      {
-        operatorId: input.operatorId,
-        action: ACTIONS[input.action],
-        subjectKind: 'client',
-        subjectId: input.userId,
-        payload: { basis: reason, previousBlocked: currentlyBlocked },
-      },
-      client as unknown as Parameters<typeof appendJournalEntry>[1],
-    );
-
-    const seqRow = await client.query(`SELECT seq FROM admin_action_journal WHERE entry_hash = $1`, [
-      entry.entryHash,
-    ]);
-    const journalSeq = Number((seqRow.rows[0] as { seq: number | string } | undefined)?.seq);
-    if (!Number.isFinite(journalSeq)) {
-      await client.query('ROLLBACK');
-      throw new Error('не удалось получить seq записи журнала блокировки');
-    }
-
-    await client.query(`UPDATE client_blocks SET last_journal_seq = $2 WHERE user_id = $1`, [
-      input.userId,
-      journalSeq,
-    ]);
 
     await client.query('COMMIT');
-    return { ok: true, blocked: targetBlocked, journalSeq };
+    return { ok: true, blocked: outcome.blocked, journalSeq: outcome.journalSeq };
   } catch (error) {
     await client.query('ROLLBACK').catch(() => {});
     throw error;

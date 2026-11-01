@@ -79,12 +79,17 @@ export interface AmlCard {
   listsChecked: SanctionsListId[];
   screenedAt: string | null;
   screenedByName: string | null;
+  /** Заблокирован ли клиент сейчас (чтение состояния зоны ADM-02). */
+  blocked: boolean;
+  /** Основание текущей блокировки (для «эскалация → авто-блок» — AML-причина). */
+  blockReason: string | null;
   history: AmlScreeningHistoryEntry[];
 }
 
 function asHistoryOutcome(action: string): AmlStatus {
   if (action === 'client.aml_escalated') return 'escalated';
   if (action === 'client.aml_checked') return 'clear';
+  if (action === 'client.aml_escalation_cleared') return 'clear';
   return 'unscreened';
 }
 
@@ -105,10 +110,13 @@ export async function getAmlCard(
             a.lists_checked,
             a.reason,
             a.screened_at,
-            o.display_name AS screened_by_name
+            o.display_name AS screened_by_name,
+            COALESCE(cb.blocked, false) AS blocked,
+            cb.reason AS block_reason
        FROM users u
        LEFT JOIN client_aml_screening a ON a.user_id = u.id
        LEFT JOIN operators o ON o.id = a.screened_by
+       LEFT JOIN client_blocks cb ON cb.user_id = u.id
       WHERE u.id = $1`,
     [userId],
   );
@@ -121,7 +129,7 @@ export async function getAmlCard(
        LEFT JOIN operators o ON o.id = j.operator_id
       WHERE j.subject_kind = 'client'
         AND j.subject_id = $1
-        AND j.action IN ('client.aml_checked', 'client.aml_escalated')
+        AND j.action IN ('client.aml_checked', 'client.aml_escalated', 'client.aml_escalation_cleared')
       ORDER BY j.seq DESC`,
     [userId],
   );
@@ -135,6 +143,8 @@ export async function getAmlCard(
     listsChecked: normalizeSanctionsLists((row.lists_checked as unknown[] | null) ?? []),
     screenedAt: row.screened_at ? new Date(row.screened_at as string | Date).toISOString() : null,
     screenedByName: (row.screened_by_name as string | null) ?? null,
+    blocked: Boolean(row.blocked),
+    blockReason: (row.block_reason as string | null) ?? null,
     history: hist.rows.map((h) => {
       const payload = (h.payload as Record<string, unknown> | null) ?? {};
       return {

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   asAmlStatus,
+  coversAllRequiredForClear,
   isSanctionsListId,
   normalizeSanctionsLists,
   SANCTIONS_LISTS,
@@ -42,5 +43,12 @@ describe('ADM-14 · списки санкций', () => {
   it('normalize на пустом/мусорном входе даёт пустой список', () => {
     expect(normalizeSanctionsLists([])).toEqual([]);
     expect(normalizeSanctionsLists([null, 1, {}])).toEqual([]);
+  });
+
+  it('coversAllRequiredForClear — только при всех трёх (Р-456 D)', () => {
+    expect(coversAllRequiredForClear(['ofsi', 'ofac', 'eu'])).toBe(true);
+    expect(coversAllRequiredForClear(['ofsi', 'ofac'])).toBe(false);
+    expect(coversAllRequiredForClear(['ofac'])).toBe(false);
+    expect(coversAllRequiredForClear([])).toBe(false);
   });
 });

@@ -17,6 +17,8 @@ const MESSAGES: Record<string, string> = {
   invalidClient: 'Клиент не указан.',
   invalidOutcome: 'Выберите исход сверки.',
   noLists: 'Отметьте хотя бы один список, по которому сверяли.',
+  listsIncompleteForClear:
+    'Для отметки «совпадений нет» нужно свериться по всем трём спискам (OFSI, OFAC, EU consolidated).',
   missingReason: 'Укажите основание — что именно сверено и каков результат.',
   noClient: 'Клиента не существует.',
 };
@@ -28,7 +30,8 @@ function Notice({ state }: { state: ScreeningState }) {
         role="status"
         className="rounded border border-positive/40 bg-positive/10 px-3 py-2 text-sm text-positive"
       >
-        Результат сверки зафиксирован и записан в журнал.
+        Результат сверки зафиксирован и записан в журнал. Исход «найдено» блокирует клиента
+        автоматически.
       </p>
     );
   }
@@ -61,7 +64,9 @@ export function ScreeningForm({ userId }: { userId: string }) {
       <input type="hidden" name="userId" value={userId} />
 
       <fieldset className="space-y-2">
-        <legend className="text-sm text-secondary">Сверено по спискам</legend>
+        <legend className="text-sm text-secondary">
+          Сверено по спискам (для «совпадений нет» обязательны все три)
+        </legend>
         <div className="flex flex-wrap gap-4">
           {SANCTIONS_LISTS.map((l) => (
             <label key={l.id} className="flex items-center gap-2 text-sm text-primary">
@@ -81,7 +86,7 @@ export function ScreeningForm({ userId }: { userId: string }) {
         </label>
         <label className="flex items-center gap-2 text-sm text-primary">
           <input type="radio" name="outcome" value="escalated" className="accent-accent" />
-          Найдено — на эскалацию
+          Найдено — на эскалацию (клиент будет заблокирован автоматически)
         </label>
       </fieldset>
 

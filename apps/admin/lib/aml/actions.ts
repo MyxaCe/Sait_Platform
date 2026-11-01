@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { getOperatorSession } from '../auth/current';
 import { LOGIN_PATH } from '../auth/constants';
-import { recordAmlScreening } from './screening';
+import { clearAmlEscalation, recordAmlScreening } from './screening';
 import { normalizeSanctionsLists, type AmlOutcome } from './lists';
 
 /**
@@ -21,7 +21,13 @@ import { normalizeSanctionsLists, type AmlOutcome } from './lists';
  *
  * **Роль-гейт: сверяют operator И admin (Р-454 III-1: AML-скрининг — как
  * KYC-решение, доступен обеим ролям).** fail-closed: без валидной сессии дело
- * до транзакции не доходит.
+ * до транзакции не доходит. Исход «найдено» автоматически блокирует клиента
+ * ТОЙ ЖЕ транзакцией (Р-456 D) — это делает ядро, не оператор.
+ *
+ * **Снятие AML-эскалации — ТОЛЬКО admin (fail-closed).** Оно разблокирует
+ * клиента, а блокировка/разблокировка клиента по Р-454 III-1 — admin-действие;
+ * обратить автоматический защитный блок тем более admin-только. Оператор может
+ * ВЫЗВАТЬ эскалацию (через скрининг), но не СНЯТЬ её.
  */
 
 export interface ScreeningState {
@@ -71,8 +77,48 @@ export async function recordScreeningAction(
   }
 
   // Карточка серверная (force-dynamic), но ревалидируем явно — статус, история и
-  // рабочий список изменились, покажем их сразу после действия.
+  // рабочий список изменились, покажем их сразу после действия. При эскалации
+  // изменилось и состояние блокировки — обновим и карточку клиента.
   revalidatePath(`/aml/${userId}`);
   revalidatePath('/aml');
+  revalidatePath(`/clients/${userId}`);
+  return { ok: true };
+}
+
+/**
+ * Снять AML-эскалацию (ложное срабатывание) после ручной проверки. ADMIN ONLY,
+ * fail-closed: оператор без роли admin получает `forbidden`, до транзакции дело
+ * не доходит. Основание обязательно (кто/когда/почему признано ложным).
+ */
+export async function clearEscalationAction(
+  _prev: ScreeningState,
+  formData: FormData,
+): Promise<ScreeningState> {
+  const operator = await getOperatorSession();
+  if (!operator) {
+    redirect(LOGIN_PATH);
+  }
+  if (operator.role !== 'admin') {
+    // Снятие защитного блока — admin-действие (Р-454 III-1), fail-closed.
+    return { error: 'forbidden' };
+  }
+
+  const userId = String(formData.get('userId') ?? '').trim();
+  if (!userId) return { error: 'invalidClient' };
+  const reason = String(formData.get('reason') ?? '');
+
+  const result = await clearAmlEscalation({
+    operatorId: operator.operatorId,
+    userId,
+    reason,
+  });
+
+  if (!result.ok) {
+    return { error: result.reason };
+  }
+
+  revalidatePath(`/aml/${userId}`);
+  revalidatePath('/aml');
+  revalidatePath(`/clients/${userId}`);
   return { ok: true };
 }

@@ -2,19 +2,30 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getAmlCard } from '@/lib/aml/queries';
 import { AML_STATUS_LABELS, sanctionsListLabel, type AmlStatus } from '@/lib/aml/lists';
+import { getOperatorSession } from '@/lib/auth/current';
 import { ScreeningForm } from './ScreeningForm';
+import { ClearEscalationForm } from './ClearEscalationForm';
 
 /**
- * Карточка AML-скрининга клиента (ADM-14, Р-454 I-5): текущий статус, основание
- * и списки последней сверки, полная история скринингов (из журнала) и форма
- * фиксации нового результата.
+ * Карточка AML-скрининга клиента (ADM-14, Р-454 I-5, Р-456 D): текущий статус,
+ * основание и списки последней сверки, состояние блокировки, полная история
+ * скринингов (из журнала), форма фиксации нового результата и — при эскалации,
+ * для admin — снятие эскалации.
  *
  * Проверку оператор делает ВРУЧНУЮ во внешних источниках (OFSI/OFAC/EU, PEP);
  * форма фиксирует РЕЗУЛЬТАТ («проверено» / «найдено→эскалация») с основанием.
- * Роль-гейт operator+admin — на layout/middleware; действие fail-closed на
- * сервере (`lib/aml/actions.ts`).
+ * Исход «найдено» блокирует клиента автоматически (Р-456 D). Роль-гейт
+ * operator+admin — на layout/middleware; снятие эскалации — admin only
+ * (fail-closed на сервере, `lib/aml/actions.ts`).
  */
 export const dynamic = 'force-dynamic';
+
+/** Подпись записи истории по действию журнала. */
+const HISTORY_ACTION_LABELS: Record<string, string> = {
+  'client.aml_checked': 'Проверено — совпадений нет',
+  'client.aml_escalated': 'Найдено — эскалация (авто-блок)',
+  'client.aml_escalation_cleared': 'Эскалация снята (ложное срабатывание)',
+};
 
 const STATUS_TONE: Record<AmlStatus, string> = {
   escalated: 'bg-negative/15 text-negative',
@@ -27,8 +38,13 @@ function dateFmt(iso: string): string {
 }
 
 export default async function ClientAmlCard({ params }: { params: { userId: string } }) {
-  const card = await getAmlCard(params.userId);
+  const [card, operator] = await Promise.all([
+    getAmlCard(params.userId),
+    getOperatorSession(),
+  ]);
   if (!card) notFound();
+
+  const isAdmin = operator?.role === 'admin';
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
@@ -58,6 +74,35 @@ export default async function ClientAmlCard({ params }: { params: { userId: stri
         ) : null}
       </div>
 
+      {card.blocked ? (
+        <div className="rounded border border-negative/40 bg-negative/10 px-4 py-3 text-sm">
+          <p className="font-medium text-negative">Клиент заблокирован.</p>
+          {card.blockReason ? (
+            <p className="text-secondary">Основание: {card.blockReason}</p>
+          ) : null}
+          {card.status === 'escalated' ? (
+            <p className="text-secondary">
+              Блок выставлен автоматически по AML-эскалации (Р-456 D). Снять — только после ручной
+              проверки, действием ниже.
+            </p>
+          ) : null}
+        </div>
+      ) : null}
+
+      {card.status === 'escalated' ? (
+        <section className="space-y-3">
+          <h2 className="text-lg font-medium">Снять эскалацию (ложное срабатывание)</h2>
+          {isAdmin ? (
+            <ClearEscalationForm userId={card.userId} />
+          ) : (
+            <p className="rounded border border-border bg-elevated px-4 py-4 text-sm text-secondary">
+              Снятие AML-эскалации и разблокировка доступны только администратору. Оператор может
+              эскалировать, но не снимать эскалацию.
+            </p>
+          )}
+        </section>
+      ) : null}
+
       <section className="space-y-3">
         <h2 className="text-lg font-medium">Зафиксировать результат сверки</h2>
         <p className="text-sm text-secondary">
@@ -83,7 +128,7 @@ export default async function ClientAmlCard({ params }: { params: { userId: stri
                   aria-hidden
                 />
                 <p className="text-sm text-primary">
-                  {AML_STATUS_LABELS[h.outcome]}
+                  {HISTORY_ACTION_LABELS[h.action] ?? AML_STATUS_LABELS[h.outcome]}
                   {h.lists.length > 0 ? (
                     <span className="text-secondary">
                       {' '}
