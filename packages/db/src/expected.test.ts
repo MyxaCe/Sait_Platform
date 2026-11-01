@@ -50,4 +50,10 @@ describe('WEB-31 · список и каталог', () => {
     expect(EXPECTED_MIGRATIONS).toContain('1794100000000_client_block');
     expect(onDisk()).toContain('1794100000000_client_block');
   });
+
+  // WEB-44/45/46/47 · плечо-портфели: миграция в списке кода и на диске.
+  it('Р-446 · миграция портфелей плеча зарегистрирована', () => {
+    expect(EXPECTED_MIGRATIONS).toContain('1794200000000_leverage_portfolios');
+    expect(onDisk()).toContain('1794200000000_leverage_portfolios');
+  });
 });
