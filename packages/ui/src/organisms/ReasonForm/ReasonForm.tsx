@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, type ReactNode } from 'react';
-import { useFormStatus } from 'react-dom';
 import { Button } from '../../atoms/Button/Button';
 import { Input } from '../../atoms/Input/Input';
 import { Select } from '../../atoms/Select/Select';
@@ -38,6 +37,13 @@ export interface ReasonFormProps {
   children?: ReactNode;
   /** Текст ошибки от server action (уже локализованный). */
   error?: string;
+  /**
+   * Идёт ли отправка. Прокидывается потребителем: `useFormStatus` здесь НЕ
+   * используем — он требует типов form-action из next-окружения, которых у
+   * `@broker/ui` (react-library tsconfig) нет. Потребитель в admin/cabinet, где
+   * эти типы есть, при желании оборачивает submit в свой pending-компонент.
+   */
+  pending?: boolean;
   className?: string;
 }
 
@@ -45,24 +51,24 @@ interface SubmitProps {
   danger: boolean;
   armed: boolean;
   canSubmit: boolean;
+  pending: boolean;
   submitLabel: string;
   confirmLabel: string;
   onArm: () => void;
   onDisarm: () => void;
 }
 
-/** Кнопка submit: знает про pending (useFormStatus) и про danger-двухшаг. */
+/** Кнопка submit: pending (от потребителя) + danger-двухшаг. */
 function SubmitRow({
   danger,
   armed,
   canSubmit,
+  pending,
   submitLabel,
   confirmLabel,
   onArm,
   onDisarm,
 }: SubmitProps) {
-  const { pending } = useFormStatus();
-
   if (danger && !armed) {
     // Первый клик — только взвод, не отправка (type=button).
     return (
@@ -105,6 +111,7 @@ export function ReasonForm({
   reference,
   children,
   error,
+  pending = false,
   className,
 }: ReasonFormProps) {
   const [reason, setReason] = useState('');
@@ -114,7 +121,11 @@ export function ReasonForm({
 
   return (
     <form
-      action={action}
+      // Server action как значение `action` — реальная семантика (работает и без
+      // JS). Плоские типы react-library (без next-аугментации) знают только
+      // `action: string`, поэтому узкий каст: во время выполнения React/Next
+      // корректно обрабатывает функцию. См. коммент к `pending` выше.
+      action={action as unknown as string}
       className={cn('space-y-4 rounded-lg border border-border bg-elevated p-4', className)}
     >
       {children}
@@ -186,6 +197,7 @@ export function ReasonForm({
         danger={danger}
         armed={armed}
         canSubmit={canSubmit}
+        pending={pending}
         submitLabel={submitLabel}
         confirmLabel={confirmLabel}
         onArm={() => setArmed(true)}
