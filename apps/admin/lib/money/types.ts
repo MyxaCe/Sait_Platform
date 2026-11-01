@@ -26,6 +26,21 @@ export const MONEY_COMMAND_TYPES: readonly MoneyCommandType[] = [
 ];
 
 /**
+ * Роль инициатора денежной команды (Р-455 R-3). Деньги инициируют и
+ * подтверждают ТОЛЬКО эти две роли (plain `operator` деньги не трогает):
+ *  - `admin` — ПОЛНОСТЬЮ освобождён от второго аппрува (Р-455 R-2-поправка):
+ *    его команда подписывается/исполняется сразу, на любую сумму;
+ *  - `finance_operator` — всегда через второй аппрув (порог=0 по Р-455 R-2).
+ */
+export type MoneyInitiatorRole = 'admin' | 'finance_operator';
+
+export const MONEY_INITIATOR_ROLES: readonly MoneyInitiatorRole[] = ['admin', 'finance_operator'];
+
+export function isMoneyInitiatorRole(value: unknown): value is MoneyInitiatorRole {
+  return value === 'admin' || value === 'finance_operator';
+}
+
+/**
  * Состояния стейт-машины dual control (Р-452). Порядок = нормальный путь.
  * `executed`/`rejected` — терминальны.
  */
@@ -76,6 +91,24 @@ export interface MoneyCommandPayload {
   initiatorId: string;
   /** Основание: id заявки/тикета/инцидента. Непустое. */
   basisRef: string;
+  /**
+   * Для `reversal` (Р-455 R-4) — UUID ИСХОДНОЙ команды, которую сторнируем;
+   * для прочих типов `null`. Входит в подпись: терминал видит, что именно
+   * сторнируется, и не примет сторно без ссылки.
+   */
+  originalCommandId: string | null;
+  /**
+   * id аппрува-инициации (Р-455 R-1). Входит в подписываемую нагрузку, чтобы
+   * расхождение «журнал аппрувов ↔ подписанный payload» было детектируемо
+   * (класс «ЦУ подписал без аппрувов»).
+   */
+  initiateApprovalId: string;
+  /**
+   * id второго аппрува (Р-455 R-1) или `null`, если его нет: команда admin
+   * освобождена от второго аппрува (Р-455 R-2-поправка), поэтому `null` тут —
+   * это нормальный admin-путь, а не пропуск контроля.
+   */
+  secondApprovalId: string | null;
   /** Метка времени выпуска, ISO-8601 (генерит ЦУ при подписи). */
   issuedAt: string;
   /** Одноразовый маркер против повтора. */

@@ -35,10 +35,25 @@ export function timestampWindowMs(): number {
   return Number.isFinite(raw) && raw > 0 ? raw : 5 * 60 * 1000;
 }
 
-/** Допустимый перекос часов «в будущее», мс (метка чуть впереди наших часов). */
+/**
+ * Допустимый перекос часов «в будущее», мс (метка чуть впереди наших часов).
+ * Р-455 R-6: ≤30 сек — узко, т.к. `issuedAt` ставится ПОСЛЕ сбора аппрувов,
+ * прямо перед отправкой, а не в момент аппрува.
+ */
 export function clockSkewMs(): number {
   const raw = Number(process.env.MONEY_CLOCK_SKEW_MS);
-  return Number.isFinite(raw) && raw >= 0 ? raw : 60 * 1000;
+  return Number.isFinite(raw) && raw >= 0 ? raw : 30 * 1000;
+}
+
+/**
+ * Время жизни nonce в кэше терминала, мс (Р-455 R-6: 10 мин). Это ПАРАМЕТР
+ * ПОРТА терминала (персистентный кэш nonce — его сторона, Rust): величина
+ * задаёт, как долго повтор ловится как replay. Приводится здесь как часть
+ * контракта приёма; терминал обязан держать nonce не меньше этого окна.
+ */
+export function nonceTtlMs(): number {
+  const raw = Number(process.env.MONEY_NONCE_TTL_MS);
+  return Number.isFinite(raw) && raw > 0 ? raw : 10 * 60 * 1000;
 }
 
 /**

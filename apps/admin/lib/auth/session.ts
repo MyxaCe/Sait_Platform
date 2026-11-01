@@ -29,7 +29,7 @@ export const ADMIN_AUDIENCE = 'admin-center';
 /** Смена оператора: 8 часов. Протухший токен = закрытый гейт (Р-394). */
 export const SESSION_TTL_SECONDS = 8 * 60 * 60;
 
-export type OperatorRole = 'admin' | 'operator';
+export type OperatorRole = 'admin' | 'operator' | 'finance_operator';
 
 export interface OperatorSession {
   /** `operators.id` — UUID оператора. */
@@ -56,7 +56,7 @@ function getSecret(): Uint8Array | null {
 }
 
 function asRole(value: unknown): OperatorRole | null {
-  return value === 'admin' || value === 'operator' ? value : null;
+  return value === 'admin' || value === 'operator' || value === 'finance_operator' ? value : null;
 }
 
 /**

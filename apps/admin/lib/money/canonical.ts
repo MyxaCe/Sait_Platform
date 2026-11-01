@@ -11,7 +11,8 @@ import type { MoneyCommandPayload } from './types';
  * закону, их нельзя рассинхронизировать.
  *
  * ПОРЯДОК полей в объекте незначим: канонизация сортирует ключи. Значим НАБОР
- * полей (Р-452: id · тип · счёт · тройка · автор · основание · метка · nonce).
+ * полей (Р-452 + Р-455 R-1/R-4: id · тип · счёт · тройка · автор · основание ·
+ * исходная-команда · id-инициации · id-второго-аппрува · метка · nonce).
  * Терминал (Rust) ОБЯЗАН воспроизвести эту же каноническую строку — это
  * межзонный контракт. Тест-векторы (`money/vectors`) дают эталон для сверки.
  */
@@ -27,6 +28,11 @@ export function canonicalizeCommandPayload(payload: MoneyCommandPayload): string
     scale: payload.amount.scale,
     initiatorId: payload.initiatorId,
     basisRef: payload.basisRef,
+    // Р-455 R-4: ссылка на исходную команду для reversal (иначе null).
+    originalCommandId: payload.originalCommandId,
+    // Р-455 R-1: id обоих аппрувов в подписи (secondApprovalId=null для admin).
+    initiateApprovalId: payload.initiateApprovalId,
+    secondApprovalId: payload.secondApprovalId,
     issuedAt: payload.issuedAt,
     nonce: payload.nonce,
   });

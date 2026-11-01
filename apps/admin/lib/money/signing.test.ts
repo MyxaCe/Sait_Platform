@@ -27,6 +27,9 @@ function payloadAt(issuedAt: string): MoneyCommandPayload {
     amount: { amountMinor: '150000', currency: 'USD', scale: 2 },
     initiatorId: '33333333-3333-3333-3333-333333333333',
     basisRef: 'TICKET-42',
+    originalCommandId: null,
+    initiateApprovalId: '44444444-4444-4444-4444-444444444444',
+    secondApprovalId: '55555555-5555-5555-5555-555555555555',
     issuedAt,
     nonce: 'nonce-abc',
   };

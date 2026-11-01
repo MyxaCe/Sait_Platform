@@ -1,5 +1,5 @@
 import { requiresSecondApproval } from './config';
-import type { MoneyCommandState } from './types';
+import type { MoneyCommandState, MoneyInitiatorRole } from './types';
 
 /**
  * Стейт-машина dual control денежных команд (Р-452) — ЧИСТАЯ логика переходов,
@@ -15,15 +15,29 @@ import type { MoneyCommandState } from './types';
  * через `initialStateFor`). Переходы ниже двигают уже существующую команду.
  */
 
-/** Начальное состояние новой команды по сумме/break-glass (Р-452). */
-export function initialStateFor(amountMinor: string, breakGlass = false): MoneyCommandState {
-  if (breakGlass) return 'draft'; // break-glass обходит второй аппрув → сразу готов к подписи
+/**
+ * Начальное состояние новой команды (Р-455 R-2 + поправка). РОЛЬ инициатора
+ * решает путь:
+ *  - `admin` → всегда `draft` (ПОЛНОСТЬЮ освобождён от второго аппрува, любая
+ *    сумма; команда подпишется сразу);
+ *  - `finance_operator` → `awaiting_second_approval`, если сумма выше порога
+ *    (порог=0 по Р-455 R-2 → всегда), иначе `draft`.
+ * break-glass (admin-only, Р-455 R-5) не меняет состояние — admin и так в
+ * `draft`; флаг несёт инцидент/алерт/ревью, а не дополнительный обход.
+ */
+export function initialStateFor(
+  role: MoneyInitiatorRole,
+  amountMinor: string,
+  breakGlass = false,
+): MoneyCommandState {
+  if (role === 'admin') return 'draft'; // Р-455 R-2-поправка: admin без второго аппрува
+  void breakGlass; // break-glass — admin-only; для finance_operator не достижим (гард в оркестрации)
   return requiresSecondApproval(amountMinor) ? 'awaiting_second_approval' : 'draft';
 }
 
 /** События, двигающие уже созданную команду. */
 export type MoneyCommandEvent =
-  | { kind: 'sign'; amountMinor: string; breakGlass?: boolean }
+  | { kind: 'sign'; role: MoneyInitiatorRole; amountMinor: string; breakGlass?: boolean }
   | { kind: 'secondApprove'; initiatorId: string; approverId: string }
   | { kind: 'dispatch' }
   | { kind: 'execute' }
@@ -57,6 +71,10 @@ export function transition(
   switch (state) {
     case 'draft':
       if (event.kind === 'sign') {
+        // Р-455 R-2-поправка: admin подписывает из draft на любую сумму без
+        // второго аппрува. finance_operator — только если второй аппрув не
+        // требуется (при пороге 0 он в draft не окажется; гард вглубь).
+        if (event.role === 'admin') return ok('signed');
         if (!event.breakGlass && requiresSecondApproval(event.amountMinor)) {
           return { ok: false, error: 'secondApprovalRequired' };
         }

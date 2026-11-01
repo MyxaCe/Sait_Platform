@@ -42,8 +42,16 @@ CREATE TABLE IF NOT EXISTS money_commands (
   scale SMALLINT NOT NULL CHECK (scale >= 0),
   -- Инициатор — оператор ЦУ (из сессии, не из формы, Р-452).
   initiator_id UUID NOT NULL REFERENCES operators(id),
+  -- Роль инициатора на момент инициации (Р-455 R-2/R-3). Решает путь dual
+  -- control: admin → подпись сразу (освобождён от второго аппрува), finance_
+  -- operator → всегда второй аппрув. Фиксируем на команде, а не читаем роль
+  -- оператора «сейчас»: политика применяется по роли В МОМЕНТ действия.
+  initiator_role TEXT NOT NULL CHECK (initiator_role IN ('admin', 'finance_operator')),
   -- Основание: id заявки/тикета/инцидента. Непустое.
   basis_ref TEXT NOT NULL,
+  -- Р-455 R-4: для reversal — ссылка на ИСХОДНУЮ команду (обязательна, иначе
+  -- это debit); для прочих типов NULL. FK на свою же таблицу.
+  original_command_id UUID REFERENCES money_commands(id),
   -- Одноразовый маркер против повтора. UNIQUE — наша сторона тоже не допускает
   -- повтор (кэш nonce терминала — отдельно, его сторона).
   nonce TEXT NOT NULL UNIQUE,
@@ -56,24 +64,40 @@ CREATE TABLE IF NOT EXISTS money_commands (
   -- Результат подписи ЦУ (base64) и версия ключа (ротация). До подписи NULL.
   signature TEXT,
   key_version TEXT,
-  -- Break-glass (Р-452): аварийный обход dual control, с причиной, ревью ≤24ч.
+  -- Break-glass (Р-452, Р-455 R-5): аварийный обход, только admin. Несёт
+  -- идентификатор инцидента (`incident_ref`, см. ниже) + описание-причину;
+  -- немедленный алерт всем админам (порт) и пост-фактум ревью ≤24ч.
   break_glass BOOLEAN NOT NULL DEFAULT false,
   break_glass_reason TEXT,
+  -- Р-455 R-5: инцидент, к которому привязана break-glass команда. Обязателен
+  -- при break_glass; одна команда на ОДИН инцидент — см. частичный UNIQUE ниже.
+  incident_ref TEXT,
   review_due_at TIMESTAMPTZ,
   reviewed_at TIMESTAMPTZ,
   reviewed_by UUID REFERENCES operators(id),
+  review_result TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   -- Запись журнала, установившая текущее состояние (та же транзакция).
   last_journal_seq BIGINT REFERENCES admin_action_journal(seq),
-  -- break-glass обязан нести причину (fail-closed на уровне схемы).
+  -- break-glass обязан нести причину И инцидент (fail-closed на уровне схемы).
   CONSTRAINT money_commands_break_glass_reason CHECK (
     break_glass = false OR break_glass_reason IS NOT NULL
+  ),
+  CONSTRAINT money_commands_break_glass_incident CHECK (
+    break_glass = false OR incident_ref IS NOT NULL
+  ),
+  -- Р-455 R-4: reversal обязан ссылаться на исходную команду (иначе это debit).
+  CONSTRAINT money_commands_reversal_ref CHECK (
+    type <> 'reversal' OR original_command_id IS NOT NULL
   )
 );
 
 CREATE INDEX IF NOT EXISTS money_commands_state_idx ON money_commands (state);
 CREATE INDEX IF NOT EXISTS money_commands_account_idx ON money_commands (account_id);
+-- Р-455 R-5: одна break-glass команда на ОДИН инцидент — частичный UNIQUE.
+CREATE UNIQUE INDEX IF NOT EXISTS money_commands_break_glass_incident_uniq
+  ON money_commands (incident_ref) WHERE break_glass;
 
 -- Аппрувы dual control: кто и в какой роли авторизовал команду (Р-452).
 CREATE TABLE IF NOT EXISTS money_command_approvals (
