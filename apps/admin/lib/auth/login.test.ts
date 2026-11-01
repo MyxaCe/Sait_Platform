@@ -110,6 +110,26 @@ describe('вход оператора', () => {
   });
 });
 
+describe('вход · второй фактор в результате пароля (ADM-13)', () => {
+  it('оператор без 2FA → ok, totpSecret = null (вход завершится сразу)', async () => {
+    operatorRow = await makeRow('correct horse', { totp_secret: null });
+    const { verifyOperatorCredentials } = await import('./login');
+
+    const result = await verifyOperatorCredentials('super', 'correct horse');
+    expect(result.ok).toBe(true);
+    expect(result.ok && result.totpSecret).toBeNull();
+  });
+
+  it('оператор с 2FA → ok, totpSecret возвращается (нужен второй шаг)', async () => {
+    operatorRow = await makeRow('correct horse', { totp_secret: 'JBSWY3DPEHPK3PXP' });
+    const { verifyOperatorCredentials } = await import('./login');
+
+    const result = await verifyOperatorCredentials('super', 'correct horse');
+    expect(result.ok).toBe(true);
+    expect(result.ok && result.totpSecret).toBe('JBSWY3DPEHPK3PXP');
+  });
+});
+
 describe('вход · прозрачный перехеш (Р-451)', () => {
   it('параметры хеша отстали → при успехе идёт UPDATE password_hash', async () => {
     // Храним хеш на m=1024, затем ужесточаем конфиг — хеш отстал.

@@ -15,6 +15,13 @@ export { Checkbox, type CheckboxProps } from './atoms/Checkbox/Checkbox';
 // Molecules
 export { StatCounter, type StatCounterProps } from './molecules/StatCounter/StatCounter';
 export { FormField, type FormFieldProps } from './molecules/FormField/FormField';
+export { KpiTile, type KpiTileProps, type KpiTone } from './molecules/KpiTile/KpiTile';
+export {
+  StatusBadge,
+  type StatusBadgeProps,
+  type StatusKey,
+  STATUS_DICTIONARY,
+} from './molecules/StatusBadge/StatusBadge';
 
 // Organisms
 export { TickerTape, type TickerTapeProps, type TickerItem } from './organisms/TickerTape/TickerTape';
@@ -24,6 +31,13 @@ export {
   type AccountPlan,
   type AccountPlanFeature,
 } from './organisms/PricingTable/PricingTable';
+
+export {
+  DataTable,
+  type DataTableProps,
+  type DataTableColumn,
+} from './organisms/DataTable/DataTable';
+export { ReasonForm, type ReasonFormProps } from './organisms/ReasonForm/ReasonForm';
 
 // Layout
 export { Container, type ContainerProps } from './layout/Container/Container';

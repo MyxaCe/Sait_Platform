@@ -22,5 +22,12 @@ export const EXPECTED_MIGRATIONS: readonly string[] = [
   '1793449440000_admin_center_foundation',
   '1793535840000_operator_password_hash',
   '1793622240000_kyc_documents',
-  '1793967840000_money_commands',
+  '1793708640000_verification_resubmit_requested',
+  '1793881440000_operator_totp',
+  '1794100000000_client_block',
+  // Денежные команды (Р-452/Р-455). Пере-таймштамплено при вливании main: исходный
+  // 1793967840000 оказался РАНЬШЕ уже применённого client_block — порядок миграций
+  // сломался бы. Ставим в КОНЕЦ, после client_block (урок: таймстамп миграции
+  // присваивается по факту вливания, а не по дате ветвления).
+  '1794300000000_money_commands',
 ];

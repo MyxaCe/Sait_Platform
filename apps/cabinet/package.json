@@ -13,6 +13,7 @@
     "@broker/api-client": "workspace:*",
     "@broker/db": "workspace:*",
     "@broker/realtime": "workspace:*",
+    "@broker/storage": "workspace:*",
     "@broker/tenant": "workspace:*",
     "@broker/ui": "workspace:*",
     "@broker/utils": "workspace:*",
