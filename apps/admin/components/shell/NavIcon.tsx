@@ -13,6 +13,7 @@ export type NavIconName =
   | 'risk'
   | 'journal'
   | 'operators'
+  | 'aml'
   | 'breakglass';
 
 const PATHS: Record<NavIconName, string> = {
@@ -30,6 +31,8 @@ const PATHS: Record<NavIconName, string> = {
   journal: 'M5 4h14v16H5zM8 8h8M8 12h8M8 16h5',
   // люди с шестерёнкой (упрощённо — ключ доступа)
   operators: 'M10 11a4 4 0 1 0-8 0M2 20a6 6 0 0 1 12 0M18 7l3 3-6 6h-3v-3z',
+  // щит с лупой (скрининг по спискам)
+  aml: 'M12 3l7 3v5c0 4-3 7-7 9-4-2-7-5-7-9V6zM11 11a2 2 0 1 0 .01 0M13 13l2 2',
   // восклицание в ромбе (аварийная дверь)
   breakglass: 'M12 2l10 10-10 10L2 12zM12 8v5M12 16.5v.5',
 };

@@ -29,23 +29,17 @@ export const NAV_ITEMS: NavItem[] = [
   { key: 'dashboard', label: 'Дашборд', href: '/', icon: 'dashboard', roles: ['operator', 'admin'], exact: true },
   { key: 'clients', label: 'Клиенты', href: '/clients', icon: 'clients', roles: ['operator', 'admin'] },
   { key: 'kyc', label: 'Верификация', href: '/kyc', icon: 'kyc', roles: ['operator', 'admin'] },
-  { key: 'money', label: 'Деньги', href: '/money', icon: 'money', roles: ['operator', 'admin'] },
+  // AML-скрининг (ADM-14): отметка результата сверки по спискам; видят оба.
+  { key: 'aml', label: 'AML-скрининг', href: '/aml', icon: 'aml', roles: ['operator', 'admin'] },
   // Риск: operator видит, но действия — только просмотр (§3.8); запись гейтится
-  // на самих страницах раздела. (Карта §2.2 помечает раздел 4 как скрытый для
-  // operator — расхождение со §3.8; задача штаба явно оставляет скрытыми только
-  // Операторов и break-glass, поэтому Риск виден обоим. Переключается одной
-  // строкой: убрать 'operator' из roles.)
-  { key: 'risk', label: 'Риск и плечо', href: '/risk', icon: 'risk', roles: ['operator', 'admin'] },
+  // на самих страницах раздела. href ведёт на реальную страницу раздела
+  // (/risk-индекса нет; обе страницы — leverage/portfolios).
+  { key: 'risk', label: 'Риск и плечо', href: '/risk/leverage', icon: 'risk', roles: ['operator', 'admin'] },
   { key: 'journal', label: 'Журнал', href: '/journal', icon: 'journal', roles: ['operator', 'admin'] },
   { key: 'operators', label: 'Операторы', href: '/operators', icon: 'operators', roles: ['admin'] },
-  {
-    key: 'break-glass',
-    label: 'Break-glass',
-    href: '/money/break-glass',
-    icon: 'breakglass',
-    roles: ['admin'],
-    danger: true,
-  },
+  // Пункты «Деньги» и «Break-glass» убраны из рельса этой волной: бэкенд денег
+  // (money-r452, Р-455) есть, но экранов /money/* ещё нет — вернём с экранами,
+  // чтобы рельс не вёл в 404.
 ];
 
 /** Пункты, видимые роли. Fail-closed: роли нет в `roles` → пункта нет. */
