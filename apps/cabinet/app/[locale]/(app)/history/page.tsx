@@ -1,4 +1,5 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server';
+import { Callout } from '@broker/ui';
 import { requireSessionUser } from '@/lib/auth/require';
 import { describeSlippage } from '@/lib/slippage';
 import { getClosedDeals } from '@/lib/terminal/client';
@@ -30,11 +31,8 @@ export default async function HistoryPage({ params }: { params: { locale: string
          * Отказ назван отказом. Пустой список здесь был бы утверждением
          * «сделок нет» — фактом о человеке вместо нашей неполадки.
          */
-        <div className="mt-6 rounded-xl border border-border bg-elevated p-4">
-          <p className="text-sm text-primary">{t('unavailable')}</p>
-          <p className="mt-2 font-mono text-xs text-secondary">
-            {t('reason', { reason: outcome.reason })}
-          </p>
+        <div className="mt-6" data-reason={outcome.reason}>
+          <Callout tone="neutral">{t('unavailable')}</Callout>
         </div>
       ) : outcome.deals.length === 0 ? (
         <p className="mt-6 text-sm text-secondary">{t('empty')}</p>

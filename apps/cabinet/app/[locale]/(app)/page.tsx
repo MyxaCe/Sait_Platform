@@ -15,7 +15,7 @@ import {
 } from '@/lib/home';
 import { getTenantStartBalance } from '@/lib/tenant';
 import type { RealAccountBlock } from '@/features/home/BalanceModule';
-import { getMoneyPolicy, getRealAccount, terminalReader } from '@/lib/money';
+import { exchangeAddress, getMoneyPolicy, getRealAccount, terminalReader } from '@/lib/money';
 
 async function loadRealBlock(userId: string, locale: string): Promise<RealAccountBlock> {
   const [account, policy, live] = await Promise.all([
@@ -27,13 +27,15 @@ async function loadRealBlock(userId: string, locale: string): Promise<RealAccoun
   ]);
   const acc = live.state === 'ok' ? live.accounts.find((a) => a.kind === 'real') : undefined;
   const demo = live.state === 'ok' ? live.accounts.find((a) => a.kind === 'demo') : undefined;
+  const figures = (a: typeof acc) =>
+    a && a.opened ? { equityMinor: a.equityMinor, freeMarginMinor: a.freeMarginMinor, leverage: a.leverage } : null;
   return {
     account,
     policy,
-    live: acc
-      ? { equityMinor: acc.equityMinor, freeMarginMinor: acc.freeMarginMinor, leverage: acc.leverage }
-      : null,
-    demoLeverage: demo?.leverage ?? null,
+    live: figures(acc),
+    terminalOk: live.state === 'ok',
+    demoLive: figures(demo),
+    depositAddressReady: exchangeAddress() !== null,
     locale,
   };
 }
@@ -52,14 +54,16 @@ export default async function HomePage({ params }: { params: { locale: string } 
   const needs = (type: CabinetHomeModule['type']) =>
     modules.some((m) => m.type === type && m.enabled);
 
-  const [demo, verification, markets, promos, startBalance] = await Promise.all([
+  const [demo, verification, markets, promos, startBalance, realForSteps] = await Promise.all([
     needs('balance') ? getDemoAccount(user.id) : null,
-    needs('onboarding') ? getVerificationStatus(user.id) : ('none' as const),
+    // Статус KYC нужен и шапке профиля (бейдж), и онбордингу.
+    getVerificationStatus(user.id),
     needs('markets') ? getMarketInstruments() : null,
     needs('promotions') ? getPromotions(params.locale) : [],
     // Состояние стартовой суммы нужно самому модулю: кнопка сброса
     // обязана объяснить, почему не работает, а не исчезнуть.
     getTenantStartBalance(),
+    needs('onboarding') ? getRealAccount(user.id) : null,
   ]);
 
   // Реальный счёт (09.11): проекция + политика + живые цифры терминала.
@@ -69,14 +73,21 @@ export default async function HomePage({ params }: { params: { locale: string } 
     : undefined;
 
   return (
-    <div className="mx-auto flex max-w-5xl flex-col gap-4">
+    <div className="mx-auto flex max-w-5xl flex-col gap-4 lg:gap-5">
       {modules.map((module, i) => {
         if (!module.enabled) return null;
         switch (module.type) {
           case 'profile':
-            return <ProfileModule key={i} user={user} />;
+            return <ProfileModule key={i} user={user} verification={verification} />;
           case 'onboarding':
-            return <OnboardingModule key={i} config={module} verification={verification} />;
+            return (
+              <OnboardingModule
+                key={i}
+                config={module}
+                verification={verification}
+                realFunded={(realForSteps?.balanceCents ?? 0) > 0}
+              />
+            );
           case 'balance':
             return (
               <BalanceModule

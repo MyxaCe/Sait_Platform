@@ -4,7 +4,7 @@ import {
   type CabinetHomeModule,
 } from '@broker/api-client';
 import { cmsGet } from './chrome';
-import { getPool } from './db';
+import { getVerificationState, type VerificationState } from './kyc';
 import {
   getTenantConfig,
   isSymbolAllowed,
@@ -127,17 +127,30 @@ export async function getMarketInstruments(): Promise<MarketsData> {
   }
 }
 
-/** Статус верификации для онбординга: по документам пользователя. */
-export type VerificationStatus = 'none' | 'pending' | 'approved';
+/**
+ * Статус верификации для главной (онбординг, бейдж профиля).
+ *
+ * Источник — `client_verification` (решение оператора в центре управления),
+ * тот же, что у страницы «Верификация» и у денежного гейта KYC. Раньше здесь
+ * читалась старая заглушка `documents` (kind = 'identity'): клиент,
+ * подтверждённый оператором через настоящий поток KYC, видел на главной
+ * «Пройти верификацию» (аудит К6) — два источника правды об одном факте.
+ */
+export type VerificationStatus = 'none' | 'pending' | 'approved' | 'rejected';
+
+export function toVerificationStatus(state: VerificationState | null): VerificationStatus {
+  switch (state) {
+    case 'verified':
+      return 'approved';
+    case 'pending':
+      return 'pending';
+    case 'rejected':
+      return 'rejected';
+    default:
+      return 'none';
+  }
+}
 
 export async function getVerificationStatus(userId: string): Promise<VerificationStatus> {
-  const r = await getPool().query(
-    `SELECT status FROM documents WHERE user_id = $1 AND kind = 'identity'
-      ORDER BY created_at DESC LIMIT 1`,
-    [userId],
-  );
-  const status = r.rows[0]?.status as string | undefined;
-  if (status === 'approved') return 'approved';
-  if (status === 'uploaded') return 'pending';
-  return 'none';
+  return toVerificationStatus(await getVerificationState(userId));
 }

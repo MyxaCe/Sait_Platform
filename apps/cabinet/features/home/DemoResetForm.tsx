@@ -56,7 +56,7 @@ function tone(outcome: DemoResetOutcome): string {
 function SubmitButton({ label }: { label: string }) {
   const { pending } = useFormStatus();
   return (
-    <Button type="submit" size="sm" variant="ghost" disabled={pending}>
+    <Button type="submit" size="sm" variant="ghost" loading={pending} className="w-full sm:w-auto">
       {label}
     </Button>
   );
@@ -65,8 +65,10 @@ function SubmitButton({ label }: { label: string }) {
 export function DemoResetForm({
   label,
   texts,
+  className = 'mt-3',
 }: {
   label: string;
+  className?: string;
   /** Готовые переводы по ключам: клиентский компонент их не ищет сам. */
   texts: Record<string, string>;
 }) {
@@ -74,7 +76,7 @@ export function DemoResetForm({
   const key = messageKey(outcome);
 
   return (
-    <form action={action} className="mt-3">
+    <form action={action} className={className}>
       <SubmitButton label={label} />
       {key && (
         <p className={`mt-1 text-xs ${tone(outcome)}`} role="status" aria-live="polite">

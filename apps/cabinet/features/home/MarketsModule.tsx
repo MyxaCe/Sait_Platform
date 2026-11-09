@@ -76,14 +76,14 @@ export function MarketsModule({ config, data }: { config: MarketsConfig; data: M
   if (notice) {
     return (
       <MarketsShell title={t('marketsTitle')}>
-        <div className="mt-4 rounded-xl border border-border bg-primary/[0.03] px-4 py-5 text-sm">
+        {/* Машинная причина — только в атрибуте (поддержке и тестам), не в тексте
+            клиенту (аудит К7). */}
+        <div
+          className="mt-4 rounded-xl border border-border bg-primary/[0.03] px-4 py-5 text-sm"
+          data-reason={notice.reason}
+        >
           <p className="font-medium text-primary">{t(notice.titleKey)}</p>
           <p className="mt-1 text-secondary">{t(notice.textKey)}</p>
-          {notice.reason && (
-            <p className="mt-2 font-mono text-xs text-secondary">
-              {t('marketsReason', { reason: notice.reason })}
-            </p>
-          )}
         </div>
       </MarketsShell>
     );
