@@ -1,6 +1,6 @@
 import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/server';
 import { cn } from '@broker/ui';
-import { getSessionUser } from '@/lib/auth/session';
+import { requireSessionUser } from '@/lib/auth/require';
 import { getVerificationState, listKycDocuments, type VerificationState } from '@/lib/kyc';
 import { KycUploadForm } from '@/features/kyc/KycUploadForm';
 
@@ -18,7 +18,7 @@ const STATE_STYLE: Record<VerificationState, string> = {
 
 export default async function VerificationPage({ params }: { params: { locale: string } }) {
   setRequestLocale(params.locale);
-  const user = (await getSessionUser())!;
+  const user = await requireSessionUser(params.locale);
   const t = await getTranslations('kyc');
   const format = await getFormatter();
   const [documents, state] = await Promise.all([

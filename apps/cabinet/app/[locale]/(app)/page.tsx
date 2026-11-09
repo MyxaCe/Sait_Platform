@@ -5,7 +5,7 @@ import { MarketsModule } from '@/features/home/MarketsModule';
 import { OnboardingModule } from '@/features/home/OnboardingModule';
 import { ProfileModule } from '@/features/home/ProfileModule';
 import { PromotionsModule } from '@/features/home/PromotionsModule';
-import { getSessionUser } from '@/lib/auth/session';
+import { requireSessionUser } from '@/lib/auth/require';
 import { getDemoAccount } from '@/lib/data';
 import {
   getHomeModules,
@@ -22,7 +22,7 @@ import { getTenantStartBalance } from '@/lib/tenant';
  */
 export default async function HomePage({ params }: { params: { locale: string } }) {
   setRequestLocale(params.locale);
-  const user = (await getSessionUser())!;
+  const user = await requireSessionUser(params.locale);
   const modules = await getHomeModules(params.locale);
 
   // Данные тянем только для включённых модулей

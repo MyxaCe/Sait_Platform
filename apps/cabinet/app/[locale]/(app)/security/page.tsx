@@ -1,11 +1,12 @@
 import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/server';
-import { getSessionUser, listSessions } from '@/lib/auth/session';
+import { listSessions } from '@/lib/auth/session';
+import { requireSessionUser } from '@/lib/auth/require';
 import { revokeSessionAction } from '@/lib/actions';
 import { PasswordForm } from '@/features/security/PasswordForm';
 
 export default async function SecurityPage({ params }: { params: { locale: string } }) {
   setRequestLocale(params.locale);
-  const user = (await getSessionUser())!;
+  const user = await requireSessionUser(params.locale);
   const t = await getTranslations('security');
   const format = await getFormatter();
   const sessions = await listSessions(user.id);

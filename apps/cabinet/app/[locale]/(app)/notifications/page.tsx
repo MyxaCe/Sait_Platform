@@ -1,13 +1,13 @@
 import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/server';
 import { cn } from '@broker/ui';
-import { getSessionUser } from '@/lib/auth/session';
+import { requireSessionUser } from '@/lib/auth/require';
 import { listNotifications } from '@/lib/data';
 import { displayParams, notificationKey } from '@/lib/notification-params';
 import { markAllReadAction, markNotificationReadAction } from '@/lib/actions';
 
 export default async function NotificationsPage({ params }: { params: { locale: string } }) {
   setRequestLocale(params.locale);
-  const user = (await getSessionUser())!;
+  const user = await requireSessionUser(params.locale);
   const t = await getTranslations('notifications');
   const format = await getFormatter();
   const notifications = await listNotifications(user.id);

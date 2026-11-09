@@ -1,6 +1,6 @@
 import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/server';
 import { cn } from '@broker/ui';
-import { getSessionUser } from '@/lib/auth/session';
+import { requireSessionUser } from '@/lib/auth/require';
 import { listDocuments } from '@/lib/data';
 import { UploadForm } from '@/features/documents/UploadForm';
 
@@ -12,7 +12,7 @@ const STATUS_STYLE: Record<string, string> = {
 
 export default async function DocumentsPage({ params }: { params: { locale: string } }) {
   setRequestLocale(params.locale);
-  const user = (await getSessionUser())!;
+  const user = await requireSessionUser(params.locale);
   const t = await getTranslations('documents');
   const format = await getFormatter();
   const documents = await listDocuments(user.id);
