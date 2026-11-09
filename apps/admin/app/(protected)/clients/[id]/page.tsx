@@ -41,6 +41,7 @@ import { getAmlCard } from '@/lib/aml/queries';
 import { sanctionsListLabel } from '@/lib/aml/lists';
 import { fmtDate, fmtDateTime } from '@/lib/ui/format';
 import { actionLabel } from '@/lib/journal/labels';
+import { TronRef } from '../../_money/tron';
 
 /**
  * Карточка клиента `/clients/[id]` (ADM-02, §3.2) — ЭТАЛОННЫЙ экран редизайна
@@ -143,8 +144,7 @@ const MONEY_COLUMNS: DataTableColumn<MoneyRow>[] = [
       r.ref ? (
         <span className="inline-flex min-w-0 items-center gap-1">
           <span className="text-muted">{r.refKind === 'tx' ? 'tx' : 'на'}</span>
-          <Mono value={r.ref} middle={8} className="text-secondary" />
-          <CopyButton value={r.ref} label={r.refKind === 'tx' ? 'хэш транзакции' : 'адрес'} />
+          <TronRef kind={r.refKind === 'tx' ? 'tx' : 'address'} value={r.ref} middle={8} />
         </span>
       ) : (
         '—'
