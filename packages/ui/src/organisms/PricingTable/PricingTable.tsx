@@ -68,7 +68,7 @@ export function PricingTable({ plans, labels: labelsProp, className }: PricingTa
             )}
           >
             {plan.featured && (
-              <span className="absolute -top-3 left-6 rounded-full bg-accent px-3 py-1 text-xs font-semibold text-base">
+              <span className="absolute -top-3 left-6 rounded-full bg-accent px-3 py-1 text-xs font-semibold text-on-accent">
                 {labels.popular}
               </span>
             )}
@@ -92,9 +92,9 @@ export function PricingTable({ plans, labels: labelsProp, className }: PricingTa
               <a
                 href={plan.ctaHref}
                 className={cn(
-                  'mt-6 inline-flex min-h-[48px] w-full items-center justify-center rounded-xl font-medium transition-colors',
+                  'mt-6 inline-flex min-h-[48px] w-full items-center justify-center rounded-xl text-[16px] font-medium transition-colors',
                   plan.featured
-                    ? 'bg-accent text-base hover:bg-accent-hover'
+                    ? 'bg-accent text-on-accent hover:bg-accent-hover'
                     : 'border border-border bg-card text-primary hover:bg-elevated',
                 )}
               >
@@ -117,7 +117,7 @@ export function PricingTable({ plans, labels: labelsProp, className }: PricingTa
                 <th key={plan.id} className="px-6 py-5 text-center">
                   <span
                     className={cn(
-                      'text-base font-semibold',
+                      'text-[16px] font-semibold',
                       plan.featured ? 'text-accent' : 'text-primary',
                     )}
                   >
@@ -164,7 +164,7 @@ export function PricingTable({ plans, labels: labelsProp, className }: PricingTa
                       className={cn(
                         'inline-flex min-h-[44px] items-center justify-center rounded-xl px-6 text-sm font-medium transition-colors',
                         plan.featured
-                          ? 'bg-accent text-base hover:bg-accent-hover'
+                          ? 'bg-accent text-on-accent hover:bg-accent-hover'
                           : 'border border-border bg-card text-primary hover:bg-elevated',
                       )}
                     >

@@ -24,7 +24,7 @@ export default async function TradePage({
     <div className="flex items-center gap-2 border-b border-border bg-elevated px-4 py-2 text-sm">
       <span
         className={`rounded px-2 py-0.5 text-xs font-semibold ${
-          accountKind === 'real' ? 'bg-accent text-base' : 'bg-card text-secondary'
+          accountKind === 'real' ? 'bg-accent text-on-accent' : 'bg-card text-secondary'
         }`}
       >
         {accountKind === 'real' ? t('badgeReal') : t('badgeDemo')}

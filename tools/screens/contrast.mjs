@@ -1,4 +1,4 @@
-// Проверка контраста WCAG 2.x для палитр центра управления.
+// Проверка контраста WCAG 2.x для палитр центра управления и сайта/кабинета.
 // Читает packages/ui/src/tokens/tokens.css, для каждой палитры админки считает
 // контраст текста и статусных цветов на фонах, на которых они реально живут
 // (в т.ч. текст бейджа на подложке «цвет/12%» поверх card).
@@ -23,6 +23,12 @@ const PALETTES = {
   graphite: block("\\[data-surface='admin'\\],"),
   gold: block("\\[data-surface='admin'\\]\\[data-palette='gold'\\]"),
   paper: block("\\[data-surface='admin'\\]\\[data-palette='paper'\\]"),
+};
+
+// Сайт и кабинет (фирменное «золото на тёмном» + светлая тема сайта).
+const SITE = {
+  'site-dark': block(":root,\\s*\\[data-theme='dark'\\]"),
+  'site-light': block("\\[data-theme='light'\\]"),
 };
 
 const rgb = (v) => v.split(/\s+/).map(Number);
@@ -62,6 +68,32 @@ for (const [name, p] of Object.entries(PALETTES)) {
     check(`${s} текст бейджа на ${s}/12% поверх card`, c(s), mix(c(s), c('bg-card'), 0.12), 4.5);
   }
   check('text-on-negative на negative (danger-кнопка)', c('text-on-negative'), c('negative'), 4.5);
+  out.push(`### ${name}\n\n| пара | контраст | порог | AA |\n|---|---|---|---|\n${rows.join('\n')}\n`);
+}
+
+// Сайт/кабинет: строго — то, что исправлено в фазе 2 и обязано держать AA
+// (текст на primary-кнопке, в т.ч. на ховере); остальное — справочно.
+for (const [name, p] of Object.entries(SITE)) {
+  const c = (k) => rgb(p[k]);
+  const rows = [];
+  const check = (what, fg, bg, min, hard) => {
+    const r = ratio(fg, bg);
+    const ok = r >= min;
+    if (!ok && hard) failed++;
+    rows.push(`| ${what} | ${r.toFixed(2)} | ${min} | ${ok ? 'да' : hard ? '**НЕТ**' : 'нет (справочно)'} |`);
+  };
+  check('text-on-accent на accent (primary-кнопка)', c('text-on-accent'), c('accent'), 4.5, true);
+  check('text-on-accent на accent-hover', c('text-on-accent'), c('accent-hover'), 4.5, name === 'site-dark');
+  for (const bg of ['bg-base', 'bg-card', 'bg-elevated']) {
+    check(`text-primary на ${bg}`, c('text-primary'), c(bg), 4.5, false);
+    check(`text-secondary на ${bg}`, c('text-secondary'), c(bg), 4.5, false);
+  }
+  check('text-muted на bg-elevated', c('text-muted'), c('bg-elevated'), 4.5, false);
+  check('accent (ссылка) на bg-elevated', c('accent'), c('bg-elevated'), 4.5, false);
+  for (const s of ['positive', 'negative', 'warning', 'info']) {
+    check(`${s} текст на bg-elevated`, c(s), c('bg-elevated'), 4.5, false);
+    check(`${s} бейдж на ${s}/10% поверх elevated`, c(s), mix(c(s), c('bg-elevated'), 0.1), 4.5, false);
+  }
   out.push(`### ${name}\n\n| пара | контраст | порог | AA |\n|---|---|---|---|\n${rows.join('\n')}\n`);
 }
 console.log(out.join('\n'));

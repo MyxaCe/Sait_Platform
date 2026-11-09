@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
 import { notFound } from 'next/navigation';
 import { hasLocale, NextIntlClientProvider } from 'next-intl';
@@ -6,6 +6,7 @@ import { getMessages, getTranslations, setRequestLocale } from 'next-intl/server
 import { hexToRgbChannels } from '@broker/utils';
 import { routing } from '@/i18n/routing';
 import { getChromeBrand } from '@/lib/chrome';
+import { onAccentChannels } from '@/lib/on-accent';
 import '../globals.css';
 
 const inter = Inter({
@@ -13,6 +14,17 @@ const inter = Inter({
   variable: '--font-sans',
   display: 'swap',
 });
+
+/**
+ * `viewport-fit=cover` — чтобы `env(safe-area-inset-bottom)` работал: нижняя
+ * навигация телефона отступает от жестовой полосы (аудит К2).
+ */
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover',
+  themeColor: '#08090c',
+};
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -46,11 +58,16 @@ export default async function RootLayout({ children, params }: LayoutProps) {
   // фирменный цвет, он за логином. Остальной бренд при этом на месте.
   const brand = await getChromeBrand(locale);
   const accentChannels = brand?.primaryColor ? hexToRgbChannels(brand.primaryColor) : null;
+  // Акцент бренда приходит с текстом на нём: тёмный на светлом акценте,
+  // белый на тёмном — primary-кнопка держит AA при любом цвете из CMS.
+  const onAccent = accentChannels ? onAccentChannels(accentChannels) : null;
 
   return (
     <html lang={locale} data-theme="dark" className={inter.variable}>
       <body className="bg-base font-sans text-primary">
-        {accentChannels && <style>{`:root{--accent:${accentChannels};}`}</style>}
+        {accentChannels && (
+          <style>{`:root{--accent:${accentChannels};--text-on-accent:${onAccent};}`}</style>
+        )}
         <NextIntlClientProvider messages={messages}>{children}</NextIntlClientProvider>
       </body>
     </html>

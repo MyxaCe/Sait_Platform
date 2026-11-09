@@ -63,7 +63,7 @@ export function KycUploadForm() {
           name="file"
           type="file"
           accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
-          className="block w-full cursor-pointer rounded-xl border border-border bg-card px-4 py-2.5 text-sm text-secondary file:mr-3 file:cursor-pointer file:rounded-lg file:border-0 file:bg-accent file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-base"
+          className="block w-full cursor-pointer rounded-xl border border-border bg-card px-4 py-2.5 text-sm text-secondary file:mr-3 file:cursor-pointer file:rounded-lg file:border-0 file:bg-accent file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-on-accent"
         />
       </FormField>
 

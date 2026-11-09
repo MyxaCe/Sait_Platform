@@ -16,7 +16,7 @@ export default async function AuthLayout({ children }: { children: React.ReactNo
           // eslint-disable-next-line @next/next/no-img-element
           <img src={brand.logo.url} alt={brand.logo.alt || brandName} className="h-9 w-auto" />
         ) : (
-          <span className="grid size-9 place-items-center rounded-lg bg-accent font-bold text-base">
+          <span className="grid size-9 place-items-center rounded-lg bg-accent font-bold text-on-accent">
             {brandName.charAt(0)}
           </span>
         )}
