@@ -9,7 +9,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "seed:admin": "tsx scripts/bootstrap-admin.ts",
-    "seed:kyc-fixture": "tsx scripts/seed-kyc-fixture.ts"
+    "seed:kyc-fixture": "tsx scripts/seed-kyc-fixture.ts",
+    "seed:demo": "tsx scripts/seed-demo.ts"
   },
   "dependencies": {
     "@broker/money": "workspace:*",

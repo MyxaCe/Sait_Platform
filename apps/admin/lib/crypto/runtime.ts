@@ -7,6 +7,7 @@ import {
 } from '@broker/money';
 import type { OperatorRole } from '../auth/session';
 import { getPool } from '../db';
+import { devFixtureAccounts, devTerminalFixtureEnabled } from './dev-terminal-fixture';
 
 /**
  * Связка админки с `@broker/money`: пул в форме пакета и клиент терминала из
@@ -49,5 +50,9 @@ export function terminalReader(): FullClient {
     tenant: process.env.SITE_SLUG,
     timeoutMs: 2_500,
   });
+  // Dev-фикстура чтения счетов (только next dev + явный флаг; см. файл фикстуры).
+  if (devTerminalFixtureEnabled()) {
+    return { ...readerStore.__adminTerminalReader, accounts: devFixtureAccounts };
+  }
   return readerStore.__adminTerminalReader;
 }
