@@ -27,7 +27,8 @@ describe('journal labels', () => {
     for (const root of ROOTS) {
       for (const file of walk(root)) {
         if (file.endsWith('labels.ts')) continue;
-        for (const m of readFileSync(file, 'utf8').matchAll(CODE)) found.add(m[1]!);
+        // Префикс вида 'client.verification.' (фильтр startsWith) — не код действия.
+        for (const m of readFileSync(file, 'utf8').matchAll(CODE)) if (!m[1]!.endsWith('.')) found.add(m[1]!);
       }
     }
     expect(found.size).toBeGreaterThan(30);
