@@ -56,3 +56,23 @@ export async function getVerificationState(userId: string): Promise<Verification
   }
   return null;
 }
+
+/**
+ * Гейт KYC на ДЕНЬГИ (подготовка к пополнению/выводу).
+ *
+ * `true` — только если оператор подтвердил проверку в центре управления
+ * (`/kyc`, `client_verification.state = 'verified'`). Любое иное состояние,
+ * в том числе отсутствие строки, `pending`, `rejected`,
+ * `resubmit_requested`, — `false`: fail-closed, деньги без подтверждённой
+ * личности не двигаются.
+ *
+ * Демо-торговлю этим НЕ гейтим сознательно: демо-счёт не деньги клиента, а
+ * воронка до верификации. Вызывать — по `userId` из СЕССИИ, не из ввода.
+ */
+export async function isKycVerified(
+  userId: string,
+  db: { query(sql: string, params?: unknown[]): Promise<{ rows: Record<string, unknown>[] }> } = getPool(),
+): Promise<boolean> {
+  const r = await db.query(`SELECT state FROM client_verification WHERE user_id = $1`, [userId]);
+  return r.rows[0]?.state === 'verified';
+}
