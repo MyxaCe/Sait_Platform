@@ -6,6 +6,7 @@
 // Кабинет — по сессии, засеянной seed:demo (cookie cabinet_session).
 //
 //   node tools/screens/shoot.mjs <outDir> [--set admin|cabinet|all] [--palette <name>] [--only key,key]
+//   кабинет: [--cabinet-token <token>] (сессия другого клиента) [--suffix -frozen] [--sizes m390,d1440]
 //
 // Переменные: ADMIN_URL (http://localhost:3305), CABINET_URL (http://localhost:3302),
 // ADMIN_SESSION_SECRET.
@@ -80,7 +81,14 @@ const CABINET_SHOTS = [
   ['c02-deposit', '/ru/deposit'],
   ['c03-withdraw', '/ru/withdraw'],
   ['c04-history', '/ru/history'],
+  ['c05-verification', '/ru/verification'],
+  // Нижняя навигация телефона: открытая шторка «Ещё» (только m390).
+  ['c06-more', '/ru', { mobileOnly: true, click: 'nav[aria-label] button[aria-haspopup="dialog"]' }],
+  // Вывод: шаг подтверждения (адрес и сумма заполнены, «Продолжить»).
+  ['c07-withdraw-confirm', '/ru/withdraw', { fill: true }],
 ];
+const CABINET_TOKEN = opt('cabinet-token', 'demo-cabinet-token-0001');
+const SIZES = opt('sizes', 'm390,d1440').split(',');
 
 async function shootAdmin(browser) {
   const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1, locale: 'ru-RU' });
@@ -125,6 +133,7 @@ async function shootAdmin(browser) {
 
 async function shootCabinet(browser) {
   for (const [w, h, tag] of [[390, 844, 'm390'], [1440, 900, 'd1440']]) {
+    if (!SIZES.includes(tag)) continue;
     const ctx = await browser.newContext({
       viewport: { width: w, height: h },
       deviceScaleFactor: tag === 'm390' ? 2 : 1,
@@ -132,15 +141,34 @@ async function shootCabinet(browser) {
       hasTouch: tag === 'm390',
       locale: 'ru-RU',
     });
-    await ctx.addCookies([{ name: 'cabinet_session', value: 'demo-cabinet-token-0001', url: CABINET }]);
+    await ctx.addCookies([{ name: 'cabinet_session', value: CABINET_TOKEN, url: CABINET }]);
     const page = await ctx.newPage();
-    for (const [key, path] of CABINET_SHOTS) {
+    for (const [key, path, extra = {}] of CABINET_SHOTS) {
       if (only && !only.includes(key)) continue;
+      if (extra.mobileOnly && tag !== 'm390') continue;
       await page.goto(`${CABINET}${path}`, { waitUntil: 'networkidle', timeout: 120_000 }).catch(() => {});
       await page.waitForTimeout(600);
-      await page.screenshot({ path: join(outDir, `${key}-${tag}.png`), fullPage: tag !== 'm390' });
-      if (tag === 'm390') await page.screenshot({ path: join(outDir, `${key}-${tag}-full.png`), fullPage: true });
-      console.log('ok', key, tag);
+      if (extra.click) {
+        await page.locator(extra.click).first().click().catch(() => {});
+        await page.waitForTimeout(300);
+      }
+      if (extra.fill) {
+        await page.locator('#wd-address').fill('TJYeasTPa6gpEEfYqN1JLBhBumK3HzZAfX').catch(() => {});
+        await page.locator('#wd-amount').fill('250').catch(() => {});
+        await page.locator('#wd-amount').blur().catch(() => {});
+        await page.getByRole('button', { name: /Продолжить/ }).click().catch(() => {});
+        await page.waitForTimeout(300);
+      }
+      const name = `${key}${suffix}-${tag}`;
+      await page.screenshot({ path: join(outDir, `${name}.png`), fullPage: tag !== 'm390' });
+      if (tag === 'm390' && !extra.click) {
+        // Во всю длину фиксированная нижняя панель «впечаталась» бы посреди
+        // страницы — в -full её прячем (она видна на кадре вьюпорта).
+        const style = await page.addStyleTag({ content: 'nav.fixed.bottom-0{display:none!important}' });
+        await page.screenshot({ path: join(outDir, `${name}-full.png`), fullPage: true });
+        await style.evaluate((el) => el.remove());
+      }
+      console.log('ok', name);
     }
     await ctx.close();
   }
