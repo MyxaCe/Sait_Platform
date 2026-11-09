@@ -47,6 +47,7 @@ export async function devFixtureAccounts(userId: string): Promise<AccountsOutcom
         usedMarginMinor: null,
         openPositions: null,
         tradingFrozen: false,
+        leverage: null,
       };
     }
     const b = Number(bal);
@@ -63,6 +64,7 @@ export async function devFixtureAccounts(userId: string): Promise<AccountsOutcom
       usedMarginMinor: used,
       openPositions: null,
       tradingFrozen: kind === 'real' && Boolean(row.frozen),
+      leverage: 20,
     };
   };
   return { state: 'ok', accounts: [make('real', row.real), make('demo', row.demo)] };
