@@ -3,7 +3,10 @@ import { redirect } from 'next/navigation';
 import { SiteFooter } from '@broker/ui';
 import { CabinetHeader } from '@/features/shell/CabinetHeader';
 import { LogoutForm } from '@/features/shell/LogoutForm';
-import { NavLink } from '@/features/shell/NavLink';
+import { MobileNav } from '@/features/shell/MobileNav';
+import { NavIcon } from '@/features/shell/NavIcon';
+import { CountBadge, NavLink, type NavItem } from '@/features/shell/NavLink';
+import { Link } from '@/i18n/navigation';
 import { getSessionUser } from '@/lib/auth/session';
 import { getChromeBrand, getChromeFooter, siteHref } from '@/lib/chrome';
 import { countUnread } from '@/lib/data';
@@ -30,18 +33,29 @@ export default async function AppLayout({ children, params }: LayoutProps) {
   ]);
   const brandName = brand?.name ?? tCommon('brand');
 
-  const nav = [
-    { href: '/', label: tNav('dashboard') },
-    { href: '/trade', label: tNav('trade') },
-    { href: '/deposit', label: tNav('deposit') },
-    { href: '/withdraw', label: tNav('withdraw') },
-    { href: '/history', label: tNav('history') },
-    { href: '/profile', label: tNav('profile') },
-    { href: '/security', label: tNav('security') },
-    { href: '/documents', label: tNav('documents') },
-    { href: '/verification', label: tNav('verification') },
-    { href: '/notifications', label: tNav('notifications'), badge: unread },
+  // Две группы: деньги и торговля (главное) / профиль и комплаенс.
+  const accountNav: NavItem[] = [
+    { href: '/', label: tNav('dashboard'), icon: 'home' },
+    { href: '/trade', label: tNav('trade'), icon: 'trade' },
+    { href: '/deposit', label: tNav('deposit'), icon: 'deposit' },
+    { href: '/withdraw', label: tNav('withdraw'), icon: 'withdraw' },
+    { href: '/history', label: tNav('history'), icon: 'history' },
   ];
+  const profileNav: NavItem[] = [
+    { href: '/verification', label: tNav('verification'), icon: 'verification' },
+    { href: '/profile', label: tNav('profile'), icon: 'profile' },
+    { href: '/security', label: tNav('security'), icon: 'security' },
+    { href: '/documents', label: tNav('documents'), icon: 'documents' },
+    { href: '/notifications', label: tNav('notifications'), icon: 'notifications', badge: unread },
+  ];
+  // Телефон: 4 главных + «Ещё» (аудит К1). Короткие подписи — чтобы влезали в 390 px.
+  const mobilePrimary: NavItem[] = [
+    { href: '/', label: tNav('short.dashboard'), icon: 'home' },
+    { href: '/trade', label: tNav('short.trade'), icon: 'trade' },
+    { href: '/deposit', label: tNav('short.deposit'), icon: 'deposit' },
+    { href: '/withdraw', label: tNav('short.withdraw'), icon: 'withdraw' },
+  ];
+  const mobileMore: NavItem[] = [accountNav[4]!, ...profileNav];
 
   return (
     <div className="flex min-h-svh flex-col">
@@ -50,29 +64,38 @@ export default async function AppLayout({ children, params }: LayoutProps) {
         <CabinetHeader brand={brand} user={user} locale={params.locale} />
       </div>
 
-      {/* Мобильная шапка */}
-      <header className="flex h-14 items-center justify-between border-b border-border bg-elevated px-4 lg:hidden">
-        <span className="flex items-center gap-2 font-semibold">
+      {/* Мобильная шапка: бренд + уведомления. Выход — в «Ещё». */}
+      <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-border bg-elevated/95 px-4 backdrop-blur lg:hidden">
+        <Link href="/" className="flex min-w-0 items-center gap-2 font-semibold">
           {brand?.logo ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={brand.logo.url} alt={brand.logo.alt || brandName} className="h-7 w-auto" />
           ) : (
-            <span className="grid size-7 place-items-center rounded-lg bg-accent text-sm font-bold text-base">
+            <span className="grid size-7 place-items-center rounded-lg bg-accent text-sm font-bold text-on-accent">
               {brandName.charAt(0)}
             </span>
           )}
-          {tCommon('cabinet')}
-        </span>
-        <LogoutForm locale={params.locale} label={tCommon('logout')} className="text-sm text-secondary" />
+          <span className="truncate">{tCommon('cabinet')}</span>
+        </Link>
+        <Link
+          href="/notifications"
+          aria-label={tNav('notifications')}
+          className="relative -mr-2 grid size-11 place-items-center rounded-lg text-secondary hover:text-primary"
+        >
+          <NavIcon name="notifications" className="size-[22px]" />
+          {unread > 0 ? <CountBadge value={unread} className="absolute right-0.5 top-1 h-[18px] min-w-[18px] px-1 text-[10px]" /> : null}
+        </Link>
       </header>
 
       <div className="flex min-h-0 flex-1">
         <aside className="hidden w-60 shrink-0 flex-col border-r border-border bg-elevated p-4 lg:flex">
-          <nav className="flex flex-1 flex-col gap-1">
-            {nav.map((item) => (
-              <NavLink key={item.href} href={item.href} badge={item.badge}>
-                {item.label}
-              </NavLink>
+          <nav className="flex flex-1 flex-col gap-0.5" aria-label={tNav('menu')}>
+            {accountNav.map((item) => (
+              <NavLink key={item.href} item={item} />
+            ))}
+            <p className="mt-5 px-3 pb-1.5 text-[11px] font-medium text-muted">{tNav('groupProfile')}</p>
+            {profileNav.map((item) => (
+              <NavLink key={item.href} item={item} />
             ))}
           </nav>
           <a
@@ -84,7 +107,7 @@ export default async function AppLayout({ children, params }: LayoutProps) {
         </aside>
 
         <div className="flex min-w-0 flex-1 flex-col">
-          <main className="flex-1 px-4 py-6 pb-24 sm:px-6 lg:px-10 lg:pb-6">{children}</main>
+          <main className="flex-1 px-4 pb-[calc(5.5rem+env(safe-area-inset-bottom))] pt-5 sm:px-6 lg:px-10 lg:pb-8 lg:pt-8">{children}</main>
 
           {/* Общий футер платформы (ADR-025): те же данные CMS, что у сайта */}
           {footer && (
@@ -104,13 +127,28 @@ export default async function AppLayout({ children, params }: LayoutProps) {
         </div>
       </div>
 
-      <nav className="fixed inset-x-0 bottom-0 z-40 flex border-t border-border bg-elevated lg:hidden">
-        {nav.map((item) => (
-          <NavLink key={item.href} href={item.href} badge={item.badge} mobile>
-            {item.label}
-          </NavLink>
-        ))}
-      </nav>
+      <MobileNav
+        primary={mobilePrimary}
+        more={mobileMore}
+        labels={{ more: tNav('more'), close: tNav('close'), sheetTitle: tNav('moreTitle'), nav: tNav('menu') }}
+        footer={
+          <>
+            <a
+              href={siteHref('/', params.locale)}
+              className="flex h-12 items-center gap-3 rounded-lg px-3 text-[15px] text-secondary hover:bg-primary/5"
+            >
+              <NavIcon name="site" />
+              {tCommon('backToSite')}
+            </a>
+            <LogoutForm
+              locale={params.locale}
+              label={tCommon('logout')}
+              icon={<NavIcon name="logout" />}
+              className="flex h-12 w-full items-center gap-3 rounded-lg px-3 text-left text-[15px] text-negative hover:bg-negative/10"
+            />
+          </>
+        }
+      />
     </div>
   );
 }

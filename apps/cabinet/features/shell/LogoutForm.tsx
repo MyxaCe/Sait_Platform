@@ -13,10 +13,13 @@ export function LogoutForm({
   locale,
   label,
   className,
+  icon,
 }: {
   locale: string;
   label: string;
   className?: string;
+  /** Иконка перед подписью (пункт шторки «Ещё»). */
+  icon?: React.ReactNode;
 }) {
   return (
     <form
@@ -29,6 +32,7 @@ export function LogoutForm({
     >
       <input type="hidden" name="uiLocale" value={locale} />
       <button type="submit" className={className}>
+        {icon}
         {label}
       </button>
     </form>
