@@ -6,7 +6,7 @@ export default function manifest(): MetadataRoute.Manifest {
     name: 'Apex Capital — торговля на мировых рынках',
     short_name: 'Apex Capital',
     description:
-      '12 000+ торговых инструментов: Forex, акции, криптовалюты, индексы и металлы. Котировки в реальном времени.',
+      'Торговая платформа: Forex, акции, криптовалюты, индексы и металлы. Котировки в реальном времени.',
     start_url: '/?source=pwa',
     scope: '/',
     display: 'standalone',

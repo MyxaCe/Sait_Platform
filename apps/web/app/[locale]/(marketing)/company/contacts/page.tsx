@@ -41,7 +41,13 @@ export default async function ContactsPage({ params }: PageProps) {
           ))}
         </div>
 
-        <div className="mt-14 grid gap-10 lg:grid-cols-[1fr_420px] lg:gap-16">
+        <div
+          className={
+            offices.length > 0
+              ? 'mt-14 grid gap-10 lg:grid-cols-[1fr_420px] lg:gap-16'
+              : 'mt-14 max-w-2xl'
+          }
+        >
           <div>
             <h2 className="text-2xl font-semibold tracking-tight text-primary sm:text-3xl">
               {t('writeUs')}
@@ -52,20 +58,24 @@ export default async function ContactsPage({ params }: PageProps) {
             </div>
           </div>
 
-          <div>
-            <h2 className="text-2xl font-semibold tracking-tight text-primary sm:text-3xl">
-              {t('offices')}
-            </h2>
-            <div className="mt-6 space-y-4">
-              {offices.map((office) => (
-                <div key={office.city} className="rounded-2xl border border-border bg-card p-5">
-                  <p className="font-semibold text-primary">{office.city}</p>
-                  <p className="mt-0.5 text-xs text-accent">{office.country}</p>
-                  <p className="mt-2 text-sm text-secondary">{office.address}</p>
-                </div>
-              ))}
+          {/* Офисов нет — нет и блока: пустой заголовок «Офисы» читался бы
+              как обещание адресов (раньше там стояли выдуманные). */}
+          {offices.length > 0 && (
+            <div>
+              <h2 className="text-2xl font-semibold tracking-tight text-primary sm:text-3xl">
+                {t('offices')}
+              </h2>
+              <div className="mt-6 space-y-4">
+                {offices.map((office) => (
+                  <div key={office.city} className="rounded-2xl border border-border bg-card p-5">
+                    <p className="font-semibold text-primary">{office.city}</p>
+                    <p className="mt-0.5 text-xs text-accent">{office.country}</p>
+                    <p className="mt-2 text-sm text-secondary">{office.address}</p>
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </Container>
     </Section>
