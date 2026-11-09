@@ -20,9 +20,11 @@ import {
 const MESSAGES: Record<string, string> = {
   forbidden: 'Недостаточно прав: изменение плеча — действие администратора.',
   missingReason: 'Нужно указать основание.',
-  invalidLeverage: 'Плечо должно быть целым числом ≥ 1 (знаменатель 1:N).',
+  invalidLeverage: 'Плечо должно быть целым числом от 1 до 1000 (знаменатель 1:N).',
   noPortfolio: 'Портфель не найден.',
   alreadyInState: 'Значение не изменилось — записывать нечего.',
+  terminalUnavailable: 'Терминал не ответил — плечо НЕ изменено ни на сайте, ни в терминале. Повторите позже.',
+  terminalRefused: 'Терминал отказал в смене плеча — изменение НЕ применено (код — в логе сервера).',
 };
 
 function Feedback({ state, okText }: { state: LeverageActionState; okText: string }) {

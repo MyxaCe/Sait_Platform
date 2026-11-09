@@ -3,11 +3,13 @@ import {
   INTERNAL_AUTH_HEADER,
   internalAuthValue,
   parseAccountsResponse,
+  parseLeverageResponse,
   parseMoneyMoveResponse,
   routes,
   TERMINAL_CURRENCY,
   type AccountKind,
   type FreezeBody,
+  type LeverageBody,
   type MoneyMoveBody,
   type TerminalAccount,
 } from './terminal-contract';
@@ -38,6 +40,16 @@ export type MoneyMoveOutcome =
 
 export type FreezeOutcome =
   | { state: 'ok' }
+  | { state: 'refused'; code: string; status: number }
+  | { state: 'unavailable'; reason: TerminalUnavailable };
+
+/**
+ * Исход назначения плеча. `not-opened` — счёта этого рода в терминале нет
+ * (человек ни разу не входил): применять нечего, и это НЕ отказ.
+ */
+export type LeverageOutcome =
+  | { state: 'ok'; leverage: number; previousLeverage: number | null; changed: boolean; seq: number | null }
+  | { state: 'not-opened' }
   | { state: 'refused'; code: string; status: number }
   | { state: 'unavailable'; reason: TerminalUnavailable };
 
@@ -74,6 +86,7 @@ type Raw = { kind: 'res'; status: number; json: unknown } | { kind: 'fail'; reas
 
 export function createTerminalMoneyClient(config: TerminalMoneyConfig): TerminalMoneyClient & {
   accounts(userId: string): Promise<AccountsOutcome>;
+  setLeverage(userId: string, body: LeverageBody, kind: AccountKind): Promise<LeverageOutcome>;
 } {
   const baseUrl = config.baseUrl?.trim().replace(/\/$/, '');
   const token = config.token?.trim();
@@ -156,6 +169,23 @@ export function createTerminalMoneyClient(config: TerminalMoneyConfig): Terminal
       if (r.status >= 200 && r.status < 300) return { state: 'ok' };
       if (r.status >= 400 && r.status < 500) {
         const c = classify4xx(r.status, r.json);
+        return c.state === 'refused' ? { state: 'refused', code: c.code, status: c.status } : c;
+      }
+      return { state: 'unavailable', reason: 'http-error' };
+    },
+    async setLeverage(userId, body, kind) {
+      const r = await call('POST', routes.leverage(tenant ?? '', userId, kind), body);
+      if (r.kind === 'fail') return { state: 'unavailable', reason: r.reason };
+      if (r.status >= 200 && r.status < 300) {
+        const parsed = parseLeverageResponse(r.json);
+        if (!parsed) return { state: 'unavailable', reason: 'malformed' };
+        return { state: 'ok', ...parsed };
+      }
+      if (r.status >= 400 && r.status < 500) {
+        const c = classify4xx(r.status, r.json);
+        // 404 С КОДОМ account_not_opened — счёта нет; 404 без кода — маршрута
+        // нет (терминал старой версии или выключен секрет) → «недоступно».
+        if (c.state === 'refused' && c.code === 'account_not_opened') return { state: 'not-opened' };
         return c.state === 'refused' ? { state: 'refused', code: c.code, status: c.status } : c;
       }
       return { state: 'unavailable', reason: 'http-error' };

@@ -124,6 +124,7 @@
     "tradeReal": "Торговать на реальном",
     "realFrozen": "Счёт заморожен: торговля и вывод закрыты, закрыть позиции можно.",
     "liveEquity": "Equity {equity} · свободная маржа {free}",
+    "accountLeverage": "Плечо для новых позиций 1:{leverage}",
     "moneyUnavailable": "Недоступно: {reasons}"
   },
   "dashboard": {

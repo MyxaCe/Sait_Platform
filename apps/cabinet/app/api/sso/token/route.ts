@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getSessionUser } from '@/lib/auth/session';
 import { isRateLimited } from '@/lib/rate-limit';
+import { terminalLeverageFor } from '@/lib/leverage';
 import {
   issueHandoffToken,
   isSsoConfigured,
@@ -83,9 +84,23 @@ export async function POST(request: Request) {
    * отправляет разбираться в чужой лог, а вызывающей странице нужен
    * различимый исход (на любой не-200 она гасит сессию терминала).
    */
+  /**
+   * Плечо счёта (claim `leverage`, Р-446). Терминал по нему синхронизирует
+   * плечо для новых позиций на каждом входе и продлении. Не прочиталось —
+   * токена нет (fail-closed): терминал иначе торговал бы по плечу, которое
+   * сайт, возможно, уже сменил.
+   */
+  let leverage: number | null;
+  try {
+    leverage = await terminalLeverageFor(user.id);
+  } catch (error) {
+    console.error('[sso] плечо клиента не прочитано — токен не выпускаем (Р-446)', error);
+    return NextResponse.json({ error: 'leverage_unavailable' }, { status: 503 });
+  }
+
   let handoff: HandoffToken;
   try {
-    handoff = await issueHandoffToken(user.id, accountKind);
+    handoff = await issueHandoffToken(user.id, accountKind, leverage);
   } catch (error) {
     if (error instanceof TokenWithoutExpiryError) {
       console.error(`[sso] ${error.message} — токен не отдаём (Р-100, CAB-07)`);

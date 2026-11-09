@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import type { PoolClient } from 'pg';
+import { FakeTerminal } from '@broker/money/testing';
 import { setClientPortfolio, setClientOverride, clearClientOverride } from './client';
+import type { LeverageTerminalSync } from './terminal-sync';
 
 /**
  * WEB-44/46 · портфель клиента и override клиента по заявке (Р-446, Р-049).
@@ -12,6 +14,7 @@ import { setClientPortfolio, setClientOverride, clearClientOverride } from './cl
 
 const OP = '11111111-1111-1111-1111-111111111111';
 const USER = '22222222-2222-2222-2222-222222222222';
+const CRYPTO_LEVERAGE: Record<string, number> = { standard: 10, pro: 50 };
 
 interface Row {
   portfolio_key: string | null;
@@ -103,7 +106,18 @@ function fakePool(opts: {
     release() {},
   };
   const pool = { async connect() { return client as unknown as PoolClient; } };
-  return { pool, journal, flags, getRow: () => row };
+  // Действующее плечо по закону Р-446 для терминала (класс crypto):
+  // override клиента › крипто-планка портфеля (Standard 1:10) › база (Pro 1:50).
+  const terminal = new FakeTerminal();
+  const sync: LeverageTerminalSync = {
+    terminal,
+    usersOfPortfolio: async () => [USER],
+    read: async (_db, ids) => {
+      const lev = row?.override_leverage ?? CRYPTO_LEVERAGE[row?.portfolio_key ?? defaultPortfolio ?? 'standard']!;
+      return new Map(ids.map((id) => [id, lev]));
+    },
+  };
+  return { pool, journal, flags, getRow: () => row, terminal, sync };
 }
 
 describe('WEB-44 · портфель клиента', () => {
@@ -112,6 +126,7 @@ describe('WEB-44 · портфель клиента', () => {
     const res = await setClientPortfolio(
       { operatorId: OP, userId: USER, portfolioKey: 'pro', reason: 'апгрейд клиента' },
       f.pool,
+      f.sync,
     );
     expect(res).toMatchObject({ ok: true });
     expect(f.getRow()!.portfolio_key).toBe('pro');
@@ -125,6 +140,7 @@ describe('WEB-44 · портфель клиента', () => {
     const res = await setClientPortfolio(
       { operatorId: OP, userId: USER, portfolioKey: 'pro', reason: 'первичное назначение' },
       f.pool,
+      f.sync,
     );
     expect(res).toMatchObject({ ok: true });
     expect(JSON.parse(f.journal[0]!.payload).previousPortfolio).toBeNull();
@@ -135,6 +151,7 @@ describe('WEB-44 · портфель клиента', () => {
     const res = await setClientPortfolio(
       { operatorId: OP, userId: USER, portfolioKey: 'pro', reason: 'без изменений' },
       f.pool,
+      f.sync,
     );
     expect(res).toEqual({ ok: false, reason: 'alreadyInState' });
     expect(f.flags.rolledBack).toBe(true);
@@ -145,6 +162,7 @@ describe('WEB-44 · портфель клиента', () => {
     const res = await setClientPortfolio(
       { operatorId: OP, userId: USER, portfolioKey: 'pro', reason: 'есть' },
       f.pool,
+      f.sync,
     );
     expect(res).toEqual({ ok: false, reason: 'noClient' });
   });
@@ -156,6 +174,7 @@ describe('WEB-46 · override клиента по заявке', () => {
     const res = await setClientOverride(
       { operatorId: OP, userId: USER, leverage: 5, reason: 'VIP по заявке', ticket: 'RISK-77' },
       f.pool,
+      f.sync,
     );
     expect(res).toMatchObject({ ok: true });
     expect(f.getRow()!.override_leverage).toBe(5);
@@ -169,6 +188,7 @@ describe('WEB-46 · override клиента по заявке', () => {
     const res = await setClientOverride(
       { operatorId: OP, userId: USER, leverage: 5, reason: 'есть основание', ticket: '  ' },
       f.pool,
+      f.sync,
     );
     expect(res).toEqual({ ok: false, reason: 'missingReason' });
     expect(f.flags.begun).toBe(false);
@@ -179,6 +199,7 @@ describe('WEB-46 · override клиента по заявке', () => {
     const res = await setClientOverride(
       { operatorId: OP, userId: USER, leverage: 3, reason: 'по заявке', ticket: 'RISK-9' },
       f.pool,
+      f.sync,
     );
     expect(res).toMatchObject({ ok: true });
     expect(f.getRow()!.portfolio_key).toBe('standard');
@@ -187,7 +208,7 @@ describe('WEB-46 · override клиента по заявке', () => {
 
   it('снятие override: leverage.override_cleared, поля обнулены', async () => {
     const f = fakePool({ row: { portfolio_key: 'standard', override_leverage: 5 } });
-    const res = await clearClientOverride({ operatorId: OP, userId: USER, reason: 'заявка закрыта' }, f.pool);
+    const res = await clearClientOverride({ operatorId: OP, userId: USER, reason: 'заявка закрыта' }, f.pool, f.sync);
     expect(res).toMatchObject({ ok: true });
     expect(f.getRow()!.override_leverage).toBeNull();
     expect(f.journal[0]!.action).toBe('leverage.override_cleared');
@@ -196,8 +217,90 @@ describe('WEB-46 · override клиента по заявке', () => {
 
   it('снимать нечего — noOverride, откат', async () => {
     const f = fakePool({ row: { portfolio_key: 'standard', override_leverage: null } });
-    const res = await clearClientOverride({ operatorId: OP, userId: USER, reason: 'нет override' }, f.pool);
+    const res = await clearClientOverride({ operatorId: OP, userId: USER, reason: 'нет override' }, f.pool, f.sync);
     expect(res).toEqual({ ok: false, reason: 'noOverride' });
     expect(f.flags.rolledBack).toBe(true);
+  });
+});
+
+describe('Р-446 · плечо клиента доезжает до терминала (fail-closed)', () => {
+  it('плечо больше 1000 — invalidLeverage до транзакции (граница терминала)', async () => {
+    const f = fakePool({ row: { portfolio_key: 'standard' } });
+    const res = await setClientOverride(
+      { operatorId: OP, userId: USER, leverage: 1001, reason: 'по заявке', ticket: 'RISK-4' },
+      f.pool,
+      f.sync,
+    );
+    expect(res).toEqual({ ok: false, reason: 'invalidLeverage' });
+    expect(f.flags.begun).toBe(false);
+    expect(f.terminal.leverageCalls).toHaveLength(0);
+  });
+
+  it('override: оба счёта получают плечо override, журнал знает, что уехало', async () => {
+    const f = fakePool({ row: { portfolio_key: 'standard' } });
+    const res = await setClientOverride(
+      { operatorId: OP, operatorLogin: 'risk', userId: USER, leverage: 5, reason: 'по заявке', ticket: 'RISK-1' },
+      f.pool,
+      f.sync,
+    );
+    expect(res).toMatchObject({ ok: true });
+    expect(f.terminal.leverageCalls.map((c) => `${c.kind}:${c.leverage}`)).toEqual(['demo:5', 'real:5']);
+    expect(JSON.parse(f.journal[0]!.payload).terminalLeverage).toEqual([{ userId: USER, before: 10, after: 5 }]);
+    expect(f.flags.committed).toBe(true);
+  });
+
+  it('смена портфеля: Standard (крипта 1:10) → Pro (1:50)', async () => {
+    const f = fakePool({ row: { portfolio_key: 'standard' } });
+    const res = await setClientPortfolio(
+      { operatorId: OP, userId: USER, portfolioKey: 'pro', reason: 'апгрейд' },
+      f.pool,
+      f.sync,
+    );
+    expect(res).toMatchObject({ ok: true });
+    expect(f.terminal.leverageCalls.map((c) => c.leverage)).toEqual([50, 50]);
+  });
+
+  it('смена портфеля при override: действующее плечо то же — терминал не зовётся', async () => {
+    const f = fakePool({ row: { portfolio_key: 'standard', override_leverage: 5 } });
+    const res = await setClientPortfolio(
+      { operatorId: OP, userId: USER, portfolioKey: 'pro', reason: 'апгрейд' },
+      f.pool,
+      f.sync,
+    );
+    expect(res).toMatchObject({ ok: true });
+    expect(f.terminal.leverageCalls).toHaveLength(0);
+  });
+
+  it('снятие override возвращает плечо портфеля', async () => {
+    const f = fakePool({ row: { portfolio_key: 'standard', override_leverage: 5 } });
+    const res = await clearClientOverride({ operatorId: OP, userId: USER, reason: 'закрыта' }, f.pool, f.sync);
+    expect(res).toMatchObject({ ok: true });
+    expect(f.terminal.leverageCalls.map((c) => c.leverage)).toEqual([10, 10]);
+  });
+
+  it('терминал отказал — override НЕ выдан: откат, журнал не закоммичен, код наружу', async () => {
+    const f = fakePool({ row: { portfolio_key: 'standard' } });
+    f.terminal.next = ['invalid_leverage'];
+    const res = await setClientOverride(
+      { operatorId: OP, userId: USER, leverage: 7, reason: 'по заявке', ticket: 'RISK-2' },
+      f.pool,
+      f.sync,
+    );
+    expect(res).toEqual({ ok: false, reason: 'terminalRefused', code: 'invalid_leverage' });
+    expect(f.flags.rolledBack).toBe(true);
+    expect(f.flags.committed).toBe(false);
+  });
+
+  it('реальный счёт не ответил после демо — демо откатывается обратно', async () => {
+    const f = fakePool({ row: { portfolio_key: 'standard' } });
+    f.terminal.next = ['ok', 'unavailable'];
+    const res = await setClientOverride(
+      { operatorId: OP, userId: USER, leverage: 5, reason: 'по заявке', ticket: 'RISK-3' },
+      f.pool,
+      f.sync,
+    );
+    expect(res).toEqual({ ok: false, reason: 'terminalUnavailable' });
+    expect(f.terminal.leverage.get(`${USER}:demo`)).toBe(20); // плечо «до» терминала
+    expect(f.flags.committed).toBe(false);
   });
 });

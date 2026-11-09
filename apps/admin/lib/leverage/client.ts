@@ -1,6 +1,15 @@
 import type { PoolClient } from 'pg';
 import { getPool } from '../db';
 import { appendJournalEntry } from '../journal/journal';
+import { MAX_TERMINAL_LEVERAGE, type Queryable } from '@broker/money';
+import {
+  changesForJournal,
+  deliverToTerminal,
+  leverageChanges,
+  terminalLeverageSync,
+  type LeverageTerminalSync,
+  type TerminalSyncFailure,
+} from './terminal-sync';
 
 /**
  * Плечо КЛИЕНТА (Р-446, Р-049): портфель как атрибут клиента (WEB-44) и
@@ -14,10 +23,16 @@ import { appendJournalEntry } from '../journal/journal';
  * Строка `client_leverage` заводится первым решением; портфель обязателен
  * (NOT NULL), поэтому без явного портфеля клиент садится в портфель по
  * умолчанию (его ключ ищем в той же транзакции).
+ *
+ * **Плечо доезжает до терминала** (`terminal-sync.ts`): если решение меняет
+ * ДЕЙСТВУЮЩЕЕ плечо клиента, в той же транзакции зовётся терминал; отказ →
+ * откат всего (fail-closed), оператор видит `terminalUnavailable` /
+ * `terminalRefused`.
  */
 
+/** Плечо — целое 1..1000: верхняя граница терминала (`broker::MAX_LEVERAGE`). */
 function badLeverage(value: number): boolean {
-  return !Number.isInteger(value) || value < 1;
+  return !Number.isInteger(value) || value < 1 || value > MAX_TERMINAL_LEVERAGE;
 }
 
 async function seqOfEntry(client: PoolClient, entryHash: string, what: string): Promise<number> {
@@ -44,6 +59,8 @@ export interface SetClientPortfolioInput {
   userId: string;
   portfolioKey: string;
   reason: string;
+  /** Логин оператора — в журнал терминала (`operator`). Нет — `operatorId`. */
+  operatorLogin?: string;
 }
 
 export type ClientLeverageResult =
@@ -53,7 +70,8 @@ export type ClientLeverageResult =
   | { ok: false; reason: 'noClient' }
   | { ok: false; reason: 'noPortfolio' }
   | { ok: false; reason: 'noOverride' }
-  | { ok: false; reason: 'alreadyInState' };
+  | { ok: false; reason: 'alreadyInState' }
+  | TerminalSyncFailure;
 
 /**
  * Назначить клиенту портфель (WEB-44 — портфель как атрибут клиента). Это
@@ -64,6 +82,7 @@ export type ClientLeverageResult =
 export async function setClientPortfolio(
   input: SetClientPortfolioInput,
   pool: { connect(): Promise<PoolClient> } = getPool(),
+  sync: LeverageTerminalSync = terminalLeverageSync(),
 ): Promise<ClientLeverageResult> {
   const reason = input.reason?.trim() ?? '';
   if (reason.length === 0) return { ok: false, reason: 'missingReason' };
@@ -97,12 +116,14 @@ export async function setClientPortfolio(
       return { ok: false, reason: 'alreadyInState' };
     }
 
+    const before = await sync.read(client as unknown as Queryable, [input.userId]);
     await client.query(
       `INSERT INTO client_leverage (user_id, portfolio_key, updated_at)
             VALUES ($1, $2, now())
        ON CONFLICT (user_id) DO UPDATE SET portfolio_key = EXCLUDED.portfolio_key, updated_at = now()`,
       [input.userId, input.portfolioKey],
     );
+    const changes = leverageChanges(before, await sync.read(client as unknown as Queryable, [input.userId]));
 
     const entry = await appendJournalEntry(
       {
@@ -110,11 +131,27 @@ export async function setClientPortfolio(
         action: 'leverage.client_portfolio_set',
         subjectKind: 'client',
         subjectId: input.userId,
-        payload: { basis: reason, previousPortfolio, newPortfolio: input.portfolioKey },
+        payload: {
+          basis: reason,
+          previousPortfolio,
+          newPortfolio: input.portfolioKey,
+          terminalLeverage: changesForJournal(changes),
+        },
       },
       client as unknown as Parameters<typeof appendJournalEntry>[1],
     );
     const journalSeq = await seqOfEntry(client, entry.entryHash, 'смена портфеля клиента');
+
+    const failed = await deliverToTerminal(sync, changes, {
+      reason,
+      operatorLogin: input.operatorLogin ?? input.operatorId,
+      journalSeq,
+    });
+    if (failed) {
+      // Терминал не принял — не меняется ничего: ни портфель, ни журнал.
+      await client.query('ROLLBACK');
+      return failed;
+    }
 
     await client.query(`UPDATE client_leverage SET last_journal_seq = $2 WHERE user_id = $1`, [
       input.userId,
@@ -140,6 +177,7 @@ export interface SetClientOverrideInput {
   reason: string;
   /** № заявки (обязательно) — override выдаётся ТОЛЬКО по заявке (Р-446). */
   ticket: string;
+  operatorLogin?: string;
 }
 
 /**
@@ -153,6 +191,7 @@ export interface SetClientOverrideInput {
 export async function setClientOverride(
   input: SetClientOverrideInput,
   pool: { connect(): Promise<PoolClient> } = getPool(),
+  sync: LeverageTerminalSync = terminalLeverageSync(),
 ): Promise<ClientLeverageResult> {
   const reason = input.reason?.trim() ?? '';
   const ticket = input.ticket?.trim() ?? '';
@@ -187,6 +226,7 @@ export async function setClientOverride(
     }
     const previousOverride =
       existing && existing.override_leverage !== null ? Number(existing.override_leverage) : null;
+    const before = await sync.read(client as unknown as Queryable, [input.userId]);
 
     await client.query(
       `INSERT INTO client_leverage
@@ -201,6 +241,7 @@ export async function setClientOverride(
               updated_at        = now()`,
       [input.userId, portfolioKey, input.leverage, reason, ticket, input.operatorId],
     );
+    const changes = leverageChanges(before, await sync.read(client as unknown as Queryable, [input.userId]));
 
     const entry = await appendJournalEntry(
       {
@@ -213,11 +254,23 @@ export async function setClientOverride(
           ticket,
           newLeverage: input.leverage,
           previousOverride,
+          terminalLeverage: changesForJournal(changes),
         },
       },
       client as unknown as Parameters<typeof appendJournalEntry>[1],
     );
     const journalSeq = await seqOfEntry(client, entry.entryHash, 'выдача override клиенту');
+
+    const failed = await deliverToTerminal(sync, changes, {
+      reason,
+      operatorLogin: input.operatorLogin ?? input.operatorId,
+      journalSeq,
+    });
+    if (failed) {
+      // Терминал не принял — не меняется ничего: ни override, ни журнал.
+      await client.query('ROLLBACK');
+      return failed;
+    }
 
     await client.query(`UPDATE client_leverage SET last_journal_seq = $2 WHERE user_id = $1`, [
       input.userId,
@@ -238,6 +291,7 @@ export interface ClearClientOverrideInput {
   operatorId: string;
   userId: string;
   reason: string;
+  operatorLogin?: string;
 }
 
 /**
@@ -248,6 +302,7 @@ export interface ClearClientOverrideInput {
 export async function clearClientOverride(
   input: ClearClientOverrideInput,
   pool: { connect(): Promise<PoolClient> } = getPool(),
+  sync: LeverageTerminalSync = terminalLeverageSync(),
 ): Promise<ClientLeverageResult> {
   const reason = input.reason?.trim() ?? '';
   if (reason.length === 0) return { ok: false, reason: 'missingReason' };
@@ -267,6 +322,7 @@ export async function clearClientOverride(
       return { ok: false, reason: 'noOverride' };
     }
     const previousOverride = Number(existing.override_leverage);
+    const before = await sync.read(client as unknown as Queryable, [input.userId]);
 
     await client.query(
       `UPDATE client_leverage
@@ -275,6 +331,7 @@ export async function clearClientOverride(
         WHERE user_id = $1`,
       [input.userId],
     );
+    const changes = leverageChanges(before, await sync.read(client as unknown as Queryable, [input.userId]));
 
     const entry = await appendJournalEntry(
       {
@@ -282,11 +339,22 @@ export async function clearClientOverride(
         action: 'leverage.override_cleared',
         subjectKind: 'client',
         subjectId: input.userId,
-        payload: { basis: reason, previousOverride },
+        payload: { basis: reason, previousOverride, terminalLeverage: changesForJournal(changes) },
       },
       client as unknown as Parameters<typeof appendJournalEntry>[1],
     );
     const journalSeq = await seqOfEntry(client, entry.entryHash, 'снятие override клиента');
+
+    const failed = await deliverToTerminal(sync, changes, {
+      reason,
+      operatorLogin: input.operatorLogin ?? input.operatorId,
+      journalSeq,
+    });
+    if (failed) {
+      // Терминал не принял — не меняется ничего: ни override, ни журнал.
+      await client.query('ROLLBACK');
+      return failed;
+    }
 
     await client.query(`UPDATE client_leverage SET last_journal_seq = $2 WHERE user_id = $1`, [
       input.userId,

@@ -46,12 +46,14 @@ const issueHandoffToken = vi.hoisted(() =>
   vi.fn(async () => ({ token: 'signed.jwt.token', expiresIn: 60 })),
 );
 const getSessionUser = vi.hoisted(() => vi.fn());
+const terminalLeverageFor = vi.hoisted(() => vi.fn(async (): Promise<number | null> => 10));
 
 vi.mock('@/lib/sso/jwt', async () => {
   const actual = await vi.importActual<typeof import('@/lib/sso/jwt')>('@/lib/sso/jwt');
   return { ...actual, issueHandoffToken };
 });
 vi.mock('@/lib/auth/session', () => ({ getSessionUser }));
+vi.mock('@/lib/leverage', () => ({ terminalLeverageFor }));
 
 const USER = { id: 'user-1', uid: 1, email: 'a@b.c', fullName: 'A', locale: 'ru', vipLevel: 0 };
 
@@ -64,6 +66,7 @@ beforeEach(async () => {
   vi.resetModules();
   issueHandoffToken.mockClear().mockResolvedValue({ token: 'signed.jwt.token', expiresIn: 60 });
   getSessionUser.mockReset().mockResolvedValue(USER);
+  terminalLeverageFor.mockReset().mockResolvedValue(10);
   vi.stubEnv('SSO_PRIVATE_KEY_B64', 'ZmFrZS1rZXk=');
   vi.stubEnv('SITE_SLUG', 'apex-ru');
   const { __resetRateLimit } = await import('@/lib/rate-limit');
@@ -193,13 +196,13 @@ describe('POST /api/sso/token · выбор счёта (account_kind, 09.11)', (
   it('без параметра — демо (как раньше)', async () => {
     const res = await postWith('');
     expect(res.status).toBe(200);
-    expect(issueHandoffToken).toHaveBeenCalledWith('user-1', 'demo');
+    expect(issueHandoffToken).toHaveBeenCalledWith('user-1', 'demo', 10);
   });
 
   it('?account=real — токен с account_kind=real', async () => {
     const res = await postWith('?account=real');
     expect(res.status).toBe(200);
-    expect(issueHandoffToken).toHaveBeenCalledWith('user-1', 'real');
+    expect(issueHandoffToken).toHaveBeenCalledWith('user-1', 'real', 10);
     await expect(res.json()).resolves.toMatchObject({ accountKind: 'real' });
   });
 
@@ -213,6 +216,35 @@ describe('POST /api/sso/token · выбор счёта (account_kind, 09.11)', (
     getSessionUser.mockResolvedValue(null);
     const res = await postWith('?account=real');
     expect(res.status).toBe(401);
+    expect(issueHandoffToken).not.toHaveBeenCalled();
+  });
+});
+
+describe('POST /api/sso/token · плечо счёта (claim leverage, Р-446)', () => {
+  it('плечо клиента уходит в выпуск токена', async () => {
+    const res = await post();
+
+    expect(res.status).toBe(200);
+    expect(terminalLeverageFor).toHaveBeenCalledWith(USER.id);
+    expect(issueHandoffToken).toHaveBeenCalledWith(USER.id, 'demo', 10);
+  });
+
+  it('конфигурация плеча клиенту ничего не задаёт — токен без claim-а', async () => {
+    terminalLeverageFor.mockResolvedValue(null);
+
+    const res = await post();
+
+    expect(res.status).toBe(200);
+    expect(issueHandoffToken).toHaveBeenCalledWith(USER.id, 'demo', null);
+  });
+
+  it('плечо не прочиталось — 503 leverage_unavailable, токен НЕ выпущен', async () => {
+    terminalLeverageFor.mockRejectedValue(new Error('db down'));
+
+    const res = await post();
+
+    expect(res.status).toBe(503);
+    await expect(res.json()).resolves.toEqual({ error: 'leverage_unavailable' });
     expect(issueHandoffToken).not.toHaveBeenCalled();
   });
 });

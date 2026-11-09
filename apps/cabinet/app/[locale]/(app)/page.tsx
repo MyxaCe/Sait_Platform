@@ -26,10 +26,14 @@ async function loadRealBlock(userId: string, locale: string): Promise<RealAccoun
       .catch(() => ({ state: 'unavailable' as const })),
   ]);
   const acc = live.state === 'ok' ? live.accounts.find((a) => a.kind === 'real') : undefined;
+  const demo = live.state === 'ok' ? live.accounts.find((a) => a.kind === 'demo') : undefined;
   return {
     account,
     policy,
-    live: acc ? { equityMinor: acc.equityMinor, freeMarginMinor: acc.freeMarginMinor } : null,
+    live: acc
+      ? { equityMinor: acc.equityMinor, freeMarginMinor: acc.freeMarginMinor, leverage: acc.leverage }
+      : null,
+    demoLeverage: demo?.leverage ?? null,
     locale,
   };
 }

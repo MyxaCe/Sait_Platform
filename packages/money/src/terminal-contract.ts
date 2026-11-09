@@ -23,10 +23,20 @@
  *   POST /internal/sites/{tenant}/users/{user_id}/{demo|real}/trading-freeze
  *        тело  { frozen, reason, operator, external_ref? }
  *        200   { tenant, sub, account_kind, account_id, frozen, changed, seq }
+ *   POST /internal/sites/{tenant}/users/{user_id}/{demo|real}/leverage   (Р-446)
+ *        тело  { leverage (целое 1..1000), reason, operator, external_ref? }
+ *        200   { tenant, sub, account_kind, account_id, leverage, previous_leverage,
+ *                changed, seq }   — плечо для НОВЫХ позиций; открытые держат своё;
+ *                повтор того же значения — changed:false, без записи.
+ *        404 account_not_opened — счёта этого рода у человека в терминале нет
+ *                (ни разу не входил): не ошибка, плечо приедет claim-ом при входе.
+ *        400 invalid_leverage / missing_reason / missing_operator.
  *   GET  /internal/sites/{tenant}/users/{user_id}/accounts
  *        200   { tenant, sub, accounts: [{ account_kind, account_id, opened, currency,
  *                balance_minor, equity_minor, free_margin_minor, used_margin_minor,
- *                open_positions, trading_frozen }] }  (денежные поля могут быть null)
+ *                open_positions, trading_frozen, leverage, leverage_assigned }] }
+ *                (денежные поля могут быть null; leverage — плечо следующей позиции:
+ *                назначенное счёту или, если не назначали, плечо площадки)
  *
  * Прочие отказы: 400 bad_request/invalid_amount/unsupported_currency/
  * invalid_external_ref/missing_initiator/missing_operator/missing_reason,
@@ -57,6 +67,7 @@ export const routes = {
   tradingFreeze: (tenant: string, userId: string, kind: AccountKind = 'real') =>
     `${base(tenant, userId)}/${kind}/trading-freeze`,
   accounts: (tenant: string, userId: string) => `${base(tenant, userId)}/accounts`,
+  leverage: (tenant: string, userId: string, kind: AccountKind) => `${base(tenant, userId)}/${kind}/leverage`,
 };
 
 export interface MoneyMoveBody {
@@ -72,6 +83,35 @@ export interface FreezeBody {
   reason: string;
   operator: string;
   external_ref?: string;
+}
+
+export interface LeverageBody {
+  leverage: number;
+  reason: string;
+  operator: string;
+  external_ref?: string;
+}
+
+export interface LeverageResult {
+  leverage: number;
+  previousLeverage: number | null;
+  changed: boolean;
+  seq: number | null;
+}
+
+/** Разбор ответа `…/leverage`. `null` — тело не по контракту. */
+export function parseLeverageResponse(body: unknown): LeverageResult | null {
+  const b = body as Record<string, unknown> | null;
+  if (!b || typeof b !== 'object') return null;
+  const lev = Number(b.leverage);
+  if (!Number.isInteger(lev) || lev < 1) return null;
+  const prev = numOrNull(b.previous_leverage);
+  return {
+    leverage: lev,
+    previousLeverage: prev,
+    changed: b.changed === true,
+    seq: numOrNull(b.seq),
+  };
 }
 
 export interface MoneyMoveResult {
@@ -110,6 +150,8 @@ export interface TerminalAccount {
   usedMarginMinor: number | null;
   openPositions: number | null;
   tradingFrozen: boolean;
+  /** Плечо следующей позиции (1:N); `null` — терминал старой версии не прислал. */
+  leverage: number | null;
 }
 
 function numOrNull(v: unknown): number | null {
@@ -137,6 +179,7 @@ export function parseAccountsResponse(body: unknown): TerminalAccount[] | null {
       usedMarginMinor: numOrNull(a.used_margin_minor),
       openPositions: numOrNull(a.open_positions),
       tradingFrozen: a.trading_frozen === true,
+      leverage: numOrNull(a.leverage),
     });
   }
   return out;

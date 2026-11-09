@@ -109,12 +109,27 @@ export function parseAccountKind(value: unknown): AccountKind | null {
   return value === 'demo' || value === 'real' ? value : null;
 }
 
+/**
+ * `leverage` — плечо счёта для НОВЫХ позиций (Р-446, claim `leverage`):
+ * итог портфеля / override клиента на момент выпуска. Терминал синхронизирует
+ * им плечо счёта при каждом входе и продлении сессии. `null` / не задано —
+ * claim не кладётся, терминал плечо не трогает.
+ */
 export async function issueHandoffToken(
   userId: string,
   accountKind: AccountKind = 'demo',
+  leverage: number | null = null,
 ): Promise<HandoffToken> {
   const { privateKey } = await getKeys();
-  const token = await new SignJWT({ tenant: tenantSlug(), account_kind: accountKind })
+  const claims: Record<string, unknown> = { tenant: tenantSlug(), account_kind: accountKind };
+  if (leverage !== null) {
+    if (!Number.isInteger(leverage) || leverage < 1 || leverage > 1000) {
+      // Терминал такой claim отверг бы (400) — лучше не выпускать подпись под ним.
+      throw new Error(`плечо для токена вне 1..1000: ${String(leverage)}`);
+    }
+    claims.leverage = leverage;
+  }
+  const token = await new SignJWT(claims)
     .setProtectedHeader({ alg: 'RS256', kid: SSO_KEY_ID, typ: 'JWT' })
     .setIssuer(SSO_ISSUER)
     .setAudience(SSO_AUDIENCE)

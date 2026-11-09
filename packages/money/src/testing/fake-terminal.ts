@@ -1,4 +1,5 @@
-import type { FreezeOutcome, MoneyMoveOutcome, TerminalMoneyClient } from '../terminal-money';
+import type { AccountKind, LeverageBody } from '../terminal-contract';
+import type { FreezeOutcome, LeverageOutcome, MoneyMoveOutcome, TerminalMoneyClient } from '../terminal-money';
 
 /**
  * Фейк терминала с ИДЕМПОТЕНТНОСТЬЮ по external_ref (как обязан вести себя
@@ -10,6 +11,13 @@ export class FakeTerminal implements TerminalMoneyClient {
   applied = new Map<string, { userId: string; delta: number; seq: number }>();
   calls: { op: string; userId: string; ref?: string; amount?: number }[] = [];
   frozen = new Map<string, boolean>();
+  /** Плечо счёта по ключу `userId:kind`. Нет ключа — счёта нет (`not-opened`). */
+  leverage = new Map<string, number>();
+  /** Плечо площадки — то, что терминал называет «до» у счёта без назначения. */
+  platformLeverage = 20;
+  /** Ключи `userId:kind` открытых счетов (по умолчанию открыты оба). */
+  opened: Set<string> | null = null;
+  leverageCalls: { userId: string; kind: AccountKind; leverage: number; reason: string }[] = [];
   /** Следующие исходы: 'ok' | refused-код | 'unavailable' | 'apply-then-unavailable'. */
   next: string[] = [];
   private seq = 0;
@@ -43,6 +51,19 @@ export class FakeTerminal implements TerminalMoneyClient {
 
   async withdraw(userId: string, body: { amount_minor: number; external_ref: string }) {
     return this.move('withdraw', userId, body.external_ref, body.amount_minor);
+  }
+
+  async setLeverage(userId: string, body: LeverageBody, kind: AccountKind): Promise<LeverageOutcome> {
+    this.calls.push({ op: `leverage:${kind}`, userId });
+    this.leverageCalls.push({ userId, kind, leverage: body.leverage, reason: body.reason });
+    const key = `${userId}:${kind}`;
+    if (this.opened && !this.opened.has(key)) return { state: 'not-opened' };
+    const mode = this.take();
+    if (mode === 'unavailable') return { state: 'unavailable', reason: 'network' };
+    if (mode !== 'ok') return { state: 'refused', code: mode, status: 400 };
+    const previous = this.leverage.get(key) ?? this.platformLeverage;
+    this.leverage.set(key, body.leverage);
+    return { state: 'ok', leverage: body.leverage, previousLeverage: previous, changed: previous !== body.leverage, seq: ++this.seq };
   }
 
   async tradingFreeze(userId: string, body: { frozen: boolean }): Promise<FreezeOutcome> {

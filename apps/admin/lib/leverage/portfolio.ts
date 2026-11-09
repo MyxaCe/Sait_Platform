@@ -1,6 +1,15 @@
 import type { PoolClient } from 'pg';
 import { getPool } from '../db';
 import { appendJournalEntry } from '../journal/journal';
+import { MAX_TERMINAL_LEVERAGE, type Queryable } from '@broker/money';
+import {
+  changesForJournal,
+  deliverToTerminal,
+  leverageChanges,
+  terminalLeverageSync,
+  type LeverageTerminalSync,
+  type TerminalSyncFailure,
+} from './terminal-sync';
 
 /**
  * Изменения ПОРТФЕЛЯ плеча — глобально для всех его клиентов (WEB-47, §3.9) и
@@ -17,6 +26,13 @@ import { appendJournalEntry } from '../journal/journal';
  * `operatorId` — из СЕССИИ вызывающим server action-ом, НЕ из формы (Р-451).
  * Роль-гейт (admin only для §3.9) — на стороне action-а; этот модуль —
  * транзакционное ядро, личность и право проверены до входа.
+ *
+ * **Плечо доезжает до терминала** (`terminal-sync.ts`) — по ВСЕМ клиентам
+ * портфеля (для портфеля по умолчанию — и по тем, у кого строки нет), но
+ * только тем, у кого действующее плечо реально сдвинулось. Пример: у
+ * Standard крипто-планка 1:10, а терминал торгует только криптой — смена
+ * базы Standard в терминал не едет вовсе (действующее плечо то же).
+ * Отказ терминала → откат всего, оператор видит ошибку.
  */
 
 export interface ChangePortfolioInput {
@@ -26,6 +42,7 @@ export interface ChangePortfolioInput {
   /** Новый знаменатель 1:N базового плеча портфеля. */
   baseLeverage: number;
   reason: string;
+  operatorLogin?: string;
 }
 
 export type PortfolioMutationResult =
@@ -33,10 +50,12 @@ export type PortfolioMutationResult =
   | { ok: false; reason: 'missingReason' }
   | { ok: false; reason: 'invalidLeverage' }
   | { ok: false; reason: 'noPortfolio' }
-  | { ok: false; reason: 'alreadyInState' };
+  | { ok: false; reason: 'alreadyInState' }
+  | TerminalSyncFailure;
 
+/** Плечо — целое 1..1000: верхняя граница терминала (`broker::MAX_LEVERAGE`). */
 function badLeverage(value: number): boolean {
-  return !Number.isInteger(value) || value < 1;
+  return !Number.isInteger(value) || value < 1 || value > MAX_TERMINAL_LEVERAGE;
 }
 
 async function seqOfEntry(client: PoolClient, entryHash: string, what: string): Promise<number> {
@@ -60,6 +79,7 @@ async function seqOfEntry(client: PoolClient, entryHash: string, what: string): 
 export async function changePortfolioLeverage(
   input: ChangePortfolioInput,
   pool: { connect(): Promise<PoolClient> } = getPool(),
+  sync: LeverageTerminalSync = terminalLeverageSync(),
 ): Promise<PortfolioMutationResult> {
   const reason = input.reason?.trim() ?? '';
   if (reason.length === 0) return { ok: false, reason: 'missingReason' };
@@ -83,10 +103,14 @@ export async function changePortfolioLeverage(
       return { ok: false, reason: 'alreadyInState' };
     }
 
+    const q = client as unknown as Queryable;
+    const users = await sync.usersOfPortfolio(q, input.portfolioKey);
+    const before = await sync.read(q, users);
     await client.query(
       `UPDATE leverage_portfolios SET base_leverage = $2, updated_at = now() WHERE key = $1`,
       [input.portfolioKey, input.baseLeverage],
     );
+    const changes = leverageChanges(before, await sync.read(q, users));
 
     const entry = await appendJournalEntry(
       {
@@ -94,11 +118,27 @@ export async function changePortfolioLeverage(
         action: 'leverage.portfolio_changed',
         subjectKind: 'leverage_portfolio',
         subjectId: input.portfolioKey,
-        payload: { basis: reason, previousBase, newBase: input.baseLeverage },
+        payload: {
+          basis: reason,
+          previousBase,
+          newBase: input.baseLeverage,
+          terminalLeverage: changesForJournal(changes),
+        },
       },
       client as unknown as Parameters<typeof appendJournalEntry>[1],
     );
     const journalSeq = await seqOfEntry(client, entry.entryHash, 'смена плеча портфеля');
+
+    const failed = await deliverToTerminal(sync, changes, {
+      reason,
+      operatorLogin: input.operatorLogin ?? input.operatorId,
+      journalSeq,
+    });
+    if (failed) {
+      // Терминал не принял — не меняется ничего: ни портфель, ни журнал.
+      await client.query('ROLLBACK');
+      return failed;
+    }
 
     await client.query('COMMIT');
     return { ok: true, journalSeq };
@@ -117,6 +157,7 @@ export interface ClassOverrideInput {
   /** Новая планка класса (знаменатель 1:N) или `null` — снять планку. */
   leverage: number | null;
   reason: string;
+  operatorLogin?: string;
 }
 
 /**
@@ -128,6 +169,7 @@ export interface ClassOverrideInput {
 export async function setClassOverride(
   input: ClassOverrideInput,
   pool: { connect(): Promise<PoolClient> } = getPool(),
+  sync: LeverageTerminalSync = terminalLeverageSync(),
 ): Promise<PortfolioMutationResult> {
   const reason = input.reason?.trim() ?? '';
   if (reason.length === 0) return { ok: false, reason: 'missingReason' };
@@ -164,6 +206,12 @@ export async function setClassOverride(
       return { ok: false, reason: 'alreadyInState' };
     }
 
+    // Терминал торгует одним классом (`TERMINAL_INSTRUMENT_CLASS`): планка
+    // другого класса действующего плеча не меняет, и `changes` выйдет пустым.
+    const q = client as unknown as Queryable;
+    const users = await sync.usersOfPortfolio(q, input.portfolioKey);
+    const before = await sync.read(q, users);
+
     if (input.leverage === null) {
       await client.query(
         `DELETE FROM leverage_portfolio_class_overrides
@@ -178,6 +226,7 @@ export async function setClassOverride(
         [input.portfolioKey, instrumentClass, input.leverage],
       );
     }
+    const changes = leverageChanges(before, await sync.read(q, users));
 
     const entry = await appendJournalEntry(
       {
@@ -190,11 +239,23 @@ export async function setClassOverride(
           instrumentClass,
           previousLeverage: previous,
           newLeverage: input.leverage,
+          terminalLeverage: changesForJournal(changes),
         },
       },
       client as unknown as Parameters<typeof appendJournalEntry>[1],
     );
     const journalSeq = await seqOfEntry(client, entry.entryHash, 'планка класса портфеля');
+
+    const failed = await deliverToTerminal(sync, changes, {
+      reason,
+      operatorLogin: input.operatorLogin ?? input.operatorId,
+      journalSeq,
+    });
+    if (failed) {
+      // Терминал не принял — не меняется ничего: ни планка класса, ни журнал.
+      await client.query('ROLLBACK');
+      return failed;
+    }
 
     await client.query('COMMIT');
     return { ok: true, journalSeq };
