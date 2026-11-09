@@ -7,11 +7,13 @@ import { VerificationBadge, BlockBadge } from '../_components/StatusBadge';
 import { JournalFeed } from './_components/JournalFeed';
 import { ViewDocumentButton } from './_components/ViewDocumentButton';
 import { BlockPanel } from './_components/BlockPanel';
+import { TradingSection } from './_components/TradingSection';
+import { getClientTrading } from '@/lib/clients/trading';
 
 /**
  * Карточка клиента `/clients/[id]` (ADM-02, §3.2): досье — профиль, состояние
  * верификации с историей переходов, документы (с превью), активность, текущие
- * сессии, журнальная лента по этому субъекту; блокировка/разблокировка и
+ * сессии, счёт и торговля (проекция терминала), журнальная лента по этому субъекту; блокировка/разблокировка и
  * «погасить сессии» (форма-с-основанием, danger-подтверждение).
  *
  * Роль-гейт (§3.2): просмотр — operator+admin (гейт layout/middleware);
@@ -56,6 +58,8 @@ export default async function ClientCardPage({ params }: { params: { id: string 
     getOperatorSession(),
   ]);
   if (!card) notFound();
+  // Проекция торговли — после проверки, что клиент есть (UUID уже валиден).
+  const trading = await getClientTrading(card.userId);
 
   const isAdmin = operator?.role === 'admin';
 
@@ -113,6 +117,8 @@ export default async function ClientCardPage({ params }: { params: { id: string 
           </div>
         </dl>
       </section>
+
+      <TradingSection trading={trading} />
 
       <section className="space-y-3">
         <h2 className="text-lg font-medium">
