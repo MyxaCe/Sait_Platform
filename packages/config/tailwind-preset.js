@@ -15,6 +15,7 @@ const preset = {
         base: 'rgb(var(--bg-base) / <alpha-value>)',
         elevated: 'rgb(var(--bg-elevated) / <alpha-value>)',
         card: 'rgb(var(--bg-card) / <alpha-value>)',
+        sunken: 'rgb(var(--bg-sunken) / <alpha-value>)',
         accent: {
           DEFAULT: 'rgb(var(--accent) / <alpha-value>)',
           hover: 'rgb(var(--accent-hover) / <alpha-value>)',
@@ -22,12 +23,28 @@ const preset = {
         royal: 'rgb(var(--royal) / <alpha-value>)',
         primary: 'rgb(var(--text-primary) / <alpha-value>)',
         secondary: 'rgb(var(--text-secondary) / <alpha-value>)',
+        muted: 'rgb(var(--text-muted) / <alpha-value>)',
+        'on-accent': 'rgb(var(--text-on-accent) / <alpha-value>)',
+        'on-negative': 'rgb(var(--text-on-negative) / <alpha-value>)',
         positive: 'rgb(var(--positive) / <alpha-value>)',
         negative: 'rgb(var(--negative) / <alpha-value>)',
+        warning: 'rgb(var(--warning) / <alpha-value>)',
+        info: 'rgb(var(--info) / <alpha-value>)',
         border: 'var(--border)',
+        'border-strong': 'var(--border-strong)',
       },
       fontFamily: {
         sans: ['var(--font-sans)', 'system-ui', 'sans-serif'],
+        // Хэши, адреса, id, seq — моноширинный СИСТЕМНЫЙ стек (без загрузки шрифтов).
+        mono: [
+          'ui-monospace',
+          '"Cascadia Mono"',
+          '"SF Mono"',
+          'Menlo',
+          'Consolas',
+          '"Liberation Mono"',
+          'monospace',
+        ],
       },
       maxWidth: {
         page: '1440px',

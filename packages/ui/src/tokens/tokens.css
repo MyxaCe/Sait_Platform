@@ -3,13 +3,48 @@
  * Значения — RGB-каналы (без rgb()), чтобы Tailwind мог
  * применять модификаторы прозрачности: bg-accent/10.
  * Тёмная тема — по умолчанию.
+ *
+ * Структура файла:
+ *   1. Сайт и кабинет: тёмная (по умолчанию) и светлая темы.
+ *   2. Центр управления (`<html data-surface="admin">`): своя палитра поверх
+ *      тех же имён токенов. Классы НЕ меняются — перекраска = значения ниже.
+ *      Варианты палитры — `[data-palette=…]` (см. _brain/ADM-редизайн/концепция.md).
+ *
+ * Семантика (одинакова во всех палитрах):
+ *   --bg-base        фон страницы
+ *   --bg-elevated    рама: рельс навигации, шапка
+ *   --bg-card        карточки, панели, таблицы
+ *   --bg-sunken      «утопленные» поверхности: поля ввода, колодцы, код
+ *   --text-primary   основной текст и числа
+ *   --text-secondary подписи, второстепенный текст (AA на всех фонах)
+ *   --text-muted     метаданные/плейсхолдеры (AA на card/base)
+ *   --text-on-accent текст на залитой акцентом кнопке
+ *   --text-on-negative текст на залитой danger-кнопке
+ *   --accent         интерактив: primary-кнопка, активная навигация, ссылки, фокус
+ *   --positive       успех/зачислено/подтверждён/прибыль
+ *   --negative       отказ/блок/убыток/опасное действие
+ *   --warning        ждёт решения/на проверке/внимание (НЕ равен accent)
+ *   --info           нейтрально-информационный статус (в пути, отправлено)
+ *   --border         тонкая граница; --border-strong — граница контролов
+ *
+ * Новые токены (sunken/muted/on-accent/warning/info/border-strong) для сайта и
+ * кабинета заданы так, что их вид НЕ меняется: старые классы читают старые
+ * значения, новые появляются только там, где их явно используют.
  */
+
+:where(:root) {
+  /* Запасной стек шрифта. Приложение со своим next/font переопределяет
+   * --font-sans на <body>. Без этой строки незаданная переменная делает
+   * font-family невалидным → браузер падает в serif (так было в админке). */
+  --font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
 
 :root,
 [data-theme='dark'] {
   --bg-base: 8 9 12;
   --bg-elevated: 16 18 24;
   --bg-card: 20 22 30;
+  --bg-sunken: 8 9 12;
 
   --accent: 212 164 55;
   --accent-hover: 230 188 85;
@@ -17,11 +52,20 @@
 
   --text-primary: 245 246 248;
   --text-secondary: 154 161 173;
+  --text-muted: 128 136 150;
+  /* = фактический цвет текста primary-кнопки сайта/кабинета (наследовался).
+   * Контраст на золоте ~2:1 — НЕ AA; исправление — отдельным решением
+   * (одна строка тут), см. аудит редизайна. */
+  --text-on-accent: 245 246 248;
+  --text-on-negative: 255 255 255;
 
   --positive: 46 189 133;
   --negative: 240 97 109;
+  --warning: 240 160 64;
+  --info: 96 165 250;
 
   --border: rgb(255 255 255 / 0.08);
+  --border-strong: rgb(255 255 255 / 0.16);
 
   color-scheme: dark;
 }
@@ -30,6 +74,7 @@
   --bg-base: 247 248 250;
   --bg-elevated: 255 255 255;
   --bg-card: 255 255 255;
+  --bg-sunken: 241 243 246;
 
   --accent: 176 130 25;
   --accent-hover: 148 108 16;
@@ -37,11 +82,111 @@
 
   --text-primary: 16 18 24;
   --text-secondary: 90 98 110;
+  --text-muted: 104 112 124;
+  --text-on-accent: 16 18 24;
+  --text-on-negative: 255 255 255;
 
   --positive: 16 145 98;
   --negative: 214 62 75;
+  --warning: 161 98 7;
+  --info: 3 105 161;
 
   --border: rgb(10 12 18 / 0.1);
+  --border-strong: rgb(10 12 18 / 0.18);
+
+  color-scheme: light;
+}
+
+/* ─── 2. Центр управления ────────────────────────────────────────────────
+ * Палитра ПО УМОЛЧАНИЮ для админки — «Графит» (рекомендация фазы 1).
+ * Сменить палитру по умолчанию = перенести в этот блок значения нужного
+ * варианта ниже. Все варианты сверены по контрасту WCAG AA
+ * (tools/screens/contrast.mjs → концепция.md §3).
+ */
+[data-surface='admin'],
+[data-surface='admin'][data-palette='graphite'] {
+  --bg-base: 11 13 17;
+  --bg-elevated: 16 18 23;
+  --bg-card: 21 24 30;
+  --bg-sunken: 13 15 19;
+
+  --accent: 110 150 255;
+  --accent-hover: 140 172 255;
+  --royal: 40 62 120;
+
+  --text-primary: 236 239 244;
+  --text-secondary: 163 171 186;
+  --text-muted: 128 137 153;
+  --text-on-accent: 8 12 26;
+  --text-on-negative: 24 6 9;
+
+  --positive: 63 201 145;
+  --negative: 246 112 122;
+  --warning: 240 180 70;
+  --info: 94 196 230;
+
+  --border: rgb(255 255 255 / 0.075);
+  --border-strong: rgb(255 255 255 / 0.15);
+
+  color-scheme: dark;
+}
+
+/* Вариант «Золото» — эволюция текущего «золото на тёмном»: тёплый нейтральный
+ * графит, золото только для интерактива; «внимание» уведено в оранжевый,
+ * чтобы не путаться с брендом. */
+[data-surface='admin'][data-palette='gold'] {
+  --bg-base: 10 10 12;
+  --bg-elevated: 17 17 20;
+  --bg-card: 23 23 27;
+  --bg-sunken: 13 13 16;
+
+  --accent: 214 172 78;
+  --accent-hover: 232 194 108;
+  --royal: 70 56 24;
+
+  --text-primary: 242 240 235;
+  --text-secondary: 170 166 158;
+  --text-muted: 136 132 124;
+  --text-on-accent: 22 17 6;
+  --text-on-negative: 24 6 9;
+
+  --positive: 70 200 140;
+  --negative: 244 110 118;
+  --warning: 247 140 70;
+  --info: 120 170 245;
+
+  --border: rgb(255 248 230 / 0.08);
+  --border-strong: rgb(255 248 230 / 0.16);
+
+  color-scheme: dark;
+}
+
+/* Вариант «Бумага» — светлый «банковский» бэк-офис: белые карточки на
+ * холодном сером, глубокий синий интерактив. Для дневной работы и показа на
+ * проекторе. */
+[data-surface='admin'][data-palette='paper'] {
+  --bg-base: 243 245 248;
+  --bg-elevated: 255 255 255;
+  --bg-card: 255 255 255;
+  --bg-sunken: 246 247 250;
+
+  --accent: 36 82 214;
+  --accent-hover: 28 66 180;
+  --royal: 219 230 255;
+
+  --text-primary: 17 24 39;
+  --text-secondary: 71 82 99;
+  --text-muted: 100 110 126;
+  --text-on-accent: 255 255 255;
+  --text-on-negative: 255 255 255;
+
+  --positive: 4 120 87;
+  --negative: 192 38 56;
+  --warning: 148 82 0;
+  --info: 2 106 160;
+
+  --border: rgb(15 23 42 / 0.1);
+  --border-strong: rgb(15 23 42 / 0.2);
 
   color-scheme: light;
 }

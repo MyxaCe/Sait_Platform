@@ -5,19 +5,22 @@ import { cn } from '../../lib/cn';
 
 export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   invalid?: boolean;
+  /** `compact` — плотный контрол операторского периметра (36px, rounded-md, bg-sunken). */
+  controlSize?: 'md' | 'compact';
 }
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(
-  ({ className, invalid, ...props }, ref) => (
+  ({ className, invalid, controlSize = 'md', ...props }, ref) => (
     <input
       ref={ref}
       aria-invalid={invalid || undefined}
       className={cn(
         // min-h 44px — touch-target
-        'h-11 w-full rounded-xl border border-border bg-card px-4 text-sm text-primary',
+        'border-border bg-card text-primary h-11 w-full rounded-xl border px-4 text-sm',
         'placeholder:text-secondary/60',
-        'transition-colors focus:border-accent/60 focus:outline-none focus:ring-2 focus:ring-accent/20',
+        'focus:border-accent/60 focus:ring-accent/20 transition-colors focus:outline-none focus:ring-2',
         'disabled:cursor-not-allowed disabled:opacity-50',
+        controlSize === 'compact' && 'bg-sunken placeholder:text-muted h-9 rounded-md px-3',
         invalid && 'border-negative/60 focus:border-negative focus:ring-negative/20',
         className,
       )}
