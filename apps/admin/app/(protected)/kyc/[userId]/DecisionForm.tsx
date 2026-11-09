@@ -1,7 +1,8 @@
 'use client';
 
+import { useState } from 'react';
 import { useFormState, useFormStatus } from 'react-dom';
-import { Button } from '@broker/ui';
+import { Button, Callout, Textarea } from '@broker/ui';
 import {
   rejectClientAction,
   requestResubmitAction,
@@ -10,54 +11,51 @@ import {
 } from '@/lib/kyc/actions';
 
 /**
- * Форма решения по KYC (ADM-08, ADM-10). Три server action-а: подтвердить (без
- * причины), отклонить (причина обязательна — клиент должен знать, что исправить)
- * и запросить переподачу (мягкий возврат, причина обязательна — что дослать).
- * Личность оператора форма НЕ передаёт: её берёт action из сессии (Р-451). В
- * форме — только `userId` (о ком решение) и `reason` (основание).
+ * Форма решения по KYC (ADM-08, ADM-10; концепция §6.6, §6.7, §7.4).
+ *
+ * Одна форма — одно «Основание» на три решения; каждая кнопка отправляет форму
+ * в СВОЙ прежний server action (`formAction`): подтвердить, запросить
+ * переподачу, отклонить. Логика экшенов не менялась: личность оператора —
+ * из сессии, в форме только `userId` и `reason`; успех — redirect на `/kyc`.
+ *
+ * Основание обязательно для всех трёх в интерфейсе (инвариант §6.6: у каждого
+ * изменяющего действия есть основание); сервер для отклонения и переподачи
+ * требует его сам, для подтверждения — принимает и пишет в журнал.
+ * Отклонение — двухшаговое: спокойная обводка → подтверждение с последствиями.
  */
 
 const MESSAGES: Record<string, string> = {
   invalidClient: 'Клиент не указан.',
-  missingReason: 'Для отклонения нужна причина.',
-  notPending: 'Клиент уже не в состоянии ожидания — возможно, решение уже принято.',
+  missingReason: 'Укажите основание решения.',
+  notPending:
+    'Заявка уже не ждёт решения — возможно, его принял другой оператор. Обновите страницу.',
 };
 
-function Error({ state }: { state: DecisionState }) {
-  if (!state.error) return null;
+function Submit({
+  action,
+  variant,
+  children,
+  disabled,
+  full = false,
+}: {
+  action: (formData: FormData) => void;
+  variant: 'primary' | 'secondary' | 'danger';
+  children: string;
+  disabled: boolean;
+  full?: boolean;
+}) {
+  const { pending } = useFormStatus();
   return (
-    <p
-      role="alert"
-      className="rounded border border-negative/40 bg-negative/10 px-3 py-2 text-sm text-negative"
+    <Button
+      type="submit"
+      formAction={action}
+      size="compact"
+      variant={variant}
+      loading={pending}
+      disabled={pending || disabled}
+      className={full ? 'w-full flex-1' : undefined}
     >
-      {MESSAGES[state.error] ?? 'Решение не применено.'}
-    </p>
-  );
-}
-
-function VerifyButton() {
-  const { pending } = useFormStatus();
-  return (
-    <Button type="submit" disabled={pending}>
-      {pending ? '…' : 'Подтвердить'}
-    </Button>
-  );
-}
-
-function RejectButton() {
-  const { pending } = useFormStatus();
-  return (
-    <Button type="submit" variant="danger" disabled={pending}>
-      {pending ? '…' : 'Отклонить с причиной'}
-    </Button>
-  );
-}
-
-function ResubmitButton() {
-  const { pending } = useFormStatus();
-  return (
-    <Button type="submit" variant="secondary" disabled={pending}>
-      {pending ? '…' : 'Запросить переподачу'}
+      {children}
     </Button>
   );
 }
@@ -69,47 +67,82 @@ export function DecisionForm({ userId }: { userId: string }) {
     requestResubmitAction,
     {},
   );
+  const [reason, setReason] = useState('');
+  const [confirmReject, setConfirmReject] = useState(false);
+
+  const error = verifyState.error ?? resubmitState.error ?? rejectState.error;
+  const empty = reason.trim().length === 0;
 
   return (
-    <div className="space-y-4 rounded border border-border bg-elevated p-4">
-      <Error state={verifyState} />
-      <Error state={rejectState} />
-      <Error state={resubmitState} />
+    <form action={verifyAction} className="space-y-3">
+      {error ? (
+        <Callout tone="negative">{MESSAGES[error] ?? 'Решение не применено.'}</Callout>
+      ) : null}
 
-      <form action={verifyAction}>
-        <input type="hidden" name="userId" value={userId} />
-        <VerifyButton />
-      </form>
-
-      <form action={rejectAction} className="space-y-2 border-t border-border pt-4">
-        <input type="hidden" name="userId" value={userId} />
-        <label htmlFor="reason" className="block text-sm text-secondary">
-          Причина отклонения
+      <div className="space-y-1">
+        <label htmlFor="kyc-reason" className="text-muted block text-xs">
+          Основание решения
         </label>
-        <textarea
-          id="reason"
+        <Textarea
+          id="kyc-reason"
           name="reason"
           rows={3}
-          className="w-full rounded border border-border bg-base px-3 py-2 text-sm text-primary outline-none focus:border-accent"
-          placeholder="Что именно не так с документами клиента"
+          value={reason}
+          onChange={(e) => {
+            setReason(e.target.value);
+            setConfirmReject(false);
+          }}
+          placeholder="Что проверено и почему такое решение. При переподаче — какой документ дослать."
         />
-        <RejectButton />
-      </form>
+        <p className="text-muted text-xs">
+          Обязательно. Пишется в неизменяемый журнал вместе с решением.
+        </p>
+      </div>
 
-      <form action={resubmitAction} className="space-y-2 border-t border-border pt-4">
-        <input type="hidden" name="userId" value={userId} />
-        <label htmlFor="resubmitReason" className="block text-sm text-secondary">
-          Что дослать (причина переподачи)
-        </label>
-        <textarea
-          id="resubmitReason"
-          name="reason"
-          rows={3}
-          className="w-full rounded border border-border bg-base px-3 py-2 text-sm text-primary outline-none focus:border-accent"
-          placeholder="Какой документ дослать или переснять — мягкий возврат, заявка не отклоняется"
-        />
-        <ResubmitButton />
-      </form>
-    </div>
+      {confirmReject ? (
+        <div className="border-negative/30 bg-negative/[0.05] space-y-2 rounded-md border p-3">
+          <p className="text-negative text-[13px]">
+            Отклонить заявку? Верификация клиента перейдёт в «Отклонён»; ввод и вывод, требующие
+            KYC, останутся закрыты. Чтобы клиент мог дослать документы без отказа — используйте
+            «Запросить переподачу».
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <Submit action={rejectAction} variant="danger" disabled={empty}>
+              Да, отклонить
+            </Submit>
+            <Button
+              type="button"
+              size="compact"
+              variant="secondary"
+              onClick={() => setConfirmReject(false)}
+            >
+              Отмена
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          <Submit action={verifyAction} variant="primary" disabled={empty} full>
+            Подтвердить KYC
+          </Submit>
+          <div className="flex gap-2">
+            <Submit action={resubmitAction} variant="secondary" disabled={empty} full>
+              Запросить переподачу
+            </Submit>
+            <Button
+              type="button"
+              size="compact"
+              variant="danger-outline"
+              disabled={empty}
+              onClick={() => setConfirmReject(true)}
+            >
+              Отклонить…
+            </Button>
+          </div>
+        </div>
+      )}
+      {/* В конце: скрытое поле не должно получать отступ space-y. */}
+      <input type="hidden" name="userId" value={userId} />
+    </form>
   );
 }
