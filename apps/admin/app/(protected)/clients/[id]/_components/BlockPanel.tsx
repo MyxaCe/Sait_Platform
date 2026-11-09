@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useFormState, useFormStatus } from 'react-dom';
-import { Button } from '@broker/ui';
+import { Button, Callout, Textarea } from '@broker/ui';
 import {
   blockClientAction,
   unblockClientAction,
@@ -35,38 +35,27 @@ const MESSAGES: Record<string, string> = {
 
 function Feedback({ state, okText }: { state: ClientActionState; okText: string }) {
   if (state.error) {
-    return (
-      <p role="alert" className="rounded border border-negative/40 bg-negative/10 px-3 py-2 text-sm text-negative">
-        {MESSAGES[state.error] ?? 'Действие не выполнено.'}
-      </p>
-    );
+    return <Callout tone="negative">{MESSAGES[state.error] ?? 'Действие не выполнено.'}</Callout>;
   }
   if (state.ok) {
-    return (
-      <p role="status" className="rounded border border-positive/40 bg-positive/10 px-3 py-2 text-sm text-positive">
-        {okText}
-      </p>
-    );
+    return <Callout tone="positive">{okText}</Callout>;
   }
   return null;
 }
-
-const textareaCls =
-  'w-full rounded border border-border bg-base px-3 py-2 text-sm text-primary outline-none focus:border-accent';
 
 function SubmitButton({
   variant,
   label,
   reason,
 }: {
-  variant: 'danger' | 'secondary' | 'primary';
+  variant: 'danger' | 'secondary' | 'primary' | 'danger-outline';
   label: string;
   reason: string;
 }) {
   const { pending } = useFormStatus();
   return (
-    <Button type="submit" variant={variant} disabled={pending || reason.trim().length === 0}>
-      {pending ? '…' : label}
+    <Button type="submit" size="compact" variant={variant} loading={pending} disabled={pending || reason.trim().length === 0}>
+      {label}
     </Button>
   );
 }
@@ -78,30 +67,30 @@ function BlockForm({ userId }: { userId: string }) {
   const [confirming, setConfirming] = useState(false);
 
   return (
-    <form action={action} className="space-y-3 rounded border border-negative/30 bg-negative/5 p-4">
+    <form action={action} className="space-y-3">
       <Feedback state={state} okText="Клиент заблокирован, его сессии погашены." />
       <input type="hidden" name="userId" value={userId} />
-      <label htmlFor="block-reason" className="block text-sm font-medium text-primary">
+      <label htmlFor="block-reason" className="block text-[13px] font-medium text-primary">
         Основание блокировки
       </label>
-      <textarea
+      <Textarea
         id="block-reason"
         name="reason"
         rows={2}
         value={reason}
         onChange={(e) => setReason(e.target.value)}
-        className={textareaCls}
+
         placeholder="Почему клиент блокируется (обязательно)"
       />
       {confirming ? (
         <div className="space-y-2">
-          <p className="text-sm text-negative">
+          <p className="text-[13px] text-negative">
             Подтвердите: заблокировать клиента? Вход в кабинет и терминал будет закрыт,
             текущие сессии погашены.
           </p>
           <div className="flex gap-2">
             <SubmitButton variant="danger" label="Да, заблокировать" reason={reason} />
-            <Button type="button" variant="secondary" onClick={() => setConfirming(false)}>
+            <Button type="button" size="compact" variant="secondary" onClick={() => setConfirming(false)}>
               Отмена
             </Button>
           </div>
@@ -109,7 +98,8 @@ function BlockForm({ userId }: { userId: string }) {
       ) : (
         <Button
           type="button"
-          variant="danger"
+          size="compact"
+          variant="danger-outline"
           disabled={reason.trim().length === 0}
           onClick={() => setConfirming(true)}
         >
@@ -125,19 +115,19 @@ function UnblockForm({ userId }: { userId: string }) {
   const [reason, setReason] = useState('');
 
   return (
-    <form action={action} className="space-y-3 rounded border border-border bg-elevated p-4">
+    <form action={action} className="space-y-3">
       <Feedback state={state} okText="Клиент разблокирован." />
       <input type="hidden" name="userId" value={userId} />
-      <label htmlFor="unblock-reason" className="block text-sm font-medium text-primary">
+      <label htmlFor="unblock-reason" className="block text-[13px] font-medium text-primary">
         Основание разблокировки
       </label>
-      <textarea
+      <Textarea
         id="unblock-reason"
         name="reason"
         rows={2}
         value={reason}
         onChange={(e) => setReason(e.target.value)}
-        className={textareaCls}
+
         placeholder="Почему клиент разблокируется (обязательно)"
       />
       <SubmitButton variant="primary" label="Разблокировать" reason={reason} />
@@ -150,23 +140,23 @@ function RevokeSessionsForm({ userId }: { userId: string }) {
   const [reason, setReason] = useState('');
 
   return (
-    <form action={action} className="space-y-3 rounded border border-border bg-elevated p-4">
+    <form action={action} className="space-y-3">
       <Feedback state={state} okText="Сессии клиента погашены, запись в журнале." />
       <input type="hidden" name="userId" value={userId} />
-      <label htmlFor="revoke-reason" className="block text-sm font-medium text-primary">
+      <label htmlFor="revoke-reason" className="block text-[13px] font-medium text-primary">
         Погасить сессии — основание
       </label>
-      <textarea
+      <Textarea
         id="revoke-reason"
         name="reason"
         rows={2}
         value={reason}
         onChange={(e) => setReason(e.target.value)}
-        className={textareaCls}
+
         placeholder="Основание для гашения сессий (обязательно)"
       />
       <SubmitButton variant="secondary" label="Погасить сессии" reason={reason} />
-      <p className="text-xs text-secondary">
+      <p className="text-xs text-muted">
         Клиент сразу выходит из кабинета; терминал не получит новый токен и закроет
         сессию не позже своего срока (до 15 минут). Блокировка не меняется — клиент
         может войти снова.
@@ -177,7 +167,7 @@ function RevokeSessionsForm({ userId }: { userId: string }) {
 
 export function BlockPanel({ userId, blocked }: { userId: string; blocked: boolean }) {
   return (
-    <div className="space-y-4">
+    <div className="grid gap-6 lg:grid-cols-2">
       {blocked ? <UnblockForm userId={userId} /> : <BlockForm userId={userId} />}
       <RevokeSessionsForm userId={userId} />
     </div>

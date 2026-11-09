@@ -1,99 +1,316 @@
 import Link from 'next/link';
-import { KpiTile, DataTable, StatusBadge, type DataTableColumn } from '@broker/ui';
+import {
+  DataTable,
+  EmptyState,
+  KpiTile,
+  Money,
+  PageHeader,
+  Panel,
+  StatusBadge,
+  Timeline,
+  type DataTableColumn,
+} from '@broker/ui';
 import { listPendingClients, type PendingClient } from '@/lib/kyc/queries';
-import { HealthIndicator } from '@/components/shell/HealthIndicator';
+import { getOperatorSession } from '@/lib/auth/current';
+import { canOperateMoney } from '@/lib/crypto/runtime';
+import {
+  getClientsSummary,
+  getMoneySummary,
+  listPendingWithdrawals,
+  listRecentActions,
+  type PendingWithdrawal,
+} from '@/lib/dashboard/queries';
+import { actionLabel } from '@/lib/journal/labels';
+import { fmtAge, fmtDateTime, fmtRelativeDay } from '@/lib/ui/format';
 
 /**
- * Дашборд `/` (ADM-07, §3.0/§4). Операционный пульт, не витрина: отвечает на
- * «всё ли здорово?» и «где меня ждут?». Числа — мгновенные и точные,
- * `tabular-nums`, БЕЗ анимации-разгона (§5.4).
+ * Дашборд `/` (эталонный экран редизайна, концепция §7.3). Операционный пульт,
+ * не витрина: отвечает на «где меня ждут?» (очереди с возрастом старейшей
+ * заявки) и «что произошло?» (последние действия журнала). Числа мгновенные и
+ * точные, табличными цифрами, без анимации (§5.4).
  *
- * Реальные данные берём там, где они уже есть: здоровье — `/api/health`; KYC в
- * очереди — `client_verification.state='pending'` (кол-во + возраст старейшей).
- * Где данных пока нет (экспозиция, объёмы, dual-control-очередь) — честный
- * плейсхолдер «скоро», а не выдуманное число.
+ * Только чтение: агрегаты `lib/dashboard/queries.ts`. Денежный блок — только
+ * для ролей с доступом к деньгам (admin, finance_operator): для оператора его
+ * нет вовсе — ни плиток, ни запроса (fail-closed, Р-394). Выдуманных чисел нет:
+ * чего не знаем — того не показываем.
  */
 export const dynamic = 'force-dynamic';
 
-/** Возраст в человекочитаемом виде (ru). Только для показа, не для логики. */
-function formatAge(fromIso: string, now: Date = new Date()): string {
-  const ms = now.getTime() - new Date(fromIso).getTime();
-  const min = Math.floor(ms / 60_000);
-  if (min < 1) return '<1 мин';
-  if (min < 60) return `${min} мин`;
-  const hours = Math.floor(min / 60);
-  if (hours < 24) return `${hours} ч`;
-  const days = Math.floor(hours / 24);
-  const remHours = hours % 24;
-  return remHours ? `${days} дн ${remHours} ч` : `${days} дн`;
+/** Старше этого — заявка KYC «просрочена» (подсветка возраста). */
+const KYC_SLA_HOURS = 48;
+
+function isOverdue(iso: string): boolean {
+  return Date.now() - new Date(iso).getTime() > KYC_SLA_HOURS * 3_600_000;
 }
 
-const QUEUE_COLUMNS: DataTableColumn<PendingClient>[] = [
+const KYC_COLUMNS: DataTableColumn<PendingClient>[] = [
   {
     key: 'client',
     header: 'Клиент',
     cell: (c) => (
-      <Link href={`/kyc/${c.userId}`} className="block hover:text-accent">
-        <span className="block truncate font-medium text-primary">{c.fullName}</span>
-        <span className="block truncate text-xs text-secondary">{c.email}</span>
+      <Link href={`/kyc/${c.userId}`} className="group block min-w-0">
+        <span className="text-primary group-hover:text-accent block truncate font-medium">
+          {c.fullName}
+        </span>
+        <span className="text-muted block truncate text-xs">{c.email}</span>
       </Link>
     ),
   },
-  { key: 'docs', header: 'Док.', numeric: true, width: '5rem', cell: (c) => c.documentCount },
-  { key: 'age', header: 'В очереди', numeric: true, width: '8rem', cell: (c) => formatAge(c.updatedAt) },
+  { key: 'docs', header: 'Документы', numeric: true, width: '7rem', cell: (c) => c.documentCount },
   {
-    key: 'state',
-    header: 'Статус',
+    key: 'age',
+    header: 'В очереди',
+    numeric: true,
     width: '8rem',
-    cell: () => <StatusBadge status="pending" />,
+    cell: (c) => (
+      <span className={isOverdue(c.updatedAt) ? 'text-warning font-medium' : undefined}>
+        {fmtAge(c.updatedAt)}
+      </span>
+    ),
+  },
+  { key: 'state', header: 'Статус', width: '9rem', cell: () => <StatusBadge status="pending" /> },
+  {
+    key: 'go',
+    header: <span className="sr-only">Действие</span>,
+    width: '7rem',
+    align: 'right',
+    cell: (c) => (
+      <Link
+        href={`/kyc/${c.userId}`}
+        className="text-accent text-[13px] font-medium hover:underline"
+      >
+        Проверить
+      </Link>
+    ),
   },
 ];
 
+const WITHDRAWAL_COLUMNS: DataTableColumn<PendingWithdrawal>[] = [
+  {
+    key: 'client',
+    header: 'Клиент',
+    cell: (w) => (
+      <Link
+        href={`/clients/${w.userId}?tab=money`}
+        className="text-primary hover:text-accent truncate font-medium"
+      >
+        {w.fullName}
+      </Link>
+    ),
+  },
+  {
+    key: 'amount',
+    header: 'Сумма',
+    numeric: true,
+    width: '10rem',
+    cell: (w) => <Money minor={w.amountMinor} currency="USDT" />,
+  },
+  {
+    key: 'status',
+    header: 'Статус',
+    width: '9rem',
+    cell: (w) => (
+      <StatusBadge
+        status={w.status === 'needs_review' ? 'withdrawal_needs_review' : 'withdrawal_requested'}
+      />
+    ),
+  },
+  { key: 'age', header: 'Ждёт', numeric: true, width: '7rem', cell: (w) => fmtAge(w.requestedAt) },
+];
+
+function OpenLink({ href, children = 'Открыть →' }: { href: string; children?: React.ReactNode }) {
+  return (
+    <Link href={href} className="text-accent font-medium hover:underline">
+      {children}
+    </Link>
+  );
+}
+
 export default async function ControlCenterHome() {
-  const pending = await listPendingClients();
+  const operator = await getOperatorSession();
+  const money = canOperateMoney(operator?.role);
+
+  const [pending, clients, recent, moneySummary, withdrawals] = await Promise.all([
+    listPendingClients(),
+    getClientsSummary(),
+    listRecentActions(9),
+    money ? getMoneySummary() : Promise.resolve(null),
+    money ? listPendingWithdrawals(5) : Promise.resolve([] as PendingWithdrawal[]),
+  ]);
   // Очередь отсортирована по возрастанию updated_at → старейшая первая.
   const oldest = pending[0];
+  const overdue = pending.filter((p) => isOverdue(p.updatedAt)).length;
 
   return (
-    <div className="space-y-8">
-      <div className="space-y-1">
-        <h1 className="text-2xl font-semibold">Дашборд</h1>
-        <p className="text-sm text-secondary">Всё ли здорово и где вас ждут.</p>
-      </div>
+    <div className="space-y-6">
+      <PageHeader
+        title="Дашборд"
+        description="Где вас ждут и что произошло на платформе."
+        meta={
+          <span className="tabular-nums">
+            Срез на {fmtDateTime(new Date())} · данные на момент открытия страницы
+          </span>
+        }
+      />
 
-      {/* Ряд KPI-плиток (§4.1) */}
-      <section aria-label="Ключевые показатели">
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
-          <KpiTile label="Здоровье платформы" value={<HealthIndicator variant="tile" />} />
-          <KpiTile
-            label="KYC в очереди"
-            value={pending.length}
-            tone={pending.length > 0 ? 'warning' : 'default'}
-            hint={oldest ? `старейшая: ${formatAge(oldest.updatedAt)}` : 'очередь пуста'}
-          />
-          <KpiTile label="Операции на ревью" placeholder />
-          <KpiTile label="Ждут моего 2-го подтв." placeholder />
-          <KpiTile label="Экспозиция / ср. плечо" placeholder />
-          <KpiTile label="Активные / объём 24ч" placeholder />
-        </div>
-      </section>
-
-      {/* Где меня ждут: живая очередь верификации (§3.0) */}
-      <section aria-label="Очередь верификации" className="space-y-3">
-        <div className="flex items-baseline justify-between">
-          <h2 className="text-lg font-medium">Очередь верификации</h2>
-          <Link href="/kyc" className="text-sm text-accent hover:underline">
-            весь раздел →
-          </Link>
-        </div>
-        <DataTable
-          aria-label="Клиенты, ожидающие решения KYC"
-          columns={QUEUE_COLUMNS}
-          rows={pending}
-          rowKey={(c) => c.userId}
-          empty="Очередь пуста — клиентов в ожидании проверки нет."
+      <section aria-label="Комплаенс и клиенты" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <KpiTile
+          label="KYC ждут решения"
+          value={pending.length}
+          tone={pending.length > 0 ? 'warning' : 'default'}
+          hint={
+            oldest
+              ? `старейшая ${fmtAge(oldest.updatedAt)}${overdue ? ` · просрочено ${overdue}` : ''}`
+              : 'очередь пуста'
+          }
+          action={<OpenLink href="/kyc" />}
+        />
+        <KpiTile
+          label="AML: эскалации"
+          value={clients.amlEscalated}
+          tone={clients.amlEscalated > 0 ? 'negative' : 'default'}
+          hint={`не сверялись: ${clients.amlUnscreened}`}
+          action={<OpenLink href="/aml" />}
+        />
+        <KpiTile
+          label="Клиенты"
+          value={clients.total}
+          hint={`подтверждены ${clients.verified} · новые за 7 дн ${clients.newLast7d}`}
+          action={<OpenLink href="/clients" />}
+        />
+        <KpiTile
+          label="Заблокированы"
+          value={clients.blocked}
+          tone={clients.blocked > 0 ? 'negative' : 'default'}
+          hint="вход в кабинет и терминал закрыт"
+          action={<OpenLink href="/clients" />}
         />
       </section>
+
+      {moneySummary ? (
+        <section aria-label="Деньги" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <KpiTile
+            label="Выводы ждут решения"
+            value={moneySummary.withdrawalsPending}
+            tone={moneySummary.withdrawalsPending > 0 ? 'warning' : 'default'}
+            hint={
+              <>
+                <Money minor={moneySummary.withdrawalsPendingMinor} currency="USDT" /> · на проверке{' '}
+                {moneySummary.needsReview}
+              </>
+            }
+            action={<OpenLink href="/money" />}
+          />
+          <KpiTile
+            label="Неопознанные поступления"
+            value={moneySummary.unidentified}
+            tone={moneySummary.unidentified > 0 ? 'warning' : 'default'}
+            hint={<Money minor={moneySummary.unidentifiedMinor} currency="USDT" />}
+            action={<OpenLink href="/money?tab=unidentified" />}
+          />
+          <KpiTile
+            label="Зачислено за 7 дней"
+            value={<Money minor={moneySummary.depositsCredited7dMinor} currency="USDT" />}
+            hint="депозиты USDT TRC20, статус «зачислен»"
+          />
+          <KpiTile
+            label="Выведено за 7 дней"
+            value={<Money minor={moneySummary.withdrawalsSettled7dMinor} currency="USDT" />}
+            hint="выводы со статусом «исполнена»"
+          />
+        </section>
+      ) : null}
+
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+        <div className="min-w-0 space-y-6">
+          <Panel
+            title="Очередь верификации"
+            count={pending.length}
+            description={`Старейшие сверху. Дольше ${KYC_SLA_HOURS} ч — подсвечено.`}
+            actions={<OpenLink href="/kyc">Вся очередь →</OpenLink>}
+            flush
+          >
+            <DataTable
+              bare
+              aria-label="Клиенты, ожидающие решения KYC"
+              columns={KYC_COLUMNS}
+              rows={pending.slice(0, 8)}
+              rowKey={(c) => c.userId}
+              rowTone={(c) => (isOverdue(c.updatedAt) ? 'warning' : undefined)}
+              empty={
+                <EmptyState
+                  size="compact"
+                  title="Очередь пуста"
+                  description="Клиентов, ожидающих проверки документов, нет."
+                />
+              }
+            />
+          </Panel>
+
+          {money ? (
+            <Panel
+              title="Выводы ждут решения"
+              count={moneySummary?.withdrawalsPending ?? 0}
+              description="Подана или на ручной проверке. Решение — в разделе «Деньги», с основанием."
+              actions={<OpenLink href="/money">Раздел «Деньги» →</OpenLink>}
+              flush
+            >
+              <DataTable
+                bare
+                aria-label="Выводы, ждущие решения"
+                columns={WITHDRAWAL_COLUMNS}
+                rows={withdrawals}
+                rowKey={(w) => w.id}
+                rowTone={(w) => (w.status === 'needs_review' ? 'warning' : undefined)}
+                empty={<EmptyState size="compact" title="Нет выводов, ждущих решения" />}
+              />
+            </Panel>
+          ) : null}
+        </div>
+
+        <Panel
+          title="Последние действия"
+          description="Неизменяемый журнал, новые сверху"
+          actions={<OpenLink href="/journal">Журнал →</OpenLink>}
+          className="self-start"
+        >
+          {recent.length === 0 ? (
+            <EmptyState size="compact" title="Журнал пока пуст" />
+          ) : (
+            <Timeline
+              items={recent.map((e) => {
+                const a = actionLabel(e.action);
+                return {
+                  key: String(e.seq),
+                  tone: a.tone,
+                  title:
+                    e.subjectKind === 'client' && e.subjectName ? (
+                      <>
+                        {a.label}
+                        <span className="text-secondary font-normal"> · </span>
+                        <Link
+                          href={`/clients/${e.subjectId}`}
+                          className="text-secondary hover:text-accent font-normal"
+                        >
+                          {e.subjectName}
+                        </Link>
+                      </>
+                    ) : (
+                      a.label
+                    ),
+                  time: fmtRelativeDay(e.occurredAt),
+                  meta: (
+                    <>
+                      {e.operatorName ?? '—'} · <span className="tabular-nums">seq {e.seq}</span>
+                    </>
+                  ),
+                  body: e.basis ? <span className="line-clamp-2">{e.basis}</span> : undefined,
+                };
+              })}
+            />
+          )}
+        </Panel>
+      </div>
     </div>
   );
 }
