@@ -1,92 +1,132 @@
-import { Badge } from '@broker/ui';
+import Link from 'next/link';
+import {
+  DataTable,
+  EmptyState,
+  StatusBadge,
+  ToneBadge,
+  initialsOf,
+  type DataTableColumn,
+} from '@broker/ui';
 import type { OperatorListItem } from '@/lib/operators/queries';
-import { OperatorRowActions } from './OperatorRowActions';
+import { fmtDate } from '@/lib/ui/format';
+import { ROLE_LABEL } from './roles';
 
 /**
- * Плотная таблица операторов (ADM-04, паттерн «таблица-очередь» §5.3).
- * Локальная таблица в admin (не трогаем `packages/ui`). Серверный компонент —
- * строки приходят готовыми; действия в последней колонке — клиентские.
+ * Таблица операторов (ADM-04, концепция §6.1): кто, роль, 2FA, статус, когда
+ * заведён. Строка-переход — «Управлять» открывает панель оператора справа
+ * (`?op=id`, без JS). Над собой действий нет (нельзя отключить/понизить себя) —
+ * вместо ссылки «это вы».
  */
-
-function formatMoment(iso: string): string {
-  // Короткая форма «дата время», tabular-friendly, без локалезависимых слов.
-  return iso.replace('T', ' ').slice(0, 16);
-}
-
 export function OperatorsTable({
   operators,
   currentOperatorId,
+  selectedId,
 }: {
   operators: OperatorListItem[];
   currentOperatorId: string;
+  selectedId?: string;
 }) {
-  if (operators.length === 0) {
-    return (
-      <p className="rounded border border-border bg-elevated px-4 py-6 text-center text-secondary">
-        Операторов пока нет.
-      </p>
-    );
-  }
+  const columns: DataTableColumn<OperatorListItem>[] = [
+    {
+      key: 'who',
+      header: 'Оператор',
+      cell: (op) => (
+        <span className="flex min-w-0 items-center gap-2.5">
+          <span
+            aria-hidden
+            className="bg-primary/[0.08] text-primary flex size-8 shrink-0 items-center justify-center rounded-full text-xs font-semibold"
+          >
+            {initialsOf(op.displayName)}
+          </span>
+          <span className="min-w-0">
+            <span
+              className={
+                op.disabledAt
+                  ? 'text-muted block truncate font-medium line-through'
+                  : 'text-primary block truncate font-medium'
+              }
+            >
+              {op.displayName}
+            </span>
+            <span className="text-muted block truncate font-mono text-xs">{op.login}</span>
+          </span>
+        </span>
+      ),
+    },
+    {
+      key: 'role',
+      header: 'Роль',
+      width: '10rem',
+      cell: (op) => <span className="text-primary">{ROLE_LABEL[op.role]}</span>,
+    },
+    {
+      key: 'access',
+      header: 'Доступ',
+      width: '9rem',
+      cell: (op) => (
+        <span className="flex flex-col items-start gap-0.5">
+          {op.disabledAt ? (
+            <ToneBadge tone="negative">Отключён</ToneBadge>
+          ) : (
+            <StatusBadge status="active" />
+          )}
+          <span
+            className={
+              op.totpEnrolled || op.disabledAt
+                ? 'text-muted text-xs'
+                : 'text-warning text-xs font-medium'
+            }
+          >
+            {op.totpEnrolled ? '2FA включена' : '2FA не включена'}
+          </span>
+        </span>
+      ),
+    },
+    {
+      key: 'created',
+      header: 'Заведён',
+      numeric: true,
+      width: '6.5rem',
+      cell: (op) => <span className="text-secondary">{fmtDate(op.createdAt)}</span>,
+    },
+    {
+      key: 'go',
+      header: <span className="sr-only">Действие</span>,
+      width: '6rem',
+      align: 'right',
+      cell: (op) =>
+        op.id === currentOperatorId ? (
+          <span className="text-muted text-xs">это вы</span>
+        ) : op.disabledAt ? (
+          <span className="text-muted text-xs">—</span>
+        ) : (
+          <Link
+            href={`/operators?op=${op.id}`}
+            className="text-accent text-[13px] font-medium hover:underline"
+            aria-label={`Управлять доступом ${op.displayName}`}
+          >
+            Управлять
+          </Link>
+        ),
+    },
+  ];
 
   return (
-    <div className="overflow-x-auto rounded border border-border">
-      <table className="w-full border-collapse text-sm tabular-nums">
-        <thead>
-          <tr className="border-b border-border bg-elevated text-left text-xs uppercase tracking-wide text-secondary">
-            <th className="px-3 py-2 font-medium">Логин</th>
-            <th className="px-3 py-2 font-medium">Имя</th>
-            <th className="px-3 py-2 font-medium">Роль</th>
-            <th className="px-3 py-2 font-medium">Создан</th>
-            <th className="px-3 py-2 font-medium">Статус</th>
-            <th className="px-3 py-2 font-medium">2FA</th>
-            <th className="px-3 py-2 font-medium">Действия</th>
-          </tr>
-        </thead>
-        <tbody>
-          {operators.map((op) => {
-            const isSelf = op.id === currentOperatorId;
-            const active = op.disabledAt === null;
-            return (
-              <tr
-                key={op.id}
-                className="border-b border-border last:border-0 bg-card align-top hover:bg-elevated/60"
-              >
-                <td className="px-3 py-2 font-medium text-primary">{op.login}</td>
-                <td className="px-3 py-2 text-primary">{op.displayName}</td>
-                <td className="px-3 py-2">
-                  <Badge variant={op.role === 'admin' ? 'accent' : 'neutral'} className="px-2 py-0.5 text-xs">
-                    {op.role}
-                  </Badge>
-                </td>
-                <td className="px-3 py-2 text-secondary">{formatMoment(op.createdAt)}</td>
-                <td className="px-3 py-2">
-                  {active ? (
-                    <Badge variant="positive" className="px-2 py-0.5 text-xs">
-                      активен
-                    </Badge>
-                  ) : (
-                    <Badge variant="negative" className="px-2 py-0.5 text-xs">
-                      отключён
-                    </Badge>
-                  )}
-                </td>
-                <td className="px-3 py-2 text-secondary">
-                  {op.totpEnrolled ? 'включена' : '—'}
-                </td>
-                <td className="px-3 py-2">
-                  {isSelf ? (
-                    <span className="text-xs text-secondary">— это вы —</span>
-                  ) : active ? (
-                    <OperatorRowActions operatorId={op.id} login={op.login} role={op.role} />
-                  ) : (
-                    <span className="text-xs text-secondary">нет действий</span>
-                  )}
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </div>
+    <DataTable
+      bare
+      aria-label="Операторы центра управления"
+      columns={columns}
+      rows={operators}
+      rowKey={(op) => op.id}
+      selectedKey={selectedId}
+      rowTone={(op) => (op.disabledAt ? undefined : !op.totpEnrolled ? 'warning' : undefined)}
+      empty={
+        <EmptyState
+          size="compact"
+          title="Операторов пока нет"
+          description="Первый администратор создаётся при развёртывании платформы."
+        />
+      }
+    />
   );
 }

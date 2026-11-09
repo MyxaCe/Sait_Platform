@@ -1,24 +1,27 @@
 'use client';
 
 import { useState } from 'react';
-import { useFormState, useFormStatus } from 'react-dom';
-import { Button, Input, Select } from '@broker/ui';
+import { useFormState } from 'react-dom';
+import { Select } from '@broker/ui';
 import type { OperatorRole } from '@/lib/auth/session';
 import {
   changeOperatorRoleAction,
   disableOperatorAction,
   type OperatorActionState,
 } from '@/lib/operators/actions';
-import { operatorErrorText } from './messages';
+import { ActionResult, ArmedSubmit, Field, ReasonField } from '@/components/control/forms';
+import { OPERATOR_ERRORS } from './messages';
+import { ROLES, ROLE_LABEL, ROLE_SCOPE } from './roles';
 
 /**
  * Отзывающие действия над оператором (ADM-04): сменить роль и отключить.
- * Асимметрия Р-394 — это НЕ событие, а отзыв прав: danger-подтверждение в два
- * шага (первый клик «вооружает», второй исполняет), основание обязательно
- * (форма-с-основанием, уходит в журнал). Действия над самим собой сюда не
- * попадают — таблица их не отрисовывает (fail-closed на уровне UI).
+ * Асимметрия Р-394 — это НЕ событие, а изменение прав: подтверждение в два
+ * шага (§6.7), основание обязательно (уходит в журнал). Действия над самим
+ * собой сюда не попадают — таблица не даёт выбрать себя (fail-closed в UI), и
+ * server action проверяет это ещё раз.
  */
-export function OperatorRowActions({
+
+export function ChangeRoleForm({
   operatorId,
   login,
   role,
@@ -27,121 +30,71 @@ export function OperatorRowActions({
   login: string;
   role: OperatorRole;
 }) {
-  const [open, setOpen] = useState<'none' | 'role' | 'disable'>('none');
-  const otherRole: OperatorRole = role === 'admin' ? 'operator' : 'admin';
-
-  return (
-    <div className="space-y-2">
-      <div className="flex gap-2">
-        <Button
-          type="button"
-          size="sm"
-          variant="secondary"
-          onClick={() => setOpen(open === 'role' ? 'none' : 'role')}
-        >
-          Сменить роль
-        </Button>
-        <Button
-          type="button"
-          size="sm"
-          variant="secondary"
-          onClick={() => setOpen(open === 'disable' ? 'none' : 'disable')}
-        >
-          Отключить
-        </Button>
-      </div>
-
-      {open === 'role' && (
-        <ChangeRolePanel operatorId={operatorId} login={login} defaultRole={otherRole} />
-      )}
-      {open === 'disable' && <DisablePanel operatorId={operatorId} login={login} />}
-    </div>
-  );
-}
-
-function PanelFeedback({ state }: { state: OperatorActionState }) {
-  if (state.ok) {
-    return (
-      <p role="status" className="text-xs text-positive">
-        Готово.
-      </p>
-    );
-  }
-  if (state.error) {
-    return (
-      <p role="alert" className="text-xs text-negative">
-        {operatorErrorText(state.error)}
-      </p>
-    );
-  }
-  return null;
-}
-
-function ChangeRolePanel({
-  operatorId,
-  login,
-  defaultRole,
-}: {
-  operatorId: string;
-  login: string;
-  defaultRole: OperatorRole;
-}) {
   const [state, action] = useFormState<OperatorActionState, FormData>(changeOperatorRoleAction, {});
+  const options = ROLES.filter((r) => r !== role);
+  const [newRole, setNewRole] = useState<OperatorRole>(options[0] ?? 'operator');
+  const [reason, setReason] = useState('');
+
   return (
-    <form action={action} className="space-y-2 rounded border border-border bg-base p-3">
+    <form action={action} className="space-y-3">
+      <ActionResult
+        state={state}
+        okText="Роль изменена, запись в журнале."
+        messages={OPERATOR_ERRORS}
+      />
       <input type="hidden" name="operatorId" value={operatorId} />
-      <p className="text-xs text-secondary">Новая роль для {login}:</p>
-      <Select name="newRole" defaultValue={defaultRole} className="max-w-[12rem]">
-        <option value="operator">operator</option>
-        <option value="admin">admin</option>
-      </Select>
-      <Input name="reason" required placeholder="Основание (в журнал)" autoComplete="off" />
-      <PanelFeedback state={state} />
-      <TwoStepSubmit idle="Сменить роль" armedLabel="Подтвердить смену роли" />
+      <Field label="Новая роль" htmlFor="newRole" hint={ROLE_SCOPE[newRole]}>
+        <Select
+          id="newRole"
+          name="newRole"
+          controlSize="compact"
+          value={newRole}
+          onChange={(e) => setNewRole(e.target.value as OperatorRole)}
+        >
+          {options.map((r) => (
+            <option key={r} value={r}>
+              {ROLE_LABEL[r]}
+            </option>
+          ))}
+        </Select>
+      </Field>
+      <ReasonField id="role-reason" value={reason} onChange={setReason} />
+      <ArmedSubmit
+        idle="Сменить роль"
+        confirm="Да, сменить роль"
+        consequence={`${login}: «${ROLE_LABEL[role]}» → «${ROLE_LABEL[newRole]}». Набор разделов и действий оператора изменится.`}
+        disabled={reason.trim().length === 0}
+        resetKey={`${newRole}|${reason}`}
+      />
     </form>
   );
 }
 
-function DisablePanel({ operatorId, login }: { operatorId: string; login: string }) {
+export function DisableOperatorForm({ operatorId, login }: { operatorId: string; login: string }) {
   const [state, action] = useFormState<OperatorActionState, FormData>(disableOperatorAction, {});
+  const [reason, setReason] = useState('');
+
   return (
-    <form action={action} className="space-y-2 rounded border border-negative/40 bg-base p-3">
+    <form action={action} className="space-y-3">
+      <ActionResult
+        state={state}
+        okText="Оператор отключён, запись в журнале."
+        messages={OPERATOR_ERRORS}
+      />
       <input type="hidden" name="operatorId" value={operatorId} />
-      <p className="text-xs text-secondary">
-        Отключить {login}: вход будет закрыт. Отзыв доступа — подтвердите в два шага.
-      </p>
-      <Input name="reason" required placeholder="Основание (в журнал)" autoComplete="off" />
-      <PanelFeedback state={state} />
-      <TwoStepSubmit idle="Отключить" armedLabel="Подтвердить отключение" />
+      <ReasonField
+        id="disable-reason"
+        value={reason}
+        onChange={setReason}
+        label="Основание отключения"
+      />
+      <ArmedSubmit
+        idle="Отключить оператора"
+        confirm="Да, отключить"
+        consequence={`Вход для ${login} будет закрыт. Учётная запись не удаляется — на неё ссылаются записи журнала.`}
+        disabled={reason.trim().length === 0}
+        resetKey={reason}
+      />
     </form>
-  );
-}
-
-/**
- * Danger-подтверждение в два шага (§5.4): первый клик «вооружает» (это обычная
- * кнопка, форму НЕ отправляет), второй — реальный submit. «Отмена» снимает
- * взвод. loading-состояние берётся из `useFormStatus` активной формы.
- */
-function TwoStepSubmit({ idle, armedLabel }: { idle: string; armedLabel: string }) {
-  const [armed, setArmed] = useState(false);
-  const { pending } = useFormStatus();
-
-  if (!armed) {
-    return (
-      <Button type="button" size="sm" variant="danger" onClick={() => setArmed(true)}>
-        {idle}
-      </Button>
-    );
-  }
-
-  return (
-    <div className="flex gap-2">
-      <Button type="submit" size="sm" variant="danger" loading={pending} disabled={pending}>
-        {armedLabel}
-      </Button>
-      <Button type="button" size="sm" variant="ghost" onClick={() => setArmed(false)} disabled={pending}>
-        Отмена
-      </Button>
-    </div>
   );
 }
