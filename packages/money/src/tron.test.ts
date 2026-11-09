@@ -53,3 +53,16 @@ describe('хэш транзакции', () => {
     expect(normalizeTxHash('g'.repeat(64))).toBeNull();
   });
 });
+
+describe('isUsableExchangeAddress — кошелёк, а не контракт', async () => {
+  const { isUsableExchangeAddress, USDT_TRC20_CONTRACT } = await import('./tron');
+  it('адрес контракта USDT валиден по формату, но кошельком биржи быть не может', () => {
+    expect(isUsableExchangeAddress(USDT_TRC20_CONTRACT)).toBe(false);
+  });
+  it('обычный кошелёк годится', () => {
+    expect(isUsableExchangeAddress('TC2u7Xufdkt5qiAVYuv23TxdKRadC5syEz')).toBe(true);
+  });
+  it('мусор — нет', () => {
+    expect(isUsableExchangeAddress('Tnotanaddress')).toBe(false);
+  });
+});

@@ -1,5 +1,6 @@
 import {
   createTerminalMoneyClient,
+  isUsableExchangeAddress,
   terminalMoneyClientFromEnv,
   type PoolLike,
   type TerminalMoneyClient,
@@ -34,7 +35,8 @@ export function canOperateMoney(role: OperatorRole | undefined | null): boolean 
 /** Адрес кошелька биржи — из env, в админке только для чтения (дизайн §3). */
 export function exchangeTronAddress(): string | null {
   const v = process.env.EXCHANGE_TRON_ADDRESS?.trim();
-  return v ? v : null;
+  // Адрес контракта USDT — не кошелёк: показывать его как реквизиты нельзя.
+  return v && isUsableExchangeAddress(v) ? v : null;
 }
 
 const readerStore = globalThis as unknown as { __adminTerminalReader?: FullClient };

@@ -97,3 +97,14 @@ export function normalizeTxHash(input: string): string | null {
 
 /** Сигнатура события ERC20/TRC20 Transfer(address,address,uint256). */
 export const TRANSFER_TOPIC = 'ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef';
+
+/**
+ * Годится ли адрес как КОШЕЛЁК БИРЖИ для приёма. Кроме контрольной суммы
+ * отсекает адрес самого контракта USDT: он валиден по base58check, но USDT,
+ * отправленные на контракт, сгорают навсегда. 09.11.2026 этот адрес
+ * почти попал в EXCHANGE_TRON_ADDRESS на стенде («адрес USDT» спутан с
+ * адресом кошелька) — урок: проверка формата не равна проверке смысла.
+ */
+export function isUsableExchangeAddress(address: string): boolean {
+  return isValidTronAddress(address) && address !== USDT_TRC20_CONTRACT;
+}

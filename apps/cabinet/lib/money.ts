@@ -1,6 +1,7 @@
 import {
   createTerminalMoneyClient,
   isValidTronAddress,
+  isUsableExchangeAddress,
   resolveMoneyPolicy,
   type AccountsOutcome,
   type MoneyPolicy,
@@ -55,7 +56,7 @@ export async function getMoneyPolicy(userId: string): Promise<MoneyPolicy> {
  */
 export function exchangeAddress(): string | null {
   const v = process.env.EXCHANGE_TRON_ADDRESS?.trim();
-  return v && isValidTronAddress(v) ? v : null;
+  return v && isUsableExchangeAddress(v) ? v : null;
 }
 
 export interface RealAccountView {

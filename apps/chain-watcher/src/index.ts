@@ -2,7 +2,7 @@ import 'dotenv/config';
 
 import { Pool } from 'pg';
 import { assertSchemaCurrent } from '@broker/db';
-import { isValidTronAddress, terminalMoneyClientFromEnv, type PoolLike } from '@broker/money';
+import { isUsableExchangeAddress, isValidTronAddress, terminalMoneyClientFromEnv, type PoolLike } from '@broker/money';
 import { assertTenantSlugAtStartup } from '@broker/tenant';
 import { envOr, readEnv } from '@broker/utils';
 import { createTronGridReader } from './trongrid';
@@ -26,6 +26,8 @@ function fatal(msg: string): never {
 const databaseUrl = readEnv(process.env.DATABASE_URL) ?? fatal('DATABASE_URL обязателен');
 const exchange = readEnv(process.env.EXCHANGE_TRON_ADDRESS) ?? fatal('EXCHANGE_TRON_ADDRESS обязателен');
 if (!isValidTronAddress(exchange)) fatal(`EXCHANGE_TRON_ADDRESS не адрес TRON (base58check): ${exchange}`);
+if (!isUsableExchangeAddress(exchange))
+  fatal('EXCHANGE_TRON_ADDRESS — это адрес КОНТРАКТА USDT, а не кошелька биржи: USDT на него сгорают. Укажите адрес своего кошелька.');
 
 let tenant: string;
 try {
