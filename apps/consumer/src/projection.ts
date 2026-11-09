@@ -61,6 +61,27 @@ export class BalanceAccountMissingError extends Error {
  * (баг B-020): «чужое» и «наше сломанное» требуют противоположных действий, а
  * молчаливый пропуск обоих терял наши же события без следа.
  */
+/**
+ * Счёт события (решение владельца 09.11: демо и реальный счёт разделены).
+ * Поле `accountKind` аддитивное: событие БЕЗ него — старое или от старого
+ * терминала — это ДЕМО, ровно прежним путём. Реальный счёт — параллельные
+ * таблицы `real_*` (миграция 1794700000000): у него свой accountSeq, и
+ * смешать его со строкой демо нельзя. Имена таблиц — из закрытого набора.
+ */
+export type ProjectionAccountKind = 'demo' | 'real';
+
+const TABLES: Record<
+  ProjectionAccountKind,
+  { accounts: string; positions: string; trades: string }
+> = {
+  demo: { accounts: 'demo_accounts', positions: 'demo_positions', trades: 'demo_trades' },
+  real: { accounts: 'real_accounts', positions: 'real_positions', trades: 'real_trades' },
+};
+
+export function accountKindOf(data: { accountKind?: string | null }): ProjectionAccountKind {
+  return data.accountKind === 'real' ? 'real' : 'demo';
+}
+
 export type MessageClassification =
   /** Наше событие, разобрано. */
   | { kind: 'terminal-event'; eventId: string; event: ParsedTerminalEvent }
@@ -133,9 +154,36 @@ export async function applyTerminalEvent(
   );
   if ((claim.rowCount ?? 0) === 0) return 'skipped-duplicate';
 
+  const kind = accountKindOf(event.data);
+  const T = TABLES[kind];
+
   switch (event.name) {
     case 'terminal.account.opened': {
       const d = event.data;
+      if (kind === 'real') {
+        // Реальный счёт: стартует с нуля, заводится первым deposit у терминала.
+        await db.query(
+          `INSERT INTO real_accounts (user_id, account_uuid, balance_cents, currency, account_seq)
+                VALUES ($1, $2, $3, $4, $5)
+           ON CONFLICT (user_id) DO UPDATE
+                 SET account_uuid = COALESCE(EXCLUDED.account_uuid, real_accounts.account_uuid),
+                     currency = EXCLUDED.currency`,
+          [
+            d.userId,
+            d.accountId ?? null,
+            moneyFromEvent({
+              field: 'balance',
+              cents: d.balanceCents,
+              minor: d.balanceMinor,
+              currency: d.currency,
+              currencyMinorUnits: d.currencyMinorUnits,
+            })?.minor ?? d.balanceCents,
+            d.currency,
+            d.accountSeq ?? null,
+          ],
+        );
+        break;
+      }
       await db.query(
         `INSERT INTO demo_accounts (user_id, balance_cents, currency) VALUES ($1, $2, $3)
            ON CONFLICT (user_id) DO UPDATE SET balance_cents = EXCLUDED.balance_cents,
@@ -206,36 +254,57 @@ export async function applyTerminalEvent(
        * и свидетель остаётся звенящим — причина ещё не закрыта.
        */
       const accountSeq = d.accountSeq ?? null;
-      const updated = await db.query(
-        `UPDATE demo_accounts
+      if (kind === 'real') {
+        /*
+         * Реальный счёт заводится первым ДЕПОЗИТОМ у терминала, и событие
+         * `account.opened` для него не гарантировано — поэтому upsert, а не
+         * «нет строки → повтор доставки» (иначе вечный DLX-круг). Гард
+         * accountSeq тот же (строго больший), он стоит в `WHERE` конфликта.
+         */
+        const up = await db.query(
+          `INSERT INTO real_accounts (user_id, account_uuid, balance_cents, currency, account_seq)
+                VALUES ($1, $2, $3, COALESCE($4, 'USD'), $5)
+           ON CONFLICT (user_id) DO UPDATE
+                 SET balance_cents = EXCLUDED.balance_cents,
+                     account_seq = COALESCE(EXCLUDED.account_seq, real_accounts.account_seq),
+                     account_uuid = COALESCE(EXCLUDED.account_uuid, real_accounts.account_uuid)
+               WHERE EXCLUDED.account_seq IS NULL
+                  OR real_accounts.account_seq IS NULL
+                  OR real_accounts.account_seq < EXCLUDED.account_seq`,
+          [d.userId, d.accountId ?? null, applied, d.currency ?? null, accountSeq],
+        );
+        if ((up.rowCount ?? 0) === 0) return 'skipped-stale';
+      } else {
+        const updated = await db.query(
+          `UPDATE demo_accounts
             SET balance_cents = $1,
                 account_seq   = COALESCE($2, account_seq)
           WHERE user_id = $3
             AND ($2::bigint IS NULL OR account_seq IS NULL OR account_seq < $2)`,
-        [applied, accountSeq, d.userId],
-      );
-      if ((updated.rowCount ?? 0) === 0) {
-        /*
-         * Ноль строк — ДВЕ противоположные причины, смешивать нельзя:
-         *  (а) строки нет вовсе → деньги есть, счёта нет (WEB-29): бросаем,
-         *      откат уносит заявку дедупа, сообщение доставят снова;
-         *  (б) строка есть, но её accountSeq не меньше нашего → мы ПРАВИЛЬНО
-         *      отбросили устаревшее. Это не ошибка: заявка остаётся, событие
-         *      не повторяем. Иначе устаревшее ушло бы в DLX и возвращалось бы
-         *      вечно (poison).
-         *
-         * Проба существования идёт ПОСЛЕ атомарного UPDATE и денежного значения
-         * уже не касается — UPDATE сам решил не перезаписывать; проба лишь
-         * различает «нет строки» и «строка есть, но старше».
-         */
-        const exists = await db.query(
-          `SELECT 1 FROM demo_accounts WHERE user_id = $1`,
-          [d.userId],
+          [applied, accountSeq, d.userId],
         );
-        if ((exists.rowCount ?? 0) === 0) {
-          throw new BalanceAccountMissingError(d.userId, eventId);
+        if ((updated.rowCount ?? 0) === 0) {
+          /*
+           * Ноль строк — ДВЕ противоположные причины, смешивать нельзя:
+           *  (а) строки нет вовсе → деньги есть, счёта нет (WEB-29): бросаем,
+           *      откат уносит заявку дедупа, сообщение доставят снова;
+           *  (б) строка есть, но её accountSeq не меньше нашего → мы ПРАВИЛЬНО
+           *      отбросили устаревшее. Это не ошибка: заявка остаётся, событие
+           *      не повторяем. Иначе устаревшее ушло бы в DLX и возвращалось бы
+           *      вечно (poison).
+           *
+           * Проба существования идёт ПОСЛЕ атомарного UPDATE и денежного значения
+           * уже не касается — UPDATE сам решил не перезаписывать; проба лишь
+           * различает «нет строки» и «строка есть, но старше».
+           */
+          const exists = await db.query(`SELECT 1 FROM demo_accounts WHERE user_id = $1`, [
+            d.userId,
+          ]);
+          if ((exists.rowCount ?? 0) === 0) {
+            throw new BalanceAccountMissingError(d.userId, eventId);
+          }
+          return 'skipped-stale';
         }
-        return 'skipped-stale';
       }
       /*
         Сброс человек замечает только по изменившемуся числу (WEB-42).
@@ -255,7 +324,7 @@ export async function applyTerminalEvent(
         каждом тике значило бы завести шум, в котором утонет
         настоящее.
       */
-      if (d.reason === 'reset') {
+      if (d.reason === 'reset' && kind === 'demo') {
         await db.query(
           `INSERT INTO notifications (id, user_id, type, params) VALUES ($1, $2, 'demoReset', $3)`,
           [cfg.newId(), d.userId, JSON.stringify({ balanceCents: applied })],
@@ -264,10 +333,10 @@ export async function applyTerminalEvent(
 
       // Снапшот позиций (если пришёл) заменяем целиком — проекция идемпотентна
       if (d.positions) {
-        await db.query(`DELETE FROM demo_positions WHERE user_id = $1`, [d.userId]);
+        await db.query(`DELETE FROM ${T.positions} WHERE user_id = $1`, [d.userId]);
         for (const p of d.positions) {
           await db.query(
-            `INSERT INTO demo_positions (id, user_id, symbol, side, volume, entry_price)
+            `INSERT INTO ${T.positions} (id, user_id, symbol, side, volume, entry_price)
                VALUES ($1, $2, $3, $4, $5, $6)`,
             [cfg.newId(), d.userId, p.symbol, p.side, p.volume, p.entryPrice],
           );
@@ -278,7 +347,7 @@ export async function applyTerminalEvent(
     case 'terminal.trade.executed': {
       const d = event.data;
       await db.query(
-        `INSERT INTO demo_trades
+        `INSERT INTO ${T.trades}
            (id, user_id, event_id, trade_id, symbol, side, volume, price, realized_pnl_cents, executed_at)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
          ON CONFLICT (event_id) DO NOTHING`,

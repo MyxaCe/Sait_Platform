@@ -45,6 +45,16 @@ const accountKey = {
    * Строгое сейчас уронило бы разбор событий, уже лежащих в очереди без него.
    */
   accountSeq: z.number().int().nonnegative().optional(),
+  /**
+   * Счёт события (09.11: демо и реальный разделены). Аддитивное поле:
+   * отсутствие = демо (старые события и старый терминал). Неизвестное
+   * значение НЕ превращается в демо — событие отвергается целиком: деньги
+   * чужого счёта в демо-проекции хуже, чем пропущенное событие (оно уходит в
+   * разбор как malformed).
+   */
+  accountKind: z.enum(['demo', 'real']).optional(),
+  /** Идентификатор счёта у терминала (аддитивное поле). */
+  accountId: z.string().min(1).optional(),
 };
 
 /** Открытая позиция (снапшот) — для проекции «баланс + открытые позиции». */
@@ -83,7 +93,16 @@ export const terminalBalanceChangedSchema = z.object({
   balanceMinor: z.number().int().optional(),
   currency: z.string().length(3).optional(),
   currencyMinorUnits: z.number().int().nonnegative().optional(),
-  reason: z.enum(['trade', 'deposit', 'reset', 'adjustment']).optional(),
+  /*
+   * Причина изменения — ТЕРПИМЫЙ разбор: незнакомое значение → null, событие
+   * не роняется. Иначе новая причина у терминала (так было с `withdrawal`)
+   * делала событие о деньгах «сломанным», и баланс не доезжал.
+   */
+  reason: z
+    .enum(['trade', 'deposit', 'withdrawal', 'reset', 'adjustment'])
+    .nullable()
+    .optional()
+    .catch(null),
   /** Полный снапшот открытых позиций на момент события (опционально) */
   positions: z.array(terminalPositionSchema).optional(),
 });
