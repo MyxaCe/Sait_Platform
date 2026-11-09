@@ -1,15 +1,20 @@
 import Link from 'next/link';
+import { Panel, ToneBadge, cn } from '@broker/ui';
+import { resolveLeverage, TERMINAL_INSTRUMENT_CLASS } from '@broker/money';
 import { listPortfolios } from '@/lib/leverage/queries';
 import { getOperatorSession } from '@/lib/auth/current';
 import { formatLeverage } from '@/lib/leverage/resolve';
+import { RiskHeader } from '../_components/RiskHeader';
+import { countClientsInDefaultImplicitly } from '../_components/queries';
 import { PortfolioEditor } from './_components/PortfolioEditor';
 
 /**
  * Риск/плечо — портфели `/risk/portfolios` (WEB-47/45, Р-446, §3.9).
  *
  * Глобальная смена плеча портфеля (действует на всех клиентов портфеля) и
- * планка класса внутри портфеля (крипта — Р-446). Напоминание «override клиента
- * имеет приоритет» видно на экране.
+ * планка класса внутри портфеля (крипта — Р-446). Главное число карточки —
+ * плечо, которое реально уходит в терминал (итог закона для класса crypto):
+ * у Standard база 1:20, но торгует он 1:10 — это видно сразу.
  *
  * Роль-гейт (§3.9): просмотр — operator+admin (гейт layout/middleware);
  * изменение — только admin (формы рендерятся лишь для admin, fail-closed).
@@ -17,78 +22,145 @@ import { PortfolioEditor } from './_components/PortfolioEditor';
  */
 export const dynamic = 'force-dynamic';
 
-export default async function PortfoliosPage() {
-  const [portfolios, operator] = await Promise.all([listPortfolios(), getOperatorSession()]);
+export default async function PortfoliosPage({
+  searchParams,
+}: {
+  searchParams: { edit?: string };
+}) {
+  const [portfolios, operator, implicit] = await Promise.all([
+    listPortfolios(),
+    getOperatorSession(),
+    countClientsInDefaultImplicitly(),
+  ]);
+  // Клиенты без явной строки сидят в портфеле по умолчанию.
+  const clientsOf = (p: { clientCount: number; isDefault: boolean }) =>
+    p.clientCount + (p.isDefault ? implicit : 0);
   const isAdmin = operator?.role === 'admin';
+  const editing = isAdmin ? portfolios.find((p) => p.key === searchParams.edit) : undefined;
 
   return (
-    <div className="mx-auto max-w-4xl space-y-6">
-      <div className="space-y-1">
-        <h1 className="text-2xl font-semibold">Портфели плеча</h1>
-        <p className="text-sm text-secondary">
-          Плечо — свойство портфеля (Р-446). Смена плеча портфеля действует{' '}
-          <span className="text-primary">глобально</span> — на всех его клиентов. Открытые позиции
-          защищены снимком плеча на момент открытия и сменой не затрагиваются.
-        </p>
-        <p className="rounded border border-border bg-elevated px-3 py-2 text-xs text-secondary">
-          Приоритет разрешения: <span className="text-primary">override клиента</span> → override
-          класса в портфеле → плечо портфеля. Override конкретному клиенту (
-          <Link href="/risk/leverage" className="text-accent hover:underline">
-            Риск/плечо → override
-          </Link>
-          ) перекрывает значения этого экрана.
-        </p>
-      </div>
+    <div className="space-y-6">
+      <RiskHeader active="portfolios" canEdit={isAdmin} />
 
-      {!isAdmin ? (
-        <p className="rounded border border-border bg-elevated px-3 py-2 text-sm text-secondary">
-          Просмотр. Изменение плеча портфелей — действие администратора.
-        </p>
-      ) : null}
-
-      <ul className="space-y-4">
-        {portfolios.map((p) => (
-          <li
-            key={p.key}
-            className="space-y-3 rounded border border-border bg-elevated px-4 py-4"
-            data-portfolio={p.key}
-          >
-            <div className="flex flex-wrap items-baseline justify-between gap-2">
-              <div className="flex items-baseline gap-3">
-                <h2 className="text-lg font-medium text-primary">{p.title}</h2>
-                {p.isDefault ? (
-                  <span className="rounded bg-accent/15 px-2 py-0.5 text-xs text-accent">по умолчанию</span>
+      <section aria-label="Портфели плеча" className="grid gap-5 lg:grid-cols-3">
+        {portfolios.map((p) => {
+          const terminal = resolveLeverage({
+            portfolio: p,
+            clientOverride: null,
+            instrumentClass: TERMINAL_INSTRUMENT_CLASS,
+          });
+          const crypto = p.classOverrides[TERMINAL_INSTRUMENT_CLASS];
+          const otherClasses = Object.entries(p.classOverrides).filter(
+            ([cls]) => cls !== TERMINAL_INSTRUMENT_CLASS,
+          );
+          const selected = editing?.key === p.key;
+          return (
+            <Panel
+              key={p.key}
+              title={
+                <span className="flex items-center gap-2">
+                  {p.title}
+                  {p.isDefault ? <ToneBadge tone="neutral" plain>по умолчанию</ToneBadge> : null}
+                </span>
+              }
+              actions={
+                isAdmin ? (
+                  <Link
+                    href={selected ? '/risk/portfolios' : `/risk/portfolios?edit=${p.key}#edit`}
+                    className="text-accent text-[13px] font-medium hover:underline"
+                  >
+                    {selected ? 'Закрыть' : 'Изменить'}
+                  </Link>
+                ) : null
+              }
+              className={cn(selected && 'ring-accent/40 ring-1')}
+            >
+              <div data-portfolio={p.key} className="space-y-4">
+                <div>
+                  <p className="text-muted text-xs">Плечо в терминале</p>
+                  <p className="text-primary text-2xl font-semibold tabular-nums tracking-tight">
+                    {formatLeverage(terminal.leverage)}
+                  </p>
+                  <p className="text-muted text-xs">
+                    {terminal.source === 'class-override'
+                      ? 'по планке класса crypto'
+                      : 'по базовому плечу портфеля'}
+                  </p>
+                </div>
+                <dl className="border-border grid grid-cols-3 gap-3 border-t pt-3">
+                  <div>
+                    <dt className="text-muted text-xs">База</dt>
+                    <dd className="text-primary mt-0.5 text-sm font-medium tabular-nums">
+                      {formatLeverage(p.baseLeverage)}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-muted text-xs">Планка crypto</dt>
+                    <dd className="text-primary mt-0.5 text-sm font-medium tabular-nums">
+                      {crypto ? formatLeverage(crypto) : <span className="text-muted">нет</span>}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-muted text-xs">Клиентов</dt>
+                    <dd className="text-primary mt-0.5 text-sm font-medium tabular-nums">
+                      {clientsOf(p)}
+                    </dd>
+                  </div>
+                </dl>
+                {otherClasses.length > 0 ? (
+                  <p className="text-secondary text-xs tabular-nums">
+                    Другие классы:{' '}
+                    {otherClasses.map(([cls, lev]) => `${cls} ${formatLeverage(lev)}`).join(' · ')}
+                  </p>
+                ) : null}
+                {crypto ? (
+                  <p className="text-muted text-xs">
+                    Пока задана планка crypto, смена базы на торговлю не влияет: терминал торгует
+                    только криптопарами.
+                  </p>
                 ) : null}
               </div>
-              <span className="tabular-nums text-sm text-secondary">
-                плечо <span className="text-primary">{formatLeverage(p.baseLeverage)}</span> · клиентов{' '}
-                <span className="text-primary">{p.clientCount}</span>
+            </Panel>
+          );
+        })}
+      </section>
+
+      {editing ? (
+        <div id="edit">
+          <PortfolioEditor
+            key={editing.key}
+            portfolioKey={editing.key}
+            title={editing.title}
+            baseLeverage={editing.baseLeverage}
+            cryptoLeverage={editing.classOverrides[TERMINAL_INSTRUMENT_CLASS] ?? null}
+            clientCount={clientsOf(editing)}
+            isDefault={editing.isDefault}
+          />
+        </div>
+      ) : null}
+
+      <Panel title="Как определяется плечо клиента" description="Первое найденное правило побеждает.">
+        <ol className="grid gap-4 sm:grid-cols-3">
+          {[
+            [
+              'Индивидуальное плечо',
+              'Выдаётся конкретному клиенту по заявке на вкладке «Плечо клиентов».',
+            ],
+            ['Планка класса в портфеле', 'Например, crypto 1:10 в Standard — для всех его клиентов.'],
+            ['Базовое плечо портфеля', 'Если ни индивидуального плеча, ни планки класса нет.'],
+          ].map(([t, d], i) => (
+            <li key={t} className="flex gap-3">
+              <span className="bg-primary/[0.07] text-primary flex size-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold tabular-nums">
+                {i + 1}
               </span>
-            </div>
-
-            <div className="text-sm text-secondary">
-              Планки классов:{' '}
-              {Object.keys(p.classOverrides).length === 0 ? (
-                <span className="text-primary">нет</span>
-              ) : (
-                <span className="tabular-nums text-primary">
-                  {Object.entries(p.classOverrides)
-                    .map(([cls, lev]) => `${cls} ${formatLeverage(lev)}`)
-                    .join(' · ')}
-                </span>
-              )}
-            </div>
-
-            {isAdmin ? (
-              <PortfolioEditor
-                portfolioKey={p.key}
-                baseLeverage={p.baseLeverage}
-                classOverrides={p.classOverrides}
-              />
-            ) : null}
-          </li>
-        ))}
-      </ul>
+              <span className="min-w-0">
+                <span className="text-primary block text-sm font-medium">{t}</span>
+                <span className="text-secondary block text-[13px]">{d}</span>
+              </span>
+            </li>
+          ))}
+        </ol>
+      </Panel>
     </div>
   );
 }

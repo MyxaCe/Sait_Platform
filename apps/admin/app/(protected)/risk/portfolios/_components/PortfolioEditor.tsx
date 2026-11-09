@@ -1,170 +1,199 @@
 'use client';
 
 import { useState } from 'react';
-import { useFormState, useFormStatus } from 'react-dom';
-import { Button } from '@broker/ui';
+import { useFormState } from 'react-dom';
+import { Input, Panel } from '@broker/ui';
 import {
   changePortfolioLeverageAction,
   setClassOverrideAction,
   type LeverageActionState,
 } from '@/lib/leverage/actions';
+import { ActionResult, ArmedSubmit, Field, ReasonField } from '@/components/control/forms';
 
 /**
- * Редактор портфеля (§3.9, admin only). Две формы-с-основанием:
- *  - база портфеля — danger-подтверждение (массовый эффект, WEB-47);
- *  - планка класса — задать/снять (WEB-45).
- * Таблицы/форма — ЛОКАЛЬНО (анти-коллизия: `packages/ui` не трогаем, берём
- * только `Button` из токенов @broker/ui). Тёмная тема, без витринных анимаций.
+ * Редактор портфеля (§3.9, admin only). Две формы-с-основанием, обе массовые —
+ * действуют на всех клиентов портфеля сразу, поэтому обе в два шага (§6.7) и в
+ * «опасной» панели:
+ *  - базовое плечо портфеля (WEB-47);
+ *  - планка класса — задать/снять (WEB-45; пустое плечо = снять).
+ * Текст подтверждения говорит, что изменится в терминале. Server actions прежние.
  */
 
 const MESSAGES: Record<string, string> = {
   forbidden: 'Недостаточно прав: изменение плеча — действие администратора.',
   missingReason: 'Нужно указать основание.',
-  invalidLeverage: 'Плечо должно быть целым числом от 1 до 1000 (знаменатель 1:N).',
+  invalidLeverage: 'Плечо — целое число от 1 до 1000 (знаменатель 1:N).',
   noPortfolio: 'Портфель не найден.',
   alreadyInState: 'Значение не изменилось — записывать нечего.',
-  terminalUnavailable: 'Терминал не ответил — плечо НЕ изменено ни на сайте, ни в терминале. Повторите позже.',
-  terminalRefused: 'Терминал отказал в смене плеча — изменение НЕ применено (код — в логе сервера).',
+  terminalUnavailable:
+    'Терминал не ответил — плечо НЕ изменено ни здесь, ни в терминале. Повторите позже.',
+  terminalRefused:
+    'Терминал отказал в смене плеча — изменение НЕ применено (код — в логе сервера).',
 };
 
-function Feedback({ state, okText }: { state: LeverageActionState; okText: string }) {
-  if (state.error) {
-    return (
-      <p role="alert" className="rounded border border-negative/40 bg-negative/10 px-3 py-2 text-sm text-negative">
-        {MESSAGES[state.error] ?? 'Действие не выполнено.'}
-      </p>
-    );
-  }
-  if (state.ok) {
-    return (
-      <p role="status" className="rounded border border-positive/40 bg-positive/10 px-3 py-2 text-sm text-positive">
-        {okText}
-      </p>
-    );
-  }
-  return null;
-}
-
-const inputCls =
-  'w-24 rounded border border-border bg-base px-2 py-1 text-sm tabular-nums text-primary outline-none focus:border-accent';
-const textCls =
-  'w-full rounded border border-border bg-base px-2 py-1 text-sm text-primary outline-none focus:border-accent';
-
-function Submit({ label, disabled, variant = 'primary' }: { label: string; disabled: boolean; variant?: 'primary' | 'danger' | 'secondary' }) {
-  const { pending } = useFormStatus();
+function LeverageInput({
+  id,
+  name,
+  value,
+  onChange,
+  placeholder,
+}: {
+  id: string;
+  name: string;
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+}) {
   return (
-    <Button type="submit" variant={variant} disabled={pending || disabled}>
-      {pending ? '…' : label}
-    </Button>
+    <span className="relative block">
+      <span className="text-muted pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm">
+        1:
+      </span>
+      <Input
+        id={id}
+        name={name}
+        inputMode="numeric"
+        controlSize="compact"
+        value={value}
+        onChange={(e) => onChange(e.target.value.replace(/[^\d]/g, ''))}
+        className="pl-7 tabular-nums"
+        placeholder={placeholder}
+      />
+    </span>
   );
 }
 
-function BaseLeverageForm({ portfolioKey, baseLeverage }: { portfolioKey: string; baseLeverage: number }) {
-  const [state, action] = useFormState<LeverageActionState, FormData>(changePortfolioLeverageAction, {});
+function whom(clientCount: number, isDefault: boolean): string {
+  return `у ${clientCount} клиентов портфеля${isDefault ? ' и у всех новых клиентов' : ''}`;
+}
+
+function BaseLeverageForm({
+  portfolioKey,
+  baseLeverage,
+  cryptoLeverage,
+  clientCount,
+  isDefault,
+}: {
+  portfolioKey: string;
+  baseLeverage: number;
+  cryptoLeverage: number | null;
+  clientCount: number;
+  isDefault: boolean;
+}) {
+  const [state, action] = useFormState<LeverageActionState, FormData>(
+    changePortfolioLeverageAction,
+    {},
+  );
   const [value, setValue] = useState(String(baseLeverage));
   const [reason, setReason] = useState('');
-  const [confirming, setConfirming] = useState(false);
   const changed = value.trim() !== '' && Number(value) !== baseLeverage;
-  const ready = changed && reason.trim().length > 0;
 
   return (
-    <form action={action} className="space-y-2 rounded border border-negative/30 bg-negative/5 p-3">
-      <Feedback state={state} okText="Плечо портфеля изменено (глобально)." />
+    <form action={action} className="space-y-3">
+      <h3 className="text-primary text-sm font-semibold">Базовое плечо</h3>
+      <ActionResult state={state} okText="Плечо портфеля изменено, запись в журнале." messages={MESSAGES} />
       <input type="hidden" name="portfolioKey" value={portfolioKey} />
-      <div className="flex flex-wrap items-center gap-2 text-sm">
-        <label className="text-secondary">Базовое плечо 1:</label>
-        <input
-          name="baseLeverage"
-          inputMode="numeric"
-          value={value}
-          onChange={(e) => setValue(e.target.value.replace(/[^\d]/g, ''))}
-          className={inputCls}
-        />
-      </div>
-      <input
-        name="reason"
-        value={reason}
-        onChange={(e) => setReason(e.target.value)}
-        className={textCls}
-        placeholder="Основание (обязательно) — массовое действие"
+      <Field label="Новое базовое плечо" htmlFor="base-lev" hint={`Сейчас 1:${baseLeverage}`}>
+        <LeverageInput id="base-lev" name="baseLeverage" value={value} onChange={setValue} />
+      </Field>
+      <ReasonField id="base-reason" value={reason} onChange={setReason} />
+      <ArmedSubmit
+        idle="Изменить базовое плечо"
+        confirm="Да, изменить для всех"
+        consequence={
+          cryptoLeverage
+            ? `База станет 1:${value} ${whom(clientCount, isDefault)}. В терминале плечо не изменится — действует планка crypto 1:${cryptoLeverage}.`
+            : `Плечо станет 1:${value} ${whom(clientCount, isDefault)} и сразу уйдёт в терминал. Открытые позиции сохранят прежнее плечо.`
+        }
+        disabled={!changed || reason.trim().length === 0}
+        resetKey={`${value}|${reason}`}
       />
-      {confirming ? (
-        <div className="space-y-2">
-          <p className="text-sm text-negative">
-            Подтвердите: плечо изменится у всех клиентов портфеля «{portfolioKey}».
-          </p>
-          <div className="flex gap-2">
-            <Submit label="Да, изменить глобально" disabled={!ready} variant="danger" />
-            <Button type="button" variant="secondary" onClick={() => setConfirming(false)}>
-              Отмена
-            </Button>
-          </div>
-        </div>
-      ) : (
-        <Button type="button" variant="danger" disabled={!ready} onClick={() => setConfirming(true)}>
-          Изменить плечо портфеля
-        </Button>
-      )}
     </form>
   );
 }
 
-function ClassOverrideForm({ portfolioKey }: { portfolioKey: string }) {
+function ClassOverrideForm({
+  portfolioKey,
+  cryptoLeverage,
+  baseLeverage,
+  clientCount,
+  isDefault,
+}: {
+  portfolioKey: string;
+  cryptoLeverage: number | null;
+  baseLeverage: number;
+  clientCount: number;
+  isDefault: boolean;
+}) {
   const [state, action] = useFormState<LeverageActionState, FormData>(setClassOverrideAction, {});
-  const [cls, setCls] = useState('');
-  const [lev, setLev] = useState('');
+  const [cls, setCls] = useState('crypto');
+  const [lev, setLev] = useState(cryptoLeverage ? String(cryptoLeverage) : '');
   const [reason, setReason] = useState('');
+  const removing = lev.trim() === '';
   const ready = cls.trim().length > 0 && reason.trim().length > 0;
+  const isCrypto = cls.trim() === 'crypto';
 
   return (
-    <form action={action} className="space-y-2 rounded border border-border bg-base/40 p-3">
-      <Feedback state={state} okText="Планка класса сохранена." />
+    <form action={action} className="space-y-3">
+      <h3 className="text-primary text-sm font-semibold">Планка класса инструментов</h3>
+      <ActionResult state={state} okText="Планка класса сохранена, запись в журнале." messages={MESSAGES} />
       <input type="hidden" name="portfolioKey" value={portfolioKey} />
-      <div className="flex flex-wrap items-center gap-2 text-sm">
-        <input
-          name="instrumentClass"
-          value={cls}
-          onChange={(e) => setCls(e.target.value)}
-          className={`${inputCls} w-28`}
-          placeholder="класс (crypto)"
-        />
-        <label className="text-secondary">плечо 1:</label>
-        <input
-          name="leverage"
-          inputMode="numeric"
-          value={lev}
-          onChange={(e) => setLev(e.target.value.replace(/[^\d]/g, ''))}
-          className={inputCls}
-          placeholder="пусто = снять"
-        />
+      <div className="grid gap-3 sm:grid-cols-2">
+        <Field label="Класс" htmlFor="cls" hint="Терминал торгует классом crypto">
+          <Input
+            id="cls"
+            name="instrumentClass"
+            controlSize="compact"
+            value={cls}
+            onChange={(e) => setCls(e.target.value)}
+          />
+        </Field>
+        <Field label="Плечо" htmlFor="cls-lev" hint="Пусто — снять планку">
+          <LeverageInput id="cls-lev" name="leverage" value={lev} onChange={setLev} placeholder="нет" />
+        </Field>
       </div>
-      <input
-        name="reason"
-        value={reason}
-        onChange={(e) => setReason(e.target.value)}
-        className={textCls}
-        placeholder="Основание (обязательно)"
+      <ReasonField id="cls-reason" value={reason} onChange={setReason} />
+      <ArmedSubmit
+        idle={removing ? 'Снять планку класса' : 'Задать планку класса'}
+        confirm={removing ? 'Да, снять' : 'Да, задать для всех'}
+        consequence={
+          isCrypto
+            ? `В терминале станет 1:${removing ? baseLeverage : lev} ${whom(clientCount, isDefault)} (кроме клиентов с индивидуальным плечом). Открытые позиции сохранят прежнее плечо.`
+            : `Планка класса «${cls}» ${removing ? 'будет снята' : `станет 1:${lev}`}. Терминал этот класс пока не торгует.`
+        }
+        disabled={!ready}
+        resetKey={`${cls}|${lev}|${reason}`}
       />
-      <Submit label={lev.trim() === '' ? 'Снять планку класса' : 'Задать планку класса'} disabled={!ready} variant="secondary" />
-      <p className="text-xs text-secondary">
-        Пустое поле плеча снимает планку — класс возвращается к базе портфеля.
-      </p>
     </form>
   );
 }
 
 export function PortfolioEditor({
   portfolioKey,
+  title,
   baseLeverage,
+  cryptoLeverage,
+  clientCount,
+  isDefault,
 }: {
   portfolioKey: string;
+  title: string;
   baseLeverage: number;
-  classOverrides: Readonly<Record<string, number>>;
+  cryptoLeverage: number | null;
+  clientCount: number;
+  isDefault: boolean;
 }) {
+  const common = { portfolioKey, baseLeverage, cryptoLeverage, clientCount, isDefault };
   return (
-    <div className="grid gap-3 sm:grid-cols-2">
-      <BaseLeverageForm portfolioKey={portfolioKey} baseLeverage={baseLeverage} />
-      <ClassOverrideForm portfolioKey={portfolioKey} />
-    </div>
+    <Panel
+      tone="danger"
+      title={`Изменить портфель ${title}`}
+      description="Массовое действие: применяется ко всем клиентам портфеля сразу и уходит в терминал."
+    >
+      <div className="grid gap-6 lg:grid-cols-2">
+        <BaseLeverageForm {...common} />
+        <ClassOverrideForm {...common} />
+      </div>
+    </Panel>
   );
 }
