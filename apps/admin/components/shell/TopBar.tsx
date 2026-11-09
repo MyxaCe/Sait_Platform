@@ -6,13 +6,18 @@ import { HealthIndicator } from './HealthIndicator';
 /**
  * Шапка консоли (концепция §8.2). Слева — быстрый поиск клиента (обычная
  * GET-форма на `/clients?q=`, работает без JS, ничего не меняет). Справа —
- * здоровье платформы, счётчик «ждёт меня» (dual control), оператор с ролью и
- * выход.
+ * здоровье платформы, (позже) счётчик «ждёт меня», оператор с ролью и выход.
  *
- * Счётчик «ждёт меня» — ЗАГЛУШКА 0 (Волна 0): dual-control-очередь (`/money/
- * pending`, Р-452) ещё не построена, настоящий источник появится с модулем
- * денег. Показываем явный 0, а не выдуманное число.
+ * Счётчик «ждёт меня» СКРЫТ по решению владельца (09.11.2026), пока нет
+ * очереди второго подтверждения (dual control, `/money/pending`, Р-452):
+ * вечный «0» на показе читается как «не сделано». Код оставлен за флагом —
+ * включить = `SHOW_WAITING_FOR_ME = true` и подставить реальный источник.
+ *
+ * На узкой ширине (≈1024) поле поиска не сжимается в «Клиент:»: подпись
+ * здоровья и строка роли прячутся до xl, у поиска — минимальная ширина.
  */
+const SHOW_WAITING_FOR_ME = false;
+
 const ROLE_LABEL: Record<OperatorRole, string> = {
   admin: 'Администратор',
   operator: 'Оператор',
@@ -23,8 +28,13 @@ export function TopBar({ operator }: { operator: OperatorSession }) {
   const waitingForMe = 0; // TODO(деньги/Р-452): реальный счётчик dual-control-очереди.
 
   return (
-    <header className="border-border bg-elevated/95 sticky top-0 z-20 flex h-14 shrink-0 items-center justify-between gap-6 border-b px-6 backdrop-blur-sm">
-      <form action="/clients" method="get" role="search" className="relative w-full max-w-md">
+    <header className="border-border bg-elevated/95 sticky top-0 z-20 flex h-14 shrink-0 items-center justify-between gap-4 border-b px-6 backdrop-blur-sm xl:gap-6">
+      <form
+        action="/clients"
+        method="get"
+        role="search"
+        className="relative min-w-[14rem] max-w-md flex-1"
+      >
         <label htmlFor="global-client-search" className="sr-only">
           Найти клиента
         </label>
@@ -44,7 +54,8 @@ export function TopBar({ operator }: { operator: OperatorSession }) {
           name="q"
           type="search"
           autoComplete="off"
-          placeholder="Клиент: имя, email, UID или id"
+          placeholder="Найти клиента: имя, email, id"
+          title="Поиск клиента по имени, email, UID или id"
           className="border-border bg-sunken text-primary placeholder:text-muted focus:border-accent/70 focus:ring-accent/20 h-9 w-full rounded-md border pl-9 pr-3 text-sm focus:outline-none focus:ring-2"
         />
       </form>
@@ -52,15 +63,17 @@ export function TopBar({ operator }: { operator: OperatorSession }) {
       <div className="flex shrink-0 items-center gap-4">
         <HealthIndicator />
 
-        <span
-          className="border-border text-secondary flex items-center gap-2 border-l pl-4 text-[13px]"
-          title="Операции, ждущие вашего второго подтверждения (dual control)"
-        >
-          Ждёт меня
-          <span className="bg-primary/[0.07] text-primary min-w-6 rounded-md px-1.5 py-0.5 text-center text-xs font-medium tabular-nums">
-            {waitingForMe}
+        {SHOW_WAITING_FOR_ME ? (
+          <span
+            className="border-border text-secondary flex items-center gap-2 border-l pl-4 text-[13px]"
+            title="Операции, ждущие вашего второго подтверждения (dual control)"
+          >
+            Ждёт меня
+            <span className="bg-primary/[0.07] text-primary min-w-6 rounded-md px-1.5 py-0.5 text-center text-xs font-medium tabular-nums">
+              {waitingForMe}
+            </span>
           </span>
-        </span>
+        ) : null}
 
         <span className="border-border flex items-center gap-2.5 border-l pl-4">
           <span
@@ -73,7 +86,7 @@ export function TopBar({ operator }: { operator: OperatorSession }) {
             <span className="text-primary block text-[13px] font-medium">
               {operator.displayName}
             </span>
-            <span className="text-muted block text-[11px]">
+            <span className="text-muted hidden text-[11px] xl:block">
               {ROLE_LABEL[operator.role]} · {operator.login}
             </span>
           </span>

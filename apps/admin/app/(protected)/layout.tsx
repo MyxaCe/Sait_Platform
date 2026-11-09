@@ -5,6 +5,8 @@ import { LOGIN_PATH } from '@/lib/auth/constants';
 import { TopBar } from '@/components/shell/TopBar';
 import { NavRail } from '@/components/shell/NavRail';
 import { navForRole } from '@/components/shell/nav-registry';
+import { enrollmentGate } from '@/lib/auth/enrollment-gate';
+import { ServiceUnavailable } from '@/components/shell/ServiceUnavailable';
 
 /**
  * Защищённая зона. Авторитетный гейт — middleware (Р-395): он уже не пустил
@@ -21,7 +23,11 @@ import { navForRole } from '@/components/shell/nav-registry';
 export default async function ProtectedLayout({ children }: { children: React.ReactNode }) {
   const operator = await getOperatorSession();
   if (!operator) redirect(LOGIN_PATH);
-  if (!(await isOperatorEnrolled(operator.operatorId))) redirect('/enroll');
+  // База не ответила на проверку 2FA — fail-closed: внутрь не пускаем, но
+  // отказываем страницей «временно недоступен», а не необработанной ошибкой.
+  const gate = await enrollmentGate(operator.operatorId, isOperatorEnrolled);
+  if (gate === 'unavailable') return <ServiceUnavailable />;
+  if (gate === 'enroll') redirect('/enroll');
 
   // Роль-гейт рельса — на сервере (fail-closed, Р-394): клиент не получает
   // пунктов, скрытых для роли.
