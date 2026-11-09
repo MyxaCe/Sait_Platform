@@ -50,7 +50,7 @@ vi.mock('next/headers', () => ({
 
 async function post() {
   const { POST } = await import('./route');
-  return POST();
+  return POST(new Request('http://cabinet.test/api/sso/token', { method: 'POST' }));
 }
 
 beforeEach(async () => {

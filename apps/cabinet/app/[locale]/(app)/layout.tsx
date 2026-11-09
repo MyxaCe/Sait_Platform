@@ -33,6 +33,8 @@ export default async function AppLayout({ children, params }: LayoutProps) {
   const nav = [
     { href: '/', label: tNav('dashboard') },
     { href: '/trade', label: tNav('trade') },
+    { href: '/deposit', label: tNav('deposit') },
+    { href: '/withdraw', label: tNav('withdraw') },
     { href: '/history', label: tNav('history') },
     { href: '/profile', label: tNav('profile') },
     { href: '/security', label: tNav('security') },

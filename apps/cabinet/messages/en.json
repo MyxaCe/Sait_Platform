@@ -23,7 +23,9 @@
     "documents": "Documents",
     "verification": "Verification",
     "notifications": "Notifications",
-    "history": "Trade history"
+    "history": "Trade history",
+    "deposit": "Deposit",
+    "withdraw": "Withdraw"
   },
   "connection": {
     "tickerAria": "Live quotes",
@@ -113,7 +115,16 @@
     "resetRefused": "The terminal refused the reset. The reason is in the log.",
     "resetUnavailable": "The terminal is unavailable, the reset was not sent. Try again later.",
     "resetTooOften": "Too often. Wait a minute and press again.",
-    "resetNoSession": "Your session has expired — sign in again."
+    "resetNoSession": "Your session has expired — sign in again.",
+    "demoAccountTitle": "Demo account",
+    "realAccountTitle": "Real account",
+    "realNoAccount": "0.00 USDT",
+    "realNote": "USDT · TRON network (TRC20), 1 USDT = 1 USD",
+    "tradeDemo": "Trade on demo",
+    "tradeReal": "Trade on real",
+    "realFrozen": "Account frozen: trading and withdrawals are closed; you can still close positions.",
+    "liveEquity": "Equity {equity} · free margin {free}",
+    "moneyUnavailable": "Unavailable: {reasons}"
   },
   "dashboard": {
     "greeting": "Hello, {name}!",
@@ -213,7 +224,11 @@
   "trade": {
     "title": "Trade",
     "comingSoon": "Terminal is on its way",
-    "comingSoonHint": "The trading terminal will appear here once the integration is complete — your demo account is ready."
+    "comingSoonHint": "The trading terminal will appear here once the integration is complete — your demo account is ready.",
+    "badgeDemo": "DEMO",
+    "badgeReal": "REAL",
+    "switchToReal": "Switch to real account",
+    "switchToDemo": "Switch to demo account"
   },
   "validation": {
     "required": "This field is required",
@@ -248,5 +263,79 @@
     "slippageFavour": "Closed {amount} better than your level {level}.",
     "slippageNone": "Closed exactly at your level {level}.",
     "gap": "The price moved across a gap at that moment — there were no prices in between."
+  },
+  "money": {
+    "depositTitle": "Deposit to real account",
+    "withdrawTitle": "Withdraw from real account",
+    "network": "USDT · TRON network (TRC20)",
+    "onlyUsdtWarning": "Send ONLY USDT on the TRON network (TRC20). Other tokens or networks are not credited and may be lost.",
+    "addressLabel": "Exchange deposit address",
+    "copyHint": "Copy the whole address and check the first and last characters.",
+    "minDeposit": "Minimum deposit: {min} USDT. Smaller amounts are not credited.",
+    "step2": "After sending, paste the transaction hash — we will verify it on-chain and credit it (usually about a minute after confirmation).",
+    "txHashLabel": "Transaction hash",
+    "txHashPlaceholder": "64 characters, e.g. 3f1a…",
+    "submitClaim": "Verify and credit",
+    "claimOk": "Hash accepted. Verifying on-chain — the status will update in the history below.",
+    "addressMissing": "Deposits are temporarily unavailable: the exchange address is not configured. Please contact support.",
+    "unavailable": "Unavailable: {reasons}.",
+    "historyDeposits": "Deposit history",
+    "historyWithdrawals": "Withdrawal history",
+    "historyEmpty": "Nothing yet.",
+    "balance": "Real account balance: {amount} USDT",
+    "minWithdraw": "Minimum withdrawal: {min} USDT.",
+    "withdrawAddress": "Recipient address (TRON, starts with T)",
+    "withdrawAmount": "Amount, USDT",
+    "submitWithdraw": "Request withdrawal",
+    "withdrawOk": "Request accepted, the amount is reserved. It will be sent after operator review.",
+    "withdrawPending": "Request accepted; the reservation is being confirmed. See the status below.",
+    "withdrawNote": "The amount is debited (reserved) immediately. If the request is rejected, the money returns to your account.",
+    "status": {
+      "claimed": "verifying on-chain",
+      "credited": "credited",
+      "rejected": "rejected",
+      "unidentified": "unidentified",
+      "requested": "requested",
+      "approved": "approved",
+      "sent": "sent",
+      "settled": "completed",
+      "needs_review": "under review",
+      "cancelled": "cancelled"
+    },
+    "rejectReason": {
+      "wrong_recipient": "not sent to the exchange address",
+      "wrong_token": "not USDT TRC20",
+      "failed": "transaction failed",
+      "not_found": "transaction not found on-chain",
+      "below_minimum": "below the minimum"
+    },
+    "policy": {
+      "no_client": "no client",
+      "blocked": "access restricted",
+      "frozen": "account frozen",
+      "withdraw_banned": "withdrawals disabled",
+      "kyc_required": "identity verification required"
+    },
+    "errors": {
+      "unauthorized": "Session expired — please sign in again.",
+      "rateLimited": "Too often — please wait a minute.",
+      "invalidHash": "A transaction hash is 64 hexadecimal characters.",
+      "alreadyClaimed": "This hash has already been claimed.",
+      "usedByWithdrawal": "This hash is an exchange payout, not a deposit.",
+      "policy": "This operation is unavailable.",
+      "invalidAddress": "Invalid TRON address: check every character (starts with T, 34 characters).",
+      "belowMinimum": "Amount is below the minimum.",
+      "invalidAmount": "Invalid amount.",
+      "amount_empty": "Enter an amount.",
+      "amount_invalid": "Amount must be a number, e.g. 25.50.",
+      "amount_tooPrecise": "At most two decimal places.",
+      "amount_notPositive": "Amount must be greater than zero.",
+      "amount_tooLarge": "Amount is too large.",
+      "terminal_insufficient_free_margin": "Not enough free funds: part of the balance is used by open positions.",
+      "terminal_account_frozen": "Account frozen — withdrawals unavailable.",
+      "terminal_account_not_opened": "Real account not opened yet — make a deposit first.",
+      "terminal_account_quarantined": "Account under review — please contact support.",
+      "generic": "Could not complete. Try again later or contact support."
+    }
   }
 }

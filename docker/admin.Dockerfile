@@ -15,6 +15,7 @@ COPY packages/config/package.json packages/config/
 COPY packages/ui/package.json packages/ui/
 COPY packages/utils/package.json packages/utils/
 COPY packages/storage/package.json packages/storage/
+COPY packages/money/package.json packages/money/
 RUN pnpm install --frozen-lockfile
 
 FROM deps AS build

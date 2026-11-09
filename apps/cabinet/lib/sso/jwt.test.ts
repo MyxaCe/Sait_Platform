@@ -130,9 +130,21 @@ describe('SSO handoff-JWT', () => {
     const { token } = await russian.issueHandoffToken('user-123');
     expect(decodeJwt(token).tenant).toBe('apex-ru');
 
-    // Растяжка: у выпуска ОДИН аргумент — идентификатор пользователя.
-    // Появится второй — проверка напомнит, что `tenant` снаружи не берут.
+    // Растяжка: у выпуска ОДИН обязательный аргумент — идентификатор
+    // пользователя (второй, `accountKind`, необязательный и закрытый
+    // множеством demo|real). Появится ещё обязательный — проверка напомнит,
+    // что `tenant` снаружи не берут.
     expect(russian.issueHandoffToken.length).toBe(1);
+  });
+
+  it('account_kind: по умолчанию demo, real — по запросу (демо/реал разделены, 09.11)', async () => {
+    const { decodeJwt } = await import('jose');
+    const { issueHandoffToken, parseAccountKind } = await import('./jwt');
+    expect(decodeJwt((await issueHandoffToken('user-123')).token).account_kind).toBe('demo');
+    expect(decodeJwt((await issueHandoffToken('user-123', 'real')).token).account_kind).toBe('real');
+    expect(parseAccountKind(null)).toBe('demo');
+    expect(parseAccountKind('real')).toBe('real');
+    expect(parseAccountKind('vip')).toBeNull();
   });
 
   it('подделка не проходит: чужой ключ отклоняется', async () => {

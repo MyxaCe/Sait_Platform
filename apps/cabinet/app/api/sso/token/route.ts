@@ -4,6 +4,8 @@ import { isRateLimited } from '@/lib/rate-limit';
 import {
   issueHandoffToken,
   isSsoConfigured,
+  parseAccountKind,
+  type AccountKind,
   tenantSlug,
   TokenWithoutExpiryError,
   type HandoffToken,
@@ -17,7 +19,27 @@ import {
  */
 export const dynamic = 'force-dynamic';
 
-export async function POST() {
+/**
+ * Счёт входа — `?account=demo|real` (без параметра — demo, как раньше).
+ * Реальный счёт выдаётся только живой сессии незаблокированного клиента —
+ * это гарантирует `getSessionUser` (блок → null → 401). Заморозку реального
+ * счёта проверяет сам терминал: замороженный клиент должен иметь возможность
+ * войти и закрыть позиции (дизайн §0 п.5).
+ */
+function requestedAccountKind(request?: Request): AccountKind | null {
+  if (!request) return 'demo';
+  try {
+    return parseAccountKind(new URL(request.url).searchParams.get('account'));
+  } catch {
+    return 'demo';
+  }
+}
+
+export async function POST(request: Request) {
+  const accountKind = requestedAccountKind(request);
+  if (accountKind === null) {
+    return NextResponse.json({ error: 'invalid_account_kind' }, { status: 400 });
+  }
   if (!isSsoConfigured()) {
     return NextResponse.json({ error: 'sso_not_configured' }, { status: 503 });
   }
@@ -63,7 +85,7 @@ export async function POST() {
    */
   let handoff: HandoffToken;
   try {
-    handoff = await issueHandoffToken(user.id);
+    handoff = await issueHandoffToken(user.id, accountKind);
   } catch (error) {
     if (error instanceof TokenWithoutExpiryError) {
       console.error(`[sso] ${error.message} — токен не отдаём (Р-100, CAB-07)`);
@@ -73,7 +95,7 @@ export async function POST() {
   }
 
   return NextResponse.json(
-    { token: handoff.token, tenant, expiresIn: handoff.expiresIn },
+    { token: handoff.token, tenant, expiresIn: handoff.expiresIn, accountKind },
     { headers: { 'Cache-Control': 'no-store' } },
   );
 }

@@ -98,9 +98,23 @@ export function tokenLifetimeSeconds(token: string): number {
   return exp - iat;
 }
 
-export async function issueHandoffToken(userId: string): Promise<HandoffToken> {
+/**
+ * Счёт, в который входит терминал (решение владельца 09.11: демо и реальный
+ * счёт разделены). Claim `account_kind`; терминал без claim считает demo.
+ */
+export type AccountKind = 'demo' | 'real';
+
+export function parseAccountKind(value: unknown): AccountKind | null {
+  if (value === undefined || value === null || value === '') return 'demo';
+  return value === 'demo' || value === 'real' ? value : null;
+}
+
+export async function issueHandoffToken(
+  userId: string,
+  accountKind: AccountKind = 'demo',
+): Promise<HandoffToken> {
   const { privateKey } = await getKeys();
-  const token = await new SignJWT({ tenant: tenantSlug() })
+  const token = await new SignJWT({ tenant: tenantSlug(), account_kind: accountKind })
     .setProtectedHeader({ alg: 'RS256', kid: SSO_KEY_ID, typ: 'JWT' })
     .setIssuer(SSO_ISSUER)
     .setAudience(SSO_AUDIENCE)

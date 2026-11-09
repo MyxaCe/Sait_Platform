@@ -16,9 +16,11 @@ interface TerminalFrameProps {
   terminalUrl: string;
   site: string;
   title: string;
+  /** Счёт входа: демо или реальный (claim `account_kind` в SSO). */
+  accountKind?: 'demo' | 'real';
 }
 
-export function TerminalFrame({ terminalUrl, site, title }: TerminalFrameProps) {
+export function TerminalFrame({ terminalUrl, site, title, accountKind = 'demo' }: TerminalFrameProps) {
   const frameRef = useRef<HTMLIFrameElement>(null);
   const locale = useLocale();
   const src = `${terminalUrl}?site=${encodeURIComponent(site)}&locale=${locale}`;
@@ -28,7 +30,7 @@ export function TerminalFrame({ terminalUrl, site, title }: TerminalFrameProps) 
     const target = frameRef.current?.contentWindow;
     if (!target) return;
     try {
-      const res = await fetch('/api/sso/token', { method: 'POST' });
+      const res = await fetch(`/api/sso/token?account=${accountKind}`, { method: 'POST' });
       if (res.ok) {
         const { token } = (await res.json()) as { token: string };
         target.postMessage({ type: 'sso.token', token }, terminalOrigin);
@@ -39,7 +41,7 @@ export function TerminalFrame({ terminalUrl, site, title }: TerminalFrameProps) 
     } catch {
       // Сеть моргнула: терминал переспросит сам (token.refresh.request)
     }
-  }, [terminalOrigin]);
+  }, [terminalOrigin, accountKind]);
 
   useEffect(() => {
     function onMessage(event: MessageEvent) {
@@ -55,6 +57,7 @@ export function TerminalFrame({ terminalUrl, site, title }: TerminalFrameProps) 
   return (
     <iframe
       ref={frameRef}
+      key={accountKind}
       src={src}
       title={title}
       onLoad={() => void sendToken()}

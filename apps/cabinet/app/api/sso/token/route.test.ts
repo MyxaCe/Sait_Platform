@@ -57,7 +57,7 @@ const USER = { id: 'user-1', uid: 1, email: 'a@b.c', fullName: 'A', locale: 'ru'
 
 async function post() {
   const { POST } = await import('./route');
-  return POST();
+  return POST(new Request('http://cabinet.test/api/sso/token', { method: 'POST' }));
 }
 
 beforeEach(async () => {
@@ -181,5 +181,38 @@ describe('POST /api/sso/token · ограничение частоты', () => {
 
     expect(issueHandoffToken.mock.calls.length).toBe(calls);
     expect(calls).toBe(30);
+  });
+});
+
+describe('POST /api/sso/token · выбор счёта (account_kind, 09.11)', () => {
+  async function postWith(query: string) {
+    const { POST } = await import('./route');
+    return POST(new Request(`http://cabinet.test/api/sso/token${query}`, { method: 'POST' }));
+  }
+
+  it('без параметра — демо (как раньше)', async () => {
+    const res = await postWith('');
+    expect(res.status).toBe(200);
+    expect(issueHandoffToken).toHaveBeenCalledWith('user-1', 'demo');
+  });
+
+  it('?account=real — токен с account_kind=real', async () => {
+    const res = await postWith('?account=real');
+    expect(res.status).toBe(200);
+    expect(issueHandoffToken).toHaveBeenCalledWith('user-1', 'real');
+    await expect(res.json()).resolves.toMatchObject({ accountKind: 'real' });
+  });
+
+  it('неизвестный счёт — 400, токен не выпущен', async () => {
+    const res = await postWith('?account=vip');
+    expect(res.status).toBe(400);
+    expect(issueHandoffToken).not.toHaveBeenCalled();
+  });
+
+  it('заблокированный (сессии нет) не получает и реальный — 401', async () => {
+    getSessionUser.mockResolvedValue(null);
+    const res = await postWith('?account=real');
+    expect(res.status).toBe(401);
+    expect(issueHandoffToken).not.toHaveBeenCalled();
   });
 });

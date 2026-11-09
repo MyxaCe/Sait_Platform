@@ -14,6 +14,25 @@ import {
   getVerificationStatus,
 } from '@/lib/home';
 import { getTenantStartBalance } from '@/lib/tenant';
+import type { RealAccountBlock } from '@/features/home/BalanceModule';
+import { getMoneyPolicy, getRealAccount, terminalReader } from '@/lib/money';
+
+async function loadRealBlock(userId: string, locale: string): Promise<RealAccountBlock> {
+  const [account, policy, live] = await Promise.all([
+    getRealAccount(userId),
+    getMoneyPolicy(userId),
+    terminalReader()
+      .accounts(userId)
+      .catch(() => ({ state: 'unavailable' as const })),
+  ]);
+  const acc = live.state === 'ok' ? live.accounts.find((a) => a.kind === 'real') : undefined;
+  return {
+    account,
+    policy,
+    live: acc ? { equityMinor: acc.equityMinor, freeMarginMinor: acc.freeMarginMinor } : null,
+    locale,
+  };
+}
 
 /**
  * Главная кабинета (ADR-026): модули из per-site конфига CMS —
@@ -39,6 +58,12 @@ export default async function HomePage({ params }: { params: { locale: string } 
     getTenantStartBalance(),
   ]);
 
+  // Реальный счёт (09.11): проекция + политика + живые цифры терминала.
+  // Терминал недоступен — главная всё равно рисуется (свой failure domain).
+  const real: RealAccountBlock | undefined = needs('balance')
+    ? await loadRealBlock(user.id, params.locale)
+    : undefined;
+
   return (
     <div className="mx-auto flex max-w-5xl flex-col gap-4">
       {modules.map((module, i) => {
@@ -50,7 +75,13 @@ export default async function HomePage({ params }: { params: { locale: string } 
             return <OnboardingModule key={i} config={module} verification={verification} />;
           case 'balance':
             return (
-              <BalanceModule key={i} config={module} demo={demo} startBalance={startBalance} />
+              <BalanceModule
+                key={i}
+                config={module}
+                demo={demo}
+                startBalance={startBalance}
+                real={real}
+              />
             );
           case 'markets':
             // `markets === null` только когда модуль выключен, а выключенные
