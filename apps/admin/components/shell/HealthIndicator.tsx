@@ -56,7 +56,7 @@ export function HealthIndicator({ variant = 'dot' }: { variant?: 'dot' | 'tile' 
   return (
     <span className="text-secondary flex items-center gap-2 text-sm">
       <ConnectionDot status={status} label={label} />
-      <span className="hidden sm:inline">{label}</span>
+      <span className="hidden xl:inline">{label}</span>
     </span>
   );
 }

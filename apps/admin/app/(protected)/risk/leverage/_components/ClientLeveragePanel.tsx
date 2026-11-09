@@ -1,100 +1,106 @@
 'use client';
 
 import { useState } from 'react';
-import { useFormState, useFormStatus } from 'react-dom';
-import { Button } from '@broker/ui';
+import { useFormState } from 'react-dom';
+import { Input, Panel, Select } from '@broker/ui';
 import {
   setClientPortfolioAction,
   setClientOverrideAction,
   clearClientOverrideAction,
   type LeverageActionState,
 } from '@/lib/leverage/actions';
+import { ActionResult, Field, ReasonField, SubmitButton } from '@/components/control/forms';
 
 /**
  * Панель управления плечом клиента (§3.8, admin only). Три формы-с-основанием:
  *  - назначить портфель (WEB-44, атрибут клиента);
- *  - выдать override по заявке (WEB-46 — № заявки обязателен, journaled);
- *  - снять override (вернуть к портфелю).
- * Локальные формы (анти-коллизия: из @broker/ui — только Button). Тёмная тема.
+ *  - выдать индивидуальное плечо по заявке (WEB-46 — № заявки обязателен);
+ *  - снять индивидуальное плечо (вернуть к портфелю).
+ * Под каждой формой — что станет в терминале после сохранения (чтобы оператор
+ * видел последствие до клика). Server actions прежние.
  */
 
 const MESSAGES: Record<string, string> = {
   forbidden: 'Недостаточно прав: управление плечом — действие администратора.',
   invalidClient: 'Клиент не указан.',
-  missingReason: 'Нужно указать основание (для override — ещё и № заявки).',
-  invalidLeverage: 'Плечо должно быть целым числом от 1 до 1000 (знаменатель 1:N).',
+  missingReason: 'Нужно указать основание (для индивидуального плеча — ещё и № заявки).',
+  invalidLeverage: 'Плечо — целое число от 1 до 1000 (знаменатель 1:N).',
   noClient: 'Клиент не найден.',
   noPortfolio: 'Портфель не найден (или не задан портфель по умолчанию).',
-  noOverride: 'У клиента нет override — снимать нечего.',
+  noOverride: 'Индивидуального плеча нет — снимать нечего.',
   alreadyInState: 'Клиент уже в этом портфеле — изменений нет.',
-  terminalUnavailable: 'Терминал не ответил — плечо НЕ изменено ни на сайте, ни в терминале. Повторите позже.',
-  terminalRefused: 'Терминал отказал в смене плеча — изменение НЕ применено (код — в логе сервера).',
+  terminalUnavailable:
+    'Терминал не ответил — плечо НЕ изменено ни здесь, ни в терминале. Повторите позже.',
+  terminalRefused:
+    'Терминал отказал в смене плеча — изменение НЕ применено (код — в логе сервера).',
 };
-
-function Feedback({ state, okText }: { state: LeverageActionState; okText: string }) {
-  if (state.error) {
-    return (
-      <p role="alert" className="rounded border border-negative/40 bg-negative/10 px-3 py-2 text-sm text-negative">
-        {MESSAGES[state.error] ?? 'Действие не выполнено.'}
-      </p>
-    );
-  }
-  if (state.ok) {
-    return (
-      <p role="status" className="rounded border border-positive/40 bg-positive/10 px-3 py-2 text-sm text-positive">
-        {okText}
-      </p>
-    );
-  }
-  return null;
-}
-
-const fieldCls =
-  'w-full rounded border border-border bg-base px-3 py-2 text-sm text-primary outline-none focus:border-accent';
-const numCls =
-  'w-28 rounded border border-border bg-base px-2 py-1 text-sm tabular-nums text-primary outline-none focus:border-accent';
-
-function Submit({ label, disabled, variant = 'primary' }: { label: string; disabled: boolean; variant?: 'primary' | 'danger' | 'secondary' }) {
-  const { pending } = useFormStatus();
-  return (
-    <Button type="submit" variant={variant} disabled={pending || disabled}>
-      {pending ? '…' : label}
-    </Button>
-  );
-}
 
 interface PortfolioOpt {
   key: string;
   title: string;
   baseLeverage: number;
+  /** Планка класса crypto (то, что реально уходит в терминал), или null. */
+  cryptoLeverage: number | null;
 }
 
-function PortfolioForm({ userId, portfolios, assignedKey }: { userId: string; portfolios: PortfolioOpt[]; assignedKey: string | null }) {
+function Outcome({ children }: { children: React.ReactNode }) {
+  return <p className="text-secondary text-xs">{children}</p>;
+}
+
+function PortfolioForm({
+  userId,
+  portfolios,
+  assignedKey,
+  override,
+}: {
+  userId: string;
+  portfolios: PortfolioOpt[];
+  assignedKey: string | null;
+  override: number | null;
+}) {
   const [state, action] = useFormState<LeverageActionState, FormData>(setClientPortfolioAction, {});
   const [key, setKey] = useState(assignedKey ?? portfolios[0]?.key ?? '');
   const [reason, setReason] = useState('');
-  const ready = key !== '' && key !== assignedKey && reason.trim().length > 0;
+  const changed = key !== '' && key !== assignedKey;
+  const target = portfolios.find((p) => p.key === key);
+  const terminal = override ?? target?.cryptoLeverage ?? target?.baseLeverage ?? null;
 
   return (
-    <form action={action} className="space-y-3 rounded border border-border bg-elevated p-4">
-      <h3 className="text-sm font-medium text-primary">Портфель клиента</h3>
-      <Feedback state={state} okText="Портфель клиента изменён." />
-      <input type="hidden" name="userId" value={userId} />
-      <select name="portfolioKey" value={key} onChange={(e) => setKey(e.target.value)} className={fieldCls}>
-        {portfolios.map((p) => (
-          <option key={p.key} value={p.key}>
-            {p.title} (1:{p.baseLeverage})
-          </option>
-        ))}
-      </select>
-      <input
-        name="reason"
-        value={reason}
-        onChange={(e) => setReason(e.target.value)}
-        className={fieldCls}
-        placeholder="Основание (обязательно)"
+    <form action={action} className="space-y-3">
+      <ActionResult
+        state={state}
+        okText="Портфель назначен, плечо отправлено в терминал, запись в журнале."
+        messages={MESSAGES}
       />
-      <Submit label="Назначить портфель" disabled={!ready} variant="secondary" />
+      <input type="hidden" name="userId" value={userId} />
+      <Field label="Портфель" htmlFor="portfolioKey">
+        <Select
+          id="portfolioKey"
+          name="portfolioKey"
+          controlSize="compact"
+          value={key}
+          onChange={(e) => setKey(e.target.value)}
+        >
+          {portfolios.map((p) => (
+            <option key={p.key} value={p.key}>
+              {p.title} — 1:{p.cryptoLeverage ?? p.baseLeverage}
+              {p.key === assignedKey ? ' (текущий)' : ''}
+            </option>
+          ))}
+        </Select>
+      </Field>
+      <ReasonField id="portfolio-reason" value={reason} onChange={setReason} />
+      <div className="flex flex-wrap items-center gap-3">
+        <SubmitButton variant="secondary" disabled={!changed || reason.trim().length === 0}>
+          Назначить портфель
+        </SubmitButton>
+        {changed && terminal ? (
+          <Outcome>
+            В терминале станет <span className="text-primary font-medium">1:{terminal}</span>
+            {override ? ' (индивидуальное плечо сохранится)' : ''}
+          </Outcome>
+        ) : null}
+      </div>
     </form>
   );
 }
@@ -107,60 +113,80 @@ function OverrideForm({ userId }: { userId: string }) {
   const ready = lev.trim() !== '' && ticket.trim().length > 0 && reason.trim().length > 0;
 
   return (
-    <form action={action} className="space-y-3 rounded border border-accent/30 bg-accent/5 p-4">
-      <h3 className="text-sm font-medium text-primary">Выдать override по заявке</h3>
-      <Feedback state={state} okText="Override выдан и записан в журнал." />
-      <input type="hidden" name="userId" value={userId} />
-      <div className="flex flex-wrap items-center gap-2 text-sm">
-        <label className="text-secondary">Плечо 1:</label>
-        <input
-          name="leverage"
-          inputMode="numeric"
-          value={lev}
-          onChange={(e) => setLev(e.target.value.replace(/[^\d]/g, ''))}
-          className={numCls}
-        />
-        <input
-          name="ticket"
-          value={ticket}
-          onChange={(e) => setTicket(e.target.value)}
-          className={`${fieldCls} flex-1`}
-          placeholder="№ заявки (обязательно)"
-        />
-      </div>
-      <input
-        name="reason"
-        value={reason}
-        onChange={(e) => setReason(e.target.value)}
-        className={fieldCls}
-        placeholder="Основание (обязательно)"
+    <form action={action} className="space-y-3">
+      <ActionResult
+        state={state}
+        okText="Индивидуальное плечо выдано, отправлено в терминал, запись в журнале."
+        messages={MESSAGES}
       />
-      <Submit label="Выдать override" disabled={!ready} variant="primary" />
-      <p className="text-xs text-secondary">
-        Override «не тихо в базе» (Р-446): без № заявки и основания не выдаётся. Приоритет над
-        портфелем и планкой класса.
-      </p>
+      <input type="hidden" name="userId" value={userId} />
+      <div className="grid gap-3 sm:grid-cols-[9rem_minmax(0,1fr)]">
+        <Field label="Плечо" htmlFor="ov-leverage" hint="от 1 до 1000">
+          <span className="relative block">
+            <span className="text-muted pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm">
+              1:
+            </span>
+            <Input
+              id="ov-leverage"
+              name="leverage"
+              inputMode="numeric"
+              controlSize="compact"
+              value={lev}
+              onChange={(e) => setLev(e.target.value.replace(/[^\d]/g, ''))}
+              className="pl-7 tabular-nums"
+              placeholder="200"
+            />
+          </span>
+        </Field>
+        <Field label="№ заявки клиента" htmlFor="ov-ticket">
+          <Input
+            id="ov-ticket"
+            name="ticket"
+            controlSize="compact"
+            value={ticket}
+            onChange={(e) => setTicket(e.target.value)}
+            placeholder="например, REQ-2026-114"
+          />
+        </Field>
+      </div>
+      <ReasonField id="override-reason" value={reason} onChange={setReason} />
+      <div className="flex flex-wrap items-center gap-3">
+        <SubmitButton disabled={!ready}>Выдать плечо</SubmitButton>
+        {lev ? (
+          <Outcome>
+            В терминале станет <span className="text-primary font-medium">1:{lev}</span> — поверх
+            портфеля
+          </Outcome>
+        ) : null}
+      </div>
     </form>
   );
 }
 
-function ClearForm({ userId }: { userId: string }) {
+function ClearForm({ userId, fallback }: { userId: string; fallback: number | null }) {
   const [state, action] = useFormState<LeverageActionState, FormData>(clearClientOverrideAction, {});
   const [reason, setReason] = useState('');
 
   return (
-    <form action={action} className="space-y-3 rounded border border-border bg-elevated p-4">
-      <h3 className="text-sm font-medium text-primary">Снять override</h3>
-      <Feedback state={state} okText="Override снят — клиент вернулся к портфелю." />
-      <input type="hidden" name="userId" value={userId} />
-      <input
-        name="reason"
-        value={reason}
-        onChange={(e) => setReason(e.target.value)}
-        className={fieldCls}
-        placeholder="Основание снятия (обязательно)"
+    <form action={action} className="space-y-3">
+      <ActionResult
+        state={state}
+        okText="Индивидуальное плечо снято — клиент вернулся к портфелю, запись в журнале."
+        messages={MESSAGES}
       />
-      <Submit label="Снять override" disabled={reason.trim().length === 0} variant="secondary" />
+      <input type="hidden" name="userId" value={userId} />
+      <ReasonField id="clear-reason" value={reason} onChange={setReason} label="Основание снятия" />
+      <div className="flex flex-wrap items-center gap-3">
+        <SubmitButton variant="secondary" disabled={reason.trim().length === 0}>
+          Снять индивидуальное плечо
+        </SubmitButton>
+        {fallback ? (
+          <Outcome>
+            В терминале станет <span className="text-primary font-medium">1:{fallback}</span> — по
+            портфелю
+          </Outcome>
+        ) : null}
+      </div>
     </form>
   );
 }
@@ -169,17 +195,40 @@ export function ClientLeveragePanel({
   userId,
   portfolios,
   assignedKey,
-  hasOverride,
+  override,
 }: {
   userId: string;
   portfolios: PortfolioOpt[];
   assignedKey: string | null;
-  hasOverride: boolean;
+  override: { leverage: number; ticket: string } | null;
 }) {
+  const current = portfolios.find((p) => p.key === assignedKey);
+  const fallback = current ? (current.cryptoLeverage ?? current.baseLeverage) : null;
   return (
-    <div className="space-y-4">
-      <PortfolioForm userId={userId} portfolios={portfolios} assignedKey={assignedKey} />
-      {hasOverride ? <ClearForm userId={userId} /> : <OverrideForm userId={userId} />}
+    <div className="space-y-5">
+      <Panel title="Портфель клиента" description="Плечо клиента следует за портфелем, если нет индивидуального.">
+        <PortfolioForm
+          userId={userId}
+          portfolios={portfolios}
+          assignedKey={assignedKey}
+          override={override?.leverage ?? null}
+        />
+      </Panel>
+      {override ? (
+        <Panel
+          title="Снять индивидуальное плечо"
+          description={`Сейчас 1:${override.leverage} по заявке ${override.ticket}.`}
+        >
+          <ClearForm userId={userId} fallback={fallback} />
+        </Panel>
+      ) : (
+        <Panel
+          title="Индивидуальное плечо по заявке"
+          description="Только по письменной заявке клиента. Перекрывает портфель и планку класса."
+        >
+          <OverrideForm userId={userId} />
+        </Panel>
+      )}
     </div>
   );
 }

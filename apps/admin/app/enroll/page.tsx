@@ -2,6 +2,9 @@ import { redirect } from 'next/navigation';
 import { LOGIN_PATH } from '@/lib/auth/constants';
 import { getOperatorSession } from '@/lib/auth/current';
 import { isOperatorEnrolled } from '@/lib/auth/operator-totp';
+import { enrollmentGate } from '@/lib/auth/enrollment-gate';
+import { ServiceUnavailable } from '@/components/shell/ServiceUnavailable';
+import { AuthShell } from '../login/AuthShell';
 import { EnrollForm } from './EnrollForm';
 
 /**
@@ -20,21 +23,17 @@ export default async function EnrollPage() {
   const operator = await getOperatorSession();
   if (!operator) redirect(LOGIN_PATH);
   // Уже включена — здесь делать нечего, внутрь.
-  if (await isOperatorEnrolled(operator.operatorId)) redirect('/');
+  const gate = await enrollmentGate(operator.operatorId, isOperatorEnrolled);
+  if (gate === 'unavailable') return <ServiceUnavailable />;
+  if (gate === 'ok') redirect('/');
 
   return (
-    <div className="grid min-h-svh place-items-center px-6">
-      <div className="w-full max-w-md space-y-6">
-        <div className="space-y-1 text-center">
-          <h1 className="text-xl font-semibold">Настройка двухфакторной аутентификации</h1>
-          <p className="text-sm text-secondary">
-            Вход в центр управления требует второй фактор. Добавьте аккаунт в
-            приложение-аутентификатор (Google Authenticator, 1Password, Aegis и т.п.) и
-            подтвердите кодом.
-          </p>
-        </div>
-        <EnrollForm />
-      </div>
-    </div>
+    <AuthShell
+      step={`Обязательная настройка · ${operator.displayName} (${operator.login})`}
+      title="Включите второй фактор"
+      description="Без кода из приложения-аутентификатора работать в центре управления нельзя. Это займёт минуту."
+    >
+      <EnrollForm />
+    </AuthShell>
   );
 }
