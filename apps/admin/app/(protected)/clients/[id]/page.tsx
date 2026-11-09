@@ -7,8 +7,19 @@ import { VerificationBadge, BlockBadge } from '../_components/StatusBadge';
 import { JournalFeed } from './_components/JournalFeed';
 import { ViewDocumentButton } from './_components/ViewDocumentButton';
 import { BlockPanel } from './_components/BlockPanel';
-import { TradingSection } from './_components/TradingSection';
+import { TradingSection, type LiveAccount } from './_components/TradingSection';
+import { MoneyFlagsPanel } from './_components/MoneyFlagsPanel';
 import { getClientTrading } from '@/lib/clients/trading';
+import { loadMoneyPolicyInputs, computeMoneyPolicy, type MoneyPolicy } from '@broker/money';
+import { canOperateMoney, moneyPool, terminalReader } from '@/lib/crypto/runtime';
+import { listClientDeposits, listClientWithdrawals } from '@/lib/crypto/queries';
+import {
+  centsText,
+  DEPOSIT_REJECT,
+  DEPOSIT_STATUS,
+  POLICY_REASON,
+  WITHDRAWAL_STATUS,
+} from '@/lib/crypto/labels';
 
 /**
  * Карточка клиента `/clients/[id]` (ADM-02, §3.2): досье — профиль, состояние
@@ -59,7 +70,26 @@ export default async function ClientCardPage({ params }: { params: { id: string 
   ]);
   if (!card) notFound();
   // Проекция торговли — после проверки, что клиент есть (UUID уже валиден).
-  const trading = await getClientTrading(card.userId);
+  // Демо и реальный счёт разделены (09.11): показываем раздельно.
+  const [demo, real, policyInputs, live, deposits, withdrawals] = await Promise.all([
+    getClientTrading(card.userId, undefined, 'demo'),
+    getClientTrading(card.userId, undefined, 'real'),
+    loadMoneyPolicyInputs(moneyPool(), card.userId),
+    terminalReader()
+      .accounts(card.userId)
+      .catch(() => ({ state: 'unavailable' as const, reason: 'network' as const })),
+    listClientDeposits(card.userId),
+    listClientWithdrawals(card.userId),
+  ]);
+  const policy = computeMoneyPolicy(policyInputs);
+  const liveOf = (kind: 'demo' | 'real'): LiveAccount | null => {
+    if (live.state !== 'ok') return null;
+    const a = live.accounts.find((x) => x.kind === kind);
+    return a
+      ? { equityMinor: a.equityMinor, freeMarginMinor: a.freeMarginMinor, tradingFrozen: a.tradingFrozen, opened: a.opened }
+      : { equityMinor: null, freeMarginMinor: null, tradingFrozen: false, opened: false };
+  };
+  const canMoney = canOperateMoney(operator?.role);
 
   const isAdmin = operator?.role === 'admin';
 
@@ -118,7 +148,26 @@ export default async function ClientCardPage({ params }: { params: { id: string 
         </dl>
       </section>
 
-      <TradingSection trading={trading} />
+      <TradingSection trading={real} title="Реальный счёт (USDT)" kind="real" live={liveOf('real')} />
+
+      <section className="space-y-3">
+        <h2 className="text-lg font-medium">Ввод и вывод: итоговые правила</h2>
+        <PolicySummary policy={policy} />
+        {canMoney ? (
+          <MoneyFlagsPanel
+            userId={card.userId}
+            flags={{
+              depositKyc: policyInputs.flags.depositKyc,
+              withdrawKyc: policyInputs.flags.withdrawKyc,
+              frozen: policyInputs.flags.frozen,
+              withdrawBanned: policyInputs.flags.withdrawBanned,
+            }}
+          />
+        ) : null}
+        <ClientMoneyHistory deposits={deposits} withdrawals={withdrawals} />
+      </section>
+
+      <TradingSection trading={demo} title="Демо-счёт" kind="demo" live={liveOf('demo')} />
 
       <section className="space-y-3">
         <h2 className="text-lg font-medium">
@@ -200,5 +249,82 @@ export default async function ClientCardPage({ params }: { params: { id: string 
         <JournalFeed entries={card.journal} />
       </section>
     </div>
+  );
+}
+
+const SOURCE: Record<string, string> = { platform: 'из платформы', client: 'индивидуально' };
+
+function PolicySummary({ policy }: { policy: MoneyPolicy }) {
+  const row = (label: string, value: string, hint?: string, bad?: boolean) => (
+    <div>
+      <dt className="text-xs uppercase text-secondary">{label}</dt>
+      <dd className={bad ? 'text-negative' : 'text-primary'}>
+        {value}
+        {hint ? <span className="ml-1 text-xs text-secondary">({hint})</span> : null}
+      </dd>
+    </div>
+  );
+  const reasons = (list: string[]) => list.map((r) => POLICY_REASON[r] ?? r).join(', ');
+  return (
+    <dl className="grid grid-cols-1 gap-2 rounded border border-border bg-elevated px-4 py-4 text-sm sm:grid-cols-2">
+      {row(
+        'Ввод',
+        policy.depositAllowed ? 'разрешён' : `закрыт: ${reasons(policy.depositReasons)}`,
+        undefined,
+        !policy.depositAllowed,
+      )}
+      {row(
+        'Вывод',
+        policy.withdrawAllowed ? 'разрешён' : `закрыт: ${reasons(policy.withdrawReasons)}`,
+        undefined,
+        !policy.withdrawAllowed,
+      )}
+      {row('Ввод только после KYC', policy.depositKyc.required ? 'да' : 'нет', SOURCE[policy.depositKyc.source])}
+      {row('Вывод только после KYC', policy.withdrawKyc.required ? 'да' : 'нет', SOURCE[policy.withdrawKyc.source])}
+      {row('KYC', policy.kycVerified ? 'подтверждён' : 'не подтверждён')}
+      {row('Заморозка счёта', policy.frozen ? 'ДА' : 'нет', 'индивидуально', policy.frozen)}
+      {row('Запрет вывода', policy.withdrawBanned ? 'ДА' : 'нет', 'индивидуально', policy.withdrawBanned)}
+      {row(
+        'Торговля на реальном',
+        policy.realTradingAllowed ? 'доступна' : 'закрыта',
+        undefined,
+        !policy.realTradingAllowed,
+      )}
+    </dl>
+  );
+}
+
+function ClientMoneyHistory({
+  deposits,
+  withdrawals,
+}: {
+  deposits: Awaited<ReturnType<typeof listClientDeposits>>;
+  withdrawals: Awaited<ReturnType<typeof listClientWithdrawals>>;
+}) {
+  if (deposits.length === 0 && withdrawals.length === 0) {
+    return <p className="text-sm text-secondary">Заявок на ввод и вывод не было.</p>;
+  }
+  return (
+    <ul className="divide-y divide-border rounded border border-border bg-elevated text-sm">
+      {deposits.map((d) => (
+        <li key={d.id} className="flex flex-wrap justify-between gap-2 px-4 py-2">
+          <span>
+            Ввод · {DEPOSIT_STATUS[d.status] ?? d.status}
+            {d.rejectReason ? ` (${DEPOSIT_REJECT[d.rejectReason] ?? d.rejectReason})` : ''}
+            <span className="ml-2 font-mono text-xs text-secondary">{d.txHash.slice(0, 12)}…</span>
+          </span>
+          <span className="tabular-nums">{centsText(d.amountMinor)}</span>
+        </li>
+      ))}
+      {withdrawals.map((w) => (
+        <li key={w.id} className="flex flex-wrap justify-between gap-2 px-4 py-2">
+          <span>
+            Вывод · {WITHDRAWAL_STATUS[w.status] ?? w.status}
+            <span className="ml-2 font-mono text-xs text-secondary">{w.toAddress.slice(0, 10)}…</span>
+          </span>
+          <span className="tabular-nums">{centsText(w.amountMinor)}</span>
+        </li>
+      ))}
+    </ul>
   );
 }

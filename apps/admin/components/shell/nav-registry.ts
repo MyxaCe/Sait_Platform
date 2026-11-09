@@ -37,9 +37,11 @@ export const NAV_ITEMS: NavItem[] = [
   { key: 'risk', label: 'Риск и плечо', href: '/risk/leverage', icon: 'risk', roles: ['operator', 'admin'] },
   { key: 'journal', label: 'Журнал', href: '/journal', icon: 'journal', roles: ['operator', 'admin'] },
   { key: 'operators', label: 'Операторы', href: '/operators', icon: 'operators', roles: ['admin'] },
-  // Пункты «Деньги» и «Break-glass» убраны из рельса этой волной: бэкенд денег
-  // (money-r452, Р-455) есть, но экранов /money/* ещё нет — вернём с экранами,
-  // чтобы рельс не вёл в 404.
+  // «Деньги» (USDT TRC20, 09.11): депозиты/неопознанные/выводы — admin и
+  // finance_operator, без второго аппрува (решение штаба). «Break-glass» по-прежнему
+  // вне рельса — экранов нет.
+  { key: 'money', label: 'Деньги', href: '/money', icon: 'money', roles: ['admin', 'finance_operator'] },
+  { key: 'settings', label: 'Настройки платформы', href: '/settings', icon: 'settings', roles: ['admin'] },
 ];
 
 /** Пункты, видимые роли. Fail-closed: роли нет в `roles` → пункта нет. */

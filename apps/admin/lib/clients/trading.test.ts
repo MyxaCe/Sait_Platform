@@ -98,3 +98,22 @@ describe('форматирование денег', () => {
     expect(formatMoneyCents(100, 'NOT_A_CODE')).toBe('1.00 NOT_A_CODE');
   });
 });
+
+describe('getClientTrading · реальный счёт отдельно от демо', () => {
+  it('kind=real читает только real_* таблицы', async () => {
+    const seen: string[] = [];
+    const db = {
+      async query(sql: string) {
+        seen.push(sql);
+        if (/FROM real_accounts/.test(sql)) {
+          return { rows: [{ balance_cents: '15000', currency: 'USD', created_at: '2026-11-09T10:00:00Z' }] };
+        }
+        return { rows: /count\(\*\)/.test(sql) ? [{ trades_total: '0', pnl_total: '0' }] : [] };
+      },
+    };
+    const t = await getClientTrading('u1', db, 'real');
+    expect(t.account?.balanceCents).toBe(15000);
+    expect(seen.some((s) => /demo_/.test(s))).toBe(false);
+    expect(seen.filter((s) => /real_/.test(s))).toHaveLength(4);
+  });
+});

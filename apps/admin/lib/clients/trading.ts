@@ -70,24 +70,37 @@ function asSide(value: unknown): 'buy' | 'sell' {
   throw new Error(`demo_*.side вне допустимого множества: ${String(value)}`);
 }
 
+/**
+ * Счёт клиента: `demo` (игрушечные деньги, `demo_*`) или `real` (USDT,
+ * `real_*`, миграция 1794700000000). Таблицы параллельные — имя выбирается из
+ * закрытого списка, а не склеивается из ввода.
+ */
+export type AccountKind = 'demo' | 'real';
+const TABLES: Record<AccountKind, { accounts: string; positions: string; trades: string }> = {
+  demo: { accounts: 'demo_accounts', positions: 'demo_positions', trades: 'demo_trades' },
+  real: { accounts: 'real_accounts', positions: 'real_positions', trades: 'real_trades' },
+};
+
 export async function getClientTrading(
   userId: string,
   db: Queryable = getPool(),
+  kind: AccountKind = 'demo',
 ): Promise<ClientTrading> {
+  const t = TABLES[kind];
   const [account, positions, trades, totals] = await Promise.all([
     db.query(
-      `SELECT balance_cents, currency, created_at FROM demo_accounts WHERE user_id = $1`,
+      `SELECT balance_cents, currency, created_at FROM ${t.accounts} WHERE user_id = $1`,
       [userId],
     ),
     db.query(
       `SELECT id, symbol, side, volume, entry_price, updated_at
-         FROM demo_positions WHERE user_id = $1
+         FROM ${t.positions} WHERE user_id = $1
         ORDER BY updated_at DESC, symbol ASC`,
       [userId],
     ),
     db.query(
       `SELECT id, trade_id, symbol, side, volume, price, realized_pnl_cents, executed_at
-         FROM demo_trades WHERE user_id = $1
+         FROM ${t.trades} WHERE user_id = $1
         ORDER BY executed_at DESC
         LIMIT ${RECENT_TRADES_LIMIT}`,
       [userId],
@@ -96,16 +109,16 @@ export async function getClientTrading(
       `SELECT count(*) AS trades_total,
               COALESCE(sum(realized_pnl_cents), 0) AS pnl_total,
               max(executed_at) AS last_trade_at,
-              (SELECT max(updated_at) FROM demo_positions WHERE user_id = $1) AS last_position_at
-         FROM demo_trades WHERE user_id = $1`,
+              (SELECT max(updated_at) FROM ${t.positions} WHERE user_id = $1) AS last_position_at
+         FROM ${t.trades} WHERE user_id = $1`,
       [userId],
     ),
   ]);
 
   const a = account.rows[0];
-  const t = totals.rows[0] ?? {};
-  const lastTrade = t.last_trade_at ? new Date(t.last_trade_at as string | Date) : null;
-  const lastPos = t.last_position_at ? new Date(t.last_position_at as string | Date) : null;
+  const tot = totals.rows[0] ?? {};
+  const lastTrade = tot.last_trade_at ? new Date(tot.last_trade_at as string | Date) : null;
+  const lastPos = tot.last_position_at ? new Date(tot.last_position_at as string | Date) : null;
   const last =
     lastTrade && lastPos ? (lastTrade > lastPos ? lastTrade : lastPos) : (lastTrade ?? lastPos);
 
@@ -138,8 +151,8 @@ export async function getClientTrading(
           : Number(r.realized_pnl_cents),
       executedAt: iso(r.executed_at),
     })),
-    tradesTotal: Number(t.trades_total ?? 0),
-    realizedPnlTotalCents: Number(t.pnl_total ?? 0),
+    tradesTotal: Number(tot.trades_total ?? 0),
+    realizedPnlTotalCents: Number(tot.pnl_total ?? 0),
     lastActivityAt: last ? last.toISOString() : null,
   };
 }

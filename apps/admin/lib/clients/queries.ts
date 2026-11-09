@@ -51,8 +51,8 @@ export interface ClientRow {
   state: VerificationState;
   blocked: boolean;
   /**
-   * Баланс демо-счёта из проекции торговли (`demo_accounts`, минорные
-   * единицы). `null` — счёт ещё не открыт терминалом.
+   * Баланс РЕАЛЬНОГО счёта из проекции (`real_accounts`, минорные единицы;
+   * демо и реальный счёт разделены 09.11). `null` — реального счёта ещё нет.
    */
   balanceCents: number | null;
   currency: string | null;
@@ -97,12 +97,12 @@ export async function listClients(
             u.last_login_at,
             COALESCE(cv.state, 'unverified') AS state,
             COALESCE(cb.blocked, false) AS blocked,
-            da.balance_cents,
-            da.currency
+            ra.balance_cents,
+            ra.currency
        FROM users u
        LEFT JOIN client_verification cv ON cv.user_id = u.id
        LEFT JOIN client_blocks cb ON cb.user_id = u.id
-       LEFT JOIN demo_accounts da ON da.user_id = u.id
+       LEFT JOIN real_accounts ra ON ra.user_id = u.id
        ${whereSql}
       ORDER BY ${orderSql}
       LIMIT 500`,

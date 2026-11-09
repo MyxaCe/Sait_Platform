@@ -14,6 +14,7 @@ export type NavIconName =
   | 'journal'
   | 'operators'
   | 'aml'
+  | 'settings'
   | 'breakglass';
 
 const PATHS: Record<NavIconName, string> = {
@@ -33,6 +34,8 @@ const PATHS: Record<NavIconName, string> = {
   operators: 'M10 11a4 4 0 1 0-8 0M2 20a6 6 0 0 1 12 0M18 7l3 3-6 6h-3v-3z',
   // щит с лупой (скрининг по спискам)
   aml: 'M12 3l7 3v5c0 4-3 7-7 9-4-2-7-5-7-9V6zM11 11a2 2 0 1 0 .01 0M13 13l2 2',
+  // ползунки (настройки)
+  settings: 'M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0M14 4v4M8 10v4M16 16v4',
   // восклицание в ромбе (аварийная дверь)
   breakglass: 'M12 2l10 10-10 10L2 12zM12 8v5M12 16.5v.5',
 };

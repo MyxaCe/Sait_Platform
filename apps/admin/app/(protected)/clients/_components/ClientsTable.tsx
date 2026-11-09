@@ -36,7 +36,7 @@ export function ClientsTable({ clients }: { clients: ClientRow[] }) {
             <th className="px-4 py-2 font-medium">Верификация</th>
             <th className="px-4 py-2 font-medium">Регистрация</th>
             <th className="px-4 py-2 font-medium">Активность</th>
-            <th className="px-4 py-2 text-right font-medium">Баланс</th>
+            <th className="px-4 py-2 text-right font-medium">Реальный счёт</th>
             <th className="px-4 py-2 font-medium">Блокировка</th>
           </tr>
         </thead>

@@ -69,28 +69,62 @@ function tradeColumns(currency: string): DataTableColumn<TradingTrade>[] {
   ];
 }
 
-export function TradingSection({ trading }: { trading: ClientTrading }) {
+/** Живые цифры счёта из терминала (`GET …/accounts`); null — терминал не ответил. */
+export interface LiveAccount {
+  equityMinor: number | null;
+  freeMarginMinor: number | null;
+  tradingFrozen: boolean;
+  opened: boolean;
+}
+
+export function TradingSection({
+  trading,
+  title = 'Счёт и торговля',
+  kind = 'demo',
+  live,
+}: {
+  trading: ClientTrading;
+  title?: string;
+  kind?: 'demo' | 'real';
+  /** undefined — не запрашивали; null — терминал не ответил. */
+  live?: LiveAccount | null;
+}) {
   const currency = trading.account?.currency ?? 'USD';
   const pnl = trading.realizedPnlTotalCents;
 
   return (
     <section className="space-y-3">
-      <h2 className="text-lg font-medium">Счёт и торговля</h2>
+      <h2 className="text-lg font-medium">{title}</h2>
+      {live !== undefined ? (
+        <p className="text-xs text-secondary">
+          {live === null
+            ? 'Терминал не ответил — equity и свободная маржа сейчас недоступны.'
+            : !live.opened
+              ? 'Счёт в терминале ещё не открыт.'
+              : `Терминал сейчас: equity ${live.equityMinor === null ? '—' : formatMoneyCents(live.equityMinor, currency)} · свободная маржа ${
+                  live.freeMarginMinor === null ? '—' : formatMoneyCents(live.freeMarginMinor, currency)
+                }${live.tradingFrozen ? ' · ТОРГОВЛЯ ЗАМОРОЖЕНА' : ''}`}
+        </p>
+      ) : null}
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {trading.account ? (
           <KpiTile
             label="Баланс"
             value={formatMoneyCents(trading.account.balanceCents, currency)}
-            hint={`демо-счёт · открыт ${new Date(trading.account.openedAt).toLocaleDateString('ru-RU')}`}
+            hint={`${kind === 'real' ? 'реальный счёт' : 'демо-счёт'} · открыт ${new Date(trading.account.openedAt).toLocaleDateString('ru-RU')}`}
           />
         ) : (
-          <KpiTile label="Баланс" value="—" hint="счёт ещё не открыт терминалом" />
+          <KpiTile
+            label="Баланс"
+            value="—"
+            hint={kind === 'real' ? 'реальных зачислений ещё не было' : 'счёт ещё не открыт терминалом'}
+          />
         )}
         <KpiTile
           label="Открытые позиции"
           value={trading.positions.length}
-          hint="equity считает терминал"
+          hint={live && live.opened ? 'по снимку проекции' : 'equity считает терминал'}
         />
         <KpiTile
           label="Реализованный P&L"
@@ -136,9 +170,8 @@ export function TradingSection({ trading }: { trading: ClientTrading }) {
       </div>
 
       <p className="text-xs text-secondary">
-        Источник — проекция событий терминала (только чтение). Позиции — по цене входа:
-        текущих котировок в проекции нет, поэтому equity и плавающий P&L здесь не
-        показываются.
+        Источник — проекция событий терминала (только чтение). Позиции — по цене входа;
+        equity и свободная маржа — живым запросом к терминалу (строка вверху блока).
       </p>
     </section>
   );
