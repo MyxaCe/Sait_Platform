@@ -5,16 +5,40 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    /* Inter (self-hosted, два подмножества) → системный стек. */
+    --font-sans: var(--font-inter-latin), var(--font-inter-cyrillic), system-ui, -apple-system,
+      'Segoe UI', Roboto, Arial, sans-serif;
+  }
+
   html {
-    @apply scroll-smooth antialiased;
+    @apply antialiased;
   }
 
   body {
-    @apply bg-base text-primary;
+    @apply bg-base font-sans text-sm text-primary;
     text-rendering: optimizeLegibility;
+    /* Inter: «открытые» цифры 6/9 и прямая «1» читаются лучше в таблицах. */
+    font-feature-settings: 'cv05', 'cv08';
   }
 
   ::selection {
     @apply bg-accent/30;
+  }
+
+  :focus-visible {
+    outline: 2px solid rgb(var(--accent));
+    outline-offset: 2px;
+  }
+
+  /* Операторский периметр: никакой «витринной» анимации даже при её
+     случайном появлении в общих компонентах; уважение reduce-motion. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
   }
 }

@@ -2,7 +2,7 @@
 
 import { useState, type ReactNode } from 'react';
 import { useFormState, useFormStatus } from 'react-dom';
-import { Button } from '@broker/ui';
+import { Button, Callout } from '@broker/ui';
 import type { MoneyActionState } from '@/lib/crypto/actions';
 import { moneyErrorText } from '@/lib/crypto/labels';
 
@@ -10,13 +10,31 @@ import { moneyErrorText } from '@/lib/crypto/labels';
  * Форма-с-основанием денежной зоны: обязательное поле «Основание», submit
  * заблокирован без него; `danger` — подтверждение вторым кликом. Личность
  * оператора форма не несёт (из сессии, Р-451). Поля действия — `children`.
+ *
+ * Редизайн (фаза 1) поменял ТОЛЬКО вид: плотные контролы, Callout для
+ * результата, спокойная красная обводка у первого шага danger. Логика, имена
+ * полей и порядок шагов — прежние.
  */
 
-function Submit({ label, variant, disabled }: { label: string; variant: 'primary' | 'secondary' | 'danger'; disabled: boolean }) {
+function Submit({
+  label,
+  variant,
+  disabled,
+}: {
+  label: string;
+  variant: 'primary' | 'secondary' | 'danger';
+  disabled: boolean;
+}) {
   const { pending } = useFormStatus();
   return (
-    <Button type="submit" size="sm" variant={variant} disabled={pending || disabled}>
-      {pending ? '…' : label}
+    <Button
+      type="submit"
+      size="compact"
+      variant={variant}
+      loading={pending}
+      disabled={pending || disabled}
+    >
+      {label}
     </Button>
   );
 }
@@ -47,15 +65,11 @@ export function ActionForm({
   const valid = reason.trim().length > 0 && extraValid;
 
   return (
-    <form action={formAction} className="space-y-2">
+    <form action={formAction} className="space-y-3">
       {state.error ? (
-        <p role="alert" className="rounded border border-negative/40 bg-negative/10 px-2 py-1 text-xs text-negative">
-          {moneyErrorText(state.error, state.detail)}
-        </p>
+        <Callout tone="negative">{moneyErrorText(state.error, state.detail)}</Callout>
       ) : state.ok ? (
-        <p role="status" className="rounded border border-positive/40 bg-positive/10 px-2 py-1 text-xs text-positive">
-          {okText}
-        </p>
+        <Callout tone="positive">{okText}</Callout>
       ) : null}
       {children}
       <input
@@ -63,17 +77,33 @@ export function ActionForm({
         value={reason}
         onChange={(e) => setReason(e.target.value)}
         placeholder={reasonPlaceholder}
-        className="w-full rounded border border-border bg-base px-2 py-1 text-sm text-primary outline-none focus:border-accent"
+        aria-label="Основание — обязательно, пишется в журнал"
+        className="border-border-strong bg-sunken text-primary placeholder:text-muted focus:border-accent/70 focus:ring-accent/20 h-9 w-full rounded-md border px-3 text-sm focus:outline-none focus:ring-2"
       />
       {danger && !armed ? (
-        <Button type="button" size="sm" variant="danger" disabled={!valid} onClick={() => setArmed(true)}>
+        <Button
+          type="button"
+          size="compact"
+          variant="danger-outline"
+          disabled={!valid}
+          onClick={() => setArmed(true)}
+        >
           {submitLabel}
         </Button>
       ) : (
-        <div className="flex gap-2">
-          <Submit label={danger ? `Да, ${submitLabel.toLowerCase()}` : submitLabel} variant={danger ? 'danger' : variant} disabled={!valid} />
+        <div className="flex items-center gap-2">
+          <Submit
+            label={danger ? `Да, ${submitLabel.toLowerCase()}` : submitLabel}
+            variant={danger ? 'danger' : variant}
+            disabled={!valid}
+          />
           {danger ? (
-            <Button type="button" size="sm" variant="secondary" onClick={() => setArmed(false)}>
+            <Button
+              type="button"
+              size="compact"
+              variant="secondary"
+              onClick={() => setArmed(false)}
+            >
               Отмена
             </Button>
           ) : null}

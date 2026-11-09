@@ -1,13 +1,15 @@
 import type { HTMLAttributes } from 'react';
 import { cn } from '../../lib/cn';
 
-type BadgeVariant = 'accent' | 'neutral' | 'positive' | 'negative';
+export type BadgeVariant = 'accent' | 'neutral' | 'positive' | 'negative' | 'warning' | 'info';
 
 const styles: Record<BadgeVariant, string> = {
   accent: 'border-accent/30 bg-accent/10 text-accent',
   neutral: 'border-border bg-elevated text-secondary',
   positive: 'border-positive/30 bg-positive/10 text-positive',
   negative: 'border-negative/30 bg-negative/10 text-negative',
+  warning: 'border-warning/30 bg-warning/10 text-warning',
+  info: 'border-info/30 bg-info/10 text-info',
 };
 
 export interface BadgeProps extends HTMLAttributes<HTMLSpanElement> {
