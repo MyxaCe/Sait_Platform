@@ -43,6 +43,9 @@ vi.mock('@/lib/db', () => ({
   }),
 }));
 
+// Плечо (claim `leverage`) этот набор не проверяет — см. `route.test.ts`.
+vi.mock('@/lib/leverage', () => ({ terminalLeverageFor: async () => null }));
+
 vi.mock('next/headers', () => ({
   cookies: () => ({ get: () => ({ value: 'live-session-token' }) }),
   headers: () => new Map(),

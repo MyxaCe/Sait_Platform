@@ -22,11 +22,13 @@ const MESSAGES: Record<string, string> = {
   forbidden: 'Недостаточно прав: управление плечом — действие администратора.',
   invalidClient: 'Клиент не указан.',
   missingReason: 'Нужно указать основание (для override — ещё и № заявки).',
-  invalidLeverage: 'Плечо должно быть целым числом ≥ 1 (знаменатель 1:N).',
+  invalidLeverage: 'Плечо должно быть целым числом от 1 до 1000 (знаменатель 1:N).',
   noClient: 'Клиент не найден.',
   noPortfolio: 'Портфель не найден (или не задан портфель по умолчанию).',
   noOverride: 'У клиента нет override — снимать нечего.',
   alreadyInState: 'Клиент уже в этом портфеле — изменений нет.',
+  terminalUnavailable: 'Терминал не ответил — плечо НЕ изменено ни на сайте, ни в терминале. Повторите позже.',
+  terminalRefused: 'Терминал отказал в смене плеча — изменение НЕ применено (код — в логе сервера).',
 };
 
 function Feedback({ state, okText }: { state: LeverageActionState; okText: string }) {

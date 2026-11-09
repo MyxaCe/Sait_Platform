@@ -27,6 +27,18 @@ export interface LeverageActionState {
   ok?: boolean;
 }
 
+/**
+ * Исход ядра → состояние формы. Отказ терминала по существу несёт код
+ * (`terminalRefused`); в форме — общий текст, код — в логе сервера.
+ */
+function toState(result: { ok: true } | { ok: false; reason: string; code?: string }): LeverageActionState {
+  if (result.ok) return { ok: true };
+  if (result.reason === 'terminalRefused') {
+    console.error(`[leverage] терминал отказал в смене плеча: ${result.code ?? 'без кода'}`);
+  }
+  return { error: result.reason };
+}
+
 async function requireAdmin() {
   const operator = await getOperatorSession();
   if (!operator) redirect(LOGIN_PATH);
@@ -57,11 +69,12 @@ export async function changePortfolioLeverageAction(
 
   const result = await changePortfolioLeverage({
     operatorId: operator.operatorId,
+    operatorLogin: operator.login,
     portfolioKey,
     baseLeverage,
     reason,
   });
-  if (!result.ok) return { error: result.reason };
+  if (!result.ok) return toState(result);
 
   revalidatePath('/risk/portfolios');
   return { ok: true };
@@ -85,12 +98,13 @@ export async function setClassOverrideAction(
 
   const result = await setClassOverride({
     operatorId: operator.operatorId,
+    operatorLogin: operator.login,
     portfolioKey,
     instrumentClass,
     leverage: raw,
     reason,
   });
-  if (!result.ok) return { error: result.reason };
+  if (!result.ok) return toState(result);
 
   revalidatePath('/risk/portfolios');
   return { ok: true };
@@ -112,11 +126,12 @@ export async function setClientPortfolioAction(
 
   const result = await setClientPortfolio({
     operatorId: operator.operatorId,
+    operatorLogin: operator.login,
     userId,
     portfolioKey,
     reason,
   });
-  if (!result.ok) return { error: result.reason };
+  if (!result.ok) return toState(result);
 
   revalidatePath('/risk/leverage');
   return { ok: true };
@@ -139,12 +154,13 @@ export async function setClientOverrideAction(
 
   const result = await setClientOverride({
     operatorId: operator.operatorId,
+    operatorLogin: operator.login,
     userId,
     leverage,
     reason,
     ticket,
   });
-  if (!result.ok) return { error: result.reason };
+  if (!result.ok) return toState(result);
 
   revalidatePath('/risk/leverage');
   return { ok: true };
@@ -164,10 +180,11 @@ export async function clearClientOverrideAction(
 
   const result = await clearClientOverride({
     operatorId: operator.operatorId,
+    operatorLogin: operator.login,
     userId,
     reason,
   });
-  if (!result.ok) return { error: result.reason };
+  if (!result.ok) return toState(result);
 
   revalidatePath('/risk/leverage');
   return { ok: true };

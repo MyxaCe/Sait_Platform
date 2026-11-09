@@ -15,7 +15,12 @@ export interface RealAccountBlock {
   account: RealAccountView | null;
   policy: MoneyPolicy;
   /** Живые цифры терминала; null — терминал не ответил / не настроен. */
-  live: { equityMinor: number | null; freeMarginMinor: number | null } | null;
+  live: { equityMinor: number | null; freeMarginMinor: number | null; leverage: number | null } | null;
+  /**
+   * Плечо ДЕМО-счёта из того же ответа терминала (`GET …/accounts`): плечо
+   * следующей позиции. `null` — терминал не ответил или счёта ещё нет.
+   */
+  demoLeverage: number | null;
   locale: string;
 }
 
@@ -77,6 +82,9 @@ export async function BalanceModule({
         <p className="mt-1 text-xs text-secondary">
           {demo ? t('balanceDemoNote') : t('balanceNoAccountNote')}
         </p>
+        {real?.demoLeverage ? (
+          <p className="mt-1 text-xs text-secondary">{t('accountLeverage', { leverage: real.demoLeverage })}</p>
+        ) : null}
         {buttons.length > 0 && (
           <div className="mt-4 flex flex-wrap items-center gap-2">
             {buttons.map((b) => (
@@ -165,6 +173,9 @@ async function RealAccountSection({
             free: real.live.freeMarginMinor === null ? '—' : usdt(real.live.freeMarginMinor),
           })}
         </p>
+      ) : null}
+      {real.live?.leverage ? (
+        <p className="mt-1 text-xs text-secondary">{t('accountLeverage', { leverage: real.live.leverage })}</p>
       ) : null}
       {real.policy.frozen ? <p className="mt-2 text-xs text-negative">{t('realFrozen')}</p> : null}
       <div className="mt-4 flex flex-wrap items-start gap-3">

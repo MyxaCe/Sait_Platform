@@ -16,7 +16,7 @@ export function moneyPool(): PoolLike {
   return getPool() as unknown as PoolLike;
 }
 
-type FullClient = TerminalMoneyClient & { accounts(userId: string): Promise<AccountsOutcome> };
+type FullClient = ReturnType<typeof createTerminalMoneyClient>;
 
 const store = globalThis as unknown as { __adminTerminalMoney?: FullClient };
 

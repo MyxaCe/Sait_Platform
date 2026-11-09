@@ -124,6 +124,7 @@
     "tradeReal": "Trade on real",
     "realFrozen": "Account frozen: trading and withdrawals are closed; you can still close positions.",
     "liveEquity": "Equity {equity} · free margin {free}",
+    "accountLeverage": "Leverage for new positions 1:{leverage}",
     "moneyUnavailable": "Unavailable: {reasons}"
   },
   "dashboard": {

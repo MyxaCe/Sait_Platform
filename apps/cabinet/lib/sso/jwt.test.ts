@@ -234,3 +234,26 @@ describe('CAB-07 · срок жизни назван и соответствуе
     expect(() => tokenLifetimeSeconds(noIat)).toThrow(TokenWithoutExpiryError);
   });
 });
+
+describe('SSO handoff-JWT · claim leverage (Р-446)', () => {
+  it('плечо названо — claim в токене; не названо — claim-а нет', async () => {
+    const { issueHandoffToken, publicJwks } = await import('./jwt');
+    const jwks = createLocalJWKSet(await publicJwks());
+
+    const withLev = await issueHandoffToken('user-1', 'real', 10);
+    const a = await jwtVerify(withLev.token, jwks);
+    expect(a.payload.leverage).toBe(10);
+    expect(a.payload.account_kind).toBe('real');
+
+    const without = await issueHandoffToken('user-1', 'demo', null);
+    const b = await jwtVerify(without.token, jwks);
+    expect('leverage' in b.payload).toBe(false);
+  });
+
+  it('плечо вне 1..1000 — подписи нет (терминал такой claim отверг бы)', async () => {
+    const { issueHandoffToken } = await import('./jwt');
+    for (const bad of [0, 1001, 2.5]) {
+      await expect(issueHandoffToken('user-1', 'demo', bad)).rejects.toThrow(/1\.\.1000/);
+    }
+  });
+});
