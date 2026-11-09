@@ -4,8 +4,7 @@ import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { getOperatorSession } from '../auth/current';
 import { LOGIN_PATH } from '../auth/constants';
-import { appendJournalEntry } from '../journal/journal';
-import { setClientBlock, type BlockAction } from './block';
+import { revokeClientSessions, setClientBlock, type BlockAction } from './block';
 
 /**
  * Серверные экшены зоны «Клиенты» (ADM-02, Р-049, Р-394).
@@ -85,19 +84,15 @@ export async function unblockClientAction(
 }
 
 /**
- * «Погасить сессии» клиента (ADM-02, долг ADM-01).
+ * «Погасить сессии» клиента (ADM-02).
  *
- * ВАЖНО — ЧЕСТНО: фактического гашения здесь НЕТ. Боевые сессии клиента живут
- * в in-memory сессиях ТЕРМИНАЛА, до которого у операторского периметра нет
- * командного пути (разведка ADM-01: входящей командной поверхности у терминала
- * нет). Поэтому экшен журналирует НАМЕРЕНИЕ `client.sessions_revoked` (кто/
- * когда/основание) — чтобы след был и аудит видел запрос, — но ничего не гасит.
- * Реальное гашение — отдельная задача на стороне терминала.
- *
- * Клиентские cookie-сессии кабинета (таблица `sessions`) мы здесь тоже НЕ
- * трогаем сознательно: их жизненный цикл — зона кабинета, а не операторского
- * периметра; смешивать гашение терминала и ревокацию кабинетных кук в одной
- * кнопке «погасить сессии» значило бы выдать половину за целое.
+ * Гашение НАСТОЯЩЕЕ: строки `sessions` клиента удаляются, и запись
+ * `client.sessions_revoked` (кто/когда/основание/сколько) пишется ТОЙ ЖЕ
+ * транзакцией (`revokeClientSessions`). Удалённая строка = немедленный выход из
+ * кабинета; терминалу кабинет больше не выдаст SSO-токен, и терминал
+ * разлогинится не позже своего TTL. Прямого командного пути в in-memory
+ * сессии терминала по-прежнему нет (долг ADM-01) — поэтому «не позже TTL», а
+ * не «мгновенно».
  */
 export async function revokeClientSessionsAction(
   _prev: ClientActionState,
@@ -108,22 +103,16 @@ export async function revokeClientSessionsAction(
 
   const userId = String(formData.get('userId') ?? '').trim();
   if (!userId) return { error: 'invalidClient' };
-  const reason = String(formData.get('reason') ?? '').trim();
-  if (reason.length === 0) return { error: 'missingReason' };
+  const reason = String(formData.get('reason') ?? '');
 
+  let result;
   try {
-    await appendJournalEntry({
-      operatorId: operator.operatorId,
-      action: 'client.sessions_revoked',
-      subjectKind: 'client',
-      subjectId: userId,
-      // intent: true — запись честно помечена намерением, не фактом гашения.
-      payload: { basis: reason, intent: true, note: 'terminal-side revocation pending (ADM-01 debt)' },
-    });
+    result = await revokeClientSessions({ operatorId: operator.operatorId, userId, reason });
   } catch {
-    // Журнал не принял запись — намерение без следа не фиксируем (fail-closed).
+    // Транзакция откатилась: ни гашения, ни записи (fail-closed).
     return { error: 'journalUnavailable' };
   }
+  if (!result.ok) return { error: result.reason };
 
   revalidatePath(`/clients/${userId}`);
   return { ok: true };

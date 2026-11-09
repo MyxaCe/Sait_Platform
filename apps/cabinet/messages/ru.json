@@ -226,6 +226,7 @@
     "emailExists": "Счёт с таким email уже существует",
     "wrongPassword": "Неверный текущий пароль",
     "invalidCredentials": "Неверный email или пароль",
+    "accessRestricted": "Доступ к кабинету ограничен. Обратитесь в поддержку.",
     "rateLimited": "Слишком много попыток — подождите минуту",
     "unauthorized": "Сессия истекла — войдите заново",
     "unsupportedFormat": "Поддерживаются PDF, JPG и PNG",

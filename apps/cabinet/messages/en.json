@@ -226,6 +226,7 @@
     "emailExists": "An account with this email already exists",
     "wrongPassword": "Current password is incorrect",
     "invalidCredentials": "Invalid email or password",
+    "accessRestricted": "Access to your account is restricted. Please contact support.",
     "rateLimited": "Too many attempts — try again in a minute",
     "unauthorized": "Session expired — please sign in again",
     "unsupportedFormat": "PDF, JPG and PNG are supported",

@@ -59,8 +59,22 @@ const ACTIONS: Record<BlockAction, string> = {
  * идемпотентный no-op (авто-блок при AML-эскалации на уже заблокированном).
  */
 export type BlockTxOutcome =
-  | { applied: true; blocked: boolean; journalSeq: number }
+  | { applied: true; blocked: boolean; journalSeq: number; sessionsRevoked: number }
   | { applied: false; reason: 'alreadyInState' };
+
+/**
+ * Гашение кабинетных сессий клиента ВНУТРИ уже открытой транзакции.
+ *
+ * Сессии кабинета — строки `sessions` (в куке opaque-токен, в базе его хеш,
+ * ADR-022), поэтому удаление строки = немедленный выход: следующий запрос
+ * кабинета не найдёт сессию и уведёт на вход, а `/api/sso/token` не выдаст
+ * терминалу новый токен — терминал разлогинится не позже своего TTL (кабинет
+ * не продлит ему сессию). Возвращает число погашенных сессий (для журнала).
+ */
+export async function revokeClientSessionsWithinTx(db: Queryable, userId: string): Promise<number> {
+  const res = await db.query(`DELETE FROM sessions WHERE user_id = $1 RETURNING id`, [userId]);
+  return res.rows.length;
+}
 
 /**
  * Транзакционное ядро блокировки ВНУТРИ уже открытой транзакции (ADM-02).
@@ -104,6 +118,11 @@ export async function applyClientBlockWithinTx(
     [input.userId, targetBlocked, input.reason, input.operatorId],
   );
 
+  // Блокировка действует по-настоящему: кабинетные сессии клиента гасятся
+  // ТОЙ ЖЕ транзакцией (и ручной блок, и AML авто-блок идут через это ядро).
+  // Разблокировка сессий не возвращает — клиент просто снова может войти.
+  const sessionsRevoked = targetBlocked ? await revokeClientSessionsWithinTx(db, input.userId) : 0;
+
   // Запись решения — ТОЙ ЖЕ транзакцией (журнал неизменяем базой, Р-049).
   const entry = await appendJournalEntry(
     {
@@ -111,7 +130,9 @@ export async function applyClientBlockWithinTx(
       action: ACTIONS[input.action],
       subjectKind: 'client',
       subjectId: input.userId,
-      payload: { basis: input.reason, previousBlocked: currentlyBlocked },
+      payload: targetBlocked
+        ? { basis: input.reason, previousBlocked: currentlyBlocked, sessionsRevoked }
+        : { basis: input.reason, previousBlocked: currentlyBlocked },
     },
     db,
   );
@@ -129,7 +150,7 @@ export async function applyClientBlockWithinTx(
     journalSeq,
   ]);
 
-  return { applied: true, blocked: targetBlocked, journalSeq };
+  return { applied: true, blocked: targetBlocked, journalSeq, sessionsRevoked };
 }
 
 export async function setClientBlock(
@@ -167,6 +188,68 @@ export async function setClientBlock(
 
     await client.query('COMMIT');
     return { ok: true, blocked: outcome.blocked, journalSeq: outcome.journalSeq };
+  } catch (error) {
+    await client.query('ROLLBACK').catch(() => {});
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+export interface RevokeSessionsInput {
+  /** `operators.id` — из серверной сессии, НЕ из формы. */
+  operatorId: string;
+  userId: string;
+  /** Основание — обязательно (Р-394). */
+  reason: string;
+}
+
+export type RevokeSessionsResult =
+  | { ok: true; revoked: number; journalSeq: number }
+  | { ok: false; reason: 'missingReason' }
+  | { ok: false; reason: 'noClient' };
+
+/**
+ * «Погасить сессии» клиента (ADM-02): РЕАЛЬНОЕ удаление кабинетных сессий +
+ * запись `client.sessions_revoked` в журнал — одной транзакцией. Прежде
+ * действие только журналировало намерение. Блокировку не меняет: клиент
+ * может войти снова (это «выйти везде», а не «закрыть доступ»).
+ */
+export async function revokeClientSessions(
+  input: RevokeSessionsInput,
+  pool: { connect(): Promise<PoolClient> } = getPool(),
+): Promise<RevokeSessionsResult> {
+  const reason = input.reason?.trim() ?? '';
+  if (reason.length === 0) return { ok: false, reason: 'missingReason' };
+
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const exists = await client.query(`SELECT 1 FROM users WHERE id = $1`, [input.userId]);
+    if (exists.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return { ok: false, reason: 'noClient' };
+    }
+
+    const db = client as unknown as Queryable;
+    const revoked = await revokeClientSessionsWithinTx(db, input.userId);
+    const entry = await appendJournalEntry(
+      {
+        operatorId: input.operatorId,
+        action: 'client.sessions_revoked',
+        subjectKind: 'client',
+        subjectId: input.userId,
+        payload: { basis: reason, revoked },
+      },
+      db,
+    );
+    const seqRow = await db.query(`SELECT seq FROM admin_action_journal WHERE entry_hash = $1`, [
+      entry.entryHash,
+    ]);
+    const journalSeq = Number((seqRow.rows[0] as { seq: number | string } | undefined)?.seq);
+
+    await client.query('COMMIT');
+    return { ok: true, revoked, journalSeq };
   } catch (error) {
     await client.query('ROLLBACK').catch(() => {});
     throw error;

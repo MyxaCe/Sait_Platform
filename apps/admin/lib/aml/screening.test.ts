@@ -34,6 +34,7 @@ function fakePool(opts: { userExists?: boolean; amlStatus?: string | null; block
   };
   const block = { value: opts.blocked ?? (null as boolean | null), lastJournalSeq: null as number | null };
   const journal: JournalRow[] = [];
+  const sessionsDeletedFor: string[] = [];
   let begun = false;
   let rolledBack = false;
   let committed = false;
@@ -75,6 +76,11 @@ function fakePool(opts: { userExists?: boolean; amlStatus?: string | null; block
         block.lastJournalSeq = params[1] as number;
         return { rows: [], rowCount: 1 };
       }
+      if (/DELETE FROM sessions WHERE user_id = \$1 RETURNING id/i.test(sql)) {
+        // Авто-блок гасит кабинетные сессии тем же ядром (ADM-02).
+        sessionsDeletedFor.push(params[0] as string);
+        return { rows: [{ id: 'sess-1' }], rowCount: 1 };
+      }
       if (/pg_advisory_xact_lock/i.test(sql)) {
         return { rows: [{ pg_advisory_xact_lock: '' }], rowCount: 1 };
       }
@@ -104,7 +110,7 @@ function fakePool(opts: { userExists?: boolean; amlStatus?: string | null; block
   };
 
   const pool = { async connect() { return client as unknown as PoolClient; } };
-  return { pool, aml, block, journal, flags: () => ({ begun, rolledBack, committed }) };
+  return { pool, aml, block, journal, sessionsDeletedFor, flags: () => ({ begun, rolledBack, committed }) };
 }
 
 describe('ADM-14 · запись AML-скрининга', () => {
@@ -150,6 +156,9 @@ describe('ADM-14 · запись AML-скрининга', () => {
     // Основание блока несёт AML-причину и списки.
     expect(JSON.parse(f.journal[1]!.payload).basis).toContain('AML: совпадение');
     expect(JSON.parse(f.journal[1]!.payload).basis).toContain('OFAC');
+    // Авто-блок действует по-настоящему: сессии клиента гасятся той же транзакцией.
+    expect(f.sessionsDeletedFor).toEqual([USER]);
+    expect(JSON.parse(f.journal[1]!.payload).sessionsRevoked).toBe(1);
     expect(f.flags().committed).toBe(true);
   });
 

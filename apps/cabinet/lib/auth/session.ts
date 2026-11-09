@@ -58,18 +58,29 @@ export async function createSession(userId: string): Promise<string> {
   return token;
 }
 
-/** Пользователь текущего запроса или null (протухшие сессии игнорируются). */
+/** Пользователь текущего запроса или null (протухшие сессии и заблокированные клиенты — null). */
 export async function getSessionUser(): Promise<SessionUser | null> {
   const token = cookies().get(SESSION_COOKIE)?.value;
   if (!token) return null;
   const result = await getPool().query(
-    `SELECT u.id, u.uid, u.email, u.full_name, u.locale, u.vip_level, u.created_at
+    `SELECT u.id, u.uid, u.email, u.full_name, u.locale, u.vip_level, u.created_at,
+            COALESCE(cb.blocked, false) AS blocked
        FROM sessions s JOIN users u ON u.id = s.user_id
+       LEFT JOIN client_blocks cb ON cb.user_id = u.id
       WHERE s.token_hash = $1 AND s.expires_at > now()`,
     [hashToken(token)],
   );
   const row = result.rows[0];
   if (!row) return null;
+  /*
+   * Заблокированный клиент (ADM-02) — не пользователь сессии, даже если
+   * строка сессии ещё жива. Блокировка в админке гасит сессии той же
+   * транзакцией, но этот рубеж не полагается на то, что гашение было:
+   * сессия могла родиться в гонке с блоком. Отсюда же следует отказ
+   * `/api/sso/token` (терминал не получит токен) и редирект зоны `(app)`
+   * на вход. Разблокировка возвращает доступ без иных действий.
+   */
+  if (row.blocked === true) return null;
   /*
    * Ноль вместо номера не подставляем (Р-086, QA-05). Грабля, из-за которой
    * одного удаления `?? 0` было бы мало: `Number(null)` это **0**, то есть

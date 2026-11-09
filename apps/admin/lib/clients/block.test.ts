@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { PoolClient } from 'pg';
-import { setClientBlock } from './block';
+import { revokeClientSessions, setClientBlock } from './block';
 
 /**
  * ADM-02 · блокировка/разблокировка клиента (Р-049, Р-394).
@@ -14,6 +14,7 @@ import { setClientBlock } from './block';
 
 const USER = '22222222-2222-2222-2222-222222222222';
 const OP = '11111111-1111-1111-1111-111111111111';
+const OTHER = '33333333-3333-3333-3333-333333333333';
 
 interface JournalRow {
   seq: number;
@@ -24,8 +25,11 @@ interface JournalRow {
   entry_hash: string;
 }
 
-function fakePool(opts: { exists?: boolean; blocked?: boolean | null }) {
+function fakePool(opts: { exists?: boolean; blocked?: boolean | null; sessions?: string[] }) {
   const exists = opts.exists ?? true;
+  // Строки `sessions` (id → user_id): гашение должно трогать только этого клиента.
+  const sessions = new Map<string, string>((opts.sessions ?? []).map((id) => [id, USER]));
+  sessions.set('other-client-session', OTHER);
   const block = { value: opts.blocked ?? null as boolean | null, lastJournalSeq: null as number | null };
   const journal: JournalRow[] = [];
   let begun = false;
@@ -74,13 +78,18 @@ function fakePool(opts: { exists?: boolean; blocked?: boolean | null }) {
         block.lastJournalSeq = params[1] as number;
         return { rows: [], rowCount: 1 };
       }
+      if (/DELETE FROM sessions WHERE user_id = \$1 RETURNING id/i.test(sql)) {
+        const gone = [...sessions].filter(([, uid]) => uid === params[0]).map(([id]) => id);
+        for (const id of gone) sessions.delete(id);
+        return { rows: gone.map((id) => ({ id })), rowCount: gone.length };
+      }
       throw new Error(`unexpected sql: ${sql}`);
     },
     release() {},
   };
 
   const pool = { async connect() { return client as unknown as PoolClient; } };
-  return { pool, block, journal, flags: () => ({ begun, rolledBack, committed }) };
+  return { pool, block, journal, sessions, flags: () => ({ begun, rolledBack, committed }) };
 }
 
 describe('ADM-02 · блокировка клиента', () => {
@@ -145,6 +154,77 @@ describe('ADM-02 · блокировка клиента', () => {
       { operatorId: OP, userId: USER, action: 'block', reason: 'есть основание' },
       f.pool,
     );
+
+    expect(res).toEqual({ ok: false, reason: 'noClient' });
+    expect(f.journal).toHaveLength(0);
+    expect(f.flags().rolledBack).toBe(true);
+  });
+});
+
+describe('ADM-02 · блокировка действует по-настоящему: сессии гасятся', () => {
+  it('блок → сессии клиента удалены ТОЙ ЖЕ транзакцией, число — в журнале', async () => {
+    const f = fakePool({ blocked: null, sessions: ['s1', 's2'] });
+    const res = await setClientBlock(
+      { operatorId: OP, userId: USER, action: 'block', reason: 'AML' },
+      f.pool,
+    );
+
+    expect(res).toMatchObject({ ok: true, blocked: true });
+    expect([...f.sessions.keys()]).toEqual(['other-client-session']);
+    expect(JSON.parse(f.journal[0]!.payload).sessionsRevoked).toBe(2);
+    expect(f.flags().committed).toBe(true);
+  });
+
+  it('разблок → сессии не трогаются (их и нет), доступ возвращается через client_blocks', async () => {
+    const f = fakePool({ blocked: true });
+    const res = await setClientBlock(
+      { operatorId: OP, userId: USER, action: 'unblock', reason: 'проверено' },
+      f.pool,
+    );
+
+    expect(res).toMatchObject({ ok: true, blocked: false });
+    expect(f.block.value).toBe(false);
+    expect(f.sessions.has('other-client-session')).toBe(true);
+    expect(JSON.parse(f.journal[0]!.payload).sessionsRevoked).toBeUndefined();
+  });
+
+  it('уже заблокирован → повторный блок ничего не гасит (откат)', async () => {
+    const f = fakePool({ blocked: true, sessions: ['s1'] });
+    const res = await setClientBlock(
+      { operatorId: OP, userId: USER, action: 'block', reason: 'повторно' },
+      f.pool,
+    );
+
+    expect(res).toEqual({ ok: false, reason: 'alreadyInState' });
+    expect(f.sessions.has('s1')).toBe(true);
+  });
+});
+
+describe('ADM-02 · «погасить сессии»', () => {
+  it('удаляет сессии клиента и пишет client.sessions_revoked с основанием и числом', async () => {
+    const f = fakePool({ blocked: null, sessions: ['s1', 's2', 's3'] });
+    const res = await revokeClientSessions({ operatorId: OP, userId: USER, reason: 'утечка пароля' }, f.pool);
+
+    expect(res).toMatchObject({ ok: true, revoked: 3, journalSeq: 1 });
+    expect([...f.sessions.keys()]).toEqual(['other-client-session']);
+    expect(f.journal[0]!.action).toBe('client.sessions_revoked');
+    expect(JSON.parse(f.journal[0]!.payload)).toMatchObject({ basis: 'утечка пароля', revoked: 3 });
+    expect(f.block.value).toBeNull();
+    expect(f.flags().committed).toBe(true);
+  });
+
+  it('без основания — отказ, ничего не удалено, транзакции нет', async () => {
+    const f = fakePool({ sessions: ['s1'] });
+    const res = await revokeClientSessions({ operatorId: OP, userId: USER, reason: ' ' }, f.pool);
+
+    expect(res).toEqual({ ok: false, reason: 'missingReason' });
+    expect(f.sessions.has('s1')).toBe(true);
+    expect(f.flags().begun).toBe(false);
+  });
+
+  it('нет клиента → noClient, откат', async () => {
+    const f = fakePool({ exists: false });
+    const res = await revokeClientSessions({ operatorId: OP, userId: USER, reason: 'x' }, f.pool);
 
     expect(res).toEqual({ ok: false, reason: 'noClient' });
     expect(f.journal).toHaveLength(0);

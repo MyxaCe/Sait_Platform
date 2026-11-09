@@ -15,7 +15,7 @@ function dateFmt(iso: string): string {
 const ACTION_LABELS: Record<string, string> = {
   'client.block': 'Блокировка',
   'client.unblock': 'Разблокировка',
-  'client.sessions_revoked': 'Гашение сессий (намерение)',
+  'client.sessions_revoked': 'Гашение сессий',
   'client.document.viewed': 'Просмотр документа',
   'client.verification.verified': 'Верификация: подтверждена',
   'client.verification.rejected': 'Верификация: отклонена',

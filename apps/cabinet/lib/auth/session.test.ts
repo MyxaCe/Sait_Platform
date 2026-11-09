@@ -99,3 +99,19 @@ describe('getSessionUser · номер пользователя', () => {
     expect((await getSessionUser())?.vipLevel).toBe(0);
   });
 });
+
+describe('getSessionUser · блокировка клиента (ADM-02)', () => {
+  it('заблокированный клиент с живой сессией → null (зона (app) уводит на вход)', async () => {
+    rows.push({ ...ROW, blocked: true });
+    const { getSessionUser } = await import('./session');
+
+    expect(await getSessionUser()).toBeNull();
+  });
+
+  it('разблокированный (blocked=false) → пользователь возвращается', async () => {
+    rows.push({ ...ROW, blocked: false });
+    const { getSessionUser } = await import('./session');
+
+    expect((await getSessionUser())?.id).toBe(ROW.id);
+  });
+});

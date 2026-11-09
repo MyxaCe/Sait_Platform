@@ -19,8 +19,9 @@ import {
  * Роль-гейт (§3.2): панель РЕНДЕРИТСЯ только для admin (fail-closed — её просто
  * нет у operator, не «серая»). Экшены на сервере проверяют роль повторно.
  *
- * «Погасить сессии» — ЧЕСТНО: журналирует намерение, но фактически НЕ гасит
- * (боевые сессии — в терминале, долг ADM-01). Подпись под кнопкой это говорит.
+ * «Погасить сессии» и блокировка удаляют кабинетные сессии клиента той же
+ * транзакцией, что и запись в журнал. Терминал теряет доступ не позже своего
+ * TTL (кабинет больше не выдаёт ему токен) — подпись под кнопкой это говорит.
  */
 
 const MESSAGES: Record<string, string> = {
@@ -78,7 +79,7 @@ function BlockForm({ userId }: { userId: string }) {
 
   return (
     <form action={action} className="space-y-3 rounded border border-negative/30 bg-negative/5 p-4">
-      <Feedback state={state} okText="Клиент заблокирован." />
+      <Feedback state={state} okText="Клиент заблокирован, его сессии погашены." />
       <input type="hidden" name="userId" value={userId} />
       <label htmlFor="block-reason" className="block text-sm font-medium text-primary">
         Основание блокировки
@@ -95,7 +96,8 @@ function BlockForm({ userId }: { userId: string }) {
       {confirming ? (
         <div className="space-y-2">
           <p className="text-sm text-negative">
-            Подтвердите: заблокировать клиента? Доступ клиента будет ограничен.
+            Подтвердите: заблокировать клиента? Вход в кабинет и терминал будет закрыт,
+            текущие сессии погашены.
           </p>
           <div className="flex gap-2">
             <SubmitButton variant="danger" label="Да, заблокировать" reason={reason} />
@@ -149,7 +151,7 @@ function RevokeSessionsForm({ userId }: { userId: string }) {
 
   return (
     <form action={action} className="space-y-3 rounded border border-border bg-elevated p-4">
-      <Feedback state={state} okText="Намерение погасить сессии записано в журнал." />
+      <Feedback state={state} okText="Сессии клиента погашены, запись в журнале." />
       <input type="hidden" name="userId" value={userId} />
       <label htmlFor="revoke-reason" className="block text-sm font-medium text-primary">
         Погасить сессии — основание
@@ -165,9 +167,9 @@ function RevokeSessionsForm({ userId }: { userId: string }) {
       />
       <SubmitButton variant="secondary" label="Погасить сессии" reason={reason} />
       <p className="text-xs text-secondary">
-        Долг ADM-01: фактическое гашение боевых сессий — на стороне терминала и пока
-        не реализовано. Кнопка фиксирует НАМЕРЕНИЕ в журнале (`client.sessions_revoked`),
-        но сессии не гасит.
+        Клиент сразу выходит из кабинета; терминал не получит новый токен и закроет
+        сессию не позже своего срока (до 15 минут). Блокировка не меняется — клиент
+        может войти снова.
       </p>
     </form>
   );

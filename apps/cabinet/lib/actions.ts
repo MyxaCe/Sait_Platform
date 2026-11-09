@@ -10,6 +10,7 @@ import { getPool } from './db';
 import { isRateLimited } from './rate-limit';
 import { hashPassword, verifyPassword } from './auth/password';
 import { registerUser } from './auth/register';
+import { checkLogin } from './auth/login';
 import { resetDemoAccount, type TerminalFailure } from './terminal/client';
 import { getTenantStartBalance } from './tenant';
 import {
@@ -95,22 +96,16 @@ export async function loginAction(_prev: ActionState, formData: FormData): Promi
     return { fieldErrors: zodFieldErrors(parsed.error) };
   }
 
-  const r = await getPool().query(
-    `SELECT id, password_hash, locale FROM users WHERE lower(email) = lower($1)`,
-    [parsed.data.email],
-  );
-  const row = r.rows[0];
-  // Хеш сверяем и для несуществующего email — одинаковое время ответа
-  const ok = row
-    ? await verifyPassword(parsed.data.password, row.password_hash)
-    : await verifyPassword(parsed.data.password, '$2a$12$invalidsaltinvalidsaltinvalidsaltinval');
-  if (!row || !ok) {
-    return { error: 'invalidCredentials' };
+  // Пароль + блокировка (ADM-02) — в `checkLogin`; о блоке говорим только
+  // после верного пароля, чтобы форма не стала оракулом.
+  const check = await checkLogin(parsed.data.email, parsed.data.password);
+  if (!check.ok) {
+    return { error: check.error };
   }
 
-  await getPool().query(`UPDATE users SET last_login_at = now() WHERE id = $1`, [row.id]);
-  await createSession(row.id);
-  redirect(homePath(String(formData.get('uiLocale') ?? row.locale)));
+  await getPool().query(`UPDATE users SET last_login_at = now() WHERE id = $1`, [check.userId]);
+  await createSession(check.userId);
+  redirect(homePath(String(formData.get('uiLocale') ?? check.locale)));
 }
 
 export async function logoutAction(formData: FormData): Promise<void> {
