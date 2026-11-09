@@ -23,25 +23,36 @@ export interface NavItem {
   exact?: boolean;
   /** Аварийная дверь: красный акцент, визуально отделён (break-glass, Р-452). */
   danger?: boolean;
+  /** Группа рельса (визуальная секция; на доступ не влияет). */
+  group: NavGroup;
 }
 
+/** Секции рельса — порядок вывода. Пустая для роли секция не рисуется. */
+export type NavGroup = 'overview' | 'compliance' | 'money' | 'control';
+export const NAV_GROUPS: { key: NavGroup; label: string }[] = [
+  { key: 'overview', label: 'Обзор' },
+  { key: 'compliance', label: 'Клиенты и комплаенс' },
+  { key: 'money', label: 'Деньги и риск' },
+  { key: 'control', label: 'Контроль' },
+];
+
 export const NAV_ITEMS: NavItem[] = [
-  { key: 'dashboard', label: 'Дашборд', href: '/', icon: 'dashboard', roles: ['operator', 'admin'], exact: true },
-  { key: 'clients', label: 'Клиенты', href: '/clients', icon: 'clients', roles: ['operator', 'admin'] },
-  { key: 'kyc', label: 'Верификация', href: '/kyc', icon: 'kyc', roles: ['operator', 'admin'] },
+  { key: 'dashboard', group: 'overview', label: 'Дашборд', href: '/', icon: 'dashboard', roles: ['operator', 'admin'], exact: true },
+  { key: 'clients', group: 'compliance', label: 'Клиенты', href: '/clients', icon: 'clients', roles: ['operator', 'admin'] },
+  { key: 'kyc', group: 'compliance', label: 'Верификация', href: '/kyc', icon: 'kyc', roles: ['operator', 'admin'] },
   // AML-скрининг (ADM-14): отметка результата сверки по спискам; видят оба.
-  { key: 'aml', label: 'AML-скрининг', href: '/aml', icon: 'aml', roles: ['operator', 'admin'] },
+  { key: 'aml', group: 'compliance', label: 'AML-скрининг', href: '/aml', icon: 'aml', roles: ['operator', 'admin'] },
   // Риск: operator видит, но действия — только просмотр (§3.8); запись гейтится
   // на самих страницах раздела. href ведёт на реальную страницу раздела
   // (/risk-индекса нет; обе страницы — leverage/portfolios).
-  { key: 'risk', label: 'Риск и плечо', href: '/risk/leverage', icon: 'risk', roles: ['operator', 'admin'] },
-  { key: 'journal', label: 'Журнал', href: '/journal', icon: 'journal', roles: ['operator', 'admin'] },
-  { key: 'operators', label: 'Операторы', href: '/operators', icon: 'operators', roles: ['admin'] },
+  { key: 'risk', group: 'money', label: 'Риск и плечо', href: '/risk/leverage', icon: 'risk', roles: ['operator', 'admin'] },
+  { key: 'journal', group: 'control', label: 'Журнал', href: '/journal', icon: 'journal', roles: ['operator', 'admin'] },
+  { key: 'operators', group: 'control', label: 'Операторы', href: '/operators', icon: 'operators', roles: ['admin'] },
   // «Деньги» (USDT TRC20, 09.11): депозиты/неопознанные/выводы — admin и
   // finance_operator, без второго аппрува (решение штаба). «Break-glass» по-прежнему
   // вне рельса — экранов нет.
-  { key: 'money', label: 'Деньги', href: '/money', icon: 'money', roles: ['admin', 'finance_operator'] },
-  { key: 'settings', label: 'Настройки платформы', href: '/settings', icon: 'settings', roles: ['admin'] },
+  { key: 'money', group: 'money', label: 'Деньги', href: '/money', icon: 'money', roles: ['admin', 'finance_operator'] },
+  { key: 'settings', group: 'control', label: 'Настройки платформы', href: '/settings', icon: 'settings', roles: ['admin'] },
 ];
 
 /** Пункты, видимые роли. Fail-closed: роли нет в `roles` → пункта нет. */

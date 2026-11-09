@@ -28,11 +28,13 @@ export default async function ProtectedLayout({ children }: { children: React.Re
   const navItems = navForRole(operator.role);
 
   return (
-    <div className="flex min-h-svh flex-col">
-      <TopBar operator={operator} />
-      <div className="flex flex-1 overflow-hidden">
-        <NavRail items={navItems} />
-        <main className="flex-1 overflow-auto px-6 py-6">{children}</main>
+    <div className="flex min-h-svh">
+      <NavRail items={navItems} />
+      <div className="flex min-w-0 flex-1 flex-col">
+        <TopBar operator={operator} />
+        <main className="flex-1 px-6 py-6 xl:px-8">
+          <div className="mx-auto w-full max-w-[1400px]">{children}</div>
+        </main>
       </div>
     </div>
   );
