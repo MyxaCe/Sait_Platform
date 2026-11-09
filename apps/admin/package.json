@@ -12,6 +12,7 @@
     "seed:kyc-fixture": "tsx scripts/seed-kyc-fixture.ts"
   },
   "dependencies": {
+    "@broker/money": "workspace:*",
     "@broker/storage": "workspace:*",
     "@broker/ui": "workspace:*",
     "@broker/utils": "workspace:*",

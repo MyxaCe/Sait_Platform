@@ -48,7 +48,11 @@ export async function bootstrapFirstOperator(
     // увидит уже непустую таблицу и откажет.
     await client.query('LOCK TABLE operators IN EXCLUSIVE MODE');
 
-    const existing = await client.query('SELECT 1 FROM operators LIMIT 1');
+    // Системные авторы журнала (`system:*`, миграция 1794600000000) — не люди:
+    // их наличие не значит, что первый админ уже заведён.
+    const existing = await client.query(
+      `SELECT 1 FROM operators WHERE login NOT LIKE 'system:%' LIMIT 1`,
+    );
     if (existing.rows.length > 0) {
       await client.query('ROLLBACK');
       return { ok: false, reason: 'alreadyBootstrapped' };
