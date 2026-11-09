@@ -31,7 +31,7 @@ const COLUMNS: DataTableColumn<PendingClient>[] = [
     header: 'Клиент',
     className: 'min-w-[12rem]',
     cell: (c) => (
-      <Link href={`/kyc/${c.userId}`} className="group block min-w-0 max-w-[24rem]">
+      <Link href={`/kyc/${c.userId}`} className="group block min-w-0 max-w-[12rem] xl:max-w-[24rem]">
         <span className="block truncate font-medium text-primary group-hover:text-accent" title={c.fullName}>
           {c.fullName}
         </span>
@@ -59,7 +59,7 @@ const COLUMNS: DataTableColumn<PendingClient>[] = [
     numeric: true,
     align: 'left',
     width: '10rem',
-    className: 'hidden lg:table-cell',
+    className: 'hidden xl:table-cell',
     cell: (c) => <span className="text-secondary">{fmtDateTime(c.updatedAt)}</span>,
   },
   {
@@ -78,6 +78,7 @@ const COLUMNS: DataTableColumn<PendingClient>[] = [
     key: 'go',
     header: <span className="sr-only">Действие</span>,
     align: 'right',
+    className: 'relative',
     width: '7rem',
     cell: (c) => (
       <Link href={`/kyc/${c.userId}`} className="text-[13px] font-medium text-accent hover:underline">

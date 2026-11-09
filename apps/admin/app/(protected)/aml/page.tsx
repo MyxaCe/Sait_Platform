@@ -44,7 +44,7 @@ const COLUMNS: DataTableColumn<AmlListRow>[] = [
     header: 'Клиент',
     className: 'min-w-[12rem]',
     cell: (r) => (
-      <Link href={`/aml/${r.userId}`} className="group block min-w-0 max-w-[22rem]">
+      <Link href={`/aml/${r.userId}`} className="group block min-w-0 max-w-[13rem] xl:max-w-[22rem]">
         <span className="block truncate font-medium text-primary group-hover:text-accent" title={r.fullName}>
           {r.fullName}
         </span>
@@ -82,7 +82,7 @@ const COLUMNS: DataTableColumn<AmlListRow>[] = [
   {
     key: 'lists',
     header: 'Списки',
-    className: 'hidden lg:table-cell',
+    className: 'hidden whitespace-nowrap xl:table-cell',
     cell: (r) =>
       r.lists.length ? (
         <span className="text-secondary">{r.lists.map(sanctionsListLabel).join(' · ')}</span>
@@ -101,6 +101,7 @@ const COLUMNS: DataTableColumn<AmlListRow>[] = [
     key: 'go',
     header: <span className="sr-only">Действие</span>,
     align: 'right',
+    className: 'relative',
     width: '6.5rem',
     cell: (r) => (
       <Link href={`/aml/${r.userId}`} className="text-[13px] font-medium text-accent hover:underline">

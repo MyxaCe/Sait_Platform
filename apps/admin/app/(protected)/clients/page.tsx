@@ -52,9 +52,9 @@ function columns(currency: string | null): DataTableColumn<RegistryRow>[] {
       key: 'name',
       header: 'Клиент',
       sortable: true,
-      className: 'min-w-[12rem]',
+      className: 'min-w-[8rem]',
       cell: (c) => (
-        <Link href={`/clients/${c.userId}`} className="group block min-w-0 max-w-[22rem]">
+        <Link href={`/clients/${c.userId}`} className="group block min-w-0 max-w-[9rem] xl:max-w-[22rem]">
           <span className="block truncate font-medium text-primary group-hover:text-accent" title={c.fullName}>
             {c.fullName}
           </span>
@@ -71,13 +71,13 @@ function columns(currency: string | null): DataTableColumn<RegistryRow>[] {
       width: '8rem',
       cell: (c) => <StatusBadge status={amlKey(c.aml)} label={AML_SHORT[c.aml]} />,
     },
-    { key: 'access', header: 'Доступ', width: '10rem', cell: accessBadges },
+    { key: 'access', header: 'Доступ', width: '9.5rem', cell: accessBadges },
     {
       key: 'balance',
       header: currency ? `Реальный счёт, ${currency}` : 'Реальный счёт',
       sortable: true,
       numeric: true,
-      width: '10rem',
+      width: '9rem',
       cell: (c) => (
         <Money minor={c.balanceMinor} currency={c.currency ?? 'USDT'} hideCurrency={currency !== null} />
       ),
@@ -99,6 +99,7 @@ function columns(currency: string | null): DataTableColumn<RegistryRow>[] {
       numeric: true,
       align: 'left',
       width: '9.5rem',
+      className: 'hidden xl:table-cell',
       cell: (c) =>
         c.lastLoginAt ? (
           <span className="text-secondary">{fmtDateTime(c.lastLoginAt)}</span>
@@ -111,7 +112,7 @@ function columns(currency: string | null): DataTableColumn<RegistryRow>[] {
       header: <span className="sr-only">Действие</span>,
       align: 'right',
       width: '5rem',
-      className: 'hidden xl:table-cell',
+      className: 'relative hidden xl:table-cell',
       cell: (c) => (
         <Link href={`/clients/${c.userId}`} className="text-[13px] font-medium text-accent hover:underline">
           Открыть
