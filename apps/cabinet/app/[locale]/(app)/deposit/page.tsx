@@ -1,15 +1,23 @@
 import QRCode from 'qrcode';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
+import { Callout, formatMoney } from '@broker/ui';
 import { requireSessionUser } from '@/lib/auth/require';
 import { exchangeAddress, getMoneyPolicy, listMyDeposits } from '@/lib/money';
 import { DepositClaimForm } from '@/features/money/MoneyForms';
 import { DepositHistory } from '@/features/money/MoneyHistory';
+import { CopyButtonLarge } from '@/features/money/CopyText';
+import { PolicyNotice } from '@/features/money/PolicyNotice';
+import { MoneyPageHeader, Step } from '@/features/money/Step';
 
 /**
- * «Пополнить» реальный счёт USDT TRC20 (дизайн §1): адрес биржи из env + QR +
- * сеть + предупреждение «только USDT TRC20» + ввод хэша транзакции → заявка
- * `claimed`, наблюдатель сверяет её с сетью. Недоступно по политике —
- * причина видна, форма неактивна.
+ * «Пополнить» реальный счёт USDT TRC20 (дизайн §1), фаза 2:
+ *   шаг 1 — адрес биржи из env + QR + копирование + крупное предупреждение
+ *           «только USDT в сети TRON (TRC20)»;
+ *   шаг 2 — хэш транзакции (проверка формата + подсказка, где его взять) →
+ *           заявка `claimed`, наблюдатель сверяет её с сетью;
+ *   история — статусы бейджами, хэши моноширинно + копирование + Tronscan.
+ * Недоступно по политике — человеческая причина и действие; форма неактивна.
+ * Адреса нет — реквизиты не показываются вовсе, кнопка неактивна (аудит К8).
  */
 export const dynamic = 'force-dynamic';
 
@@ -22,50 +30,62 @@ export default async function DepositPage({ params }: { params: { locale: string
   const qr = address
     ? await QRCode.toString(address, { type: 'svg', margin: 1, errorCorrectionLevel: 'M' })
     : null;
-  const reasons = policy.depositReasons.map((r) => (t.has(`policy.${r}`) ? t(`policy.${r}`) : r)).join(', ');
   const enabled = policy.depositAllowed && address !== null;
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6">
-      <h1 className="text-2xl font-semibold">{t('depositTitle')}</h1>
+    <div className="mx-auto max-w-2xl space-y-4 sm:space-y-5">
+      <MoneyPageHeader title={t('depositTitle')} lead={t('depositLead')} />
 
-      {!policy.depositAllowed ? (
-        <p role="alert" className="rounded-xl border border-negative/40 bg-negative/10 px-4 py-3 text-sm text-negative">
-          {t('unavailable', { reasons })}
-        </p>
-      ) : null}
+      {!policy.depositAllowed ? <PolicyNotice op="deposit" reasons={policy.depositReasons} /> : null}
 
-      {address ? (
-        <section className="space-y-4 rounded-2xl border border-border bg-elevated p-5">
-          <p className="text-sm font-semibold">{t('network')}</p>
-          <p className="rounded-xl border border-accent/40 bg-accent/10 px-4 py-3 text-sm">{t('onlyUsdtWarning')}</p>
-          <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-start">
-            {qr ? (
-              <div
-                className="size-44 shrink-0 rounded-xl bg-white p-2"
-                aria-label={t('addressLabel')}
-                // SVG сгенерирован на сервере из адреса env, пользовательского ввода в нём нет.
-                dangerouslySetInnerHTML={{ __html: qr }}
-              />
-            ) : null}
-            <div className="min-w-0 space-y-2">
-              <p className="text-xs text-secondary">{t('addressLabel')}</p>
-              <p className="select-all break-all font-mono text-base">{address}</p>
-              <p className="text-xs text-secondary">{t('copyHint')}</p>
-              <p className="text-xs text-secondary">
-                {t('minDeposit', { min: (policy.minDepositMinor / 100).toFixed(2) })}
-              </p>
+      <Step n={1} title={t('step1Title')} muted={!enabled}>
+        {address ? (
+          <div className="space-y-4">
+            <Callout tone="warning" title={t('warningTitle')}>
+              {t('onlyUsdtWarning')}
+            </Callout>
+            <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-start">
+              {qr ? (
+                <div
+                  role="img"
+                  className="size-44 shrink-0 rounded-xl bg-white p-2 sm:size-40"
+                  aria-label={t('qrLabel')}
+                  // SVG сгенерирован на сервере из адреса env, пользовательского ввода в нём нет.
+                  dangerouslySetInnerHTML={{ __html: qr }}
+                />
+              ) : null}
+              <div className="w-full min-w-0 space-y-2">
+                <p className="text-xs font-medium text-secondary">{t('addressLabel')}</p>
+                <p
+                  className="select-all break-all rounded-xl border border-border-strong bg-sunken px-3 py-3 font-mono text-[13px] leading-relaxed tracking-tight min-[400px]:text-[14px] sm:text-[15px]"
+                  data-testid="deposit-address"
+                >
+                  {address}
+                </p>
+                <CopyButtonLarge
+                  value={address}
+                  label={t('copyAddress')}
+                  doneLabel={t('copied')}
+                  className="w-full sm:w-auto"
+                />
+                <p className="text-xs text-muted">{t('copyHint')}</p>
+                <p className="text-xs text-secondary">
+                  {t('minDeposit', { min: formatMoney(policy.minDepositMinor, 'USDT') })}
+                </p>
+              </div>
             </div>
           </div>
-        </section>
-      ) : (
-        <p className="rounded-xl border border-border bg-elevated px-4 py-3 text-sm text-secondary">{t('addressMissing')}</p>
-      )}
+        ) : (
+          <Callout tone="neutral" title={t('addressMissingTitle')}>
+            {t('addressMissing')}
+          </Callout>
+        )}
+      </Step>
 
-      <section className="space-y-3 rounded-2xl border border-border bg-elevated p-5">
-        <p className="text-sm text-secondary">{t('step2')}</p>
+      <Step n={2} title={t('step2Title')} muted={!enabled}>
+        <p className="mb-3 text-sm text-secondary">{t('step2')}</p>
         <DepositClaimForm disabled={!enabled} />
-      </section>
+      </Step>
 
       <DepositHistory items={deposits} />
     </div>

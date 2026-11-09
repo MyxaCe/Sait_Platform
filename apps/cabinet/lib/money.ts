@@ -9,6 +9,7 @@ import {
   type TerminalMoneyClient,
 } from '@broker/money';
 import { getPool } from './db';
+import { devFixtureAccounts, devTerminalFixtureEnabled } from './dev-terminal-fixture';
 
 /**
  * Деньги кабинета (USDT TRC20, реальный счёт). Только серверный модуль.
@@ -41,6 +42,10 @@ export function terminalReader(): FullClient {
     tenant: process.env.SITE_SLUG,
     timeoutMs: 2_000,
   });
+  // Dev-фикстура чтения счетов (только next dev + явный флаг; см. файл фикстуры).
+  if (devTerminalFixtureEnabled()) {
+    return { ...store.__cabinetTerminalReader, accounts: devFixtureAccounts };
+  }
   return store.__cabinetTerminalReader;
 }
 

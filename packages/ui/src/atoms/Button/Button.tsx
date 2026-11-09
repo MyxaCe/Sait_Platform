@@ -27,7 +27,9 @@ const buttonVariants = cva(
         // min-h — touch-target ≥ 44px на всех размерах
         sm: 'min-h-[40px] px-4 text-sm',
         md: 'min-h-[44px] px-5 text-sm',
-        lg: 'min-h-[52px] px-7 text-base',
+        // 16px — `text-[16px]`, НЕ `text-base`: тот же класс красит текст в цвет
+        // фона `base` (коллизия имени цвета и размера, аудит С2).
+        lg: 'min-h-[52px] px-7 text-[16px]',
         // Плотные размеры операторского периметра (десктоп, мышь): 32/36px.
         xs: 'h-8 min-h-0 rounded-md px-3 text-[13px]',
         compact: 'h-9 min-h-0 rounded-md px-3.5 text-sm',
