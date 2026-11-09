@@ -11,20 +11,18 @@ export function OrganizationJsonLd() {
     name: SITE_NAME,
     url: SITE_URL,
     logo: `${SITE_URL}/icons/icon-512.png`,
-    description:
-      'Международный онлайн-брокер: торговля Forex, CFD на акции, криптовалюты, индексы и металлы.',
-    foundingDate: '2009',
+    description: 'Торговая платформа: Forex, CFD на акции, криптовалюты, индексы и металлы.',
+    // foundingDate убран: «2009» не подтверждён ничем. Микроразметку читают
+    // поисковики и агрегаторы — выдуманный факт расходится отсюда дальше сайта.
     contactPoint: {
       '@type': 'ContactPoint',
       contactType: 'customer support',
       availableLanguage: ['Russian', 'English'],
       url: `${SITE_URL}/company/contacts`,
     },
-    sameAs: [
-      // TODO: реальные профили компании
-      'https://t.me/apexcapital',
-      'https://www.youtube.com/@apexcapital',
-    ],
+    // sameAs убран до появления реальных профилей: t.me/apexcapital и
+    // youtube.com/@apexcapital нам не принадлежат — разметка объявляла
+    // чужие аккаунты нашими.
   };
 
   return (

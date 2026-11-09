@@ -25,12 +25,12 @@ const RU: FaqSection[] = [
       {
         question: 'Есть ли демо-счёт и чем он отличается от реального?',
         answer:
-          'Да, демо-счёт с виртуальными $10 000 доступен сразу после регистрации. Котировки, спреды и исполнение полностью повторяют реальные условия — отличается только источник средств.',
+          'Да, демо-счёт с виртуальными средствами доступен сразу после регистрации. Он работает в том же терминале на тех же котировках — отличается только источник средств.',
       },
       {
         question: 'Нужно ли проходить верификацию (KYC)?',
         answer:
-          'Да, верификация обязательна по требованиям регулятора: понадобится документ, удостоверяющий личность, и подтверждение адреса. Это защищает ваш счёт от несанкционированного доступа и вывода средств третьими лицами.',
+          'Да, для реального счёта верификация обязательна: документ, удостоверяющий личность, загружается в личном кабинете. Это защищает ваш счёт от несанкционированного доступа и вывода средств третьими лицами.',
       },
     ],
   },
@@ -55,7 +55,7 @@ const RU: FaqSection[] = [
       {
         question: 'Разрешены ли скальпинг и торговые советники?',
         answer:
-          'Да, без ограничений: скальпинг, автоматические стратегии и хеджирование разрешены на всех типах счетов. Исполнение от 14 мс подходит для высокочастотных стратегий.',
+          'Да, без ограничений: скальпинг, автоматические стратегии и хеджирование разрешены на всех типах счетов.',
       },
     ],
   },
@@ -65,17 +65,17 @@ const RU: FaqSection[] = [
       {
         question: 'Как пополнить счёт и сколько это занимает?',
         answer:
-          'Банковские карты, банковский перевод, электронные кошельки и криптовалюты. Карты и кошельки зачисляются мгновенно, банковский перевод — 1–3 рабочих дня. Комиссия за пополнение — 0%.',
+          'В USDT в сети TRC20 из личного кабинета. Средства зачисляются после подтверждения транзакции в сети и её сверки с блокчейном по хэшу.',
       },
       {
         question: 'Сколько выводятся средства?',
         answer:
-          '92% заявок обрабатываются автоматически за несколько минут. Остальные проходят ручную проверку и исполняются в течение 24 часов. Вывод возможен только тем же способом, которым пополнялся счёт.',
+          'Вывод — в USDT (TRC20) по заявке из личного кабинета. Заявка проходит проверку, а хэш выплаты сверяется с блокчейном.',
       },
       {
         question: 'Где хранятся средства клиентов?',
         answer:
-          'На сегрегированных счетах в банках уровня Tier-1, отдельно от операционных средств компании. Это требование регуляторов: средства клиентов не могут использоваться в деятельности брокера.',
+          'Пополнения в USDT поступают на кошелёк площадки в сети TRON. Каждое пополнение и каждая выплата сверяются с блокчейном по хэшу транзакции, а баланс торгового счёта защищён от ухода ниже нуля.',
       },
     ],
   },
@@ -98,12 +98,12 @@ const EN: FaqSection[] = [
       {
         question: 'Is there a demo account and how does it differ from a live one?',
         answer:
-          'Yes — a demo account with virtual $10,000 is available right after registration. Quotes, spreads and execution fully replicate live conditions; only the source of funds differs.',
+          'Yes — a demo account with virtual funds is available right after registration. It runs in the same terminal on the same quotes; only the source of funds differs.',
       },
       {
         question: 'Do I need to pass verification (KYC)?',
         answer:
-          'Yes, verification is required by the regulator: you will need an identity document and proof of address. It protects your account from unauthorized access and third-party withdrawals.',
+          'Yes, verification is required for a live account: you upload an identity document in the client area. It protects your account from unauthorized access and third-party withdrawals.',
       },
     ],
   },
@@ -128,7 +128,7 @@ const EN: FaqSection[] = [
       {
         question: 'Are scalping and expert advisors allowed?',
         answer:
-          'Yes, without restrictions: scalping, automated strategies and hedging are allowed on all account types. Execution from 14 ms suits high-frequency strategies.',
+          'Yes, without restrictions: scalping, automated strategies and hedging are allowed on all account types.',
       },
     ],
   },
@@ -138,17 +138,17 @@ const EN: FaqSection[] = [
       {
         question: 'How do I fund my account and how long does it take?',
         answer:
-          'Bank cards, wire transfer, e-wallets and crypto. Cards and wallets are credited instantly; wire transfers take 1–3 business days. Deposit fee — 0%.',
+          'In USDT on the TRC20 network from the client area. Funds are credited once the transaction is confirmed on-chain and matched by its hash.',
       },
       {
         question: 'How long do withdrawals take?',
         answer:
-          '92% of requests are processed automatically within minutes. The rest go through manual review and are completed within 24 hours. Withdrawals are only possible via the same method used for funding.',
+          'Withdrawals are made in USDT (TRC20) on request from the client area. Each request is reviewed, and the payout hash is reconciled with the blockchain.',
       },
       {
         question: 'Where are client funds held?',
         answer:
-          'In segregated accounts with Tier-1 banks, separate from the company’s operating funds. This is a regulatory requirement: client funds cannot be used in the broker’s business activities.',
+          'USDT deposits arrive at the platform wallet on the TRON network. Every deposit and payout is reconciled with the blockchain by transaction hash, and the trading account balance is protected from going below zero.',
       },
     ],
   },

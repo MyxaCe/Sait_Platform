@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
-import { Badge, Button, Container, Section, StatCounter } from '@broker/ui';
+import { Badge, Button, Container, Section } from '@broker/ui';
 import { Link } from '@/i18n/navigation';
 
 interface PageProps {
@@ -20,10 +20,21 @@ interface ValueItem {
   title: string;
   text: string;
 }
-interface LicenseItem {
-  authority: string;
-  region: string;
-  number: string;
+interface FactItem {
+  value: string;
+  label: string;
+}
+/**
+ * Раньше здесь был блок «Лицензии и регуляция» с CySEC/FSCA/FSA и
+ * номерами-заглушками, а выше — «17 лет на рынке · 1.2 млн трейдеров ·
+ * 87 млрд $». Лицензий и такой истории у площадки нет; на показе
+ * комплаенсу это прямое ложное заявление. Теперь блок говорит о мерах
+ * защиты, которые реально работают в продукте, а таймлайн — о том, как
+ * устроена платформа, а не о выдуманной истории компании.
+ */
+interface SafeguardItem {
+  title: string;
+  text: string;
 }
 
 export default async function AboutPage({ params }: PageProps) {
@@ -31,7 +42,8 @@ export default async function AboutPage({ params }: PageProps) {
   const t = await getTranslations('about');
   const timeline = t.raw('timeline') as TimelineItem[];
   const values = t.raw('values') as ValueItem[];
-  const licenses = t.raw('licenses') as LicenseItem[];
+  const facts = t.raw('facts') as FactItem[];
+  const safeguards = t.raw('safeguards') as SafeguardItem[];
 
   return (
     <>
@@ -48,10 +60,14 @@ export default async function AboutPage({ params }: PageProps) {
           </div>
 
           <dl className="mt-12 grid grid-cols-2 gap-x-6 gap-y-8 border-t border-border pt-8 sm:grid-cols-4">
-            <StatCounter value={17} suffix={t('statsYearsSuffix')} label={t('statsYears')} />
-            <StatCounter value={1_240_000} label={t('statsTraders')} />
-            <StatCounter value={87} suffix={t('statsVolumeSuffix')} label={t('statsVolume')} />
-            <StatCounter value={190} suffix="+" label={t('statsCountries')} />
+            {facts.map((fact) => (
+              <div key={fact.value} className="flex flex-col gap-1">
+                <dt className="order-2 text-sm text-secondary">{fact.label}</dt>
+                <dd className="order-1 text-2xl font-semibold text-primary sm:text-3xl">
+                  {fact.value}
+                </dd>
+              </div>
+            ))}
           </dl>
         </Container>
       </Section>
@@ -102,9 +118,9 @@ export default async function AboutPage({ params }: PageProps) {
           <div className="grid items-start gap-10 lg:grid-cols-2 lg:gap-16">
             <div>
               <h2 className="text-2xl font-semibold tracking-tight text-primary sm:text-3xl lg:text-4xl">
-                {t('licensesTitle')}
+                {t('safetyTitle')}
               </h2>
-              <p className="mt-4 leading-relaxed text-secondary">{t('licensesText')}</p>
+              <p className="mt-4 leading-relaxed text-secondary">{t('safetyText')}</p>
               <Link href="/legal/risk-disclosure" className="mt-6 inline-block">
                 <Button variant="secondary" tabIndex={-1}>
                   {t('riskCta')}
@@ -112,16 +128,10 @@ export default async function AboutPage({ params }: PageProps) {
               </Link>
             </div>
             <div className="space-y-4">
-              {licenses.map((lic) => (
-                <div
-                  key={lic.authority}
-                  className="flex items-center justify-between rounded-2xl border border-border bg-card p-5"
-                >
-                  <div>
-                    <p className="font-semibold text-primary">{lic.authority}</p>
-                    <p className="mt-0.5 text-sm text-secondary">{lic.region}</p>
-                  </div>
-                  <span className="text-sm tabular-nums text-secondary">{lic.number}</span>
+              {safeguards.map((item) => (
+                <div key={item.title} className="rounded-2xl border border-border bg-card p-5">
+                  <p className="font-semibold text-primary">{item.title}</p>
+                  <p className="mt-0.5 text-sm text-secondary">{item.text}</p>
                 </div>
               ))}
             </div>

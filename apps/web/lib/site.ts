@@ -8,4 +8,4 @@ export const SITE_URL = envOr(process.env.NEXT_PUBLIC_SITE_URL, 'https://example
 export const SITE_NAME = 'Apex Capital';
 
 export const SITE_DESCRIPTION =
-  '12 000+ торговых инструментов: Forex, акции, криптовалюты, индексы и металлы. Спреды от 0.0 пунктов, исполнение за 14 мс.';
+  'Торговая платформа: Forex, акции, криптовалюты, индексы и металлы. Котировки в реальном времени, веб-терминал и единый личный кабинет.';

@@ -1,7 +1,7 @@
 {
   "meta": {
     "title": "Apex Capital — Trade Global Markets",
-    "description": "12,000+ trading instruments: Forex, stocks, crypto, indices and metals. Spreads from 0.0 pips, 14 ms order execution."
+    "description": "A trading platform for Forex, stocks, crypto, indices and metals. Real-time quotes, a web terminal and a single client area."
   },
   "common": {
     "openAccount": "Open Account",
@@ -151,42 +151,51 @@
   },
   "home": {
     "hero": {
-      "badge": "Regulated broker · in the market since 2009",
+      "badge": "Web platform · client area · terminal",
       "title": "Trade global markets <accent>with confidence</accent>",
-      "subtitle": "12,000+ instruments: Forex, stocks, crypto, indices and metals. Spreads from 0.0 pips, 14 ms order execution.",
-      "statsTraders": "Active traders",
-      "statsVolume": "Monthly volume",
-      "statsVolumeSuffix": " bn $",
-      "statsExecution": "Order execution",
-      "statsExecutionSuffix": " ms"
+      "subtitle": "Forex, stocks, crypto, indices and metals in one terminal. Real-time quotes and transparent execution terms.",
+      "facts": [
+        {
+          "value": "24/7",
+          "label": "Crypto quotes"
+        },
+        {
+          "value": "USDT",
+          "label": "Deposits and withdrawals on TRC20"
+        },
+        {
+          "value": "SSO",
+          "label": "Single sign-on to client area and terminal"
+        }
+      ]
     },
     "advantages": {
       "title": "Why traders choose us",
-      "subtitle": "Institutional-grade infrastructure, accessible to everyone.",
+      "subtitle": "Technology, transparency and control at every step.",
       "items": [
         {
-          "title": "Lightning-fast execution",
-          "text": "Average order execution of 14 ms. Servers in LD4, NY4 and TY3, right next to liquidity providers."
+          "title": "Real-time quotes",
+          "text": "Prices stream over WebSocket, and a stale quote is never passed off as the current one."
         },
         {
           "title": "Fair spreads",
           "text": "From 0.0 pips on ECN accounts. No hidden fees, no requotes — the math is fully transparent."
         },
         {
-          "title": "Security and regulation",
-          "text": "Licenses from leading regulators, segregated client accounts and negative balance protection."
+          "title": "Fund security",
+          "text": "Identity verification before live trading, deposit reconciliation against the blockchain and negative balance protection."
         },
         {
-          "title": "12,000+ instruments",
+          "title": "All markets in one terminal",
           "text": "Forex, stock CFDs, crypto, indices, metals and energies — all in one terminal."
         },
         {
-          "title": "24/7 support",
-          "text": "Real specialists in 14 languages. Average chat response time — 40 seconds."
+          "title": "One client area",
+          "text": "Accounts, documents, deposits and withdrawals — in one client area with single sign-on to the terminal."
         },
         {
-          "title": "Instant withdrawals",
-          "text": "92% of withdrawal requests are processed automatically within minutes."
+          "title": "Transparent withdrawals",
+          "text": "USDT (TRC20) withdrawals on request from the client area; every payout hash is reconciled with the blockchain."
         }
       ]
     },
@@ -202,7 +211,7 @@
     },
     "cta": {
       "title": "Start trading in 5 minutes",
-      "subtitle": "Registration, verification and your first deposit — all online. Or practice on a demo account with virtual $10,000."
+      "subtitle": "Registration, verification and your first deposit — all online. Or practice on a demo account with virtual funds."
     }
   },
   "pwa": {
@@ -227,7 +236,7 @@
     "notFound": "Nothing found. Try a different query or category.",
     "breadcrumbs": "Breadcrumbs",
     "breadcrumbRoot": "Instruments",
-    "detailSubtitle": "Trade {name} with institutional liquidity: 14 ms execution, leverage up to 1:500 and negative balance protection.",
+    "detailSubtitle": "Trade {name} in the web terminal: real-time quotes, demo and live accounts and negative balance protection.",
     "metaDetail": "Live {name} quote: price, spread, CFD trading conditions. Category: {category}.",
     "metaDetailTitle": "{name} ({symbol}) — Live Quote & Trading Conditions",
     "specMinLot": "Min. lot",
@@ -285,18 +294,18 @@
   },
   "analytics": {
     "title": "Market Analytics",
-    "subtitle": "News, macro data and the events that move prices — from the Apex Capital research desk.",
+    "subtitle": "News, macro data and the events that move prices.",
     "tabsAria": "Analytics sections",
     "tabNews": "Market News",
     "tabCalendar": "Economic Calendar",
     "newsMetaTitle": "Market News",
-    "newsMetaDescription": "The latest financial market news: Forex, stocks, crypto and macroeconomics. Analysis from Apex Capital experts.",
+    "newsMetaDescription": "The latest financial market news: Forex, stocks, crypto and macroeconomics — the events that move prices.",
     "calendarMetaTitle": "Economic Calendar",
     "calendarMetaDescription": "Macroeconomic events calendar: central bank decisions, inflation, employment. Forecasts and actual values in real time.",
     "readFull": "Read full story →",
     "backAll": "← All news",
     "source": "Source: {source}",
-    "articleCta": "Trade the news with 14 ms execution",
+    "articleCta": "Trade the news in the web terminal",
     "calendar": {
       "filterAll": "All events",
       "filterHigh": "High impact",
@@ -328,7 +337,7 @@
     "levelBeginner": "Beginner",
     "levelIntermediate": "Intermediate",
     "backArticles": "← All articles",
-    "articleCta": "Practice what you learned on a demo account with virtual $10,000",
+    "articleCta": "Practice what you learned on a demo account with virtual funds",
     "articleCtaButton": "Open Demo Account",
     "webinarsMetaTitle": "Webinars",
     "webinarsMetaDescription": "Free trading webinars: live sessions with analysts, market breakdowns and recordings of past classes.",
@@ -348,7 +357,7 @@
     "faqMetaTitle": "Frequently Asked Questions",
     "faqMetaDescription": "Answers to popular questions: account opening, verification, leverage, deposits and withdrawals.",
     "faqNotFoundTitle": "Didn't find your answer?",
-    "faqNotFoundText": "Support replies in chat within 40 seconds on average — 24/7.",
+    "faqNotFoundText": "Write to us via the contact form — we will reply to the email you provide.",
     "faqContact": "Contact support"
   },
   "auth": {
@@ -358,10 +367,10 @@
     "loginTitle": "Client Area",
     "loginText": "The trader's dashboard launches together with the trading platform — it will live on the my.* subdomain with single sign-on (SSO). Meanwhile, you can apply for an account: we'll send invitations first.",
     "registerMetaTitle": "Open an Account",
-    "registerMetaDescription": "Open a trading account in 5 minutes: online registration, deposits from $100, over 12,000 instruments.",
+    "registerMetaDescription": "Open a trading account in 5 minutes: online registration, deposits from $100, a demo account and a web terminal.",
     "registerTitle": "Open an account <accent>in 5 minutes</accent>",
     "registerTitleShort": "Open an Account",
-    "registerSubtitle": "Join 1.2 million traders who already trade with us.",
+    "registerSubtitle": "One account for the client area, the demo account and the web terminal.",
     "steps": [
       {
         "title": "Application",
@@ -376,7 +385,7 @@
         "text": "Fund your account and open your first trade"
       }
     ],
-    "trust": "Client funds are held in segregated accounts with Tier-1 banks and are never used in the company's operating activities."
+    "trust": "A live account opens after identity verification, and every deposit is reconciled with blockchain data."
   },
   "registerForm": {
     "firstName": "First name",
@@ -442,46 +451,20 @@
   },
   "contacts": {
     "metaTitle": "Contacts & Support",
-    "metaDescription": "24/7 support: live chat, email, phone. Offices in Limassol, Dubai and Almaty.",
+    "metaDescription": "Contact support: feedback form and email. We reply to the address you provide.",
     "title": "Contacts & Support",
-    "subtitle": "Support in 14 languages, 24/7. Pick a convenient channel or write to us using the form.",
+    "subtitle": "Pick a convenient channel or write to us using the form.",
     "channels": [
-      {
-        "title": "Live chat",
-        "value": "Reply within 40 seconds",
-        "detail": "Around the clock, no days off — the chat button is in the bottom-right corner of the dashboard"
-      },
       {
         "title": "Email",
         "value": "support@apexcapital.example",
         "detail": "Reply within one business day"
-      },
-      {
-        "title": "Phone",
-        "value": "+357 25 000 000",
-        "detail": "Mon–Fri, 8:00–20:00 (UTC+2), toll-free"
       }
     ],
     "writeUs": "Write to us",
     "writeUsText": "We'll reply by email within one business day.",
     "offices": "Offices",
-    "officesList": [
-      {
-        "city": "Limassol",
-        "country": "Cyprus · Headquarters",
-        "address": "Arch. Makariou III Ave 155, 3026"
-      },
-      {
-        "city": "Dubai",
-        "country": "UAE",
-        "address": "Business Bay, Bay Square 12, office 404"
-      },
-      {
-        "city": "Almaty",
-        "country": "Kazakhstan",
-        "address": "77/7 Al-Farabi Ave, Esentai Tower, 12th floor"
-      }
-    ],
+    "officesList": [],
     "form": {
       "name": "Name",
       "email": "Email",
@@ -508,82 +491,87 @@
       "messagePlaceholder": "Describe your question…",
       "submit": "Send message",
       "successTitle": "Message sent",
-      "successText": "We'll reply to your email within one business day. In a hurry? Ask in chat — average response time is 40 seconds.",
+      "successText": "We will reply to your email within one business day.",
       "writeAgain": "Write another"
     }
   },
   "about": {
     "metaTitle": "About Us",
-    "metaDescription": "Apex Capital — an international broker since 2009: 1.2M traders, licenses from leading regulators, segregated accounts and offices in three countries.",
-    "badge": "In the market since 2009",
-    "title": "The broker trusted by <accent>1.2 million traders</accent>",
-    "subtitle": "We build institutional-grade infrastructure and make it available to retail traders: fair prices, fast execution and support that replies in 40 seconds.",
-    "statsYears": "Years in the market",
-    "statsYearsSuffix": "",
-    "statsTraders": "Active traders",
-    "statsVolume": "Monthly volume",
-    "statsVolumeSuffix": " bn $",
-    "statsCountries": "Countries served",
-    "historyTitle": "Company history",
+    "metaDescription": "Apex Capital is a trading platform: a web terminal, a single client area, identity verification and USDT deposits reconciled on-chain.",
+    "badge": "Technology · transparency · control",
+    "title": "A trading platform <accent>transparent in every operation</accent>",
+    "subtitle": "We build our own trading infrastructure and make it clear to retail traders: real-time quotes, a single client area and verifiable movement of funds.",
+    "historyTitle": "How the platform works",
     "timeline": [
       {
-        "year": "2009",
-        "text": "Company founded. First 1,000 clients and a CySEC license."
+        "year": "01",
+        "text": "Registration and single sign-on: one account for the website, the client area and the web terminal."
       },
       {
-        "year": "2013",
-        "text": "ECN execution launched with direct agreements with Tier-1 liquidity providers."
+        "year": "02",
+        "text": "Identity verification: documents are uploaded in the client area, live trading opens after the check."
       },
       {
-        "year": "2017",
-        "text": "Offices opened in Dubai and Almaty. 100,000 active traders."
+        "year": "03",
+        "text": "USDT (TRC20) deposits: every transfer is reconciled with blockchain data by its transaction hash."
       },
       {
-        "year": "2021",
-        "text": "Proprietary trading infrastructure: servers in LD4, NY4 and TY3, execution from 14 ms."
+        "year": "04",
+        "text": "Trading in the web terminal: real-time quotes, demo and live accounts in one interface."
       },
       {
-        "year": "2024",
-        "text": "One million active clients. Crypto trading and swap-free accounts launched."
-      },
-      {
-        "year": "2026",
-        "text": "A new ecosystem: web platform, mobile PWA app and a unified client area."
+        "year": "05",
+        "text": "Withdrawals on request from the client area: the payout hash is reconciled on-chain and the status is visible to the client."
       }
     ],
     "valuesTitle": "Our principles",
     "values": [
       {
         "title": "Transparency",
-        "text": "We publish average execution times, slippage and withdrawal statistics. No hidden fees."
+        "text": "Account terms, legal documents and the risk disclosure are published on the site and available before sign-up."
       },
       {
         "title": "Reliability",
-        "text": "Segregated accounts with Tier-1 banks, negative balance protection, regular external audits."
+        "text": "Identity verification, negative balance protection and on-chain reconciliation of fund movements."
       },
       {
         "title": "Technology",
-        "text": "Proprietary infrastructure next to liquidity venues and a team of 120 engineers."
+        "text": "Our own platform: website, client area and web terminal on a shared technology base."
       }
     ],
-    "licensesTitle": "Licenses & regulation",
-    "licensesText": "The company is regulated in several jurisdictions. Client funds are held in segregated accounts and never take part in operating activities — a requirement of every one of our regulators.",
     "riskCta": "Risk Disclosure",
-    "licenses": [
+    "facts": [
       {
-        "authority": "CySEC",
-        "region": "European Union",
-        "number": "No. 000/09"
+        "value": "SSO",
+        "label": "Single sign-on"
       },
       {
-        "authority": "FSCA",
-        "region": "South Africa",
-        "number": "No. 00000"
+        "value": "KYC",
+        "label": "Identity verification"
       },
       {
-        "authority": "FSA",
-        "region": "Seychelles",
-        "number": "SD000"
+        "value": "TRC20",
+        "label": "On-chain reconciliation"
+      },
+      {
+        "value": "PWA",
+        "label": "Site as an app"
+      }
+    ],
+    "safetyTitle": "Security and legal information",
+    "safetyText": "Terms of service, the privacy policy and the risk disclosure are published in the legal section. Please read them before opening an account.",
+    "safeguards": [
+      {
+        "title": "Identity verification",
+        "text": "A live account opens after documents are checked in the client area"
+      },
+      {
+        "title": "On-chain reconciliation",
+        "text": "USDT (TRC20) deposits and payouts are matched by transaction hash"
+      },
+      {
+        "title": "Negative balance protection",
+        "text": "The trading account balance never goes below zero"
       }
     ]
   },
@@ -592,7 +580,7 @@
     "metaDescription": "IB program with up to 40% of the spread and White Label — brokerage under your brand. Daily payouts, transparent statistics.",
     "badge": "Up to 40% of the spread · daily payouts",
     "title": "Partner Program",
-    "subtitle": "Earn by referring traders or launch a brokerage under your own brand. 4,200+ partners already work with us.",
+    "subtitle": "Earn by referring traders or launch a brokerage under your own brand on our platform.",
     "models": [
       {
         "name": "Introducing Broker (IB)",
@@ -712,10 +700,10 @@
   },
   "careers": {
     "metaTitle": "Careers",
-    "metaDescription": "Apex Capital jobs: engineering, analytics, support. Offices in Limassol, Dubai, Almaty and remote work.",
-    "badge": "340+ people · 12 countries",
+    "metaDescription": "Apex Capital jobs: engineering, analytics, support. Remote work.",
+    "badge": "FinTech · remote",
     "title": "Build the fintech of the future with us",
-    "subtitle": "We build infrastructure that moves billions of dollars a day. We're looking for people who care about speed, reliability and an honest product.",
+    "subtitle": "We build a trading platform: website, client area and web terminal. We are looking for people who care about speed, reliability and an honest product.",
     "benefits": [
       {
         "title": "Flexible format",
@@ -723,7 +711,7 @@
       },
       {
         "title": "FinTech scale",
-        "text": "Problems at the intersection of finance and high load: millions of quotes per second"
+        "text": "Problems at the intersection of finance and high load: real-time quotes and money operations"
       },
       {
         "title": "Growth",
@@ -739,13 +727,13 @@
       {
         "title": "Senior Frontend Developer (React/Next.js)",
         "department": "Engineering",
-        "location": "Remote / Limassol",
+        "location": "Remote",
         "type": "Full-time"
       },
       {
         "title": "Backend Developer (Go, liquidity & execution)",
         "department": "Engineering",
-        "location": "Limassol",
+        "location": "Remote",
         "type": "Full-time"
       },
       {
@@ -757,7 +745,7 @@
       {
         "title": "Financial Analyst (FX markets)",
         "department": "Research",
-        "location": "Almaty / remote",
+        "location": "Remote",
         "type": "Full-time"
       },
       {

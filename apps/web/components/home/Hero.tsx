@@ -1,10 +1,16 @@
 import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
-import { Badge, Button, Container, StatCounter } from '@broker/ui';
+import { Badge, Button, Container } from '@broker/ui';
+
+interface HeroFact {
+  value: string;
+  label: string;
+}
 
 export function Hero() {
   const t = useTranslations('home.hero');
   const tCommon = useTranslations('common');
+  const facts = t.raw('facts') as HeroFact[];
 
   return (
     <section className="relative flex min-h-[calc(100svh-4rem)] items-center overflow-hidden">
@@ -54,15 +60,29 @@ export function Hero() {
             </Link>
           </div>
 
+          {/*
+            Здесь стояли счётчики «1 240 000 трейдеров · 87 млрд $ в месяц ·
+            14 мс». Ни одна цифра не подтверждена: истории оборота и клиентской
+            базы у площадки нет. Перед комплаенсом и инвесторами такая строка —
+            не маркетинг, а заявление, которое нечем доказать. Вместо цифр —
+            факты о продукте, каждый проверяется в нём самом.
+          */}
           <dl className="mt-12 grid grid-cols-2 gap-x-6 gap-y-8 border-t border-border pt-8 sm:grid-cols-3">
-            <StatCounter value={1_240_000} label={t('statsTraders')} />
-            <StatCounter value={87} suffix={t('statsVolumeSuffix')} label={t('statsVolume')} />
-            <StatCounter
-              value={14}
-              suffix={t('statsExecutionSuffix')}
-              label={t('statsExecution')}
-              className="col-span-2 sm:col-span-1"
-            />
+            {facts.map((fact, i) => (
+              <div
+                key={fact.value}
+                className={
+                  i === facts.length - 1
+                    ? 'col-span-2 flex flex-col gap-1 sm:col-span-1'
+                    : 'flex flex-col gap-1'
+                }
+              >
+                <dt className="order-2 text-sm text-secondary">{fact.label}</dt>
+                <dd className="order-1 text-2xl font-semibold text-primary sm:text-3xl">
+                  {fact.value}
+                </dd>
+              </div>
+            ))}
           </dl>
         </div>
       </Container>
