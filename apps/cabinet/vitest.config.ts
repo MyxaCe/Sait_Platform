@@ -29,6 +29,11 @@ export default defineConfig({
   test: {
     // Ограничение пула — общее для всех пакетов (WEB-37).
     poolOptions,
+    // Первый тест файла с динамическим импортом серверного экшена грузит
+    // граф модулей холодным (после demo-leverage/money он вырос). Под
+    // нагрузкой полного `turbo typecheck test build` это >5 с — таймаут
+    // по умолчанию краснил прогон при зелёной логике (09.11, demo-reset).
+    testTimeout: 20_000,
     environment: 'node',
     // RTL вешает авто-очистку на глобальный `afterEach`.
     globals: true,
