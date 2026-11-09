@@ -237,6 +237,12 @@ jobs:
             dockerfile: docker/consumer.Dockerfile
             arg-names: ''
             public-args: ''
+          # Наблюдатель сети TRON (USDT TRC20) — окружение-агностичен, как
+          # релей и консюмер: адрес кошелька и ключи приходят окружением.
+          - image: broker-chain-watcher
+            dockerfile: docker/chain-watcher.Dockerfile
+            arg-names: ''
+            public-args: ''
     steps:
       - uses: actions/checkout@v4
 
@@ -418,7 +424,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        image: [broker-web, broker-cabinet, broker-admin, broker-relay, broker-consumer]
+        image: [broker-web, broker-cabinet, broker-admin, broker-relay, broker-consumer, broker-chain-watcher]
     steps:
       # Отдельное задание на чистом раннере — иначе «скачивается» проверялось бы
       # на машине, где образ уже лежит в демоне с момента сборки. Проверка

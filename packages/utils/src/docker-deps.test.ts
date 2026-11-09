@@ -27,7 +27,7 @@ import { describe, expect, it } from 'vitest';
  */
 
 const ROOT = path.resolve(__dirname, '../../..');
-const APPS = ['consumer', 'relay', 'web', 'cabinet'];
+const APPS = ['consumer', 'relay', 'web', 'cabinet', 'chain-watcher'];
 
 /** Копирует ли сборка дерево целиком. */
 export function copiesWholeTree(dockerfile: string): boolean {
