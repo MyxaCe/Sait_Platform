@@ -3,61 +3,270 @@ import type { StatusTone } from '@broker/ui';
 /**
  * Человекочитаемые подписи действий журнала + тон точки в ленте (та же
  * семантика цвета, что у статус-бейджей, концепция §5). Один словарь для
- * дашборда, карточки клиента и (в фазе 2) раздела «Журнал». Неизвестное
- * действие показывается как есть — машинным кодом, без догадок.
+ * дашборда, карточки клиента и раздела «Журнал». Неизвестное действие
+ * показывается как есть — машинным кодом, без догадок.
+ *
+ * Каждому коду — группа (`group`): по ней раздел «Журнал» строит фильтр типа
+ * действия (optgroup), а оператор видит, к какой области относится запись.
+ * Новый код действия = одна строка здесь (тест `labels.test.ts` сверяет, что
+ * у всех кодов, которые пишет код приложения, есть подпись).
  */
-export const ACTION_LABELS: Record<string, { label: string; tone: StatusTone }> = {
-  'client.block': { label: 'Клиент заблокирован', tone: 'negative' },
-  'client.unblock': { label: 'Клиент разблокирован', tone: 'positive' },
-  'client.sessions_revoked': { label: 'Сессии клиента погашены', tone: 'warning' },
-  'client.document.viewed': { label: 'Просмотр документа KYC', tone: 'neutral' },
-  'client.verification.verified': { label: 'KYC подтверждён', tone: 'positive' },
-  'client.verification.rejected': { label: 'KYC отклонён', tone: 'negative' },
-  'client.verification.resubmit_requested': { label: 'Запрошена переподача KYC', tone: 'info' },
-  'client.aml_checked': { label: 'AML: совпадений нет', tone: 'positive' },
-  'client.aml_escalated': { label: 'AML: эскалация', tone: 'negative' },
-  'client.aml_escalation_cleared': { label: 'AML: эскалация снята', tone: 'positive' },
-  'client.money.frozen': { label: 'Счёт заморожен', tone: 'negative' },
-  'client.money.unfrozen': { label: 'Заморозка снята', tone: 'positive' },
-  'client.money.withdraw_banned': { label: 'Вывод запрещён', tone: 'negative' },
-  'client.money.withdraw_unbanned': { label: 'Запрет вывода снят', tone: 'positive' },
-  'client.money.deposit_kyc_changed': { label: 'Изменено правило ввода (KYC)', tone: 'info' },
-  'client.money.withdraw_kyc_changed': { label: 'Изменено правило вывода (KYC)', tone: 'info' },
-  'crypto.deposit.claimed': { label: 'Депозит заявлен', tone: 'info' },
-  'crypto.deposit.credited': { label: 'Депозит зачислен', tone: 'positive' },
-  'crypto.deposit.rejected': { label: 'Депозит отклонён', tone: 'negative' },
-  'crypto.deposit.unidentified': { label: 'Неопознанное поступление', tone: 'warning' },
-  'crypto.deposit.bound': { label: 'Поступление привязано к клиенту', tone: 'positive' },
-  'crypto.withdrawal.requested': { label: 'Заявка на вывод', tone: 'warning' },
-  'crypto.withdrawal.debited': { label: 'Вывод: средства списаны', tone: 'info' },
-  'crypto.withdrawal.needs_review': { label: 'Вывод на ручной проверке', tone: 'warning' },
-  'crypto.withdrawal.approved': { label: 'Вывод одобрен', tone: 'info' },
-  'crypto.withdrawal.sent': { label: 'Вывод отправлен', tone: 'info' },
-  'crypto.withdrawal.settled': { label: 'Вывод исполнен', tone: 'positive' },
-  'crypto.withdrawal.settled_manually': { label: 'Вывод отмечен исполненным', tone: 'positive' },
-  'crypto.withdrawal.rejected': { label: 'Вывод отклонён', tone: 'negative' },
-  'crypto.withdrawal.cancelled': { label: 'Вывод отменён', tone: 'neutral' },
-  'crypto.withdrawal.refused': { label: 'Терминал отказал в списании', tone: 'negative' },
-  'leverage.client_portfolio_set': { label: 'Назначен портфель плеча', tone: 'info' },
-  'leverage.override_set': { label: 'Индивидуальное плечо', tone: 'warning' },
-  'leverage.override_cleared': { label: 'Индивидуальное плечо снято', tone: 'neutral' },
-  'leverage.portfolio_changed': { label: 'Изменён портфель плеча', tone: 'info' },
-  'leverage.class_override_set': { label: 'Плечо по классу активов', tone: 'warning' },
-  'leverage.class_override_cleared': { label: 'Плечо по классу снято', tone: 'neutral' },
-  'platform.money_settings.updated': { label: 'Изменены денежные настройки', tone: 'warning' },
-  'operator.bootstrap': { label: 'Создан первый администратор', tone: 'info' },
-  'operator.created': { label: 'Создан оператор', tone: 'info' },
-  'operator.disabled': { label: 'Оператор отключён', tone: 'negative' },
-  'operator.role_changed': { label: 'Изменена роль оператора', tone: 'warning' },
-  'operator.totp_enrolled': { label: 'Оператор включил 2FA', tone: 'positive' },
-  'operator.login': { label: 'Вход оператора', tone: 'neutral' },
-  'journal.exported': { label: 'Экспорт журнала', tone: 'neutral' },
-  'money.command.initiated': { label: 'Денежная команда создана', tone: 'warning' },
-  'money.command.second_approved': { label: 'Второе подтверждение', tone: 'positive' },
-  'money.command.signed': { label: 'Команда подписана', tone: 'info' },
-  'money.command.break_glass': { label: 'Break-glass', tone: 'negative' },
+
+export type ActionGroup =
+  | 'kyc'
+  | 'aml'
+  | 'access'
+  | 'client_money'
+  | 'deposit'
+  | 'withdrawal'
+  | 'leverage'
+  | 'money_command'
+  | 'operators'
+  | 'platform';
+
+/** Группы — в порядке вывода в фильтре. */
+export const ACTION_GROUPS: { key: ActionGroup; label: string }[] = [
+  { key: 'kyc', label: 'Верификация (KYC)' },
+  { key: 'aml', label: 'AML-скрининг' },
+  { key: 'access', label: 'Доступ клиента: блокировки и сессии' },
+  { key: 'client_money', label: 'Денежные ограничения клиента' },
+  { key: 'deposit', label: 'Пополнения USDT' },
+  { key: 'withdrawal', label: 'Выводы USDT' },
+  { key: 'leverage', label: 'Плечо и портфели' },
+  { key: 'money_command', label: 'Денежные команды' },
+  { key: 'operators', label: 'Операторы и вход' },
+  { key: 'platform', label: 'Платформа и журнал' },
+];
+
+export interface ActionMeta {
+  label: string;
+  tone: StatusTone;
+  group: ActionGroup;
+}
+
+export const ACTION_LABELS: Record<string, ActionMeta> = {
+  // Верификация
+  'client.verification.verified': { label: 'KYC подтверждён', tone: 'positive', group: 'kyc' },
+  'client.verification.rejected': { label: 'KYC отклонён', tone: 'negative', group: 'kyc' },
+  'client.verification.resubmit_requested': {
+    label: 'Запрошена переподача KYC',
+    tone: 'info',
+    group: 'kyc',
+  },
+  'client.document.viewed': { label: 'Просмотр документа KYC', tone: 'neutral', group: 'kyc' },
+  // Ранний формат записей решения KYC (до ADM-03) — могут встретиться в старых журналах.
+  'client.verify': { label: 'KYC подтверждён (ранняя запись)', tone: 'positive', group: 'kyc' },
+  'client.reject': { label: 'KYC отклонён (ранняя запись)', tone: 'negative', group: 'kyc' },
+
+  // AML
+  'client.aml_checked': { label: 'AML: совпадений нет', tone: 'positive', group: 'aml' },
+  'client.aml_escalated': { label: 'AML: эскалация', tone: 'negative', group: 'aml' },
+  'client.aml_escalation_cleared': {
+    label: 'AML: эскалация снята',
+    tone: 'positive',
+    group: 'aml',
+  },
+
+  // Доступ клиента
+  'client.block': { label: 'Клиент заблокирован', tone: 'negative', group: 'access' },
+  'client.unblock': { label: 'Клиент разблокирован', tone: 'positive', group: 'access' },
+  'client.sessions_revoked': {
+    label: 'Сессии клиента погашены',
+    tone: 'warning',
+    group: 'access',
+  },
+
+  // Денежные ограничения клиента
+  'client.money.frozen': { label: 'Счёт заморожен', tone: 'negative', group: 'client_money' },
+  'client.money.unfrozen': { label: 'Заморозка снята', tone: 'positive', group: 'client_money' },
+  'client.money.withdraw_banned': {
+    label: 'Вывод запрещён',
+    tone: 'negative',
+    group: 'client_money',
+  },
+  'client.money.withdraw_unbanned': {
+    label: 'Запрет вывода снят',
+    tone: 'positive',
+    group: 'client_money',
+  },
+  'client.money.deposit_kyc_changed': {
+    label: 'Изменено правило пополнения (KYC)',
+    tone: 'info',
+    group: 'client_money',
+  },
+  'client.money.withdraw_kyc_changed': {
+    label: 'Изменено правило вывода (KYC)',
+    tone: 'info',
+    group: 'client_money',
+  },
+
+  // Пополнения
+  'crypto.deposit.claimed': { label: 'Пополнение заявлено', tone: 'info', group: 'deposit' },
+  'crypto.deposit.credited': { label: 'Пополнение зачислено', tone: 'positive', group: 'deposit' },
+  'crypto.deposit.rejected': { label: 'Пополнение отклонено', tone: 'negative', group: 'deposit' },
+  'crypto.deposit.unidentified': {
+    label: 'Неопознанное поступление',
+    tone: 'warning',
+    group: 'deposit',
+  },
+  'crypto.deposit.bound': {
+    label: 'Поступление привязано к клиенту',
+    tone: 'positive',
+    group: 'deposit',
+  },
+
+  // Выводы
+  'crypto.withdrawal.requested': { label: 'Заявка на вывод', tone: 'warning', group: 'withdrawal' },
+  'crypto.withdrawal.debited': {
+    label: 'Вывод: средства списаны со счёта',
+    tone: 'info',
+    group: 'withdrawal',
+  },
+  'crypto.withdrawal.needs_review': {
+    label: 'Вывод на ручной проверке',
+    tone: 'warning',
+    group: 'withdrawal',
+  },
+  'crypto.withdrawal.approved': { label: 'Вывод одобрен', tone: 'info', group: 'withdrawal' },
+  'crypto.withdrawal.sent': { label: 'Вывод отправлен в сеть', tone: 'info', group: 'withdrawal' },
+  'crypto.withdrawal.settled': { label: 'Вывод исполнен', tone: 'positive', group: 'withdrawal' },
+  'crypto.withdrawal.settled_manually': {
+    label: 'Вывод отмечен исполненным вручную',
+    tone: 'positive',
+    group: 'withdrawal',
+  },
+  'crypto.withdrawal.rejected': { label: 'Вывод отклонён', tone: 'negative', group: 'withdrawal' },
+  'crypto.withdrawal.cancelled': { label: 'Вывод отменён', tone: 'neutral', group: 'withdrawal' },
+  'crypto.withdrawal.refused': {
+    label: 'Терминал отказал в списании',
+    tone: 'negative',
+    group: 'withdrawal',
+  },
+
+  // Плечо
+  'leverage.client_portfolio_set': {
+    label: 'Клиенту назначен портфель',
+    tone: 'info',
+    group: 'leverage',
+  },
+  'leverage.override_set': {
+    label: 'Клиенту выдано индивидуальное плечо',
+    tone: 'warning',
+    group: 'leverage',
+  },
+  'leverage.override_cleared': {
+    label: 'Индивидуальное плечо снято',
+    tone: 'neutral',
+    group: 'leverage',
+  },
+  'leverage.portfolio_changed': {
+    label: 'Изменено плечо портфеля',
+    tone: 'warning',
+    group: 'leverage',
+  },
+  'leverage.class_override_set': {
+    label: 'Задана планка плеча по классу',
+    tone: 'warning',
+    group: 'leverage',
+  },
+  'leverage.class_override_cleared': {
+    label: 'Планка плеча по классу снята',
+    tone: 'neutral',
+    group: 'leverage',
+  },
+
+  // Денежные команды (dual control)
+  'money.command.initiated': {
+    label: 'Денежная команда создана',
+    tone: 'warning',
+    group: 'money_command',
+  },
+  'money.command.second_approved': {
+    label: 'Второе подтверждение команды',
+    tone: 'positive',
+    group: 'money_command',
+  },
+  'money.command.signed': { label: 'Команда подписана', tone: 'info', group: 'money_command' },
+  'money.command.bootstrap_self_approval': {
+    label: 'Самоподтверждение в режиме запуска',
+    tone: 'warning',
+    group: 'money_command',
+  },
+  'money.command.break_glass': {
+    label: 'Аварийное исполнение (break-glass)',
+    tone: 'negative',
+    group: 'money_command',
+  },
+  'money.command.break_glass_reviewed': {
+    label: 'Аварийное исполнение разобрано',
+    tone: 'info',
+    group: 'money_command',
+  },
+
+  // Операторы
+  'operator.bootstrap': {
+    label: 'Создан первый администратор',
+    tone: 'info',
+    group: 'operators',
+  },
+  'operator.created': { label: 'Заведён оператор', tone: 'info', group: 'operators' },
+  'operator.disabled': { label: 'Оператор отключён', tone: 'negative', group: 'operators' },
+  'operator.role_changed': {
+    label: 'Изменена роль оператора',
+    tone: 'warning',
+    group: 'operators',
+  },
+  'operator.totp_enrolled': {
+    label: 'Оператор включил 2FA',
+    tone: 'positive',
+    group: 'operators',
+  },
+  'operator.login': { label: 'Вход оператора', tone: 'neutral', group: 'operators' },
+
+  // Платформа
+  'platform.money_settings.updated': {
+    label: 'Изменены денежные настройки платформы',
+    tone: 'warning',
+    group: 'platform',
+  },
+  'journal.exported': { label: 'Выгрузка журнала', tone: 'neutral', group: 'platform' },
 };
 
 export function actionLabel(action: string): { label: string; tone: StatusTone } {
-  return ACTION_LABELS[action] ?? { label: action, tone: 'neutral' };
+  const meta = ACTION_LABELS[action];
+  return meta ? { label: meta.label, tone: meta.tone } : { label: action, tone: 'neutral' };
+}
+
+/** Группа действия; неизвестный код — `null` (в фильтре уходит в «Прочее»). */
+export function actionGroup(action: string): ActionGroup | null {
+  return ACTION_LABELS[action]?.group ?? null;
+}
+
+/** Род субъекта записи — по-русски (фильтр и колонка «Субъект»). */
+export const SUBJECT_KIND_LABELS: Record<string, string> = {
+  client: 'Клиент',
+  operator: 'Оператор',
+  crypto_deposit: 'Поступление USDT',
+  leverage_portfolio: 'Портфель плеча',
+  money_command: 'Денежная команда',
+  platform: 'Платформа',
+  journal: 'Журнал',
+};
+
+export function subjectKindLabel(kind: string): string {
+  return SUBJECT_KIND_LABELS[kind] ?? kind;
+}
+
+/** Субъекты с постоянным машинным id (не из справочников) — их имя. */
+export const STATIC_SUBJECT_NAMES: Record<string, string> = {
+  'platform:money_settings': 'Денежные настройки',
+};
+
+/**
+ * Основание из payload — его видно без раскрытия. Исторически ключ бывает
+ * `basis` (новые записи) или `reason` (провижининг, плечо).
+ */
+export function basisOf(payload: Record<string, unknown>): string | null {
+  const b = payload.basis ?? payload.reason;
+  return typeof b === 'string' && b.trim().length > 0 ? b : null;
 }

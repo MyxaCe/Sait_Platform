@@ -58,6 +58,8 @@ export interface JournalListOptions {
   filters: JournalFilters;
   /** Потолок строк (по умолчанию 500 для ленты). */
   limit?: number;
+  /** Пропустить строк (постраничный показ). */
+  offset?: number;
 }
 
 /** Опция фильтра «оператор». */
@@ -84,14 +86,14 @@ function toRow(r: Record<string, unknown>): JournalRow {
 }
 
 /**
- * Лента журнала с фильтрами и роль-видимостью. Новые сверху (`seq DESC`).
- * Клаузы WHERE собираются параметризованно — конкатенации пользовательского
- * ввода в SQL нет.
+ * WHERE ленты: роль-видимость + фильтры. Клаузы собираются параметризованно —
+ * конкатенации пользовательского ввода в SQL нет. Общий для ленты и счётчика,
+ * чтобы «Показано N из M» считалось ровно по той же выборке.
  */
-export async function listJournalEntries(
-  opts: JournalListOptions,
-  db: Queryable = getPool(),
-): Promise<JournalRow[]> {
+function buildWhere(opts: Pick<JournalListOptions, 'role' | 'selfOperatorId' | 'filters'>): {
+  whereSql: string;
+  params: unknown[];
+} {
   const params: unknown[] = [];
   const where: string[] = [];
 
@@ -127,8 +129,20 @@ export async function listJournalEntries(
     where.push(`j.occurred_at <= $${params.length}`);
   }
 
-  const whereSql = where.length > 0 ? `WHERE ${where.join(' AND ')}` : '';
+  return { whereSql: where.length > 0 ? `WHERE ${where.join(' AND ')}` : '', params };
+}
+
+/**
+ * Лента журнала с фильтрами и роль-видимостью. Новые сверху (`seq DESC`).
+ * `offset` — для постраничного показа (экспорт его не передаёт).
+ */
+export async function listJournalEntries(
+  opts: JournalListOptions,
+  db: Queryable = getPool(),
+): Promise<JournalRow[]> {
+  const { whereSql, params } = buildWhere(opts);
   const limit = Math.max(1, Math.min(opts.limit ?? 500, 100_000));
+  const offset = Math.max(0, Math.floor(opts.offset ?? 0));
 
   const result = await db.query(
     `SELECT j.seq, j.occurred_at, j.operator_id, j.action, j.subject_kind, j.subject_id,
@@ -138,10 +152,90 @@ export async function listJournalEntries(
        JOIN operators o ON o.id = j.operator_id
        ${whereSql}
       ORDER BY j.seq DESC
-      LIMIT ${limit}`,
+      LIMIT ${limit}${offset > 0 ? ` OFFSET ${offset}` : ''}`,
     params,
   );
   return result.rows.map(toRow);
+}
+
+/** Сколько записей в выборке (та же роль-видимость и фильтры, что у ленты). */
+export async function countJournalEntries(
+  opts: Pick<JournalListOptions, 'role' | 'selfOperatorId' | 'filters'>,
+  db: Queryable = getPool(),
+): Promise<number> {
+  const { whereSql, params } = buildWhere(opts);
+  const result = await db.query(
+    `SELECT COUNT(*)::int AS n FROM admin_action_journal j ${whereSql}`,
+    params,
+  );
+  return Number(result.rows[0]?.n ?? 0);
+}
+
+/** Сводка цепочки для шапки раздела: всего записей, последняя seq и её момент. */
+export interface JournalTotals {
+  total: number;
+  lastSeq: number | null;
+  lastAt: string | null;
+}
+
+export async function getJournalTotals(db: Queryable = getPool()): Promise<JournalTotals> {
+  const result = await db.query(
+    `SELECT COUNT(*)::int AS n, MAX(seq) AS last_seq, MAX(occurred_at) AS last_at
+       FROM admin_action_journal`,
+  );
+  const r = result.rows[0] ?? {};
+  return {
+    total: Number(r.n ?? 0),
+    lastSeq: r.last_seq == null ? null : Number(r.last_seq),
+    lastAt: r.last_at ? new Date(r.last_at as string | Date).toISOString() : null,
+  };
+}
+
+/**
+ * Человеческие имена субъектов на странице ленты: клиент → ФИО, оператор →
+ * имя, портфель → название. Ключ — `${kind}:${id}`. Только чтение
+ * справочников, журнал не трогает; чего не нашли — того в карте нет
+ * (показываем id).
+ */
+export async function resolveSubjectNames(
+  rows: Pick<JournalRow, 'subjectKind' | 'subjectId'>[],
+  db: Queryable = getPool(),
+): Promise<Map<string, string>> {
+  const ids = (kind: string) => [
+    ...new Set(rows.filter((r) => r.subjectKind === kind).map((r) => r.subjectId)),
+  ];
+  const clients = ids('client');
+  const operators = ids('operator');
+  const portfolios = ids('leverage_portfolio');
+  const out = new Map<string, string>();
+
+  const [c, o, p] = await Promise.all([
+    clients.length
+      ? db.query(`SELECT id::text AS id, full_name AS name FROM users WHERE id::text = ANY($1)`, [
+          clients,
+        ])
+      : null,
+    operators.length
+      ? db.query(
+          `SELECT id::text AS id, display_name AS name FROM operators WHERE id::text = ANY($1)`,
+          [operators],
+        )
+      : null,
+    portfolios.length
+      ? db.query(`SELECT key AS id, title AS name FROM leverage_portfolios WHERE key = ANY($1)`, [
+          portfolios,
+        ])
+      : null,
+  ]);
+  const pairs: [string, { rows: Record<string, unknown>[] } | null][] = [
+    ['client', c],
+    ['operator', o],
+    ['leverage_portfolio', p],
+  ];
+  for (const [kind, res] of pairs) {
+    for (const row of res?.rows ?? []) out.set(`${kind}:${String(row.id)}`, String(row.name));
+  }
+  return out;
 }
 
 /**
