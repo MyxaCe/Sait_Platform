@@ -3,6 +3,7 @@
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { getOperatorSession } from '../auth/current';
+import { isNarrowRole } from '../auth/role-scope';
 import { LOGIN_PATH } from '../auth/constants';
 import { clearAmlEscalation, recordAmlScreening } from './screening';
 import { normalizeSanctionsLists, type AmlOutcome } from './lists';
@@ -53,6 +54,8 @@ export async function recordScreeningAction(
     // Личность автора обязана быть из валидной сессии — иначе на вход.
     redirect(LOGIN_PATH);
   }
+  // Поддержка AML-скрининг не ведёт (узкий периметр роли, 10.11).
+  if (isNarrowRole(operator.role)) return { error: 'forbidden' };
 
   const userId = String(formData.get('userId') ?? '').trim();
   if (!userId) return { error: 'invalidClient' };

@@ -27,7 +27,7 @@ import type { OperatorRole } from '../auth/session';
 export const OPERATOR_PASSWORD_MIN_LENGTH = 12;
 
 function isRole(value: unknown): value is OperatorRole {
-  return value === 'admin' || value === 'operator' || value === 'finance_operator';
+  return value === 'admin' || value === 'operator' || value === 'finance_operator' || value === 'support_operator';
 }
 
 // ─── Создать оператора ─────────────────────────────────────────────────────

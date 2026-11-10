@@ -22,6 +22,10 @@ import {
 } from '@/lib/dashboard/queries';
 import { actionLabel } from '@/lib/journal/labels';
 import { fmtAge, fmtDateTime, fmtRelativeDay } from '@/lib/ui/format';
+// ── Поддержка (ветка demo-support) ──
+import { queueStats } from '@broker/support';
+import { getPool } from '@/lib/db';
+import { supportActor } from '@/lib/support/runtime';
 
 /**
  * Дашборд `/` (эталонный экран редизайна, концепция §7.3). Операционный пульт,
@@ -138,6 +142,9 @@ export default async function ControlCenterHome() {
     money ? listPendingWithdrawals(5) : Promise.resolve([] as PendingWithdrawal[]),
   ]);
   // Очередь отсортирована по возрастанию updated_at → старейшая первая.
+  // ── Поддержка (ветка demo-support): та же видимость, что у очереди (по роли). ──
+  const supportActorNow = await supportActor();
+  const support = supportActorNow ? await queueStats(getPool(), supportActorNow) : null;
   const oldest = pending[0];
   const overdue = pending.filter((p) => isOverdue(p.updatedAt)).length;
 
@@ -186,6 +193,37 @@ export default async function ControlCenterHome() {
           action={<OpenLink href="/clients" />}
         />
       </section>
+
+      {support ? (
+        <section aria-label="Поддержка" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <KpiTile
+            label="Поддержка: ждут ответа"
+            value={support.awaiting}
+            tone={support.awaiting > 0 ? 'warning' : 'default'}
+            hint={support.oldestAwaitingAt ? `старейшее ${fmtAge(support.oldestAwaitingAt)}` : 'очередь пуста'}
+            action={<OpenLink href="/support" />}
+          />
+          <KpiTile
+            label="Поддержка: SLA просрочен"
+            value={support.overdue}
+            tone={support.overdue > 0 ? 'negative' : 'default'}
+            hint="первый ответ в рабочие часы"
+            action={<OpenLink href="/support" />}
+          />
+          <KpiTile
+            label="Поддержка: не назначены"
+            value={support.unassigned}
+            tone={support.unassigned > 0 ? 'warning' : 'default'}
+            hint={`ждём клиента / эскалация: ${support.waiting}`}
+            action={<OpenLink href="/support?f=unassigned" />}
+          />
+          <KpiTile
+            label="Поддержка: решено за 24 ч"
+            value={support.resolvedToday}
+            hint={support.csatAvg !== null ? `оценка ${support.csatAvg.toFixed(1).replace('.', ',')} из 5` : 'оценок пока нет'}
+          />
+        </section>
+      ) : null}
 
       {moneySummary ? (
         <section aria-label="Деньги" className="grid grid-cols-2 gap-3 lg:grid-cols-4">

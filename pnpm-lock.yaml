@@ -26,6 +26,9 @@ importers:
       '@broker/storage':
         specifier: workspace:*
         version: link:../../packages/storage
+      '@broker/support':
+        specifier: workspace:*
+        version: link:../../packages/support
       '@broker/ui':
         specifier: workspace:*
         version: link:../../packages/ui

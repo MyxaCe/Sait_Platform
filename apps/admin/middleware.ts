@@ -6,6 +6,7 @@ import {
   PUBLIC_PATHS,
 } from './lib/auth/constants';
 import { verifyOperatorSession } from './lib/auth/session';
+import { scopeViolation } from './lib/auth/role-scope';
 
 /**
  * ЕДИНЫЙ ГЕЙТ входа в центр управления (Р-395, Р-394, Р-451).
@@ -51,6 +52,10 @@ export default async function middleware(request: NextRequest) {
       return NextResponse.next();
     }
     if (!operator) return unauthorized();
+    // Узкая роль (поддержка) — только свои ручки (role-scope.ts).
+    if (scopeViolation(operator.role, pathname)) {
+      return NextResponse.json({ error: 'forbidden' }, { status: 403 });
+    }
     return NextResponse.next();
   }
 
@@ -70,6 +75,17 @@ export default async function middleware(request: NextRequest) {
     url.pathname = '/';
     url.search = '';
     return NextResponse.redirect(url);
+  }
+
+  // Узкая роль (поддержка): страницы вне её периметра не открываются (fail-closed).
+  if (operator) {
+    const scope = scopeViolation(operator.role, pathname);
+    if (scope) {
+      const url = request.nextUrl.clone();
+      url.pathname = scope.home;
+      url.search = '';
+      return NextResponse.redirect(url);
+    }
   }
 
   return NextResponse.next();

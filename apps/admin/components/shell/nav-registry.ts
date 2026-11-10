@@ -42,6 +42,11 @@ export const NAV_ITEMS: NavItem[] = [
   { key: 'kyc', group: 'compliance', label: 'Верификация', href: '/kyc', icon: 'kyc', roles: ['operator', 'admin'] },
   // AML-скрининг (ADM-14): отметка результата сверки по спискам; видят оба.
   { key: 'aml', group: 'compliance', label: 'AML-скрининг', href: '/aml', icon: 'aml', roles: ['operator', 'admin'] },
+  // ── Поддержка (ветка demo-support, 10.11) ──
+  // Очередь обращений: все, кто работает с тикетами; finance_operator — только
+  // назначенные ему (фильтр в запросах). support_operator — ТОЛЬКО этот раздел
+  // (периметр роли — lib/auth/role-scope.ts).
+  { key: 'support', group: 'compliance', label: 'Поддержка', href: '/support', icon: 'support', roles: ['operator', 'admin', 'support_operator', 'finance_operator'] },
   // Риск: operator видит, но действия — только просмотр (§3.8); запись гейтится
   // на самих страницах раздела. href ведёт на реальную страницу раздела
   // (/risk-индекса нет; обе страницы — leverage/portfolios).

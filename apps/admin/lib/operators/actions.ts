@@ -51,7 +51,9 @@ async function requireAdminActor(): Promise<string> {
 class ForbiddenError extends Error {}
 
 function asRole(value: FormDataEntryValue | null): OperatorRole | null {
-  return value === 'admin' || value === 'operator' || value === 'finance_operator' ? value : null;
+  return value === 'admin' || value === 'operator' || value === 'finance_operator' || value === 'support_operator'
+    ? value
+    : null;
 }
 
 export async function createOperatorAction(
