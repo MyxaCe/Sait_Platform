@@ -22,6 +22,7 @@ import {
   registerSchema,
 } from './auth/schemas';
 import { envOr } from '@broker/utils';
+import { MAX_DOC_BYTES } from '@/upload-limits.mjs';
 import {
   createSession,
   destroyCurrentSession,
@@ -192,7 +193,6 @@ export async function revokeSessionAction(formData: FormData): Promise<void> {
 /* ------------------------------------------------------------------ */
 
 const ALLOWED_MIME = new Set(['application/pdf', 'image/jpeg', 'image/png']);
-const MAX_DOC_BYTES = 10 * 1024 * 1024;
 
 export async function uploadDocumentAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const user = await getSessionUser();

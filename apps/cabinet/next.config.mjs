@@ -1,6 +1,8 @@
 import { withSentryConfig } from '@sentry/nextjs';
 import createNextIntlPlugin from 'next-intl/plugin';
 
+import { SERVER_ACTION_BODY_LIMIT_BYTES } from './upload-limits.mjs';
+
 const withNextIntl = createNextIntlPlugin('./i18n/request.ts');
 
 /** @type {import('next').NextConfig} */
@@ -13,6 +15,8 @@ const nextConfig = {
   experimental: {
     instrumentationHook: true,
     serverComponentsExternalPackages: ['@aws-sdk/client-s3', '@aws-sdk/s3-request-presigner'],
+    // KYC-фото больше 1 МБ (потолок server actions по умолчанию) — см. upload-limits.mjs.
+    serverActions: { bodySizeLimit: SERVER_ACTION_BODY_LIMIT_BYTES },
   },
   // standalone — только для Docker-сборки (docker/cabinet.Dockerfile)
   output: process.env.BUILD_STANDALONE ? 'standalone' : undefined,

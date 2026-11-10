@@ -9,6 +9,7 @@ import { getSessionUser } from './auth/session';
 import { isRateLimited } from './rate-limit';
 import { isKycDocKind } from './kyc-kinds';
 import type { ActionState } from './actions';
+import { MAX_DOC_BYTES } from '@/upload-limits.mjs';
 
 /**
  * Приём KYC-документа от КЛИЕНТА (CAB-KYC, Р-454 II-1).
@@ -39,7 +40,6 @@ import type { ActionState } from './actions';
  */
 
 const ALLOWED_MIME = new Set(['application/pdf', 'image/jpeg', 'image/png']);
-const MAX_DOC_BYTES = 10 * 1024 * 1024;
 
 export async function submitKycDocumentAction(
   _prev: ActionState,
