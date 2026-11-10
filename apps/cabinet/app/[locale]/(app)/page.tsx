@@ -7,12 +7,8 @@ import { ProfileModule } from '@/features/home/ProfileModule';
 import { PromotionsModule } from '@/features/home/PromotionsModule';
 import { requireSessionUser } from '@/lib/auth/require';
 import { getDemoAccount } from '@/lib/data';
-import {
-  getHomeModules,
-  getMarketInstruments,
-  getPromotions,
-  getVerificationStatus,
-} from '@/lib/home';
+import { getHomeModules, getMarketInstruments, getVerificationStatus } from '@/lib/home';
+import { loadClientPromotions } from '@/lib/promo';
 import { getTenantStartBalance } from '@/lib/tenant';
 import type { RealAccountBlock } from '@/features/home/BalanceModule';
 import { exchangeAddress, getMoneyPolicy, getRealAccount, terminalReader } from '@/lib/money';
@@ -59,7 +55,8 @@ export default async function HomePage({ params }: { params: { locale: string } 
     // Статус KYC нужен и шапке профиля (бейдж), и онбордингу.
     getVerificationStatus(user.id),
     needs('markets') ? getMarketInstruments() : null,
-    needs('promotions') ? getPromotions(params.locale) : [],
+    // Акции — живые данные @broker/promo (участия, прогресс), не витрина CMS.
+    needs('promotions') ? loadClientPromotions(user.id, params.locale) : null,
     // Состояние стартовой суммы нужно самому модулю: кнопка сброса
     // обязана объяснить, почему не работает, а не исчезнуть.
     getTenantStartBalance(),
@@ -105,7 +102,7 @@ export default async function HomePage({ params }: { params: { locale: string } 
             // почему он пуст, он рассказывает сам (Р-025, п. 3).
             return markets ? <MarketsModule key={i} config={module} data={markets} /> : null;
           case 'promotions':
-            return <PromotionsModule key={i} items={promos} locale={params.locale} />;
+            return <PromotionsModule key={i} view={promos?.state === 'ok' ? promos.data : null} />;
           default:
             return null;
         }

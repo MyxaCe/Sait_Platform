@@ -104,9 +104,9 @@ async function main(): Promise<number> {
     }
 
     // ── Тарифы портфелей (в демо — прямо в базе; в жизни — форма «Риск и плечо → Портфели»).
-    await pool.query(`UPDATE leverage_portfolios SET markup_bps = 15, commission_bps = 0, instruments = 'Криптовалютные пары Binance (спот-котировки)' WHERE key = 'standard'`);
-    await pool.query(`UPDATE leverage_portfolios SET markup_bps = 5, commission_bps = 4, instruments = 'Криптовалютные пары Binance (спот-котировки)' WHERE key = 'pro'`);
-    await pool.query(`UPDATE leverage_portfolios SET markup_bps = 0, commission_bps = 3, instruments = 'Криптовалютные пары Binance (спот-котировки)' WHERE key = 'enc_prime'`);
+    await pool.query(`UPDATE leverage_portfolios SET markup_bps = 15, commission_bps = 0, instruments = 'Криптовалютные пары Binance (спот-котировки)', description = 'Для старта: без комиссии, стоимость — в спреде.' WHERE key = 'standard'`);
+    await pool.query(`UPDATE leverage_portfolios SET markup_bps = 5, commission_bps = 4, instruments = 'Криптовалютные пары Binance (спот-котировки)', description = 'Для активной торговли: меньше наценка, небольшая комиссия.' WHERE key = 'pro'`);
+    await pool.query(`UPDATE leverage_portfolios SET markup_bps = 0, commission_bps = 3, instruments = 'Криптовалютные пары Binance (спот-котировки)', description = 'Для крупных объёмов: чистый спред, только комиссия.' WHERE key = 'enc_prime'`);
 
     // ── Акции (решения владельца 10.11 — числа здесь как ВВОД админки, не код платформы).
     const reason = 'Решение владельца 10.11 (демо-набор)';
@@ -248,6 +248,16 @@ async function main(): Promise<number> {
     for (let k = 0; k < 3; k++) await realTrip(SERGEY, 8 - k, 900, 0.05, 68_000, { c: 140, m: 510 });
     for (let k = 0; k < 12; k++) await realTrip(OLGA, 5 - k * 0.2, 30, 0.05, 68_000, { c: 140, m: 510 }); // короткие — не в зачёт
     await realTrip(NATALIA, 3, 400, 0.02, 68_000, { c: 55, m: 205 });
+    // Лукас Вебер — участник «в процессе» (кабинет: прогресс по условиям): KYC пройден,
+    // первый депозит после вступления, оборот выполнен частично, вывода нет.
+    await enroll(WELCOME, LUKAS, 6);
+    await pool.query(`UPDATE client_verification SET state = 'verified' WHERE user_id = $1`, [LUKAS]);
+    await pool.query(
+      `INSERT INTO crypto_deposits (user_id, tx_hash, status, from_address, to_address, amount_raw, amount_minor, block_time, credited_at, claimed_at, updated_at)
+       VALUES ($1, md5(random()::text) || md5(random()::text), 'credited', 'TLw8kWeber3mNp4kLc2Vb9Hs3Df6Gj5Rt', 'TXyQ8cG6rWwP3b1hT9cTn2mE5sTq4xYb7K', 1000000000, 100000, $2, $2, $2, $2)`,
+      [LUKAS, ago(5)],
+    );
+    await realTrip(LUKAS, 4, 600, 0.025, 68_000, { c: 70, m: 255 });
 
     // Общий кошелёк-отправитель: депозит Ольги — с кошелька Волкова.
     const sw = await pool.query(`SELECT from_address FROM crypto_deposits WHERE user_id = $1 AND from_address IS NOT NULL LIMIT 1`, [SERGEY]);

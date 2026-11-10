@@ -16,7 +16,11 @@ export type NavIconName =
   | 'notifications'
   | 'more'
   | 'site'
-  | 'logout';
+  | 'logout'
+  | 'gift'
+  | 'friends'
+  | 'trophy'
+  | 'terms';
 
 const PATHS: Record<NavIconName, React.ReactNode> = {
   home: (
@@ -100,6 +104,32 @@ const PATHS: Record<NavIconName, React.ReactNode> = {
   logout: (
     <>
       <path d="M8 3.75H4.5v12.5H8M12.5 6.5 16 10l-3.5 3.5M16 10H7.75" strokeLinecap="round" strokeLinejoin="round" />
+    </>
+  ),
+  gift: (
+    <>
+      <rect x="3.5" y="7.25" width="13" height="3.25" rx="1" />
+      <path d="M4.75 10.5v6h10.5v-6M10 7.25v9.25" strokeLinejoin="round" />
+      <path d="M10 7.25S8.9 3.5 6.9 3.9c-1.6.3-1.3 2.6.6 3.35M10 7.25s1.1-3.75 3.1-3.35c1.6.3 1.3 2.6-.6 3.35" strokeLinecap="round" strokeLinejoin="round" />
+    </>
+  ),
+  friends: (
+    <>
+      <circle cx="7.5" cy="7" r="2.75" />
+      <path d="M2.75 16c.6-2.6 2.5-3.9 4.75-3.9s4.15 1.3 4.75 3.9" strokeLinecap="round" />
+      <path d="M12.75 4.6a2.6 2.6 0 0 1 0 4.8M14.5 12.4c1.4.5 2.4 1.6 2.75 3.6" strokeLinecap="round" />
+    </>
+  ),
+  trophy: (
+    <>
+      <path d="M6.25 3.75h7.5v4a3.75 3.75 0 0 1-7.5 0z" strokeLinejoin="round" />
+      <path d="M6.25 5.25H3.75c0 2.2 1.1 3.5 2.9 3.75M13.75 5.25h2.5c0 2.2-1.1 3.5-2.9 3.75M10 11.5v2.75M7 16.5h6" strokeLinecap="round" strokeLinejoin="round" />
+    </>
+  ),
+  terms: (
+    <>
+      <rect x="3.75" y="3.5" width="12.5" height="13" rx="1.75" />
+      <path d="M7 7.5h6M7 10.5h6M7 13.5h3.5" strokeLinecap="round" />
     </>
   ),
 };

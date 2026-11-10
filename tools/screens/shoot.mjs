@@ -114,6 +114,14 @@ const CABINET_SHOTS = [
   ['c13-profile-documents', '/ru/profile?tab=documents'],
   // Нижняя навигация телефона: открытая шторка «Ещё» (только m390).
   ['c14-more', '/ru', { mobileOnly: true, click: 'nav[aria-label] button[aria-haspopup="dialog"]' }],
+  // Акции, рефералы, конкурс, условия счетов (кабинет-акции, 10.11). Клиент — `--cabinet-token`.
+  ['c20-promotions', '/ru/promotions'],
+  ['c21-referrals', '/ru/referrals'],
+  ['c22-contest', '/ru/contest'],
+  ['c22b-contest-join', '/ru/contest', { click: '[data-contest] button:has-text("Участвовать")' }],
+  ['c22c-contest-finished', '/ru/contest', { pickHref: 'a[href*="/contest?id="]:has-text("Завершённые")' }],
+  ['c23-accounts', '/ru/accounts'],
+  ['c24-home', '/ru'],
 ];
 const CABINET_TOKEN = opt('cabinet-token', 'demo-cabinet-token-0001');
 const SIZES = opt('sizes', 'm390,d1440').split(',');
@@ -183,6 +191,12 @@ async function shootCabinet(browser) {
       if (extra.mobileOnly && tag !== 'm390') continue;
       await page.goto(`${CABINET}${path}`, { waitUntil: 'networkidle', timeout: 120_000 }).catch(() => {});
       await page.waitForTimeout(600);
+      if (extra.pickHref) {
+        const href = await page.locator(extra.pickHref).first().getAttribute('href').catch(() => null);
+        if (!href) continue;
+        await page.goto(`${CABINET}${href}`, { waitUntil: 'networkidle', timeout: 120_000 }).catch(() => {});
+        await page.waitForTimeout(600);
+      }
       if (extra.click) {
         await page.locator(extra.click).first().click().catch(() => {});
         await page.waitForTimeout(300);

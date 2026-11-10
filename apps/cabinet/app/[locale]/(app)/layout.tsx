@@ -10,6 +10,8 @@ import { Link } from '@/i18n/navigation';
 import { getSessionUser } from '@/lib/auth/session';
 import { getChromeBrand, getChromeFooter, siteHref } from '@/lib/chrome';
 import { countUnread } from '@/lib/data';
+import { hasLiveContest } from '@/features/promo/format';
+import { loadContests } from '@/lib/promo';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -24,19 +26,20 @@ export default async function AppLayout({ children, params }: LayoutProps) {
     redirect(params.locale === 'en' ? '/en/login' : '/login');
   }
 
-  const [tNav, tCommon, unread, brand, footer] = await Promise.all([
+  const [tNav, tCommon, unread, brand, footer, contests] = await Promise.all([
     getTranslations('nav'),
     getTranslations('common'),
     countUnread(user.id),
     getChromeBrand(params.locale),
     getChromeFooter(params.locale),
+    // «Конкурс» в меню — только если есть идущий или будущий (сбой чтения — пункта нет).
+    loadContests(user.id, params.locale),
   ]);
   const brandName = brand?.name ?? tCommon('brand');
 
   // Навигация (r2): 4 раздела счёта + аккаунт. Кошелёк = пополнение и вывод,
   // Профиль = личные данные, верификация, безопасность и документы.
-  // Место под «Акции» / «Пригласи друга» — третья группа (их проектирует
-  // отдельная команда; добавить = строка в `growthNav`).
+  // Бонусы: акции, приглашения, конкурс (ДЕМО-акции 10.11).
   const accountNav: NavItem[] = [
     { href: '/', label: tNav('dashboard'), icon: 'home' },
     { href: '/trade', label: tNav('trade'), icon: 'trade' },
@@ -46,8 +49,15 @@ export default async function AppLayout({ children, params }: LayoutProps) {
   const profileNav: NavItem[] = [
     { href: '/profile', label: tNav('profile'), icon: 'profile' },
     { href: '/notifications', label: tNav('notifications'), icon: 'notifications', badge: unread },
+    { href: '/accounts', label: tNav('accounts'), icon: 'terms' },
   ];
-  const growthNav: NavItem[] = [];
+  const growthNav: NavItem[] = [
+    { href: '/promotions', label: tNav('promotions'), icon: 'gift' },
+    { href: '/referrals', label: tNav('referrals'), icon: 'friends' },
+    ...(contests.state === 'ok' && hasLiveContest(contests.data)
+      ? [{ href: '/contest', label: tNav('contest'), icon: 'trophy' as const }]
+      : []),
+  ];
   // Телефон: 4 главных + «Ещё». Короткие подписи — чтобы влезали в 390 px.
   const mobilePrimary: NavItem[] = [
     { href: '/', label: tNav('short.dashboard'), icon: 'home' },
