@@ -101,6 +101,7 @@ export function ActionForm({
   reasonHint = 'Обязательно. Пишется в неизменяемый журнал вместе с вашим логином.',
   reasonPlaceholder = 'Почему принимается это решение',
   extraValid = true,
+  errorText = moneyErrorText,
   className,
 }: {
   action: (state: MoneyActionState, fd: FormData) => Promise<MoneyActionState>;
@@ -119,6 +120,8 @@ export function ActionForm({
   reasonPlaceholder?: string;
   /** Доп. условие активности submit (напр. заполнен хэш). */
   extraValid?: boolean;
+  /** Словарь ошибок зоны (по умолчанию — денежный). */
+  errorText?: (error: string, detail?: string) => string;
   className?: string;
 }) {
   const report = useContext(DecisionReport);
@@ -127,7 +130,7 @@ export function ActionForm({
   const reported = useCallback(
     async (prev: MoneyActionState, fd: FormData) => {
       const r = await action(prev, fd);
-      if (r.ok) reportRef.current?.(okText);
+      if (r.ok) reportRef.current?.(r.detail ? `${okText} (${r.detail})` : okText);
       return r;
     },
     [action, okText],
@@ -160,9 +163,12 @@ export function ActionForm({
   return (
     <form action={formAction} className={cn('space-y-3', className)}>
       {state.error ? (
-        <Callout tone="negative">{moneyErrorText(state.error, state.detail)}</Callout>
+        <Callout tone="negative">{errorText(state.error, state.detail)}</Callout>
       ) : state.ok && !report ? (
-        <Callout tone="positive">{okText}</Callout>
+        <Callout tone="positive">
+          {okText}
+          {state.detail ? ` (${state.detail})` : null}
+        </Callout>
       ) : null}
       {children}
       <div className="space-y-1.5">

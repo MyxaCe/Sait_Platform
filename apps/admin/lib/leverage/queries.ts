@@ -10,6 +10,11 @@ import type { PortfolioLeverage, ClientLeverageOverride } from './resolve';
 export interface PortfolioRow extends PortfolioLeverage {
   readonly isDefault: boolean;
   readonly clientCount: number;
+  /** Тариф портфеля (б.п., 0..500) и условия типа счёта для /accounts. */
+  readonly markupBps: number;
+  readonly commissionBps: number;
+  readonly instruments: string | null;
+  readonly description: string | null;
 }
 
 function asDenominator(value: unknown): number {
@@ -22,6 +27,15 @@ function asDenominator(value: unknown): number {
   return n;
 }
 
+/** Ставка тарифа (б.п.): колонка NOT NULL 0..500; иное — испорченная строка, громко. */
+function asBps(value: unknown): number {
+  const n = Number(value);
+  if (value === null || value === undefined || !Number.isInteger(n) || n < 0) {
+    throw new Error(`ставка тарифа должна быть целым ≥ 0, получено: ${String(value)}`);
+  }
+  return n;
+}
+
 /**
  * Все портфели с планками по классам и числом клиентов. Один проход: портфели
  * слева, class-override'ы и счётчик клиентов — агрегатами, чтобы не ходить в
@@ -30,6 +44,7 @@ function asDenominator(value: unknown): number {
 export async function listPortfolios(db: Queryable = getPool()): Promise<PortfolioRow[]> {
   const portfolios = await db.query(
     `SELECT p.key, p.title, p.base_leverage, p.is_default, p.sort_order,
+            p.markup_bps, p.commission_bps, p.instruments, p.description,
             COALESCE(c.cnt, 0) AS client_count
        FROM leverage_portfolios p
        LEFT JOIN (
@@ -59,6 +74,10 @@ export async function listPortfolios(db: Queryable = getPool()): Promise<Portfol
     classOverrides: byPortfolio.get(String(row.key)) ?? {},
     isDefault: Boolean(row.is_default),
     clientCount: Number(row.client_count ?? 0),
+    markupBps: asBps(row.markup_bps),
+    commissionBps: asBps(row.commission_bps),
+    instruments: row.instruments === null || row.instruments === undefined ? null : String(row.instruments),
+    description: row.description === null || row.description === undefined ? null : String(row.description),
   }));
 }
 

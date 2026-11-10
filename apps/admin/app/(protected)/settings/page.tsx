@@ -6,6 +6,8 @@ import { exchangeTronAddress } from '@/lib/crypto/runtime';
 import { getPlatformMoneySettings } from '@/lib/crypto/settings';
 import { TronRef } from '../_money/tron';
 import { SettingsForm } from './SettingsForm';
+import { getPromoSettings } from '@/lib/promo/queries';
+import { PromoSettingsForm } from '../promo/_components/PromoForms';
 
 /**
  * «Настройки платформы» (дизайн §3) — только admin. Денежные гейты и
@@ -23,7 +25,7 @@ function KycValue({ required }: { required: boolean }) {
 export default async function PlatformSettingsPage() {
   const operator = await getOperatorSession();
   if (operator?.role !== 'admin') notFound();
-  const settings = await getPlatformMoneySettings();
+  const [settings, promo] = await Promise.all([getPlatformMoneySettings(), getPromoSettings()]);
   const address = exchangeTronAddress();
 
   return (
@@ -34,6 +36,7 @@ export default async function PlatformSettingsPage() {
       />
 
       <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+        <div className="min-w-0 space-y-5">
         <Panel
           title="Ввод и вывод"
           description="Изменение — с основанием, пишется в журнал (до и после)."
@@ -71,6 +74,46 @@ export default async function PlatformSettingsPage() {
             </div>
           </div>
         </Panel>
+
+        <Panel
+          id="promo"
+          title="Акции и атрибуция"
+          description="Профиль юрисдикции: акции можно выключить целиком или для стран. Изменение — с основанием, в журнал."
+          actions={
+            promo ? (
+              <ToneBadge tone={promo.promotionsEnabled ? 'positive' : 'negative'}>
+                {promo.promotionsEnabled ? 'акции включены' : 'акции выключены'}
+              </ToneBadge>
+            ) : null
+          }
+        >
+          {promo ? (
+            <div className="space-y-5">
+              <DescriptionList
+                columns={3}
+                items={[
+                  { term: 'Акции', value: promo.promotionsEnabled ? 'включены' : 'выключены', tone: promo.promotionsEnabled ? 'default' : 'negative' },
+                  { term: 'Срок атрибуции', value: `${promo.attributionWindowDays} дн`, hint: 'first-click' },
+                  { term: 'Страны без акций', value: promo.blockedCountries.length ? promo.blockedCountries.join(', ') : 'нет' },
+                ]}
+              />
+              <div className="border-border border-t pt-5">
+                <PromoSettingsForm
+                  initial={{
+                    promotionsDisabled: !promo.promotionsEnabled,
+                    attributionWindowDays: promo.attributionWindowDays,
+                    blockedCountries: promo.blockedCountries.join(', '),
+                  }}
+                />
+              </div>
+            </div>
+          ) : (
+            <Callout tone="warning" title="Настроек акций нет">
+              Миграция акций на этой базе не применена — акции считаются выключенными.
+            </Callout>
+          )}
+        </Panel>
+        </div>
 
         <aside className="min-w-0 space-y-5">
           <Panel

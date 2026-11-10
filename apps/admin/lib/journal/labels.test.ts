@@ -8,8 +8,9 @@ import { ACTION_GROUPS, ACTION_LABELS, actionGroup, actionLabel, basisOf } from 
  * приложения (admin + @broker/money), имеет человекочитаемую подпись. Иначе
  * в разделе «Журнал» всплывёт машинный код — для комплаенса это брак.
  */
-const ROOTS = [resolve(__dirname, '..'), resolve(__dirname, '../../app'), resolve(__dirname, '../../../../packages/money/src')];
-const CODE = /'((?:client|crypto|leverage|operator|journal)\.[a-z_.]+|money\.command\.[a-z_]+|platform\.money_settings\.[a-z_]+)'/g;
+const ROOTS = [resolve(__dirname, '..'), resolve(__dirname, '../../app'), resolve(__dirname, '../../../../packages/money/src'), resolve(__dirname, '../../../../packages/promo/src')];
+const CODE =
+  /'((?:client|crypto|leverage|operator|journal|promo|referral|contest|cashback|ib)\.[a-z_.]+|money\.command\.[a-z_]+|platform\.(?:money|promo)_settings\.[a-z_]+)'/g;
 
 function walk(dir: string, out: string[] = []): string[] {
   for (const name of readdirSync(dir)) {

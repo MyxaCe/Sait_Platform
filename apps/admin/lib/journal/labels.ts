@@ -22,6 +22,11 @@ export type ActionGroup =
   | 'leverage'
   | 'money_command'
   | 'operators'
+  | 'promo'
+  | 'referral'
+  | 'contest'
+  | 'cashback'
+  | 'ib'
   | 'platform';
 
 /** Группы — в порядке вывода в фильтре. */
@@ -35,6 +40,11 @@ export const ACTION_GROUPS: { key: ActionGroup; label: string }[] = [
   { key: 'leverage', label: 'Плечо и портфели' },
   { key: 'money_command', label: 'Денежные команды' },
   { key: 'operators', label: 'Операторы и вход' },
+  { key: 'promo', label: 'Акции и бонусы' },
+  { key: 'referral', label: 'Рефералы' },
+  { key: 'contest', label: 'Конкурсы' },
+  { key: 'cashback', label: 'Кешбэк' },
+  { key: 'ib', label: 'IB-партнёры' },
   { key: 'platform', label: 'Платформа и журнал' },
 ];
 
@@ -175,6 +185,64 @@ export const ACTION_LABELS: Record<string, ActionMeta> = {
     group: 'leverage',
   },
 
+  'leverage.portfolio_fees_changed': { label: 'Изменён тариф портфеля (наценка/комиссия)', tone: 'warning', group: 'leverage' },
+
+  // Акции
+  'promo.created': { label: 'Создана акция', tone: 'info', group: 'promo' },
+  'promo.updated': { label: 'Изменены условия акции', tone: 'warning', group: 'promo' },
+  'promo.activated': { label: 'Акция запущена', tone: 'positive', group: 'promo' },
+  'promo.paused': { label: 'Акция на паузе', tone: 'warning', group: 'promo' },
+  'promo.ended': { label: 'Акция завершена', tone: 'neutral', group: 'promo' },
+  'promo.enrolled': { label: 'Клиент вступил в акцию', tone: 'info', group: 'promo' },
+  'promo.participation_expired': { label: 'Участие в акции истекло', tone: 'neutral', group: 'promo' },
+  'promo.queue_synced': { label: 'Пересчитана очередь начислений', tone: 'neutral', group: 'promo' },
+
+  // Бонусы акций
+  'promo.reward.queued': { label: 'Бонус: к начислению', tone: 'warning', group: 'promo' },
+  'promo.reward.approved': { label: 'Бонус одобрен', tone: 'info', group: 'promo' },
+  'promo.reward.credited': { label: 'Бонус зачислен', tone: 'positive', group: 'promo' },
+  'promo.reward.needs_review': { label: 'Бонус: терминал отказал', tone: 'warning', group: 'promo' },
+  'promo.reward.rejected': { label: 'Бонус отклонён', tone: 'negative', group: 'promo' },
+
+  // Рефералы
+  'referral.attributed': { label: 'Клиент привязан к рефереру', tone: 'info', group: 'referral' },
+  'referral.attribution_rejected': { label: 'Самореферал отсечён', tone: 'negative', group: 'referral' },
+  'referral.attribution.reassigned': { label: 'Реферер переназначен', tone: 'warning', group: 'referral' },
+  'referral.attribution.revoked': { label: 'Атрибуция снята', tone: 'neutral', group: 'referral' },
+  'referral.reward.queued': { label: 'Реферальная награда: к начислению', tone: 'warning', group: 'referral' },
+  'referral.reward.approved': { label: 'Реферальная награда одобрена', tone: 'info', group: 'referral' },
+  'referral.reward.credited': { label: 'Реферальная награда зачислена', tone: 'positive', group: 'referral' },
+  'referral.reward.needs_review': { label: 'Реферальная награда: терминал отказал', tone: 'warning', group: 'referral' },
+  'referral.reward.rejected': { label: 'Реферальная награда отклонена', tone: 'negative', group: 'referral' },
+
+  // Кешбэк
+  'cashback.period_accrued': { label: 'Кешбэк за период рассчитан', tone: 'info', group: 'cashback' },
+  'cashback.reward.queued': { label: 'Кешбэк: к начислению', tone: 'warning', group: 'cashback' },
+  'cashback.reward.approved': { label: 'Кешбэк одобрен', tone: 'info', group: 'cashback' },
+  'cashback.reward.credited': { label: 'Кешбэк зачислен', tone: 'positive', group: 'cashback' },
+  'cashback.reward.needs_review': { label: 'Кешбэк: терминал отказал', tone: 'warning', group: 'cashback' },
+  'cashback.reward.rejected': { label: 'Кешбэк отклонён', tone: 'negative', group: 'cashback' },
+
+  // Конкурсы
+  'contest.joined': { label: 'Клиент вступил в конкурс', tone: 'info', group: 'contest' },
+  'contest.join_failed': { label: 'Вступление в конкурс не удалось', tone: 'neutral', group: 'contest' },
+  'contest.finalized': { label: 'Итоги конкурса подведены', tone: 'positive', group: 'contest' },
+  'contest.prize.queued': { label: 'Приз конкурса: к начислению', tone: 'warning', group: 'contest' },
+  'contest.prize.approved': { label: 'Приз конкурса одобрен', tone: 'info', group: 'contest' },
+  'contest.prize.credited': { label: 'Приз конкурса зачислен', tone: 'positive', group: 'contest' },
+  'contest.prize.needs_review': { label: 'Приз конкурса: терминал отказал', tone: 'warning', group: 'contest' },
+  'contest.prize.rejected': { label: 'Приз конкурса отклонён', tone: 'negative', group: 'contest' },
+
+  // IB-партнёры
+  'ib.partner.created': { label: 'Заведён IB-партнёр', tone: 'info', group: 'ib' },
+  'ib.partner.updated': { label: 'Изменены условия IB-партнёра', tone: 'warning', group: 'ib' },
+  'ib.revshare_accrued': { label: 'Рассчитана доля IB за период', tone: 'info', group: 'ib' },
+  'ib.payout.queued': { label: 'IB-выплата: к начислению', tone: 'warning', group: 'ib' },
+  'ib.payout.approved': { label: 'IB-выплата одобрена', tone: 'info', group: 'ib' },
+  'ib.payout.credited': { label: 'IB-выплата зачислена', tone: 'positive', group: 'ib' },
+  'ib.payout.needs_review': { label: 'IB-выплата: терминал отказал', tone: 'warning', group: 'ib' },
+  'ib.payout.rejected': { label: 'IB-выплата отклонена', tone: 'negative', group: 'ib' },
+
   // Денежные команды (dual control)
   'money.command.initiated': {
     label: 'Денежная команда создана',
@@ -229,6 +297,11 @@ export const ACTION_LABELS: Record<string, ActionMeta> = {
     tone: 'warning',
     group: 'platform',
   },
+  'platform.promo_settings.updated': {
+    label: 'Изменены настройки акций платформы',
+    tone: 'warning',
+    group: 'platform',
+  },
   'journal.exported': { label: 'Выгрузка журнала', tone: 'neutral', group: 'platform' },
 };
 
@@ -249,6 +322,8 @@ export const SUBJECT_KIND_LABELS: Record<string, string> = {
   crypto_deposit: 'Поступление USDT',
   leverage_portfolio: 'Портфель плеча',
   money_command: 'Денежная команда',
+  promotion: 'Акция',
+  ib_partner: 'IB-партнёр',
   platform: 'Платформа',
   journal: 'Журнал',
 };
@@ -260,6 +335,8 @@ export function subjectKindLabel(kind: string): string {
 /** Субъекты с постоянным машинным id (не из справочников) — их имя. */
 export const STATIC_SUBJECT_NAMES: Record<string, string> = {
   'platform:money_settings': 'Денежные настройки',
+  'platform:promo_settings': 'Настройки акций',
+  'platform:promo_queue': 'Очередь начислений',
 };
 
 /**

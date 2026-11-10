@@ -15,7 +15,8 @@ export type NavIconName =
   | 'operators'
   | 'aml'
   | 'settings'
-  | 'breakglass';
+  | 'breakglass'
+  | 'promo';
 
 const PATHS: Record<NavIconName, string> = {
   // сетка плиток
@@ -38,6 +39,8 @@ const PATHS: Record<NavIconName, string> = {
   settings: 'M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0M14 4v4M8 10v4M16 16v4',
   // восклицание в ромбе (аварийная дверь)
   breakglass: 'M12 2l10 10-10 10L2 12zM12 8v5M12 16.5v.5',
+  // подарок (акции и партнёры)
+  promo: 'M4 11h16v9H4zM3 7h18v4H3zM12 7v13M12 7c-1.5-3-5-3-5-1s3 1 5 1c2 0 5 1 5-1s-3.5-2-5 1',
 };
 
 export function NavIcon({ name, ...props }: { name: NavIconName } & SVGProps<SVGSVGElement>) {
