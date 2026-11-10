@@ -203,10 +203,10 @@ async function syncReferral(
     `SELECT ra.referee_user_id::text AS referee, ra.referrer_user_id::text AS referrer, ra.attributed_at
        FROM referral_attributions ra
       WHERE ra.status = 'active' AND ra.referrer_user_id IS NOT NULL AND ra.ib_partner_id IS NULL
-        AND ($2::timestamptz IS NULL OR ra.attributed_at >= $2)
-        AND ($3::timestamptz IS NULL OR ra.attributed_at <= $3)
+        AND ($1::timestamptz IS NULL OR ra.attributed_at >= $1)
+        AND ($2::timestamptz IS NULL OR ra.attributed_at <= $2)
       ORDER BY ra.attributed_at`,
-    [promo.id, promo.startsAt, promo.endsAt],
+    [promo.startsAt, promo.endsAt],
   );
   const report: SyncReport = { evaluated: 0, queued: 0, expired: 0 };
   for (const pair of pairs.rows) {

@@ -292,7 +292,11 @@ export function platformRevenueMinor(
   for (const t of trades) {
     const at = ms(t.executedAt);
     if (at < ms(from) || at > ms(until)) continue;
-    sum += Math.max(0, Number(t.commissionMinor ?? 0) || 0) + Math.max(0, Number(t.markupMinor ?? 0) || 0);
+    // Поля нет (старое событие) — вклада нет: доход не выдумываем, а не «ноль комиссии».
+    const c = typeof t.commissionMinor === 'number' && Number.isFinite(t.commissionMinor) ? Math.max(0, t.commissionMinor) : null;
+    const m = typeof t.markupMinor === 'number' && Number.isFinite(t.markupMinor) ? Math.max(0, t.markupMinor) : null;
+    if (c !== null) sum += c;
+    if (m !== null) sum += m;
   }
   return sum;
 }
