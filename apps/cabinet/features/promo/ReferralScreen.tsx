@@ -1,3 +1,4 @@
+import { PAGE } from '@/features/ui/page';
 import { useLocale, useTranslations } from 'next-intl';
 import { Callout, cn, EmptyState, formatMoney, Money, ToneBadge, type StatusTone } from '@broker/ui';
 import type { InviteeStage, InviteeView, MyPartnerView, MyReferralView } from '@broker/promo';
@@ -25,7 +26,7 @@ export function ReferralScreen({
   const t = useTranslations('referrals');
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6">
+    <div className={cn(PAGE, 'space-y-6')}>
       <header>
         <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">
           {data?.referral.isPartner ? t('partner.title') : t('title')}
@@ -60,11 +61,19 @@ function Body({
         <Callout tone="info">{t(`disabled.${r.disabledReason}`)}</Callout>
       ) : null}
 
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] lg:gap-5">
+      {/*
+        ≥ xl: слева ссылка/QR и условия (5 из 12, липкая колонка), справа
+        итоги и приглашённые (7). Ниже xl — прежний порядок.
+      */}
+      <div className="space-y-6 xl:grid xl:grid-cols-12 xl:items-start xl:gap-5 xl:space-y-0">
+      <div className="space-y-4 xl:sticky xl:top-6 xl:col-span-5 xl:space-y-5">
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] lg:gap-5 xl:grid-cols-1">
         <InviteCard r={r} qrSvg={qrSvg} brand={brand} />
         {r.isPartner ? <PartnerTerms partner={partner} /> : <ProgramTerms r={r} />}
       </div>
+      </div>
 
+      <div className="space-y-6 xl:col-span-7">
       <Totals r={r} />
 
       {r.isPartner && partner ? <PartnerRewards partner={partner} /> : null}
@@ -85,6 +94,8 @@ function Body({
           )}
         </div>
       </section>
+      </div>
+      </div>
     </>
   );
 }

@@ -1,3 +1,4 @@
+import { PAGE } from '@/features/ui/page';
 import { useLocale, useTranslations } from 'next-intl';
 import { Callout, cn, EmptyState, formatMoney, Money, ToneBadge, type StatusTone } from '@broker/ui';
 import type { ContestLeaderboard, ContestSummary, LeaderboardRow } from '@broker/promo';
@@ -46,7 +47,7 @@ export function ContestScreen({
     .sort((a, b) => TAB_ORDER[contestTab(a)!] - TAB_ORDER[contestTab(b)!] || Date.parse(b.endsAt) - Date.parse(a.endsAt));
 
   return (
-    <div className="mx-auto max-w-5xl space-y-5">
+    <div className={cn(PAGE, 'space-y-5')}>
       <header>
         <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">{t('title')}</h1>
         <p className="mt-1 text-sm text-secondary">{t('lead')}</p>
@@ -74,11 +75,19 @@ export function ContestScreen({
             />
           ) : null}
 
-          <div className="grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] lg:gap-5">
-            <div className="min-w-0 space-y-4">
-              <ContestHeader c={selected} demoCurrency={demoCurrency} now={now} />
-              {board?.me ? <MyPlace me={board.me} minTrades={selected.rules.minTrades} /> : null}
-              <section aria-labelledby="lb" className="space-y-3">
+          {/*
+            ≥ lg: слева шапка и лидерборд (8 из 12), справа закреплённая
+            колонка «Моё место» → призы → правила (4). На телефоне порядок
+            прежний (шапка → моё место → лидерборд → призы → правила): обе
+            колонки там `display: contents`, а порядок задаёт `order-*`.
+            «Моё место» в DOM одно (тесты и скринридер видят один блок).
+          */}
+          <div className="flex flex-col gap-4 lg:grid lg:grid-cols-12 lg:items-start lg:gap-5">
+            <div className="contents lg:col-span-8 lg:block lg:min-w-0 lg:space-y-5">
+              <div className="order-1 min-w-0">
+                <ContestHeader c={selected} demoCurrency={demoCurrency} now={now} />
+              </div>
+              <section aria-labelledby="lb" className="order-3 min-w-0 space-y-3">
                 <SectionTitle id="lb">{t('leaderboardTitle')}</SectionTitle>
                 <div className={cn(CARD, 'p-0 sm:p-0')}>
                   {board === null ? (
@@ -96,9 +105,18 @@ export function ContestScreen({
                 ) : null}
               </section>
             </div>
-            <aside className="space-y-4">
-              <Prizes c={selected} />
-              <Rules c={selected} demoCurrency={demoCurrency} />
+            <aside className="contents lg:sticky lg:top-6 lg:col-span-4 lg:block lg:space-y-4">
+              {board?.me ? (
+                <div className="order-2">
+                  <MyPlace me={board.me} minTrades={selected.rules.minTrades} />
+                </div>
+              ) : null}
+              <div className="order-4">
+                <Prizes c={selected} />
+              </div>
+              <div className="order-5">
+                <Rules c={selected} demoCurrency={demoCurrency} />
+              </div>
             </aside>
           </div>
         </>
