@@ -4,15 +4,17 @@ export function Step({
   title,
   children,
   muted = false,
+  className,
 }: {
   n: number;
   title: string;
   children: React.ReactNode;
   /** Шаг недоступен сейчас — номер серый. */
   muted?: boolean;
+  className?: string;
 }) {
   return (
-    <section className="rounded-2xl border border-border bg-elevated p-4 sm:p-5" aria-label={title}>
+    <section className={['rounded-2xl border border-border bg-elevated p-4 sm:p-5', className].filter(Boolean).join(' ')} aria-label={title}>
       <div className="flex items-center gap-2.5">
         <span
           aria-hidden

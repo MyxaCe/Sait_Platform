@@ -121,16 +121,19 @@ export async function moneyOpRenderer() {
 export async function OperationsHistory({
   deposits,
   withdrawals,
+  titleId = 'ops-title',
 }: {
   deposits: DepositView[];
   withdrawals: WithdrawalView[];
+  /** id заголовка — уникален, когда лента на странице дважды (телефон/десктоп). */
+  titleId?: string;
 }) {
   const t = await getTranslations('money');
   const render = await moneyOpRenderer();
   const ops = toMoneyOps(deposits, withdrawals);
   return (
-    <section className="space-y-2" aria-labelledby="ops-title">
-      <h2 id="ops-title" className="text-sm font-semibold">
+    <section className="space-y-2" aria-labelledby={titleId}>
+      <h2 id={titleId} className="text-sm font-semibold">
         {t('historyOperations')}
       </h2>
       {ops.length === 0 ? (
