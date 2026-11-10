@@ -3,6 +3,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { routing } from './i18n/routing';
 import { SESSION_COOKIE } from './lib/auth/constants';
 import { legacyTarget } from './lib/legacy-routes';
+import { applyAttributionCookies } from './lib/attribution-cookies';
 
 const intl = createMiddleware(routing);
 
@@ -30,6 +31,11 @@ export default function middleware(request: NextRequest) {
     url.pathname = pathname.startsWith('/en') ? '/en' : '/';
     url.search = '';
     return NextResponse.redirect(url);
+  }
+
+  // Регистрация по ссылке акции / реф-ссылке: first-click cookie (атрибуция).
+  if (PUBLIC_PATH.test(pathname)) {
+    return applyAttributionCookies(request, intl(request));
   }
 
   const legacy = legacyTarget(pathname, request.nextUrl.search);
