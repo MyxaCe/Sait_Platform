@@ -1,20 +1,54 @@
-import { unstable_cache } from 'next/cache';
 import { draftMode } from 'next/headers';
 import type { z } from 'zod';
 import { CMS_RESPONSE_SCHEMAS, cmsFetch, type Locale } from '@broker/api-client';
 import { readTenantSlug } from '@broker/tenant';
-import { CMS_MOCK } from './cms-mock';
+import { lastGoodKey, loadLastGood, saveLastGood } from './cms-last-good';
+import { markCmsOutage } from './cms-outage';
 
 /**
- * Единая точка чтения CMS-контента страницами (этап 1 интеграции).
- * - CMS_API_URL задан → cmsFetch к реальной CMS (timeout/Zod/last-good),
- *   фолбэк — локальный mock-билдер (фикстуры).
- * - Не задан → mock in-process ЧЕРЕЗ unstable_cache с теми же тегами:
- *   revalidateTag() из вебхука работает одинаково для мока и боевой CMS.
- * Теги: cms:{resource} — согласованы со спецификацией (§4).
+ * Единая точка чтения CMS-контента страницами.
+ *
+ * **Контента в коде нет — даже как запасного** (решение владельца 10.11,
+ * `_brain/ДЕМО-контент-из-CMS-аудит.md`). Прежде здесь при любой ошибке
+ * CMS и на сборке без CMS подставлялись фикстуры из `lib/cms-mock.ts`:
+ * они разошлись с CMS, а посетитель не мог отличить их от настоящих.
+ *
+ * Порядок теперь такой:
+ *  1. CMS ответила → данные; ответ записывается как «последний удачный»
+ *     (`cms-last-good.ts`, на постоянном томе).
+ *  2. CMS не ответила (сеть, таймаут, 5xx, мусор мимо схемы, CMS не
+ *     настроена) → последний удачный ответ CMS с диска + лог уровня error.
+ *  3. Сохранённого нет → `CmsUnavailableError`. Страница не рендерится:
+ *     ISR оставляет прежнюю версию, а если её нет — посетитель видит
+ *     «Контент временно недоступен» (503, noindex, Retry-After — см.
+ *     `cms-outage.ts` и `server-entry.cjs`).
+ *
+ * **Теги.** Вешаются ОБА: `cms:<ресурс>` и `cms:<ресурс>:<слаг>`. CMS для
+ * сайта не по умолчанию шлёт в вебхуке второй вид, и с одним первым
+ * правки до второй платформы доходили только по таймеру (~час).
  */
 
-type Resource = keyof typeof CMS_MOCK & keyof typeof CMS_RESPONSE_SCHEMAS;
+/** Все ресурсы контракта, которые читает витрина: для прогрева и тегов. */
+export const CMS_RESOURCES = [
+  'brand',
+  'navigation',
+  'instruments',
+  'accounts',
+  'faq',
+  'promotions',
+  'partners',
+  'academy',
+  'streams',
+  'articles',
+  'contacts',
+  'careers',
+  'legal',
+  'system-status',
+] as const satisfies readonly (keyof typeof CMS_RESPONSE_SCHEMAS)[];
+
+export type CmsResource = (typeof CMS_RESOURCES)[number];
+
+type CmsData<K extends CmsResource> = z.infer<(typeof CMS_RESPONSE_SCHEMAS)[K]>;
 
 interface GetCmsOptions {
   locale: Locale;
@@ -23,71 +57,114 @@ interface GetCmsOptions {
   params?: Record<string, string>;
 }
 
-export async function getCms<K extends Resource>(
+/** CMS недоступна, и сохранённой версии ресурса нет. Показать нечего. */
+export class CmsUnavailableError extends Error {
+  constructor(
+    readonly resource: string,
+    readonly reason: string,
+  ) {
+    super(`CMS недоступна, сохранённой версии нет: ${resource} (${reason})`);
+    this.name = 'CmsUnavailableError';
+  }
+}
+
+/** Теги ресурса: общий и со слагом сайта (CMS не по умолчанию шлёт второй). */
+export function cmsTags(resource: string, slug: string | null): string[] {
+  const tag = `cms:${resource}`;
+  return slug ? [tag, `${tag}:${slug}`] : [tag];
+}
+
+/** CMS для витрины настроена: адрес и слаг сайта заданы. */
+export function isCmsConfigured(): boolean {
+  return Boolean(process.env.CMS_API_URL?.trim()) && readTenantSlug(process.env.SITE_SLUG) !== null;
+}
+
+function isDraft(): boolean {
+  // Вне request-контекста (сборка, generateStaticParams) — false
+  try {
+    return draftMode().isEnabled;
+  } catch {
+    return false;
+  }
+}
+
+function describeFailure(error: unknown): string {
+  if (error instanceof Error) {
+    const cause = (error as { cause?: unknown }).cause;
+    return cause instanceof Error ? `${error.message}: ${cause.message}` : error.message;
+  }
+  return String(error);
+}
+
+export async function getCms<K extends CmsResource>(
   resource: K,
   { locale, revalidate = 3600, params = {} }: GetCmsOptions,
-): Promise<z.infer<(typeof CMS_RESPONSE_SCHEMAS)[K]>> {
-  const schema = CMS_RESPONSE_SCHEMAS[resource];
-  const tag = `cms:${resource}`;
-  const buildLocal = () => CMS_MOCK[resource]!(locale, new URLSearchParams(params));
+): Promise<CmsData<K>> {
+  const schema = CMS_RESPONSE_SCHEMAS[resource] as unknown as z.ZodType<
+    CmsData<K>,
+    z.ZodTypeDef,
+    unknown
+  >;
+  const draft = isDraft();
 
-  // Preview (этап 3): редактор с draftMode-кукой видит черновой контент —
-  // кеш обходится, к CMS уходит draft=true. Вне request-контекста — false.
-  let draft = false;
-  try {
-    draft = draftMode().isEnabled;
-  } catch {
-    draft = false;
-  }
+  // Слага нет — в CMS НЕ идём вовсе (PKG-05): запрос с `?site=` вернул
+  // бы сайт по умолчанию, то есть чужой бренд без единой ошибки.
+  const slug = readTenantSlug(process.env.SITE_SLUG);
+  const key = slug ? lastGoodKey(resource, slug, locale, params) : null;
 
-  if (process.env.CMS_API_URL) {
-    // Мульти-тенантная CMS: сайт явно называет себя (без site CMS взяла бы дефолт)
-    // Слага нет — в CMS НЕ идём вовсе (PKG-05). Запрос с `?site=`
-    // возвращал бы сайт по умолчанию, то есть чужой бренд при живой
-    // CMS и без единой ошибки. Отдаём фикстуры: это уже существующий
-    // честный путь «CMS не настроена», и он ничего не утверждает о
-    // чужом тенанте.
-    const slug = readTenantSlug(process.env.SITE_SLUG);
-    if (slug === null) {
-      console.error(
-        `[getCms] SITE_SLUG не задан — ресурс ${resource} берём из фикстур, ` +
-          'в CMS не идём: запрос без слага вернул бы чужой сайт (PKG-05).',
-      );
-      return schema.parse(buildLocal()) as z.infer<(typeof CMS_RESPONSE_SCHEMAS)[K]>;
-    }
+  let failure: unknown;
+  if (!process.env.CMS_API_URL?.trim()) {
+    failure = new Error('CMS_API_URL не задан');
+  } else if (slug === null) {
+    failure = new Error('SITE_SLUG не задан (PKG-05: без слага CMS отдала бы чужой сайт)');
+  } else {
     const siteParams = { site: slug, ...params };
-    // Фикстура строится ДО вызова, значит её исключение летит мимо try/catch
-    // внутри cmsFetch (баг B-017): сломанная фикстура роняла страницу даже при
-    // живой CMS, к которой не успевали сходить. Страховка не имеет права быть
-    // причиной аварии — строим её здесь и сами же ловим.
-    // Тип — union по всем ресурсам, а не по K: сузить до K значит увести
-    // вывод T у cmsFetch с schema на fallback и поссорить их между собой.
-    let fallback: z.infer<(typeof CMS_RESPONSE_SCHEMAS)[Resource]> | undefined;
     try {
-      fallback = schema.parse(buildLocal());
+      const data = await cmsFetch(`/cms/${resource}`, {
+        schema,
+        locale,
+        tags: cmsTags(resource, slug),
+        revalidate: draft ? 0 : revalidate,
+        searchParams: draft ? { ...siteParams, draft: 'true' } : siteParams,
+      });
+      // Черновик — не «последняя версия сайта»
+      if (!draft && key) await saveLastGood(key, data);
+      return data;
     } catch (error) {
-      // Подавленная диагностика дороже шумной: фикстура разошлась с контрактом,
-      // сайт остался без последнего рубежа — это должно быть видно.
-      console.error(`[getCms] fixture build failed resource=${resource} locale=${locale}`, error);
+      failure = error;
     }
-    return cmsFetch(`/cms/${resource}`, {
-      schema,
-      locale,
-      tags: [tag],
-      revalidate: draft ? 0 : revalidate,
-      searchParams: draft ? { ...siteParams, draft: 'true' } : siteParams,
-      fallback,
-    }) as Promise<z.infer<(typeof CMS_RESPONSE_SCHEMAS)[K]>>;
   }
 
-  if (draft) {
-    return schema.parse(buildLocal()) as z.infer<(typeof CMS_RESPONSE_SCHEMAS)[K]>;
+  if (key && !draft) {
+    const saved = await loadLastGood(key);
+    const parsed = saved ? schema.safeParse(saved.data) : null;
+    if (saved && parsed?.success) {
+      console.error(
+        `[cms] CMS недоступна — ${resource} (${locale}) показан из последней версии от ${saved.savedAt}: ${describeFailure(failure)}`,
+      );
+      return parsed.data;
+    }
   }
 
-  const cached = unstable_cache(
-    async () => buildLocal(),
-    ['cms', resource, locale, JSON.stringify(params)],
-    { tags: [tag], revalidate },
+  // Уровень error и постоянный префикс — по нему настраивается алерт
+  console.error(
+    `[cms] ALERT: CMS недоступна и сохранённой версии нет — ${resource} (${locale}), ` +
+      `страница не будет показана (503): ${describeFailure(failure)}`,
   );
-  return schema.parse(await cached()) as z.infer<(typeof CMS_RESPONSE_SCHEMAS)[K]>;
+  markCmsOutage(resource);
+  throw new CmsUnavailableError(resource, describeFailure(failure));
+}
+
+/**
+ * Списки для `generateStaticParams`. CMS на сборке нет (так в CI) или она
+ * не ответила → пустой список: страницы соберутся при первом запросе
+ * (on-demand ISR, `dynamicParams` по умолчанию true). Списка из кода нет.
+ */
+export async function staticParamsFromCms<T>(load: () => Promise<T[]>): Promise<T[]> {
+  if (!isCmsConfigured()) return [];
+  try {
+    return await load();
+  } catch {
+    return [];
+  }
 }

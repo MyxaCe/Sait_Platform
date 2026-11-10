@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { Badge, Button, Container, Section } from '@broker/ui';
 import { Link } from '@/i18n/navigation';
+import { getCms } from '@/lib/cms';
 
 interface PageProps {
   params: { locale: string };
@@ -12,28 +13,14 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   return { title: t('metaTitle'), description: t('metaDescription') };
 }
 
-interface Model {
-  name: string;
-  description: string;
-  features: string[];
-}
-interface Tier {
-  name: string;
-  clients: string;
-  share: string;
-  featured?: boolean;
-}
-interface Step {
-  title: string;
-  text: string;
-}
-
 export default async function PartnersPage({ params }: PageProps) {
   setRequestLocale(params.locale);
   const t = await getTranslations('partners');
-  const models = t.raw('models') as Model[];
-  const tiers = t.raw('tiers') as Tier[];
-  const steps = t.raw('steps') as Step[];
+  // Модели, уровни и шаги — из CMS (`/cms/partners`, теги cms:partners[:<сайт>]).
+  // Прежде страница брала их из messages, хотя коллекция в CMS была (аудит 10.11).
+  const { models, tiers, steps } = await getCms('partners', {
+    locale: params.locale === 'en' ? 'en' : 'ru',
+  });
 
   return (
     <>

@@ -2,7 +2,8 @@ import { useTranslations } from 'next-intl';
 import { Container, Section } from '@broker/ui';
 import { InstallPWAButton } from '@/features/pwa/InstallPWAButton';
 
-export function DownloadApp() {
+/** Имя бренда — из CMS (`cms:brand`), в коде его нет. */
+export function DownloadApp({ brandName }: { brandName: string }) {
   const t = useTranslations('home.download');
   const features = t.raw('features') as string[];
 
@@ -14,7 +15,7 @@ export function DownloadApp() {
             <h2 className="text-3xl font-semibold tracking-tight text-primary sm:text-4xl lg:text-5xl">
               {t('title')}
             </h2>
-            <p className="mt-4 text-secondary sm:text-lg">{t('subtitle')}</p>
+            <p className="mt-4 text-secondary sm:text-lg">{t('subtitle', { brand: brandName })}</p>
             <ul className="mt-8 space-y-3">
               {features.map((feature) => (
                 <li key={feature} className="flex items-start gap-3 text-sm text-secondary">
@@ -39,9 +40,9 @@ export function DownloadApp() {
                 <div className="mx-auto h-1.5 w-16 rounded-full bg-border" />
                 <div className="mt-5 flex items-center gap-2">
                   <span className="grid size-7 place-items-center rounded-lg bg-accent text-xs font-bold text-base">
-                    A
+                    {brandName.charAt(0)}
                   </span>
-                  <span className="text-sm font-semibold text-primary">Apex Capital</span>
+                  <span className="text-sm font-semibold text-primary">{brandName}</span>
                 </div>
                 {/*
                   Макет телефона БЕЗ цен (WEB-25).

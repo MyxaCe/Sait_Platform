@@ -8,7 +8,7 @@ import { NavIcon } from '@/features/shell/NavIcon';
 import { CountBadge, NavLink, type NavItem } from '@/features/shell/NavLink';
 import { Link } from '@/i18n/navigation';
 import { getSessionUser } from '@/lib/auth/session';
-import { getChromeBrand, getChromeFooter, siteHref } from '@/lib/chrome';
+import { getChromeBrand, getChromeFooter, siteHref, resolveBrandName } from '@/lib/chrome';
 import { countUnread } from '@/lib/data';
 import { hasLiveContest } from '@/features/promo/format';
 import { loadContests } from '@/lib/promo';
@@ -39,7 +39,7 @@ export default async function AppLayout({ children, params }: LayoutProps) {
     // «Конкурс» в меню — только если есть идущий или будущий (сбой чтения — пункта нет).
     loadContests(user.id, params.locale),
   ]);
-  const brandName = brand?.name ?? tCommon('brand');
+  const brandName = resolveBrandName(brand, tCommon('cabinet'));
   // Поддержка: бейдж кнопки и вкл/выкл канала чата — из базы (настройки админки).
   // Сбой чтения не роняет кабинет: кнопки просто нет (fail-closed для виджета).
   const support = await Promise.all([loadSupportSettings(getPool()), countClientUnread(getPool(), user.id)])
@@ -147,7 +147,7 @@ export default async function AppLayout({ children, params }: LayoutProps) {
                 riskWarning={footer.riskWarning}
                 brandName={brandName}
                 socials={brand?.socials ?? []}
-                copyright={tCommon('copyright', { year: new Date().getFullYear() })}
+                copyright={tCommon('copyright', { year: new Date().getFullYear(), brand: brandName })}
               />
             </div>
           )}

@@ -64,11 +64,14 @@ async function main(): Promise<number> {
     [SUPPORT_OP.id, SUPPORT_OP.login, SUPPORT_OP.name],
   );
 
-  // Часы по умолчанию (пн–пт 09–21 МСК); имя отправителя — бренд ячейки.
+  // Часы по умолчанию (пн–пт 09–21 МСК); имя отправителя — бренд ячейки из
+  // окружения (SITE_BRAND_NAME, тот же мост, что у кабинета), не строкой в коде:
+  // контента и бренда в коде нет (web-cms-lastgood). Нет бренда — нейтрально.
+  const brand = readEnv(process.env.SITE_BRAND_NAME);
   const S: SupportSettings = {
     ...DEFAULT_SUPPORT_SETTINGS,
     hours: { ...DEFAULT_SUPPORT_SETTINGS.hours, alwaysOpen: false },
-    mail: { fromName: 'Wholesalefy · Поддержка' },
+    mail: { fromName: brand ? `${brand} · Поддержка` : DEFAULT_SUPPORT_SETTINGS.mail.fromName },
   };
   await pool.query(`UPDATE support_settings SET settings = $1 WHERE id = 1`, [JSON.stringify(S)]);
 

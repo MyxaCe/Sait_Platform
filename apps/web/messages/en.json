@@ -1,6 +1,6 @@
 {
   "meta": {
-    "title": "Apex Capital — Trade Global Markets",
+    "title": "{brand} — Trade Global Markets",
     "description": "A trading platform for Forex, stocks, crypto, indices and metals. Real-time quotes, a web terminal and a single client area."
   },
   "common": {
@@ -11,7 +11,10 @@
     "read": "Read →",
     "minRead": "{minutes} min read",
     "backHome": "Back to home",
-    "trade": "Trade"
+    "trade": "Trade",
+    "cmsUnavailableTitle": "Content is temporarily unavailable",
+    "cmsUnavailableText": "We could not load this page. Please try again in a couple of minutes.",
+    "retry": "Try again"
   },
   "validation": {
     "nameMin": "At least 2 characters",
@@ -50,105 +53,13 @@
     "energy": "Energy"
   },
   "nav": {
-    "instruments": "Instruments",
-    "accounts": "Accounts & Pricing",
-    "analytics": "Analytics",
-    "education": "Education",
-    "about": "About Us",
     "mainNav": "Main navigation",
     "mobileNav": "Mobile navigation",
     "openMenu": "Open menu",
     "closeMenu": "Close menu"
   },
   "footer": {
-    "columns": [
-      {
-        "title": "Trading",
-        "links": [
-          {
-            "href": "/instruments",
-            "label": "Trading Instruments"
-          },
-          {
-            "href": "/accounts",
-            "label": "Account Types"
-          },
-          {
-            "href": "/education/faq",
-            "label": "FAQ"
-          },
-          {
-            "href": "/promotions",
-            "label": "Promotions & Bonuses"
-          }
-        ]
-      },
-      {
-        "title": "Analytics",
-        "links": [
-          {
-            "href": "/analytics/news",
-            "label": "Market News"
-          },
-          {
-            "href": "/analytics/calendar",
-            "label": "Economic Calendar"
-          },
-          {
-            "href": "/education/articles",
-            "label": "Education"
-          },
-          {
-            "href": "/blog",
-            "label": "Blog"
-          }
-        ]
-      },
-      {
-        "title": "Company",
-        "links": [
-          {
-            "href": "/about",
-            "label": "About Us"
-          },
-          {
-            "href": "/partners",
-            "label": "Partners"
-          },
-          {
-            "href": "/company/careers",
-            "label": "Careers"
-          },
-          {
-            "href": "/company/contacts",
-            "label": "Contacts"
-          }
-        ]
-      },
-      {
-        "title": "Legal",
-        "links": [
-          {
-            "href": "/legal/privacy",
-            "label": "Privacy Policy"
-          },
-          {
-            "href": "/legal/terms",
-            "label": "Terms of Use"
-          },
-          {
-            "href": "/legal/risk-disclosure",
-            "label": "Risk Disclosure"
-          },
-          {
-            "href": "/status",
-            "label": "Service Status"
-          }
-        ]
-      }
-    ],
-    "riskWarning": "Risk warning: trading CFDs and leveraged products carries a high level of risk and may result in the loss of your entire invested capital. Make sure you fully understand the risks involved before trading.",
-    "copyright": "© {year} Apex Capital. All rights reserved."
+    "copyright": "© {year} {brand}. All rights reserved."
   },
   "home": {
     "hero": {
@@ -202,7 +113,7 @@
     },
     "download": {
       "title": "Markets in your pocket",
-      "subtitle": "Install Apex Capital as an app: home screen icon, full screen without browser bars and instant access to the markets.",
+      "subtitle": "Install {brand} as an app: home screen icon, full screen without browser bars and instant access to the markets.",
       "features": [
         "Real-time quotes and market news",
         "Works offline: your latest data is always at hand",
@@ -320,8 +231,17 @@
       "colPrevious": "Prev.",
       "colForecast": "Forecast",
       "colActual": "Actual",
-      "noEvents": "No events with the selected impact level."
-    }
+      "noEvents": "No events with the selected impact level.",
+      "noSourceTitle": "The calendar is not connected yet",
+      "noSourceText": "The economic events source is not connected yet. We do not show events we cannot verify."
+    },
+    "categories": {
+      "forex": "Forex",
+      "stocks": "Stocks",
+      "crypto": "Crypto",
+      "economy": "Economy"
+    },
+    "noNews": "No news yet."
   },
   "education": {
     "title": "Trading Education",
@@ -361,7 +281,7 @@
   },
   "auth": {
     "backHome": "← Back to home",
-    "footerRisk": "Trading leveraged products involves a high level of risk. © {year} Apex Capital",
+    "footerRisk": "Trading leveraged products involves a high level of risk. © {year} {brand}",
     "loginMetaTitle": "Client Area Login",
     "loginTitle": "Client Area",
     "loginText": "The trader's dashboard launches together with the trading platform — it will live on the my.* subdomain with single sign-on (SSO). Meanwhile, you can apply for an account: we'll send invitations first.",
@@ -453,17 +373,9 @@
     "metaDescription": "Contact support: feedback form and email. We reply to the address you provide.",
     "title": "Contacts & Support",
     "subtitle": "Pick a convenient channel or write to us using the form.",
-    "channels": [
-      {
-        "title": "Email",
-        "value": "support@apexcapital.example",
-        "detail": "Reply within one business day"
-      }
-    ],
     "writeUs": "Write to us",
     "writeUsText": "We'll reply by email within one business day.",
     "offices": "Offices",
-    "officesList": [],
     "form": {
       "name": "Name",
       "email": "Email",
@@ -497,7 +409,7 @@
   },
   "about": {
     "metaTitle": "About Us",
-    "metaDescription": "Apex Capital is a trading platform: a web terminal, a single client area, identity verification and USDT deposits reconciled on-chain.",
+    "metaDescription": "{brand} is a trading platform: a web terminal, a single client area, identity verification and USDT deposits reconciled on-chain.",
     "badge": "Technology · transparency · control",
     "title": "A trading platform <accent>transparent in every operation</accent>",
     "subtitle": "We build our own trading infrastructure and make it clear to retail traders: real-time quotes, a single client area and verifiable movement of funds.",
@@ -581,180 +493,36 @@
     "badge": "Up to 40% of the spread · daily payouts",
     "title": "Partner Program",
     "subtitle": "Earn by referring traders or launch a brokerage under your own brand on our platform.",
-    "models": [
-      {
-        "name": "Introducing Broker (IB)",
-        "description": "Recommend us to your audience and receive up to 40% of the spread from every referred client — for life, as long as the client trades.",
-        "features": [
-          "Daily payouts with no minimum threshold",
-          "Referral links, promo materials and landing pages",
-          "Partner dashboard with real-time statistics",
-          "Sub-partner network: 10% of sub-agents' rewards"
-        ]
-      },
-      {
-        "name": "White Label",
-        "description": "Your own brokerage brand on our infrastructure: platform, liquidity, back office and support — turnkey.",
-        "features": [
-          "Trading platform and client area under your brand",
-          "Aggregated Tier-1 liquidity",
-          "Risk management and reporting out of the box",
-          "Launch from 6 weeks with a dedicated project manager"
-        ]
-      }
-    ],
     "tiersTitle": "IB reward tiers",
     "tiersSubtitle": "Your share of the spread grows with your client base. Tiers are reviewed monthly — upgrades only during the first 6 months.",
     "tierMax": "Maximum",
     "fromSpread": "of the spread",
-    "tiers": [
-      {
-        "name": "Bronze",
-        "clients": "up to 20 active clients",
-        "share": "25%"
-      },
-      {
-        "name": "Silver",
-        "clients": "20–100 active clients",
-        "share": "30%"
-      },
-      {
-        "name": "Gold",
-        "clients": "100+ active clients",
-        "share": "40%",
-        "featured": true
-      }
-    ],
     "howTitle": "How to start",
-    "steps": [
-      {
-        "title": "Application",
-        "text": "Fill in the form — a manager will contact you within one business day"
-      },
-      {
-        "title": "Tools",
-        "text": "Get links, promo materials and access to the partner dashboard"
-      },
-      {
-        "title": "Income",
-        "text": "Refer clients and receive payouts every day"
-      }
-    ],
     "ctaTitle": "Ready to become a partner?",
     "ctaText": "Send a request with the “Partnership” topic — a manager will prepare personal terms and estimate your potential income.",
     "ctaButton": "Become a Partner"
   },
   "promotions": {
     "metaTitle": "Promotions & Bonuses",
-    "metaDescription": "Current Apex Capital offers: 30% welcome bonus, spread cashback, demo trading contest and the refer-a-friend program.",
+    "metaDescription": "Current {brand} offers: 30% welcome bonus, spread cashback, demo trading contest and the refer-a-friend program.",
     "title": "Promotions & Bonuses",
     "subtitle": "Current offers for new and active traders. All conditions — transparent, right on the card.",
-    "promos": [
-      {
-        "badge": "For new clients",
-        "title": "30% Welcome Bonus",
-        "description": "Fund your first account with $500 or more — get +30% in trading funds. The bonus counts towards margin and helps you withstand drawdowns.",
-        "terms": "Bonus up to $5,000. Available once; released at 1 lot per every $10 of bonus.",
-        "ctaLabel": "Get the bonus",
-        "href": "/register?promo=welcome30",
-        "featured": true
-      },
-      {
-        "badge": "For active traders",
-        "title": "Up to 15% Spread Cashback",
-        "description": "Trade 50+ lots a month — we return part of the spread in real money to your account. The bigger the volume, the higher the rate.",
-        "terms": "Credited automatically on the first day of the following month. No cap on the amount.",
-        "ctaLabel": "Join",
-        "href": "/register?promo=cashback"
-      },
-      {
-        "badge": "Risk-free",
-        "title": "Demo Trading Contest",
-        "description": "A monthly competition on demo accounts with a $10,000 prize pool. Three winners receive live trading accounts funded with the prize money.",
-        "terms": "Free to enter. A new round starts on the 1st of every month.",
-        "ctaLabel": "Enter the contest",
-        "href": "/register?demo=1"
-      },
-      {
-        "badge": "Referrals",
-        "title": "Refer a Friend — Get $50",
-        "description": "Share your personal link: when your friend opens an account and starts trading, you both receive $50 on your trading accounts.",
-        "terms": "Your friend must deposit at least $100 and trade 1 lot within 30 days.",
-        "ctaLabel": "Get your link",
-        "href": "/register"
-      }
-    ],
     "disclaimer": "Full terms of each promotion are available in the corresponding regulations. The company may change promotion terms with notice to participants. Trading leveraged products involves risk — bonus funds do not remove the need to manage it."
   },
   "blog": {
     "metaTitle": "Blog & Press Center",
-    "metaDescription": "Apex Capital company news: products, results, industry events and announcements.",
+    "metaDescription": "{brand} company news: products, results, industry events and announcements.",
     "title": "Blog & Press Center",
     "subtitle": "What's new in the product, the company and the industry — first-hand.",
-    "backAll": "← All posts",
-    "categoryLabels": {
-      "company": "Company",
-      "product": "Product",
-      "events": "Events"
-    }
+    "empty": "No posts yet."
   },
   "careers": {
     "metaTitle": "Careers",
-    "metaDescription": "Apex Capital jobs: engineering, analytics, support. Remote work.",
+    "metaDescription": "{brand} jobs: engineering, analytics, support. Remote work.",
     "badge": "FinTech · remote",
     "title": "Build the fintech of the future with us",
     "subtitle": "We build a trading platform: website, client area and web terminal. We are looking for people who care about speed, reliability and an honest product.",
-    "benefits": [
-      {
-        "title": "Flexible format",
-        "text": "Office, hybrid or fully remote — your choice"
-      },
-      {
-        "title": "FinTech scale",
-        "text": "Problems at the intersection of finance and high load: real-time quotes and money operations"
-      },
-      {
-        "title": "Growth",
-        "text": "Budget for training and conferences, internal market courses"
-      },
-      {
-        "title": "Care",
-        "text": "Health insurance incl. dental, sports, 5 weeks of vacation"
-      }
-    ],
     "vacanciesTitle": "Open positions",
-    "vacancies": [
-      {
-        "title": "Senior Frontend Developer (React/Next.js)",
-        "department": "Engineering",
-        "location": "Remote",
-        "type": "Full-time"
-      },
-      {
-        "title": "Backend Developer (Go, liquidity & execution)",
-        "department": "Engineering",
-        "location": "Remote",
-        "type": "Full-time"
-      },
-      {
-        "title": "DevOps / SRE (trading infrastructure)",
-        "department": "Infrastructure",
-        "location": "Remote",
-        "type": "Full-time"
-      },
-      {
-        "title": "Financial Analyst (FX markets)",
-        "department": "Research",
-        "location": "Remote",
-        "type": "Full-time"
-      },
-      {
-        "title": "Support Specialist (Russian + English)",
-        "department": "Client Service",
-        "location": "Remote",
-        "type": "2/2 shift schedule"
-      }
-    ],
     "apply": "Apply →",
     "applySubject": "Application: {title}",
     "notFound": "Didn't find a suitable role? Write to us at <email></email> — we find places for strong candidates beyond open positions."
@@ -767,7 +535,7 @@
   },
   "status": {
     "metaTitle": "Service Status",
-    "metaDescription": "Current status of Apex Capital services: trading API, quotes, client area, payments.",
+    "metaDescription": "Current status of {brand} services: trading API, quotes, client area, payments.",
     "title": "Service Status",
     "subtitle": "The state of every subsystem in real time. The “Quotes” row reflects your actual WebSocket connection.",
     "bannerOk": "All systems operational",
@@ -777,45 +545,7 @@
     "stateOutage": "Outage",
     "stateMaintenance": "Maintenance",
     "uptime": "90-day uptime: {value}",
-    "wsName": "Quotes (WebSocket)",
-    "wsDescription": "Real-time price stream — the status of your connection",
-    "services": [
-      {
-        "name": "Website & registration",
-        "description": "Marketing site, application forms",
-        "uptime": "99.99%"
-      },
-      {
-        "name": "Trading API",
-        "description": "Order execution, trading operations",
-        "uptime": "99.97%"
-      },
-      {
-        "name": "Client area",
-        "description": "Authentication, profile, documents",
-        "uptime": "99.95%"
-      },
-      {
-        "name": "Payment gateway",
-        "description": "Deposits and withdrawals",
-        "uptime": "99.92%"
-      }
-    ],
-    "incidentsTitle": "Incident history",
-    "incidents": [
-      {
-        "date": "2026-07-14",
-        "title": "Delayed card withdrawal processing",
-        "status": "Resolved",
-        "text": "From 10:20 to 12:45 UTC some withdrawal requests were processed with a delay due to degradation on the payment provider's side. All requests have been executed and funds credited."
-      },
-      {
-        "date": "2026-06-30",
-        "title": "Scheduled trading API maintenance",
-        "status": "Completed",
-        "text": "On the night of June 29–30 (01:00–02:30 UTC, markets closed) the execution infrastructure was upgraded. Downtime was 12 minutes within the announced window."
-      }
-    ]
+    "incidentsTitle": "Incident history"
   },
   "offline": {
     "metaTitle": "No Connection",
@@ -839,5 +569,10 @@
   "supportFab": {
     "label": "Support",
     "aria": "Contact support"
+  },
+  "pwaShortcuts": {
+    "quotes": "Quotes",
+    "news": "Market news",
+    "register": "Open account"
   }
 }

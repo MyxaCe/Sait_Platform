@@ -33,7 +33,9 @@ ROOT="${RUNTIME_CONFIG_ROOT:-/app/apps}"
 
 # Список файлов-кандидатов считается ОДИН раз: текстовые файлы сборки,
 # без `node_modules`.
-CANDIDATES="$(find "$ROOT" -type d -name node_modules -prune -o -type f   \( -name '*.js' -o -name '*.html' -o -name '*.json' -o -name '*.css' -o -name '*.txt' \)   -print 2>/dev/null)"
+# Кэш витрины (`.next/cache`, постоянный том) не обходится: там ответы CMS,
+# плейсхолдеров в них нет, а том растёт и замедлял бы каждый старт.
+CANDIDATES="$(find "$ROOT" -type d \( -name node_modules -o -path '*/.next/cache' \) -prune -o -type f   \( -name '*.js' -o -name '*.html' -o -name '*.json' -o -name '*.css' -o -name '*.txt' \)   -print 2>/dev/null)"
 
 # «плейсхолдер|переменная|обязательность». Добавить адрес — добавить строку.
 #

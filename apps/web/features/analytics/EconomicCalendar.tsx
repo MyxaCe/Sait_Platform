@@ -4,7 +4,25 @@ import { useLocale, useTranslations } from 'next-intl';
 import { useMemo, useState } from 'react';
 import { cn } from '@broker/ui';
 import { formatTime, formatWeekday } from '@broker/utils';
-import type { EconomicEvent, EventImportance } from './calendar-data';
+
+/**
+ * Форма события календаря. Источника событий пока нет: синтетический
+ * календарь из кода удалён (10.11) — он выдавал выдуманные «факт» и
+ * «прогноз» за реальные макроданные. Компонент ждёт провайдера (или
+ * коллекцию CMS v2, блок `economic-calendar`).
+ */
+export type EventImportance = 1 | 2 | 3;
+
+export interface EconomicEvent {
+  id: string;
+  datetime: string;
+  currency: string;
+  title: string;
+  importance: EventImportance;
+  previous: string | null;
+  forecast: string | null;
+  actual: string | null;
+}
 
 export function EconomicCalendar({ events }: { events: EconomicEvent[] }) {
   const t = useTranslations('analytics.calendar');

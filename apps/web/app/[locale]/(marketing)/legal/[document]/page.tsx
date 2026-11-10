@@ -4,19 +4,26 @@ import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { Container, Section, cn } from '@broker/ui';
 import { formatDate } from '@broker/utils';
 import { Link } from '@/i18n/navigation';
-import { findLegalDocument, LEGAL_SLUGS } from '@/features/legal/documents';
-import { getCms } from '@/lib/cms';
+import { getCms, staticParamsFromCms } from '@/lib/cms';
 
 interface PageParams {
   params: { locale: string; document: string };
 }
 
-export function generateStaticParams() {
-  return LEGAL_SLUGS.map((document) => ({ document }));
+async function legalDocuments(locale: string) {
+  const { items } = await getCms('legal', { locale: locale === 'en' ? 'en' : 'ru' });
+  return items;
 }
 
-export function generateMetadata({ params }: PageParams): Metadata {
-  const doc = findLegalDocument(params.document, params.locale);
+// Список документов — из CMS; нет CMS на сборке → пусто, страницы по первому запросу
+export function generateStaticParams({ params }: { params: { locale: string } }) {
+  return staticParamsFromCms(async () =>
+    (await legalDocuments(params.locale)).map((d) => ({ document: d.slug })),
+  );
+}
+
+export async function generateMetadata({ params }: PageParams): Promise<Metadata> {
+  const doc = (await legalDocuments(params.locale)).find((d) => d.slug === params.document);
   if (!doc) return {};
   return { title: doc.title, description: doc.intro };
 }
@@ -24,10 +31,8 @@ export function generateMetadata({ params }: PageParams): Metadata {
 export default async function LegalDocumentPage({ params }: PageParams) {
   setRequestLocale(params.locale);
 
-  // Контент из CMS-слоя (тег cms:legal, вебхук-инвалидация)
-  const { items: documents } = await getCms('legal', {
-    locale: params.locale === 'en' ? 'en' : 'ru',
-  });
+  // Контент из CMS (теги cms:legal, cms:legal:<сайт>; вебхук-инвалидация)
+  const documents = await legalDocuments(params.locale);
   const doc = documents.find((d) => d.slug === params.document);
   if (!doc) notFound();
 

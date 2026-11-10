@@ -124,6 +124,12 @@ services:
       ALLOW_SENTRY_TEST: ${ALLOW_SENTRY_TEST:-0}
     ports:
       - '3000:3000'
+    # Кэш витрины на постоянном томе: data-cache Next (ответы CMS) и
+    # последняя удачная версия ответов CMS (`lib/cms-last-good.ts`).
+    # Без тома каждый деплой обнулял его, и при лежащей CMS витрине
+    # нечего было показать (решение 10.11).
+    volumes:
+      - web-next-cache:/app/apps/web/.next/cache
     restart: unless-stopped
     depends_on:
       site-db:
@@ -200,3 +206,4 @@ volumes:
   cms-db-data:
   cms-media:
   cabinet-uploads:
+  web-next-cache:

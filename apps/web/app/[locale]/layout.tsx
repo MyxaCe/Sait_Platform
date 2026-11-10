@@ -9,8 +9,8 @@ import { PreviewBanner } from '@/components/PreviewBanner';
 import { OrganizationJsonLd } from '@/components/seo/OrganizationJsonLd';
 import { routing } from '@/i18n/routing';
 import { hexToRgbChannels, resolvePrimaryColor } from '@/lib/brand';
-import { getCms } from '@/lib/cms';
-import { SITE_NAME, SITE_URL } from '@/lib/site';
+import { getCms, isCmsConfigured } from '@/lib/cms';
+import { SITE_URL } from '@/lib/site';
 import { Providers } from './providers';
 import '../globals.css';
 
@@ -25,8 +25,17 @@ interface LayoutProps {
   params: { locale: string };
 }
 
+/**
+ * Пререндер на сборке — только если сборке доступна CMS.
+ *
+ * В CI образ собирается без CMS. Прежде страницы пререндерились из
+ * фикстур кода, и стенд час после каждого деплоя показывал код вместо
+ * CMS (аудит 10.11). Теперь без CMS список пуст: страницы собираются
+ * при первом запросе (on-demand ISR, `dynamicParams` по умолчанию true)
+ * из CMS или из последней сохранённой версии её ответа.
+ */
 export function generateStaticParams() {
-  return routing.locales.map((locale) => ({ locale }));
+  return isCmsConfigured() ? routing.locales.map((locale) => ({ locale })) : [];
 }
 
 export async function generateMetadata({
@@ -44,10 +53,12 @@ export async function generateMetadata({
     draft = false;
   }
 
-  // Favicon из CMS (White Label): если загружен — переопределяет статический
+  // Бренд из CMS (White Label): имя — в title/OG/applicationName,
+  // favicon — если загружен, переопределяет статический. Имени в коде нет.
   const brand = await getCms('brand', {
     locale: params.locale === 'en' ? 'en' : 'ru',
   });
+  const title = t('title', { brand: brand.name });
 
   return {
     ...(brand.favicon
@@ -65,22 +76,22 @@ export async function generateMetadata({
       : {}),
     metadataBase: new URL(SITE_URL),
     title: {
-      default: t('title'),
-      template: `%s — ${SITE_NAME}`,
+      default: title,
+      template: `%s — ${brand.name}`,
     },
     description: t('description'),
-    applicationName: SITE_NAME,
+    applicationName: brand.name,
     openGraph: {
       type: 'website',
-      siteName: SITE_NAME,
+      siteName: brand.name,
       locale: params.locale === 'en' ? 'en_US' : 'ru_RU',
       url: SITE_URL,
-      title: t('title'),
+      title,
       description: t('description'),
     },
     twitter: {
       card: 'summary_large_image',
-      title: t('title'),
+      title,
       description: t('description'),
     },
     robots: {
@@ -92,7 +103,7 @@ export async function generateMetadata({
     other: { 'rendered-at': new Date().toISOString() },
     appleWebApp: {
       capable: true,
-      title: SITE_NAME,
+      title: brand.name,
       statusBarStyle: 'black-translucent',
     },
   };
@@ -116,12 +127,12 @@ export default async function RootLayout({ children, params }: LayoutProps) {
   const messages = await getMessages();
 
   // Бренд из CMS (тег cms:brand): акцентный цвет инжектируется поверх
-  // токенов. В v2 цвет может быть `null` — тогда идёт наш запасной
-  // (WEB-14): страница без фирменного цвета была бы тихим регрессом
-  // переезда, заметным не раньше, чем кто-нибудь посмотрит на макет.
+  // токенов. Цвета в CMS нет (`null` в v2) — действует токен `--accent`:
+  // запасного цвета бренда в коде нет (10.11).
   const brand = await getCms('brand', { locale: locale as 'ru' | 'en' });
   const primary = resolvePrimaryColor(brand.primaryColor);
-  const accentChannels = hexToRgbChannels(primary.color);
+  const accentChannels = primary.color ? hexToRgbChannels(primary.color) : null;
+  const tMeta = await getTranslations({ locale, namespace: 'meta' });
 
   // В preview страница динамическая, rendered-at меняется на каждый запрос —
   // автообновление там не имеет смысла (тот же try/catch, что в generateMetadata)
@@ -139,7 +150,11 @@ export default async function RootLayout({ children, params }: LayoutProps) {
         {accentChannels && (
           <style>{`:root{--accent:${accentChannels};}`}</style>
         )}
-        <OrganizationJsonLd />
+        <OrganizationJsonLd
+          name={brand.name}
+          description={tMeta('description')}
+          logoUrl={brand.logo?.url ?? null}
+        />
         <NextIntlClientProvider messages={messages}>
           <Providers>{children}</Providers>
         </NextIntlClientProvider>

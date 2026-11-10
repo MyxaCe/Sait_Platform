@@ -1,4 +1,15 @@
+import { tmpdir } from 'node:os';
+import path from 'node:path';
 import { defineConfig, devices } from '@playwright/test';
+
+/**
+ * Витрина в e2e поднимается со СТАБОМ CMS (`e2e/support/cms-stub.mjs`).
+ * С 10.11 контента в коде нет: без CMS витрина честно отвечает «Контент
+ * временно недоступен», и сценарии проверяли бы только заглушку.
+ * Порты — переменными: локально 3000 часто занят.
+ */
+const PORT = process.env.E2E_PORT || '3000';
+const STUB_PORT = process.env.CMS_STUB_PORT || '55493';
 
 export default defineConfig({
   testDir: './e2e',
@@ -19,7 +30,7 @@ export default defineConfig({
   reporter: process.env.CI ? 'github' : 'list',
   timeout: 60_000,
   use: {
-    baseURL: 'http://localhost:3000',
+    baseURL: `http://localhost:${PORT}`,
     trace: 'on-first-retry',
   },
   projects: [
@@ -27,19 +38,33 @@ export default defineConfig({
     // ~50% трафика — мобильные: гоняем те же сценарии на телефоне
     { name: 'mobile-chromium', use: { ...devices['Pixel 7'] } },
   ],
-  webServer: {
-    // CI: e2e гоняется против production-сборки (build уже выполнен шагом раньше)
-    command: process.env.CI ? 'pnpm start' : 'pnpm dev',
-    url: 'http://localhost:3000',
-    reuseExistingServer: !process.env.CI,
-    /*
-     * В CI сервер уже собран (`pnpm start`) и поднимается быстро. Локально
-     * это ХОЛОДНЫЙ `next dev`, и в две минуты он не укладывается: прогон
-     * падал с «Timed out waiting 120000ms from config.webServer», то есть
-     * по причине, не имеющей отношения ни к одному проверяемому свойству.
-     * Отказ, не относящийся к предмету проверки, — тоже мёртвый тест
-     * (WEB-18).
-     */
-    timeout: process.env.CI ? 120_000 : 300_000,
-  },
+  webServer: [
+    {
+      command: 'node e2e/support/cms-stub.mjs',
+      url: `http://127.0.0.1:${STUB_PORT}/health`,
+      env: { CMS_STUB_PORT: STUB_PORT },
+      reuseExistingServer: !process.env.CI,
+    },
+    {
+      // CI: e2e гоняется против production-сборки (build уже выполнен шагом раньше)
+      command: process.env.CI ? `pnpm exec next start -p ${PORT}` : `pnpm exec next dev -p ${PORT}`,
+      url: `http://localhost:${PORT}`,
+      reuseExistingServer: !process.env.CI,
+      env: {
+        CMS_API_URL: `http://127.0.0.1:${STUB_PORT}/v1`,
+        SITE_SLUG: 'e2e',
+        // Последняя версия ответов CMS — во временном каталоге прогона
+        CMS_LAST_GOOD_DIR: path.join(tmpdir(), `web-e2e-cms-last-good-${PORT}`),
+      },
+      /*
+       * В CI сервер уже собран (`next start`) и поднимается быстро. Локально
+       * это ХОЛОДНЫЙ `next dev`, и в две минуты он не укладывается: прогон
+       * падал с «Timed out waiting 120000ms from config.webServer», то есть
+       * по причине, не имеющей отношения ни к одному проверяемому свойству.
+       * Отказ, не относящийся к предмету проверки, — тоже мёртвый тест
+       * (WEB-18).
+       */
+      timeout: process.env.CI ? 120_000 : 300_000,
+    },
+  ],
 });

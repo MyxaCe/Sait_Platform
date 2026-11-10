@@ -120,7 +120,7 @@ describe('QA-05 · ноль не подставляют вместо отсут�
     const scanned = SCAN_DIRS.flatMap((d) => sourceFiles(path.join(ROOT, d)));
 
     expect(scanned.length).toBeGreaterThan(100);
-    expect(scanned.some((f) => f.includes('cms-mock'))).toBe(true);
+    expect(scanned.some((f) => f.includes(path.join('web', 'lib', 'cms.ts')))).toBe(true);
     expect(scanned.some((f) => f.includes(path.join('auth', 'session')))).toBe(true);
   });
 

@@ -3,6 +3,7 @@ import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { Container, Section } from '@broker/ui';
 import { StatusBoard } from '@/features/status/StatusBoard';
 import { getCms } from '@/lib/cms';
+import { brandName } from '@/lib/brand';
 
 interface PageProps {
   params: { locale: string };
@@ -10,7 +11,11 @@ interface PageProps {
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const t = await getTranslations({ locale: params.locale, namespace: 'status' });
-  return { title: t('metaTitle'), description: t('metaDescription'), robots: { index: false } };
+  return {
+    title: t('metaTitle'),
+    description: t('metaDescription', { brand: await brandName(params.locale) }),
+    robots: { index: false },
+  };
 }
 
 export default async function StatusPage({ params }: PageProps) {

@@ -7,7 +7,7 @@
  */
 
 import { readTenantSlug } from '@broker/tenant';
-import { envOr } from '@broker/utils';
+import { envOr, readEnv } from '@broker/utils';
 
 export interface ChromeBrand {
   name: string;
@@ -87,6 +87,16 @@ export async function getChromeBrand(locale: string): Promise<ChromeBrand | null
     logo: logo && typeof logo.url === 'string' ? logo : null,
     socials: Array.isArray(data.socials) ? (data.socials as ChromeBrand['socials']) : [],
   };
+}
+
+/**
+ * Имя бренда для хрома кабинета. Строки бренда в коде нет (10.11):
+ * CMS (`cms:brand`) → окружение ячейки `SITE_BRAND_NAME` (временный мост,
+ * пока у кабинета нет своей «последней версии» ответа CMS) → нейтральная
+ * метка интерфейса («Личный кабинет»), а не чужое или выдуманное имя.
+ */
+export function resolveBrandName(brand: ChromeBrand | null, neutral: string): string {
+  return brand?.name ?? readEnv(process.env.SITE_BRAND_NAME) ?? neutral;
 }
 
 export async function getChromeFooter(locale: string): Promise<ChromeFooter | null> {
