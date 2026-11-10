@@ -12,7 +12,8 @@
     "seed:kyc-fixture": "tsx scripts/seed-kyc-fixture.ts",
     "seed:demo": "tsx scripts/seed-demo.ts",
     "seed:promo": "tsx scripts/seed-promo.ts",
-    "seed:support-demo": "tsx scripts/seed-support-demo.ts"
+    "seed:support-demo": "tsx scripts/seed-support-demo.ts",
+    "support:always-open": "tsx scripts/support-always-open.ts"
   },
   "dependencies": {
     "@broker/money": "workspace:*",

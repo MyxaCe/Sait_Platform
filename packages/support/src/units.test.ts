@@ -39,6 +39,23 @@ describe('рабочие часы и SLA', () => {
     expect(addBusinessMinutes(always, new Date('2026-11-14T12:00:00Z'), 15).toISOString()).toBe('2026-11-14T12:15:00.000Z');
   });
 
+  it('24/7 (стенд владельца): всегда «на связи», SLA без пауз на ночь/выходные/праздники', () => {
+    // Хранится как в базе после support:always-open — частичный JSON поверх умолчаний.
+    const s = parseSupportSettings({ hours: { alwaysOpen: true, holidays: ['2026-11-15'] } });
+    expect(validateSettings(s)).toEqual([]);
+    for (const at of ['2026-11-15T00:30:00Z', '2026-11-14T23:59:00Z', '2026-11-10T21:30:00Z', '2026-11-16T03:00:00Z']) {
+      expect(isWithinHours(s, new Date(at)), at).toBe(true); // вс-праздник ночью, сб, после закрытия, пн до открытия
+    }
+    // Пятница 20:50 МСК + 240 мин email-SLA → суббота 00:50 МСК, а не понедельник.
+    const due = addBusinessMinutes(s, new Date('2026-11-13T17:50:00Z'), 240);
+    expect(due.toISOString()).toBe('2026-11-13T21:50:00.000Z');
+    expect(describeHours(s, 'ru')).toBe('круглосуточно');
+    // Рабочие дни можно хоть все выключить — при 24/7 это не ошибка.
+    const noDays = parseSupportSettings({ hours: { alwaysOpen: true, week: { mon: null, tue: null, wed: null, thu: null, fri: null, sat: null, sun: null } } });
+    expect(validateSettings(noDays)).toEqual([]);
+    expect(isWithinHours(noDays, new Date('2026-11-11T12:00:00Z'))).toBe(true);
+  });
+
   it('подпись часов для текстов', () => {
     expect(describeHours(DEFAULT_SUPPORT_SETTINGS, 'ru')).toBe('пн–пт 09:00–21:00 (Europe/Moscow)');
     expect(describeHours({ ...UTC, hours: { ...UTC.hours, alwaysOpen: true } }, 'en')).toBe('24/7');
