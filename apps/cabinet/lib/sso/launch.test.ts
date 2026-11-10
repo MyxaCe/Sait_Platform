@@ -6,14 +6,14 @@ import { checkReturnUrl, safeLaunchNext, terminalLaunchHref, terminalOrigins } f
 describe('белый список origin терминала', () => {
   it('через пробел/запятую, нормализуется до origin, мусор отброшен', () => {
     expect(
-      terminalOrigins({ TERMINAL_ORIGINS: 'https://t.example.com/app, https://t2.example.com  not-a-url' } as NodeJS.ProcessEnv),
+      terminalOrigins({ TERMINAL_ORIGINS: 'https://t.example.com/app, https://t2.example.com  not-a-url' } as unknown as NodeJS.ProcessEnv),
     ).toEqual(['https://t.example.com', 'https://t2.example.com']);
   });
   it('по умолчанию — origin NEXT_PUBLIC_TERMINAL_URL; ничего — пусто (всё отвергается)', () => {
-    expect(terminalOrigins({ NEXT_PUBLIC_TERMINAL_URL: 'https://t.example.com/x' } as NodeJS.ProcessEnv)).toEqual([
+    expect(terminalOrigins({ NEXT_PUBLIC_TERMINAL_URL: 'https://t.example.com/x' } as unknown as NodeJS.ProcessEnv)).toEqual([
       'https://t.example.com',
     ]);
-    expect(terminalOrigins({} as NodeJS.ProcessEnv)).toEqual([]);
+    expect(terminalOrigins({} as unknown as NodeJS.ProcessEnv)).toEqual([]);
     expect(checkReturnUrl('https://t.example.com/', [])).toBeNull();
   });
   it('фрагмент возврата отбрасывается', () => {
