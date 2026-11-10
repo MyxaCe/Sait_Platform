@@ -30,7 +30,9 @@ export type ActionGroup =
   | 'platform'
   // ── Поддержка и auth-письма (ветка demo-support) ──
   | 'support'
-  | 'client_auth';
+  | 'client_auth'
+  // ── Менеджеры клиентов (ветка admin-managers) ──
+  | 'managers';
 
 /** Группы — в порядке вывода в фильтре. */
 export const ACTION_GROUPS: { key: ActionGroup; label: string }[] = [
@@ -52,6 +54,8 @@ export const ACTION_GROUPS: { key: ActionGroup; label: string }[] = [
   // ── Поддержка и auth-письма (ветка demo-support) ──
   { key: 'support', label: 'Поддержка: обращения клиентов' },
   { key: 'client_auth', label: 'Вход клиента: сброс пароля и email' },
+  // ── Менеджеры клиентов (ветка admin-managers) ──
+  { key: 'managers', label: 'Менеджеры клиентов' },
 ];
 
 export interface ActionMeta {
@@ -331,6 +335,13 @@ export const ACTION_LABELS: Record<string, ActionMeta> = {
   'auth.password_reset.completed': { label: 'Пароль сброшен, сессии погашены', tone: 'warning', group: 'client_auth' },
   'auth.email_verify.sent': { label: 'Отправлено письмо подтверждения email', tone: 'neutral', group: 'client_auth' },
   'auth.email_verify.confirmed': { label: 'Email подтверждён', tone: 'positive', group: 'client_auth' },
+
+  // ── Менеджеры клиентов (ветка admin-managers, 10.11). Payload: basis, managerId/Name,
+  //    previousManagerId/Name, при массовом назначении — bulk + batchSize. ──
+  'client.manager_assigned': { label: 'Клиенту назначен менеджер', tone: 'info', group: 'managers' },
+  'client.manager_unassigned': { label: 'Менеджер клиента снят', tone: 'neutral', group: 'managers' },
+  'operator.client_manager_granted': { label: 'Оператор стал менеджером клиентов', tone: 'info', group: 'managers' },
+  'operator.client_manager_revoked': { label: 'Снят флаг «менеджер клиентов»', tone: 'neutral', group: 'managers' },
 };
 
 export function actionLabel(action: string): { label: string; tone: StatusTone } {
