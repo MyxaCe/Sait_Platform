@@ -20,6 +20,7 @@ import { DecisionArea } from '../../_money/ActionForm';
 import { Segmented } from '../../_money/Segmented';
 import { PromoHeader } from '../_components/PromoHeader';
 import { RewardActions } from '../_components/PromoForms';
+import { REAL_ACCOUNT_CURRENCY } from '@broker/money';
 import { RewardStatusBadge, SignalBadges, SignalDetails } from '../_components/badges';
 
 /**
@@ -73,7 +74,7 @@ function columns(filter: Filter, selected?: string): DataTableColumn<RewardRow>[
       header: 'Сумма, USDT',
       numeric: true,
       width: '7rem',
-      cell: (r) => <Money minor={r.amountMinor} currency="USDT" hideCurrency className={r.status === 'rejected' ? 'text-muted line-through' : 'font-medium'} />,
+      cell: (r) => <Money minor={r.amountMinor} currency={REAL_ACCOUNT_CURRENCY} hideCurrency className={r.status === 'rejected' ? 'text-muted line-through' : 'font-medium'} />,
     },
     { key: 'signals', header: 'Сигналы', cell: (r) => <SignalBadges signals={r.signals} /> },
     {
@@ -129,7 +130,7 @@ export default async function QueuePage({ searchParams }: { searchParams: { f?: 
           label="Ждут решения"
           value={counts.pending}
           tone={counts.pending > 0 ? 'warning' : 'default'}
-          hint={counts.pending > 0 ? <><Money minor={counts.pendingMinor} currency="USDT" />{counts.oldest ? ` · старейшее ${fmtAge(counts.oldest)}` : ''}</> : 'очередь пуста'}
+          hint={counts.pending > 0 ? <><Money minor={counts.pendingMinor} currency={REAL_ACCOUNT_CURRENCY} />{counts.oldest ? ` · старейшее ${fmtAge(counts.oldest)}` : ''}</> : 'очередь пуста'}
         />
         <KpiTile label="Со связями" value={linked} tone={linked > 0 ? 'negative' : 'default'} hint="общий кошелёк / адрес / IP / самореферал" />
         <KpiTile label="Зачисляются / отказ терминала" value={counts.review} tone={counts.review > 0 ? 'warning' : 'default'} hint="нужен повтор или разбор" />
@@ -169,7 +170,7 @@ export default async function QueuePage({ searchParams }: { searchParams: { f?: 
               <div className="space-y-4">
                 <div>
                   <p className="text-muted text-xs">Сумма на реальный счёт</p>
-                  <Money minor={selected.amountMinor} currency="USDT" className={selected.status === 'rejected' ? 'text-muted text-2xl font-semibold line-through' : 'text-2xl font-semibold'} />
+                  <Money minor={selected.amountMinor} currency={REAL_ACCOUNT_CURRENCY} className={selected.status === 'rejected' ? 'text-muted text-2xl font-semibold line-through' : 'text-2xl font-semibold'} />
                 </div>
                 <DescriptionList
                   columns={1}
@@ -199,7 +200,7 @@ export default async function QueuePage({ searchParams }: { searchParams: { f?: 
                     { term: 'За что', value: `${REWARD_KIND[selected.kind] ?? selected.kind} · ${source(selected)}` },
                     { term: 'Операция в терминале', value: <Mono value={selected.externalRef} middle={14} className="text-[13px]" /> },
                     ...(selected.budgetMinor !== null
-                      ? [{ term: 'Бюджет акции', value: <><Money minor={selected.spentMinor} currency="USDT" /> из <Money minor={selected.budgetMinor} currency="USDT" /></>, hint: 'одобрено / всего' }]
+                      ? [{ term: 'Бюджет акции', value: <><Money minor={selected.spentMinor} currency={REAL_ACCOUNT_CURRENCY} /> из <Money minor={selected.budgetMinor} currency={REAL_ACCOUNT_CURRENCY} /></>, hint: 'одобрено / всего' }]
                       : []),
                   ]}
                 />

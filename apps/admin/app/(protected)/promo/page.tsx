@@ -7,6 +7,7 @@ import { getPromoSettings, listPromotionsWithStats, queueCounts, type PromotionL
 import { fmtAge, fmtDate, fmtDateTime } from '@/lib/ui/format';
 import { PromoHeader } from './_components/PromoHeader';
 import { BudgetBar, PromoStatusBadge, TypeLabel } from './_components/badges';
+import { REAL_ACCOUNT_CURRENCY } from '@broker/money';
 import { SyncForm } from './_components/PromoForms';
 
 /**
@@ -48,7 +49,7 @@ const columns: DataTableColumn<PromotionListRow>[] = [
     cell: (p) =>
       p.pendingCount > 0 ? (
         <span className="inline-flex flex-col items-end">
-          <Money minor={p.pendingMinor} currency="USDT" hideCurrency className="text-warning font-medium" />
+          <Money minor={p.pendingMinor} currency={REAL_ACCOUNT_CURRENCY} hideCurrency className="text-warning font-medium" />
           <span className="text-muted text-xs">начислений: {p.pendingCount}</span>
         </span>
       ) : (
@@ -96,7 +97,7 @@ export default async function PromotionsPage() {
           hint={
             counts.pending > 0 ? (
               <>
-                <Money minor={counts.pendingMinor} currency="USDT" />
+                <Money minor={counts.pendingMinor} currency={REAL_ACCOUNT_CURRENCY} />
                 {counts.oldest ? ` · старейшее ${fmtAge(counts.oldest)}` : ''}
               </>
             ) : (
@@ -111,14 +112,14 @@ export default async function PromotionsPage() {
         />
         <KpiTile
           label="Бюджет одобрен"
-          value={<Money minor={spent} currency="USDT" />}
+          value={<Money minor={spent} currency={REAL_ACCOUNT_CURRENCY} />}
           hint={
             <>
-              из <Money minor={budget} currency="USDT" />
+              из <Money minor={budget} currency={REAL_ACCOUNT_CURRENCY} />
             </>
           }
         />
-        <KpiTile label="Зачислено клиентам" value={<Money minor={credited} currency="USDT" />} hint="реальными USDT через терминал" />
+        <KpiTile label="Зачислено клиентам" value={<Money minor={credited} currency={REAL_ACCOUNT_CURRENCY} />} hint="реальными USDT через терминал" />
       </section>
 
       <Panel title="Акции" count={promos.length} flush footer={<span className="text-muted text-xs">Срез на {fmtDateTime(new Date())}</span>}>

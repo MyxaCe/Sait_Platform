@@ -1,9 +1,10 @@
 import { DescriptionList, Money, type DescriptionItem } from '@broker/ui';
 import type { ParsedRules } from '@broker/promo';
+import { REAL_ACCOUNT_CURRENCY } from '@broker/money';
 import { bpsText } from '@/lib/promo/labels';
 
 const yes = (v: boolean) => (v ? 'да' : 'нет');
-const usdt = (m: number) => <Money minor={m} currency="USDT" />;
+const usdt = (m: number) => <Money minor={m} currency={REAL_ACCOUNT_CURRENCY} />;
 
 /** Правила акции человеческими словами (числа — из базы, не из кода). */
 export function rulesItems(p: ParsedRules): DescriptionItem[] {

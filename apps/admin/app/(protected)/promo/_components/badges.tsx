@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { Money, ToneBadge } from '@broker/ui';
 import type { LinkSignal } from '@broker/promo';
+import { REAL_ACCOUNT_CURRENCY } from '@broker/money';
 import {
   CONDITION_LABELS,
   PARTICIPATION_STATUS,
@@ -75,7 +76,7 @@ export function SignalDetails({
             ) : null}
             {s.kind === 'budget_insufficient' && s.value ? (
               <span className="text-muted text-xs">
-                остаток <Money minor={Number(s.value)} currency="USDT" />
+                остаток <Money minor={Number(s.value)} currency={REAL_ACCOUNT_CURRENCY} />
               </span>
             ) : null}
           </li>
@@ -106,7 +107,7 @@ export function ConditionList({ conditions, compact = false }: { conditions: Con
           <span className={c.met ? 'text-primary' : 'text-secondary'}>{CONDITION_LABELS[c.key] ?? c.key}</span>
           {(c.key === 'turnover' || c.key === 'deposit') && typeof c.target === 'number' ? (
             <span className="text-muted tabular-nums">
-              <Money minor={c.current ?? 0} currency="USDT" hideCurrency /> / <Money minor={c.target} currency="USDT" />
+              <Money minor={c.current ?? 0} currency={REAL_ACCOUNT_CURRENCY} hideCurrency /> / <Money minor={c.target} currency={REAL_ACCOUNT_CURRENCY} />
             </span>
           ) : null}
         </span>
@@ -124,7 +125,7 @@ export function BudgetBar({ spent, budget }: { spent: number; budget: number }) 
         <div className={pct >= 90 ? 'bg-warning h-full' : 'bg-accent h-full'} style={{ width: `${pct}%` }} />
       </div>
       <p className="text-secondary whitespace-nowrap text-xs tabular-nums">
-        <Money minor={spent} currency="USDT" hideCurrency /> / <Money minor={budget} currency="USDT" hideCurrency /> · {pct} %
+        <Money minor={spent} currency={REAL_ACCOUNT_CURRENCY} hideCurrency /> / <Money minor={budget} currency={REAL_ACCOUNT_CURRENCY} hideCurrency /> · {pct} %
       </p>
     </div>
   );

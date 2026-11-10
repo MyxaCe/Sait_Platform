@@ -29,6 +29,7 @@ import { PromoHeader } from '../_components/PromoHeader';
 import { PromotionForm } from '../_components/PromotionForm';
 import { CashbackForm, StatusForms, SyncForm } from '../_components/PromoForms';
 import { RulesList } from '../_components/RulesList';
+import { REAL_ACCOUNT_CURRENCY } from '@broker/money';
 import {
   ConditionList,
   ParticipationBadge,
@@ -85,7 +86,7 @@ const partColumns: DataTableColumn<ParticipantRow>[] = [
     width: '8rem',
     cell: (p) =>
       typeof p.progress.rewardMinor === 'number' ? (
-        <Money minor={p.progress.rewardMinor} currency="USDT" hideCurrency />
+        <Money minor={p.progress.rewardMinor} currency={REAL_ACCOUNT_CURRENCY} hideCurrency />
       ) : (
         <span className="text-muted">—</span>
       ),
@@ -122,7 +123,7 @@ const rewardColumns: DataTableColumn<RewardRow>[] = [
     header: 'Сумма, USDT',
     numeric: true,
     width: '8rem',
-    cell: (r) => <Money minor={r.amountMinor} currency="USDT" hideCurrency className={r.status === 'rejected' ? 'text-muted line-through' : 'font-medium'} />,
+    cell: (r) => <Money minor={r.amountMinor} currency={REAL_ACCOUNT_CURRENCY} hideCurrency className={r.status === 'rejected' ? 'text-muted line-through' : 'font-medium'} />,
   },
   { key: 'status', header: 'Статус', width: '9rem', cell: (r) => <RewardStatusBadge status={r.status} /> },
   { key: 'signals', header: 'Связи', cell: (r) => <SignalBadges signals={r.signals} /> },
@@ -185,13 +186,13 @@ export default async function PromotionCardPage({ params, searchParams }: { para
       ) : null}
 
       <section aria-label="Сводка акции" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <KpiTile label="Бюджет одобрен" value={<Money minor={promo.spentMinor} currency="USDT" />} hint={<>из <Money minor={promo.budgetMinor} currency="USDT" /> · {promo.budgetMinor > 0 ? Math.round((promo.spentMinor / promo.budgetMinor) * 100) : 0} %</>} />
+        <KpiTile label="Бюджет одобрен" value={<Money minor={promo.spentMinor} currency={REAL_ACCOUNT_CURRENCY} />} hint={<>из <Money minor={promo.budgetMinor} currency={REAL_ACCOUNT_CURRENCY} /> · {promo.budgetMinor > 0 ? Math.round((promo.spentMinor / promo.budgetMinor) * 100) : 0} %</>} />
         <KpiTile label="Участники" value={promo.type === 'contest' ? '—' : participants.length} hint={promo.type === 'contest' ? 'см. лидерборд' : `выполнили: ${participants.filter((p) => p.status === 'qualified' || p.status === 'rewarded').length}`} />
         <KpiTile
           label="Ждут решения"
           value={pending.length}
           tone={pending.length > 0 ? 'warning' : 'default'}
-          hint={pending.length > 0 ? <Money minor={pending.reduce((s, r) => s + r.amountMinor, 0)} currency="USDT" /> : 'нет'}
+          hint={pending.length > 0 ? <Money minor={pending.reduce((s, r) => s + r.amountMinor, 0)} currency={REAL_ACCOUNT_CURRENCY} /> : 'нет'}
           action={
             pending.length > 0 ? (
               <Link href="/promo/queue" className="text-accent font-medium hover:underline">
@@ -200,7 +201,7 @@ export default async function PromotionCardPage({ params, searchParams }: { para
             ) : undefined
           }
         />
-        <KpiTile label="Зачислено" value={<Money minor={credited} currency="USDT" />} hint="через терминал" />
+        <KpiTile label="Зачислено" value={<Money minor={credited} currency={REAL_ACCOUNT_CURRENCY} />} hint="через терминал" />
       </section>
 
       {editing ? (

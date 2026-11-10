@@ -1,4 +1,5 @@
 import type { ClientPromotionsView, ContestSummary, ParticipationView, PromoCardView } from '@broker/promo';
+import { REAL_ACCOUNT_CURRENCY } from '@broker/money/display-currency';
 
 /**
  * Чистые помощники экранов «Акции», «Пригласи друга», «Конкурс», «Условия
@@ -9,7 +10,7 @@ import type { ClientPromotionsView, ContestSummary, ParticipationView, PromoCard
 const DAY_MS = 86_400_000;
 
 /** Валюта выплат акций: деньги идут на реальный счёт (USDT TRC20, решение владельца №1). */
-export const PROMO_CURRENCY = 'USDT';
+export const PROMO_CURRENCY = REAL_ACCOUNT_CURRENCY;
 
 /** Б.п. → «30 %», «0,15 %», «0,05 %» (до двух знаков, без хвостовых нулей). */
 export function bpsPercent(bps: number, locale: string): string {

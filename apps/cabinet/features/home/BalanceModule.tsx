@@ -9,6 +9,7 @@ import { linkButton } from '@/features/ui/link-button';
 import type { DemoAccount } from '@/lib/data';
 import type { TenantStartBalance } from '@/lib/tenant';
 import { TerminalLink } from '@/features/trade/TerminalLink';
+import { realMoneyCurrency } from '@broker/money/display-currency';
 import type { RealAccountView } from '@/lib/money';
 
 type BalanceConfig = Extract<CabinetHomeModule, { type: 'balance' }>;
@@ -173,7 +174,7 @@ async function RealAccountCard({
   const t = await getTranslations('home');
   const tm = await getTranslations('money');
   const { policy } = real;
-  const currency = real.account?.currency ?? 'USDT';
+  const currency = realMoneyCurrency(real.account?.currency);
 
   // Заморозку объясняет свой Callout выше кнопок — в списке причин она не повторяется.
   const notFrozen = (r: MoneyPolicyReason) => !(policy.frozen && r === 'frozen');

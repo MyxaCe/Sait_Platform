@@ -327,3 +327,51 @@ describe('«Условия счетов»', () => {
     expect(std.textContent).not.toContain(messages.accounts.yours);
   });
 });
+
+describe('валюта реальных денег — USDT (решение штаба 10.11)', () => {
+  it('начисления из терминала в USD показываются в USDT; «USD» рядом с «USDT» нет', () => {
+    const { container } = wrap(
+      <PromotionsScreen
+        view={{
+          ...EMPTY,
+          participating: [inProgress],
+          rewards: [
+            {
+              id: 'r1',
+              kind: 'promo',
+              promotionId: null,
+              promotionTitle: 'Бонус',
+              amountMinor: 30_000,
+              currency: 'USD',
+              period: null,
+              status: 'credited',
+              rejectReason: null,
+              externalRef: 'x',
+              createdAt: '2026-11-01T00:00:00Z',
+              creditedAt: '2026-11-02T00:00:00Z',
+            },
+          ],
+        }}
+        now={NOW}
+      />,
+    );
+    const text = container.textContent ?? '';
+    expect(text).toContain('USDT');
+    expect(text).not.toMatch(/USD(?!T)/);
+  });
+
+  it('партнёр: начисления и итоги — USDT', () => {
+    const partner: MyPartnerView = {
+      displayName: 'Club',
+      model: 'cpa',
+      cpaAmountMinor: 7_500,
+      cpaRules: null,
+      revshareBps: null,
+      rewards: [{ period: null, amountMinor: 7_500, status: 'credited', createdAt: '2026-11-01T00:00:00Z' }],
+    };
+    const { container } = wrap(
+      <ReferralScreen data={{ referral: referral({ isPartner: true }), partner }} qrSvg={null} brand="B" />,
+    );
+    expect(container.textContent ?? '').not.toMatch(/USD(?!T)/);
+  });
+});

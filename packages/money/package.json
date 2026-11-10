@@ -4,7 +4,8 @@
   "private": true,
   "exports": {
     ".": "./src/index.ts",
-    "./testing": "./src/testing/index.ts"
+    "./testing": "./src/testing/index.ts",
+    "./display-currency": "./src/display-currency.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

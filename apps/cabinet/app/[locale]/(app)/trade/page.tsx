@@ -5,6 +5,7 @@ import { linkButton } from '@/features/ui/link-button';
 import { requireSessionUser } from '@/lib/auth/require';
 import { getDemoAccount } from '@/lib/data';
 import { TerminalLink } from '@/features/trade/TerminalLink';
+import { realMoneyCurrency } from '@broker/money/display-currency';
 import { getMoneyPolicy, getRealAccount } from '@/lib/money';
 
 /**
@@ -55,7 +56,7 @@ export default async function TradePage({
             </span>
           </div>
           <p className="mt-3 text-[26px] font-semibold leading-9 tracking-tight">
-            <Money minor={real?.balanceCents ?? 0} currency={real?.currency ?? 'USDT'} />
+            <Money minor={real?.balanceCents ?? 0} currency={realMoneyCurrency(real?.currency)} />
           </p>
           <p className="mt-1 flex-1 text-xs text-secondary">{t('realHint')}</p>
           {policy.frozen ? (

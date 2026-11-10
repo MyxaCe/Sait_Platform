@@ -1,6 +1,7 @@
 import { useLocale, useTranslations } from 'next-intl';
 import { EmptyState, Money, ToneBadge, type StatusTone } from '@broker/ui';
 import type { ClientRewardStatus, RewardView } from '@broker/promo';
+import { realMoneyCurrency } from '@broker/money/display-currency';
 import { formatDate, formatPeriod } from './format';
 
 export const REWARD_TONE: Record<ClientRewardStatus, StatusTone> = {
@@ -41,7 +42,7 @@ export function RewardList({ rewards }: { rewards: RewardView[] }) {
               <div className="flex shrink-0 flex-col items-end gap-1">
                 <Money
                   minor={r.amountMinor}
-                  currency={r.currency}
+                  currency={realMoneyCurrency(r.currency)}
                   signed={r.status === 'credited'}
                   className={r.status === 'rejected' ? 'text-sm text-muted line-through' : 'text-sm font-semibold'}
                 />

@@ -15,6 +15,7 @@ import {
   type PromoActionState,
 } from '@/lib/promo/actions';
 import { promoErrorText } from '@/lib/promo/labels';
+import { REAL_ACCOUNT_CURRENCY } from '@broker/money';
 import { ActionForm, ConfirmFacts, type ConfirmSpec } from '../../_money/ActionForm';
 
 /**
@@ -182,7 +183,7 @@ export interface RewardFacts {
   budgetLeftMinor: number | null;
 }
 
-const big = (minor: number) => <Money minor={minor} currency="USDT" className="text-xl font-semibold" />;
+const big = (minor: number) => <Money minor={minor} currency={REAL_ACCOUNT_CURRENCY} className="text-xl font-semibold" />;
 
 function clientFact(r: RewardFacts): [string, ReactNode] {
   return [
@@ -219,7 +220,7 @@ export function RewardActions({ r }: { r: RewardFacts }) {
               ['Сумма', big(r.amountMinor)],
               clientFact(r),
               ['Основание операции в терминале', <span key="ref" className="font-mono text-[13px]">{r.externalRef}</span>],
-              r.budgetLeftMinor !== null ? ['Остаток бюджета акции', <Money key="b" minor={r.budgetLeftMinor} currency="USDT" />] : null,
+              r.budgetLeftMinor !== null ? ['Остаток бюджета акции', <Money key="b" minor={r.budgetLeftMinor} currency={REAL_ACCOUNT_CURRENCY} />] : null,
             ]}
           />
         ),

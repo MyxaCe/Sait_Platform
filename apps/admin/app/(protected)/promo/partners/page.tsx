@@ -6,6 +6,7 @@ import { bpsText } from '@/lib/promo/labels';
 import { getPromoSettings, listPartners, queueCounts, type PartnerRow } from '@/lib/promo/queries';
 import { canManagePromo, canViewPromo } from '@/lib/promo/runtime';
 import { PromoHeader } from '../_components/PromoHeader';
+import { REAL_ACCOUNT_CURRENCY } from '@broker/money';
 import { PartnerForm, RevshareForm, SyncForm, type PartnerInitial } from '../_components/PromoForms';
 
 /**
@@ -21,7 +22,7 @@ function terms(p: PartnerRow) {
   if (p.model === 'revshare') return `доля ${bpsText(p.revshareBps ?? 0)} дохода`;
   return (
     <>
-      <Money minor={p.cpaAmountMinor} currency="USDT" /> за клиента
+      <Money minor={p.cpaAmountMinor} currency={REAL_ACCOUNT_CURRENCY} /> за клиента
     </>
   );
 }
@@ -142,8 +143,8 @@ export default async function PartnersPage({ searchParams }: { searchParams: { p
                     { term: 'Условия', value: terms(selected) },
                     { term: 'Клиентов', value: String(selected.clients), numeric: true },
                     { term: 'Реф-код', value: selected.code ?? '—' },
-                    { term: 'Выплачено', value: <Money minor={selected.paidMinor} currency="USDT" /> },
-                    { term: 'В очереди', value: <Money minor={selected.pendingMinor} currency="USDT" /> },
+                    { term: 'Выплачено', value: <Money minor={selected.paidMinor} currency={REAL_ACCOUNT_CURRENCY} /> },
+                    { term: 'В очереди', value: <Money minor={selected.pendingMinor} currency={REAL_ACCOUNT_CURRENCY} /> },
                   ]}
                 />
               </Panel>

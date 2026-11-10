@@ -11,3 +11,4 @@ export * from './deposits';
 export * from './withdrawals';
 export * from './fees-contract';
 export * from './fees';
+export * from './display-currency';

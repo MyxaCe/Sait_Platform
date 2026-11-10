@@ -1,4 +1,5 @@
 import { getPool } from './db';
+import { realMoneyCurrency } from '@broker/money/display-currency';
 
 /**
  * История счёта (r2): сделки из проекции терминала (`{demo,real}_trades`,
@@ -122,7 +123,7 @@ export async function getAccountHistory(userId: string, kind: AccountKind, perio
   ]);
   const accRow = acc.rows[0] as { currency?: string } | undefined;
   return {
-    currency: accRow?.currency ?? (kind === 'real' ? 'USDT' : 'USD'),
+    currency: kind === 'real' ? realMoneyCurrency(accRow?.currency) : (accRow?.currency ?? 'USD'),
     opened: Boolean(accRow),
     trades: trades.rows.map((r) => ({
       id: r.id as string,
