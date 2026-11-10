@@ -33,7 +33,10 @@ export default defineConfig({
     // граф модулей холодным (после demo-leverage/money он вырос). Под
     // нагрузкой полного `turbo typecheck test build` это >5 с — таймаут
     // по умолчанию краснил прогон при зелёной логике (09.11, demo-reset).
-    testTimeout: 20_000,
+    // 10.11: под нагрузкой 17 пакетов (PGlite в регистрации/атрибуции) хуки
+    // и холодные импорты не укладывались и в 10–20 с — лимит про старт, не про логику.
+    testTimeout: 60_000,
+    hookTimeout: 120_000,
     environment: 'node',
     // RTL вешает авто-очистку на глобальный `afterEach`.
     globals: true,

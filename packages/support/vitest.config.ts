@@ -9,6 +9,13 @@ import { defineConfig } from 'vitest/config';
 export default defineConfig({
   test: {
     poolOptions,
+    // Первый тест каждого файла поднимает PGlite (WASM) и прогоняет ВСЕ
+    // миграции в шаблон. В одиночку ~2 с, под параллельной нагрузкой CI
+    // (Linux runner, 17 пакетов разом) — >5 с: дефолтный таймаут краснил
+    // прогон при зелёной логике (integration-demo3, 10.11). Лимит про
+    // холодный старт базы, а не про медленную логику.
+    testTimeout: 60_000,
+    hookTimeout: 120_000,
     environment: 'node',
     include: ['src/**/*.test.ts'],
   },
