@@ -4,6 +4,7 @@ import { Container, PricingTable, Section, type AccountPlan } from '@broker/ui';
 import { CtaBand } from '@/components/home/CtaBand';
 import { CommissionCalculator } from '@/features/accounts/CommissionCalculator';
 import { getCms } from '@/lib/cms';
+import { cabinetRegisterHref } from '@/lib/cabinet-links';
 
 interface PageProps {
   params: { locale: string };
@@ -30,7 +31,7 @@ export default async function AccountsPage({ params }: PageProps) {
     minDeposit: p.minDeposit,
     featured: p.featured,
     features: p.features,
-    ctaHref: `/register?account=${p.id}`,
+    ctaHref: cabinetRegisterHref(`/register?account=${p.id}`, params.locale),
   }));
   const pricing = items.map((p) => ({ id: p.id, name: p.name, ...p.pricing }));
 
