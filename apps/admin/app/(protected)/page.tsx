@@ -11,7 +11,8 @@ import {
   type DataTableColumn,
 } from '@broker/ui';
 import { listPendingClients, type PendingClient } from '@/lib/kyc/queries';
-import { getOperatorSession } from '@/lib/auth/current';
+import { requireSection } from '@/lib/auth/section-guard';
+import { canAccessSection } from '@/components/shell/sections';
 import { canOperateMoney } from '@/lib/crypto/runtime';
 import {
   getClientsSummary,
@@ -131,11 +132,15 @@ function OpenLink({ href, children = 'Открыть →' }: { href: string; chi
 }
 
 export default async function ControlCenterHome() {
-  const operator = await getOperatorSession();
-  const money = canOperateMoney(operator?.role);
+  // Дашборд — по матрице разделов; support_operator уводится на «Поддержку».
+  const operator = await requireSection('dashboard');
+  const money = canOperateMoney(operator.role);
+  // KYC/AML-плитки и очередь — только ролям этих разделов (finance_operator их не видит).
+  const kyc = canAccessSection(operator.role, 'kyc');
+  const aml = canAccessSection(operator.role, 'aml');
 
   const [pending, clients, recent, moneySummary, withdrawals] = await Promise.all([
-    listPendingClients(),
+    kyc ? listPendingClients() : Promise.resolve([] as Awaited<ReturnType<typeof listPendingClients>>),
     getClientsSummary(),
     listRecentActions(9),
     money ? getMoneySummary() : Promise.resolve(null),
@@ -161,6 +166,7 @@ export default async function ControlCenterHome() {
       />
 
       <section aria-label="Комплаенс и клиенты" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        {kyc ? (
         <KpiTile
           label="KYC ждут решения"
           value={pending.length}
@@ -172,6 +178,8 @@ export default async function ControlCenterHome() {
           }
           action={<OpenLink href="/kyc" />}
         />
+        ) : null}
+        {aml ? (
         <KpiTile
           label="AML: эскалации"
           value={clients.amlEscalated}
@@ -179,6 +187,7 @@ export default async function ControlCenterHome() {
           hint={`не сверялись: ${clients.amlUnscreened}`}
           action={<OpenLink href="/aml" />}
         />
+        ) : null}
         <KpiTile
           label="Клиенты"
           value={clients.total}
@@ -261,6 +270,7 @@ export default async function ControlCenterHome() {
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
         <div className="min-w-0 space-y-6">
+          {kyc ? (
           <Panel
             title="Очередь верификации"
             count={pending.length}
@@ -284,6 +294,7 @@ export default async function ControlCenterHome() {
               }
             />
           </Panel>
+          ) : null}
 
           {money ? (
             <Panel

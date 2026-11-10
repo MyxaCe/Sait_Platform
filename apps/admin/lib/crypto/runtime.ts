@@ -7,6 +7,7 @@ import {
   type AccountsOutcome,
 } from '@broker/money';
 import type { OperatorRole } from '../auth/session';
+import { canAccessSection } from '@/components/shell/sections';
 import { getPool } from '../db';
 import { devFixtureAccounts, devTerminalFixtureEnabled } from './dev-terminal-fixture';
 
@@ -29,7 +30,8 @@ export function terminalMoney(): FullClient {
 
 /** Деньги (депозиты/выводы/флаги клиента): admin и finance_operator, без второго аппрува. */
 export function canOperateMoney(role: OperatorRole | undefined | null): boolean {
-  return role === 'admin' || role === 'finance_operator';
+  // Тот же список, что раздел «Деньги» в матрице (components/shell/sections.ts).
+  return canAccessSection(role, 'money');
 }
 
 /** Адрес кошелька биржи — из env, в админке только для чтения (дизайн §3). */

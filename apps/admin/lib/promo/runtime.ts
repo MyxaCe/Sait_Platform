@@ -1,4 +1,5 @@
 import type { OperatorRole } from '../auth/session';
+import { canAccessSection } from '@/components/shell/sections';
 
 /**
  * Роли зоны «Акции и партнёры» (fail-closed):
@@ -8,7 +9,8 @@ import type { OperatorRole } from '../auth/session';
  *    IB-партнёров — только admin (дизайн §3.4).
  */
 export function canViewPromo(role: OperatorRole | null | undefined): boolean {
-  return role === 'admin' || role === 'finance_operator';
+  // Тот же список, что раздел «Акции» в матрице (components/shell/sections.ts).
+  return canAccessSection(role, 'promo');
 }
 
 export function canManagePromo(role: OperatorRole | null | undefined): boolean {

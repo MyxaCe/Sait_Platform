@@ -24,6 +24,7 @@ import { DOC_KIND_LABELS } from '@/lib/clients/verification-state';
 import { getOperatorSession } from '@/lib/auth/current';
 import { JournalFeed } from './_components/JournalFeed';
 import { ViewDocumentButton } from './_components/ViewDocumentButton';
+import { canAccessSection, canViewKycDocuments } from '@/components/shell/sections';
 import { BlockPanel } from './_components/BlockPanel';
 import { AccountStats, TradingSection, type LiveAccount } from './_components/TradingSection';
 import { MoneyFlagsPanel } from './_components/MoneyFlagsPanel';
@@ -279,6 +280,11 @@ export default async function ClientCardPage({
   const liveReal = liveOf('real');
   const canMoney = canOperateMoney(operator?.role);
   const isAdmin = operator?.role === 'admin';
+  // KYC-документы и переходы в KYC/AML — только ролям этих разделов (матрица
+  // sections.ts). finance_operator видит статус верификации, но не документы.
+  const canDocs = canViewKycDocuments(operator?.role);
+  const canKyc = canAccessSection(operator?.role, 'kyc');
+  const canAml = canAccessSection(operator?.role, 'aml');
 
   const moneyRows = toMoneyRows(deposits, withdrawals);
   const depositedMinor = deposits.filter((d) => d.status === 'credited').reduce((s, d) => s + (d.amountMinor ?? 0), 0);
@@ -323,12 +329,14 @@ export default async function ClientCardPage({
         ]}
         actions={
           <>
-            <Link
-              href={`/aml/${card.userId}`}
-              className="inline-flex h-9 items-center rounded-md border border-border-strong px-3.5 text-sm text-primary hover:bg-primary/5"
-            >
-              AML-сверка
-            </Link>
+            {canAml ? (
+              <Link
+                href={`/aml/${card.userId}`}
+                className="inline-flex h-9 items-center rounded-md border border-border-strong px-3.5 text-sm text-primary hover:bg-primary/5"
+              >
+                AML-сверка
+              </Link>
+            ) : null}
             {isAdmin ? (
               <Link
                 href={tabHref('access')}
@@ -401,7 +409,7 @@ export default async function ClientCardPage({
             key: 'compliance',
             label: 'KYC и AML',
             href: tabHref('compliance'),
-            count: card.documents.length,
+            count: canDocs ? card.documents.length : undefined,
             countTone: card.state === 'pending' || amlStatus === 'escalated' ? 'warning' : 'default',
           },
           { key: 'access', label: 'Доступ и сессии', href: tabHref('access'), count: card.sessions.length },
@@ -495,7 +503,11 @@ export default async function ClientCardPage({
                   },
                   {
                     term: 'Документы',
-                    value: card.documents.length ? card.documents.map((d) => DOC_KIND_LABELS[d.kind]).join(', ') : 'не поданы',
+                    value: !canDocs
+                      ? 'видны операторам KYC'
+                      : card.documents.length
+                        ? card.documents.map((d) => DOC_KIND_LABELS[d.kind]).join(', ')
+                        : 'не поданы',
                   },
                 ]}
               />
@@ -582,7 +594,7 @@ export default async function ClientCardPage({
               title="Верификация (KYC)"
               description={card.verificationUpdatedAt ? `Состояние обновлено ${fmtDateTime(card.verificationUpdatedAt)}` : undefined}
               actions={
-                card.state === 'pending' ? (
+                card.state === 'pending' && canKyc ? (
                   <Link href={`/kyc/${card.userId}`} className="text-[13px] font-medium text-accent hover:underline">
                     Принять решение →
                   </Link>
@@ -593,6 +605,7 @@ export default async function ClientCardPage({
             >
               <VerificationTimeline journal={card.journal} />
             </Panel>
+            {canDocs ? (
             <Panel title="Документы" count={card.documents.length} flush>
               {card.documents.length === 0 ? (
                 <EmptyState size="compact" title="Документы не поданы" />
@@ -613,13 +626,16 @@ export default async function ClientCardPage({
                 </ul>
               )}
             </Panel>
+            ) : null}
           </div>
           <Panel
             title="AML-скрининг"
             actions={
-              <Link href={`/aml/${card.userId}`} className="text-[13px] font-medium text-accent hover:underline">
-                Сверка и решения →
-              </Link>
+              canAml ? (
+                <Link href={`/aml/${card.userId}`} className="text-[13px] font-medium text-accent hover:underline">
+                  Сверка и решения →
+                </Link>
+              ) : undefined
             }
             className="self-start"
           >

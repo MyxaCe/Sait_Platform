@@ -2,7 +2,7 @@
 
 import { redirect } from 'next/navigation';
 import { getOperatorSession } from '../auth/current';
-import { isNarrowRole } from '../auth/role-scope';
+import { canAccessSection } from '@/components/shell/sections';
 import { LOGIN_PATH } from '../auth/constants';
 import { decideClientVerification, type VerificationDecision } from './decide';
 
@@ -36,8 +36,9 @@ async function decide(
     // Личность автора решения обязана быть из валидной сессии — иначе отказ.
     redirect(LOGIN_PATH);
   }
-  // Поддержка решений KYC не принимает (узкий периметр роли, 10.11).
-  if (isNarrowRole(operator.role)) return { error: 'forbidden' };
+  // Решение KYC — только ролям раздела KYC (матрица sections.ts): не
+  // finance_operator и не support_operator, даже прямым вызовом action.
+  if (!canAccessSection(operator.role, 'kyc')) return { error: 'forbidden' };
 
   const userId = String(formData.get('userId') ?? '').trim();
   if (!userId) {

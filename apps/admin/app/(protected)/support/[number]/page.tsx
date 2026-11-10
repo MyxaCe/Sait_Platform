@@ -31,7 +31,7 @@ import {
   type TicketView,
 } from '@broker/support';
 import { LOGIN_PATH } from '@/lib/auth/constants';
-import { isNarrowRole } from '@/lib/auth/role-scope';
+import { canAccessSection } from '@/components/shell/sections';
 import { getPool } from '@/lib/db';
 import { assignAction, linkClientAction, replyAction, requeueMailAction, statusAction } from '@/lib/support/actions';
 import { CHANNEL_LABEL, STATUS_ACTION, STATUS_KEY } from '@/lib/support/labels';
@@ -310,7 +310,7 @@ export default async function TicketPage({ params }: { params: { number: string 
 
         <aside className="min-w-0 space-y-5">
           {ctx ? (
-            <ContextPanel ctx={ctx} canOpenCard={!isNarrowRole(actor.role)} />
+            <ContextPanel ctx={ctx} canOpenCard={canAccessSection(actor.role, 'clients')} />
           ) : (
             <Panel title="Контекст клиента">
               <div className="space-y-3">
