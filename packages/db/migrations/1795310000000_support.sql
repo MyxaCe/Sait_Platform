@@ -29,7 +29,7 @@ ALTER TABLE operators
 -- письма, автозакрытие, восстановление обращений). Войти нельзя: пароля нет,
 -- учётка отключена (как system:cabinet / system:chain-watcher).
 INSERT INTO operators (id, login, display_name, role, disabled_at) VALUES
-  ('00000000-0000-4000-8000-00000000c0b3', 'system:support', 'Система · поддержка', 'operator', now())
+  ('00000000-0000-4000-8000-00000000c0b4', 'system:support', 'Система · поддержка', 'operator', now())
 ON CONFLICT (login) DO NOTHING;
 
 CREATE SEQUENCE IF NOT EXISTS support_ticket_number_seq START WITH 1001;

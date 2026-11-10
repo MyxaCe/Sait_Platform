@@ -103,4 +103,4 @@ export const SUPPORT_ACTIONS = {
 } as const;
 
 /** Системный автор журнала поддержки (миграция 1795310000000_support). */
-export const SUPPORT_SYSTEM_OPERATOR = '00000000-0000-4000-8000-00000000c0b3';
+export const SUPPORT_SYSTEM_OPERATOR = '00000000-0000-4000-8000-00000000c0b4';

@@ -186,7 +186,7 @@ describe('жизненный цикл тикета', () => {
     expect(await assignTicket(db, op, { ticketId: a.ticketId, assigneeId: other })).toEqual({ ok: true });
     expect((await db.query(`SELECT status FROM support_tickets`)).rows[0]!.status).toBe('open');
     expect((await journal('support.ticket.assigned'))[0]!.payload).toMatchObject({ from: null, to: other });
-    expect(await assignTicket(db, op, { ticketId: a.ticketId, assigneeId: '00000000-0000-4000-8000-00000000c0b3' })).toEqual({
+    expect(await assignTicket(db, op, { ticketId: a.ticketId, assigneeId: '00000000-0000-4000-8000-00000000c0b4' })).toEqual({
       ok: false,
       reason: 'invalidAssignee',
     });
@@ -199,7 +199,7 @@ describe('жизненный цикл тикета', () => {
     expect(await autoCloseResolved(db, ALWAYS)).toBe(1);
     expect((await db.query(`SELECT status FROM support_tickets`)).rows[0]!.status).toBe('closed');
     const j = await journal('support.ticket.auto_closed');
-    expect(j[0]!.operator_id).toBe('00000000-0000-4000-8000-00000000c0b3');
+    expect(j[0]!.operator_id).toBe('00000000-0000-4000-8000-00000000c0b4');
     expect(await autoCloseResolved(db, ALWAYS)).toBe(0);
   });
 
