@@ -5,7 +5,7 @@ import { hasLocale, NextIntlClientProvider } from 'next-intl';
 import { getMessages, getTranslations, setRequestLocale } from 'next-intl/server';
 import { hexToRgbChannels } from '@broker/utils';
 import { routing } from '@/i18n/routing';
-import { getChromeBrand } from '@/lib/chrome';
+import { getChromeBrand, resolveBrandName } from '@/lib/chrome';
 import { onAccentChannels } from '@/lib/on-accent';
 import '../globals.css';
 
@@ -37,9 +37,12 @@ export async function generateMetadata({
   params: { locale: string };
 }): Promise<Metadata> {
   const t = await getTranslations({ locale: params.locale, namespace: 'meta' });
+  const tCommon = await getTranslations({ locale: params.locale, namespace: 'common' });
+  // Бренд — из CMS (строки бренда в коде нет, 10.11)
+  const brand = resolveBrandName(await getChromeBrand(params.locale), tCommon('cabinet'));
   return {
-    title: t('title'),
-    description: t('description'),
+    title: t('title', { brand }),
+    description: t('description', { brand }),
     robots: { index: false, follow: false },
   };
 }

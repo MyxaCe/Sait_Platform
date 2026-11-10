@@ -1,16 +1,15 @@
 {
   "meta": {
-    "title": "Client area — Apex Capital",
-    "description": "Apex Capital client area"
+    "title": "Client area — {brand}",
+    "description": "{brand} client area"
   },
   "common": {
-    "brand": "Apex Capital",
     "cabinet": "Client area",
     "logout": "Sign out",
     "save": "Save",
     "saved": "Saved",
     "backToSite": "Back to website",
-    "copyright": "© {year} Apex Capital. All rights reserved.",
+    "copyright": "© {year} {brand}. All rights reserved.",
     "notFound": "Page not found",
     "notFoundHint": "Check the address or return to the dashboard",
     "toDashboard": "To dashboard",

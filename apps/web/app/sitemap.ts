@@ -1,13 +1,27 @@
 import type { MetadataRoute } from 'next';
 import { SYMBOL_UNIVERSE } from '@broker/realtime';
-import { NEWS_ARTICLES } from '@/features/analytics/news-data';
-import { BLOG_POSTS } from '@/features/blog/posts-data';
-import { EDUCATION_ARTICLES } from '@/features/education/articles-data';
-import { LEGAL_DOCUMENTS } from '@/features/legal/documents';
+import { getCms } from '@/lib/cms';
 import { SITE_URL } from '@/lib/site';
 
-export default function sitemap(): MetadataRoute.Sitemap {
+/**
+ * Sitemap: статические разделы + страницы, чьи списки живут в CMS
+ * (новости, статьи обучения, юр-документы). Прежде слаги брались из
+ * data-файлов кода и расходились с CMS на первой же новой статье.
+ *
+ * Динамический: на сборке CMS нет (CI), а пререндер запёк бы sitemap без
+ * CMS-страниц. CMS недоступна → последняя сохранённая версия её ответа
+ * (`getCms`); нет и её — ошибка, а не sitemap «из ничего».
+ */
+export const dynamic = 'force-dynamic';
+
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
+
+  const [articles, academy, legal] = await Promise.all([
+    getCms('articles', { locale: 'ru', revalidate: 60, params: { pageSize: '50' } }),
+    getCms('academy', { locale: 'ru' }),
+    getCms('legal', { locale: 'ru' }),
+  ]);
 
   const staticRoutes: MetadataRoute.Sitemap = [
     { path: '', priority: 1, changeFrequency: 'daily' as const },
@@ -15,7 +29,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { path: '/accounts', priority: 0.9, changeFrequency: 'monthly' as const },
     { path: '/register', priority: 0.9, changeFrequency: 'monthly' as const },
     { path: '/analytics/news', priority: 0.8, changeFrequency: 'hourly' as const },
-    { path: '/analytics/calendar', priority: 0.8, changeFrequency: 'daily' as const },
     { path: '/education/articles', priority: 0.7, changeFrequency: 'weekly' as const },
     { path: '/education/webinars', priority: 0.7, changeFrequency: 'daily' as const },
     { path: '/education/glossary', priority: 0.5, changeFrequency: 'monthly' as const },
@@ -24,7 +37,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { path: '/company/contacts', priority: 0.6, changeFrequency: 'monthly' as const },
     { path: '/partners', priority: 0.7, changeFrequency: 'monthly' as const },
     { path: '/promotions', priority: 0.7, changeFrequency: 'weekly' as const },
-    { path: '/blog', priority: 0.6, changeFrequency: 'weekly' as const },
     { path: '/company/careers', priority: 0.5, changeFrequency: 'weekly' as const },
   ].map((r) => ({
     url: `${SITE_URL}${r.path}`,
@@ -40,33 +52,29 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority: 0.6,
   }));
 
-  const news: MetadataRoute.Sitemap = NEWS_ARTICLES.map((a) => ({
+  const news: MetadataRoute.Sitemap = articles.items.map((a) => ({
     url: `${SITE_URL}/analytics/news/${a.slug}`,
     lastModified: new Date(a.publishedAt),
     changeFrequency: 'weekly',
     priority: 0.7,
   }));
 
-  const education: MetadataRoute.Sitemap = EDUCATION_ARTICLES.map((a) => ({
+  const education: MetadataRoute.Sitemap = academy.articles.map((a) => ({
     url: `${SITE_URL}/education/articles/${a.slug}`,
     lastModified: now,
     changeFrequency: 'monthly',
     priority: 0.6,
   }));
 
-  const blog: MetadataRoute.Sitemap = BLOG_POSTS.map((p) => ({
-    url: `${SITE_URL}/blog/${p.slug}`,
-    lastModified: new Date(p.publishedAt),
-    changeFrequency: 'monthly',
-    priority: 0.5,
-  }));
+  const legalDocs: MetadataRoute.Sitemap = legal.items.map((d) => {
+    const updated = new Date(d.updatedAt);
+    return {
+      url: `${SITE_URL}/legal/${d.slug}`,
+      lastModified: Number.isNaN(updated.getTime()) ? now : updated,
+      changeFrequency: 'yearly',
+      priority: 0.3,
+    };
+  });
 
-  const legal: MetadataRoute.Sitemap = LEGAL_DOCUMENTS.map((d) => ({
-    url: `${SITE_URL}/legal/${d.slug}`,
-    lastModified: new Date(d.updatedAt),
-    changeFrequency: 'yearly',
-    priority: 0.3,
-  }));
-
-  return [...staticRoutes, ...instruments, ...news, ...education, ...blog, ...legal];
+  return [...staticRoutes, ...instruments, ...news, ...education, ...legalDocs];
 }

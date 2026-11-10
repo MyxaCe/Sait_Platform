@@ -2,7 +2,7 @@ import { getTranslations } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
 import { LogoutForm } from '@/features/shell/LogoutForm';
 import type { SessionUser } from '@/lib/auth/session';
-import type { ChromeBrand } from '@/lib/chrome';
+import { resolveBrandName, type ChromeBrand } from '@/lib/chrome';
 
 /**
  * Шапка ЛК (ADR-026, п.1 задания): бренд-зона как у сайта (логотип+имя
@@ -18,7 +18,7 @@ export async function CabinetHeader({
   locale: string;
 }) {
   const t = await getTranslations('common');
-  const brandName = brand?.name ?? t('brand');
+  const brandName = resolveBrandName(brand, t('cabinet'));
 
   return (
     <header className="sticky top-0 z-50 flex h-16 items-center justify-between gap-4 border-b border-border bg-base/80 px-4 backdrop-blur-xl sm:px-6 lg:px-8">

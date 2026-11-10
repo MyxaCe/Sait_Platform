@@ -2,8 +2,15 @@ import type { z } from 'zod';
 
 /**
  * Серверный клиент CMS-контракта (используется ТОЛЬКО в RSC/route handlers).
- * Слои защиты (риск R-06): timeout → Zod-валидация → fallback.
+ * Слои защиты (риск R-06): timeout → Zod-валидация → ОШИБКА наружу.
  * ISR-кеширование — через параметры next: { tags, revalidate }.
+ *
+ * Подмены фикстурами нет (решение владельца 10.11, `_brain/ДЕМО-контент-из-CMS-аудит.md`):
+ * контента в коде нет даже как запасного. Отказ CMS всегда бросает
+ * `CmsError` — что показать вместо (последний удачный ответ CMS или
+ * честную заглушку), решает потребитель (`apps/web/lib/cms.ts`).
+ * Подставленная «правдоподобная» версия неотличима для посетителя от
+ * настоящей и однажды уже разошлась с CMS.
  */
 
 export interface CmsFetchOptions<T> {
@@ -23,8 +30,6 @@ export interface CmsFetchOptions<T> {
   tags?: string[];
   /** Страховочный интервал ревалидации, сек */
   revalidate?: number | false;
-  /** Последний рубеж при недоступной/невалидной CRM (фикстуры) */
-  fallback?: T;
   searchParams?: Record<string, string>;
   timeoutMs?: number;
 }
@@ -49,7 +54,7 @@ function baseUrl(): string {
   const url = process.env.CMS_API_URL;
   if (!url) {
     throw new CmsError(
-      'CMS_API_URL is not set — use fallback fixtures or configure mock-CRM origin',
+      'CMS_API_URL is not set — CMS is not configured',
       '(config)',
     );
   }
@@ -62,16 +67,9 @@ export async function cmsFetch<T>(path: string, options: CmsFetchOptions<T>): Pr
     locale = 'ru',
     tags = [],
     revalidate = 3600,
-    fallback,
     searchParams = {},
     timeoutMs = 3_000,
   } = options;
-
-  const report = (reason: string, cause?: unknown) => {
-    // Каждый фолбэк обязан быть виден: риск R-15 «фолбэк без алерта — скрытая авария».
-    // TODO(glitchtip): заменить на Sentry.captureException после подключения SDK.
-    console.error(`[cmsFetch] ${reason} path=${path} locale=${locale}`, cause ?? '');
-  };
 
   try {
     const params = new URLSearchParams({ locale, ...searchParams });
@@ -95,11 +93,8 @@ export async function cmsFetch<T>(path: string, options: CmsFetchOptions<T>): Pr
     }
     return parsed.data;
   } catch (error) {
-    if (fallback !== undefined) {
-      report('falling back to fixtures', error);
-      return fallback;
-    }
-    report('failed without fallback', error);
+    // Лог — забота потребителя: он знает, есть ли чем заменить ответ, и
+    // пишет одну строку с исходом, а не две (R-15: отказ виден всегда).
     throw error instanceof CmsError ? error : new CmsError('fetch failed', path, error);
   }
 }

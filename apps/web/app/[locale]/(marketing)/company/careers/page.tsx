@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { Badge, Container, Section } from '@broker/ui';
 import { getCms } from '@/lib/cms';
+import { brandName } from '@/lib/brand';
 
 interface PageProps {
   params: { locale: string };
@@ -9,7 +10,10 @@ interface PageProps {
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const t = await getTranslations({ locale: params.locale, namespace: 'careers' });
-  return { title: t('metaTitle'), description: t('metaDescription') };
+  return {
+    title: t('metaTitle'),
+    description: t('metaDescription', { brand: await brandName(params.locale) }),
+  };
 }
 
 export default async function CareersPage({ params }: PageProps) {
@@ -19,7 +23,8 @@ export default async function CareersPage({ params }: PageProps) {
   const { benefits, vacancies } = await getCms('careers', {
     locale: params.locale === 'en' ? 'en' : 'ru',
   });
-  const hrEmail = vacancies[0]?.applyEmail ?? 'hr@apexcapital.example';
+  // Адрес для резюме — только из CMS (вакансии); в коде адреса нет
+  const hrEmail = vacancies[0]?.applyEmail ?? null;
 
   return (
     <>
@@ -70,15 +75,17 @@ export default async function CareersPage({ params }: PageProps) {
             ))}
           </ul>
 
-          <p className="mt-8 text-sm text-secondary">
-            {t.rich('notFound', {
-              email: () => (
-                <a href={`mailto:${hrEmail}`} className="text-accent hover:underline">
-                  {hrEmail}
-                </a>
-              ),
-            })}
-          </p>
+          {hrEmail && (
+            <p className="mt-8 text-sm text-secondary">
+              {t.rich('notFound', {
+                email: () => (
+                  <a href={`mailto:${hrEmail}`} className="text-accent hover:underline">
+                    {hrEmail}
+                  </a>
+                ),
+              })}
+            </p>
+          )}
         </Container>
       </Section>
     </>

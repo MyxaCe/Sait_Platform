@@ -4,22 +4,28 @@ import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { Button } from '@broker/ui';
 import { Link } from '@/i18n/navigation';
 import { MarkdownText } from '@/components/MarkdownText';
-import {
-  EDUCATION_SLUGS,
-  findEducationArticle,
-} from '@/features/education/articles-data';
-import { getCms } from '@/lib/cms';
+import { brandName } from '@/lib/brand';
+import { getCms, staticParamsFromCms } from '@/lib/cms';
 
 interface PageParams {
   params: { locale: string; slug: string };
 }
 
-export function generateStaticParams() {
-  return EDUCATION_SLUGS.map((slug) => ({ slug }));
+async function findArticle(locale: string, slug: string) {
+  const { articles } = await getCms('academy', { locale: locale === 'en' ? 'en' : 'ru' });
+  return articles.find((a) => a.slug === slug) ?? null;
 }
 
-export function generateMetadata({ params }: PageParams): Metadata {
-  const article = findEducationArticle(params.slug, params.locale);
+// Список статей — из CMS; нет CMS на сборке → пусто, страницы по первому запросу
+export function generateStaticParams({ params }: { params: { locale: string } }) {
+  return staticParamsFromCms(async () => {
+    const { articles } = await getCms('academy', { locale: params.locale === 'en' ? 'en' : 'ru' });
+    return articles.map((a) => ({ slug: a.slug }));
+  });
+}
+
+export async function generateMetadata({ params }: PageParams): Promise<Metadata> {
+  const article = await findArticle(params.locale, params.slug);
   if (!article) return {};
   return { title: article.title, description: article.excerpt };
 }
@@ -27,12 +33,10 @@ export function generateMetadata({ params }: PageParams): Metadata {
 export default async function EducationArticlePage({ params }: PageParams) {
   setRequestLocale(params.locale);
 
-  // Статья из CMS (тег cms:academy)
-  const { articles } = await getCms('academy', {
-    locale: params.locale === 'en' ? 'en' : 'ru',
-  });
-  const article = articles.find((a) => a.slug === params.slug);
+  // Статья из CMS (теги cms:academy, cms:academy:<сайт>)
+  const article = await findArticle(params.locale, params.slug);
   if (!article) notFound();
+  const organization = await brandName(params.locale);
   const t = await getTranslations('education');
   const tCommon = await getTranslations('common');
 
@@ -41,8 +45,8 @@ export default async function EducationArticlePage({ params }: PageParams) {
     '@type': 'Article',
     headline: article.title,
     description: article.excerpt,
-    author: { '@type': 'Organization', name: 'Apex Capital' },
-    publisher: { '@type': 'Organization', name: 'Apex Capital' },
+    author: { '@type': 'Organization', name: organization },
+    publisher: { '@type': 'Organization', name: organization },
   };
 
   return (

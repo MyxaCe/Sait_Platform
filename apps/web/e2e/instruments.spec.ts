@@ -5,8 +5,10 @@ import { requireOrSkip, skipAsOtherScenario } from './support/gates';
  * Граница доступа витрины к инструментам (ADR-028) после решения Р-025 —
  * fail-closed: списка нет → не показываем ничего и говорим почему.
  *
- * **Почему спек разделён на два блока.** В CI сервер поднимается без
- * `CMS_API_URL`, то есть ровно в состоянии «списка нет». Это основной
+ * **Почему спек разделён на два блока.** В CI сервер поднимается со
+ * стабом CMS (`e2e/support/cms-stub.mjs`) БЕЗ карточки сайта, то есть
+ * ровно в состоянии «списка нет» (причина `http-error`; до 10.11 витрина
+ * поднималась без CMS вовсе, и причина была `not-configured`). Это основной
  * сценарий, он гоняется всегда. Сценарии с НЕПУСТЫМ списком требуют живой
  * CMS с посаженным тенантом и гейтятся `CMS_E2E=1` — так же, как
  * `mds-live.spec.ts` гейтится `MDS_E2E`.
@@ -17,7 +19,7 @@ import { requireOrSkip, skipAsOtherScenario } from './support/gates';
  * `lib/tenant.test.ts`, а покрытие единицы покрытием пути не является.
  */
 
-test.describe('Граница закрыта (CI: сайт без CMS)', () => {
+test.describe('Граница закрыта (CI: стаб CMS без карточки сайта)', () => {
   skipAsOtherScenario(Boolean(process.env.CMS_E2E), 'контур с живой CMS проверяется ниже');
 
   test('страница инструментов объясняет, почему списка нет, а не молчит', async ({ page }) => {
@@ -32,7 +34,7 @@ test.describe('Граница закрыта (CI: сайт без CMS)', () => {
     await expect(notice).toContainText('недоступен');
     // «Пусто» и «недоступно» отличимы машиной, причина — тоже на экране
     await expect(notice).toHaveAttribute('data-access-state', 'unavailable');
-    await expect(notice).toHaveAttribute('data-access-reason', 'not-configured');
+    await expect(notice).toHaveAttribute('data-access-reason', /^(http-error|not-configured)$/);
 
     // Граница действительно не снята: счётчика инструментов нет вовсе
     await expect(page.getByText(/\d+ из \d+ инструментов/)).toHaveCount(0);

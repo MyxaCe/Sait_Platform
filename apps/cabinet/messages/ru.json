@@ -1,16 +1,15 @@
 {
   "meta": {
-    "title": "Личный кабинет — Apex Capital",
-    "description": "Личный кабинет клиента Apex Capital"
+    "title": "Личный кабинет — {brand}",
+    "description": "Личный кабинет клиента {brand}"
   },
   "common": {
-    "brand": "Apex Capital",
     "cabinet": "Личный кабинет",
     "logout": "Выйти",
     "save": "Сохранить",
     "saved": "Сохранено",
     "backToSite": "На сайт",
-    "copyright": "© {year} Apex Capital. Все права защищены.",
+    "copyright": "© {year} {brand}. Все права защищены.",
     "notFound": "Страница не найдена",
     "notFoundHint": "Проверьте адрес или вернитесь на главную кабинета",
     "toDashboard": "К дашборду",

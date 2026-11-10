@@ -46,7 +46,7 @@ function LayoutContent({
       </main>
       <footer className="border-t border-border py-6">
         <p className="mx-auto max-w-page px-4 text-center text-xs text-secondary sm:px-6">
-          {t('footerRisk', { year: new Date().getFullYear() })}
+          {t('footerRisk', { year: new Date().getFullYear(), brand: brandName })}
         </p>
       </footer>
     </div>

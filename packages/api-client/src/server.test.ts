@@ -3,16 +3,17 @@ import { z } from 'zod';
 import { cmsFetch, CmsError } from './server';
 
 /**
- * Тесты слоёв изоляции cmsFetch (риск R-06, чеклист §9.3 брифа):
- * CMS лежит / отвечает мусором / отвечает 5xx → сайт живёт на фолбэке.
+ * Тесты слоёв изоляции cmsFetch (риск R-06).
+ *
+ * С 10.11 подмены фикстурами нет: CMS лежит / отвечает мусором / 5xx →
+ * `CmsError` наружу. Что показать вместо — последний удачный ответ CMS
+ * или честную заглушку — решает потребитель (`apps/web/lib/cms.ts`).
  */
 
 const schema = z.object({ name: z.string() });
-const FALLBACK = { name: 'fallback' };
 
 beforeEach(() => {
   vi.stubEnv('CMS_API_URL', 'http://cms.test');
-  vi.spyOn(console, 'error').mockImplementation(() => {});
 });
 
 afterEach(() => {
@@ -27,39 +28,38 @@ function stubFetch(impl: () => Promise<Response>) {
   return mock;
 }
 
-describe('cmsFetch — изоляция при недоступной CMS', () => {
-  it('CMS недоступна (connection refused) → фолбэк + алерт в лог', async () => {
+describe('cmsFetch — отказ CMS бросает, а не подменяет', () => {
+  it('connection refused → CmsError', async () => {
     stubFetch(() => Promise.reject(new Error('ECONNREFUSED')));
-    const result = await cmsFetch('/cms/brand', { schema, fallback: FALLBACK });
-    expect(result).toEqual(FALLBACK);
-    expect(console.error).toHaveBeenCalled();
+    await expect(cmsFetch('/cms/brand', { schema })).rejects.toBeInstanceOf(CmsError);
   });
 
-  it('CMS отвечает 500 → фолбэк', async () => {
+  it('500 → CmsError с кодом в сообщении', async () => {
     stubFetch(() => Promise.resolve(new Response('oops', { status: 500 })));
-    expect(await cmsFetch('/cms/brand', { schema, fallback: FALLBACK })).toEqual(FALLBACK);
+    await expect(cmsFetch('/cms/brand', { schema })).rejects.toThrow(/HTTP 500/);
   });
 
-  it('CMS отвечает невалидным по схеме JSON → фолбэк (мусор не доходит до страниц)', async () => {
-    stubFetch(() =>
-      Promise.resolve(Response.json({ unexpected: true })),
-    );
-    expect(await cmsFetch('/cms/brand', { schema, fallback: FALLBACK })).toEqual(FALLBACK);
+  it('ответ мимо схемы → CmsError (мусор не доходит до страниц)', async () => {
+    stubFetch(() => Promise.resolve(Response.json({ unexpected: true })));
+    await expect(cmsFetch('/cms/brand', { schema })).rejects.toThrow(/schema/);
   });
 
-  it('валидный ответ → распарсенные данные; передаются locale и X-API-Key', async () => {
+  it('CMS_API_URL не задан → CmsError, в сеть не ходим', async () => {
+    vi.stubEnv('CMS_API_URL', '');
+    const mock = stubFetch(() => Promise.resolve(Response.json({ name: 'x' })));
+    await expect(cmsFetch('/cms/brand', { schema })).rejects.toBeInstanceOf(CmsError);
+    expect(mock).not.toHaveBeenCalled();
+  });
+
+  it('валидный ответ → данные; передаются locale, X-API-Key и теги', async () => {
     vi.stubEnv('CMS_API_KEY', 'k-123');
     const mock = stubFetch(() => Promise.resolve(Response.json({ name: 'live' })));
-    const result = await cmsFetch('/cms/brand', { schema, locale: 'en', fallback: FALLBACK });
+    const result = await cmsFetch('/cms/brand', { schema, locale: 'en', tags: ['cms:brand'] });
     expect(result).toEqual({ name: 'live' });
-    const calls = mock.mock.calls as unknown as [string, RequestInit][];
+    const calls = mock.mock.calls as unknown as [string, RequestInit & { next?: unknown }][];
     const [url, init] = calls[0]!;
     expect(String(url)).toContain('locale=en');
     expect(init.headers).toMatchObject({ 'X-API-Key': 'k-123' });
-  });
-
-  it('без фолбэка ошибка не глотается — CmsError наружу', async () => {
-    stubFetch(() => Promise.reject(new Error('down')));
-    await expect(cmsFetch('/cms/brand', { schema })).rejects.toBeInstanceOf(CmsError);
+    expect(init.next).toMatchObject({ tags: ['cms:brand'] });
   });
 });

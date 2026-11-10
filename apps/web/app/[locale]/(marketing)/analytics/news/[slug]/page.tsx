@@ -5,24 +5,37 @@ import { Badge, Button } from '@broker/ui';
 import { formatDate, formatTime } from '@broker/utils';
 import { Link } from '@/i18n/navigation';
 import { MarkdownText } from '@/components/MarkdownText';
-import {
-  findArticle,
-  NEWS_CATEGORY_LABELS,
-  NEWS_SLUGS,
-  type NewsCategory,
-} from '@/features/analytics/news-data';
-import { getCms } from '@/lib/cms';
+import { brandName } from '@/lib/brand';
+import { getCms, staticParamsFromCms } from '@/lib/cms';
 
 interface PageParams {
   params: { locale: string; slug: string };
 }
 
-export function generateStaticParams() {
-  return NEWS_SLUGS.map((slug) => ({ slug }));
+/** Одна выборка для страницы и метаданных: Next дедуплицирует одинаковый fetch. */
+async function findNews(locale: string, slug: string) {
+  const { items } = await getCms('articles', {
+    locale: locale === 'en' ? 'en' : 'ru',
+    revalidate: 60,
+    params: { pageSize: '50' },
+  });
+  return items.find((a) => a.slug === slug) ?? null;
 }
 
-export function generateMetadata({ params }: PageParams): Metadata {
-  const article = findArticle(params.slug, params.locale);
+// Список статей — из CMS; нет CMS на сборке → пусто, страницы по первому запросу
+export function generateStaticParams({ params }: { params: { locale: string } }) {
+  return staticParamsFromCms(async () => {
+    const { items } = await getCms('articles', {
+      locale: params.locale === 'en' ? 'en' : 'ru',
+      revalidate: 60,
+      params: { pageSize: '50' },
+    });
+    return items.map((a) => ({ slug: a.slug }));
+  });
+}
+
+export async function generateMetadata({ params }: PageParams): Promise<Metadata> {
+  const article = await findNews(params.locale, params.slug);
   if (!article) return {};
   return {
     title: article.title,
@@ -40,19 +53,16 @@ export default async function NewsArticlePage({ params }: PageParams) {
   setRequestLocale(params.locale);
   const locale = params.locale === 'en' ? 'en' : 'ru';
 
-  // Статья из CMS (тег cms:articles)
-  const { items } = await getCms('articles', {
-    locale,
-    revalidate: 60,
-    params: { pageSize: '50' },
-  });
-  const article = items.find((a) => a.slug === params.slug);
+  // Статья из CMS (теги cms:articles, cms:articles:<сайт>)
+  const article = await findNews(locale, params.slug);
   if (!article) notFound();
-  const category = article.category as NewsCategory;
+  const publisher = await brandName(locale);
   const t = await getTranslations('analytics');
   const tCommon = await getTranslations('common');
   const intlLocale = params.locale === 'en' ? 'en-US' : 'ru-RU';
-  const categoryLabels = NEWS_CATEGORY_LABELS[params.locale === 'en' ? 'en' : 'ru']!;
+  const categoryLabel = t.has(`categories.${article.category}`)
+    ? t(`categories.${article.category}`)
+    : article.category;
 
   // Микроразметка NewsArticle для поисковиков
   const jsonLd = {
@@ -62,7 +72,7 @@ export default async function NewsArticlePage({ params }: PageParams) {
     description: article.excerpt,
     datePublished: article.publishedAt,
     author: { '@type': 'Organization', name: article.source },
-    publisher: { '@type': 'Organization', name: 'Apex Capital' },
+    publisher: { '@type': 'Organization', name: publisher },
   };
 
   return (
@@ -80,7 +90,7 @@ export default async function NewsArticlePage({ params }: PageParams) {
 
       <div className="mt-6 flex flex-wrap items-center gap-3 text-xs text-secondary">
         <Badge variant="accent" className="px-3 py-1 text-xs">
-          {categoryLabels[category]}
+          {categoryLabel}
         </Badge>
         <time dateTime={article.publishedAt}>
           {formatDate(article.publishedAt, intlLocale)} ·{' '}

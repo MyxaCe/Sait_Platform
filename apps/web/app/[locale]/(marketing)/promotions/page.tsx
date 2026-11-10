@@ -3,6 +3,7 @@ import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { Badge, Button, Container, Section } from '@broker/ui';
 import { Link } from '@/i18n/navigation';
 import { getCms } from '@/lib/cms';
+import { brandName } from '@/lib/brand';
 
 interface PageProps {
   params: { locale: string };
@@ -10,7 +11,10 @@ interface PageProps {
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const t = await getTranslations({ locale: params.locale, namespace: 'promotions' });
-  return { title: t('metaTitle'), description: t('metaDescription') };
+  return {
+    title: t('metaTitle'),
+    description: t('metaDescription', { brand: await brandName(params.locale) }),
+  };
 }
 
 export default async function PromotionsPage({ params }: PageProps) {

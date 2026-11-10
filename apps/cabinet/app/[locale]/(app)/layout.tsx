@@ -8,7 +8,7 @@ import { NavIcon } from '@/features/shell/NavIcon';
 import { CountBadge, NavLink, type NavItem } from '@/features/shell/NavLink';
 import { Link } from '@/i18n/navigation';
 import { getSessionUser } from '@/lib/auth/session';
-import { getChromeBrand, getChromeFooter, siteHref } from '@/lib/chrome';
+import { getChromeBrand, getChromeFooter, siteHref, resolveBrandName } from '@/lib/chrome';
 import { countUnread } from '@/lib/data';
 
 interface LayoutProps {
@@ -31,7 +31,7 @@ export default async function AppLayout({ children, params }: LayoutProps) {
     getChromeBrand(params.locale),
     getChromeFooter(params.locale),
   ]);
-  const brandName = brand?.name ?? tCommon('brand');
+  const brandName = resolveBrandName(brand, tCommon('cabinet'));
 
   // Навигация (r2): 4 раздела счёта + аккаунт. Кошелёк = пополнение и вывод,
   // Профиль = личные данные, верификация, безопасность и документы.
@@ -128,7 +128,7 @@ export default async function AppLayout({ children, params }: LayoutProps) {
                 riskWarning={footer.riskWarning}
                 brandName={brandName}
                 socials={brand?.socials ?? []}
-                copyright={tCommon('copyright', { year: new Date().getFullYear() })}
+                copyright={tCommon('copyright', { year: new Date().getFullYear(), brand: brandName })}
               />
             </div>
           )}

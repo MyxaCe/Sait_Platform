@@ -1,5 +1,5 @@
 import { getLocale, getTranslations } from 'next-intl/server';
-import { getChromeBrand } from '@/lib/chrome';
+import { getChromeBrand, resolveBrandName } from '@/lib/chrome';
 import { envOr } from '@broker/utils';
 
 /** Публичная зона: центрированная карточка; бренд — из CMS (ADR-025). */
@@ -7,7 +7,7 @@ export default async function AuthLayout({ children }: { children: React.ReactNo
   const locale = await getLocale();
   const t = await getTranslations('common');
   const brand = await getChromeBrand(locale);
-  const brandName = brand?.name ?? t('brand');
+  const brandName = resolveBrandName(brand, t('cabinet'));
 
   return (
     <main className="flex min-h-svh flex-col items-center justify-center px-4 py-10">

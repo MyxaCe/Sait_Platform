@@ -50,10 +50,19 @@ RUN addgroup -S app && adduser -S app -G app
 COPY --from=build --chown=app:app /repo/apps/web/.next/standalone ./
 COPY --from=build --chown=app:app /repo/apps/web/.next/static ./apps/web/.next/static
 COPY --from=build --chown=app:app /repo/apps/web/public ./apps/web/public
+# Точка запуска: 503 вместо 500, когда CMS недоступна и показать нечего
+# (`apps/web/server-entry.cjs`), и прогрев после деплоя (`scripts/revalidate-all.mjs`).
+COPY --chown=app:app apps/web/server-entry.cjs ./apps/web/server-entry.cjs
+COPY --chown=app:app apps/web/scripts/revalidate-all.mjs ./apps/web/scripts/revalidate-all.mjs
+# Кэш витрины (data-cache Next + последняя удачная версия ответов CMS)
+# монтируется томом сюда. Каталог создаётся заранее и принадлежит `app`:
+# именованный том при первом подключении наследует владельца из образа,
+# иначе Next не смог бы писать кэш (root-owned точка монтирования).
+RUN mkdir -p /app/apps/web/.next/cache && chown -R app:app /app/apps/web/.next
 # Подстановка адресов из окружения — до старта сервера (WEB-22).
 COPY --chown=app:app docker/runtime-config.sh /usr/local/bin/runtime-config
 RUN chmod +x /usr/local/bin/runtime-config
 USER app
 EXPOSE 3000
 ENTRYPOINT ["/usr/local/bin/runtime-config"]
-CMD ["node", "apps/web/server.js"]
+CMD ["node", "apps/web/server-entry.cjs", "apps/web/server.js"]

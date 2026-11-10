@@ -1,61 +1,40 @@
+import { mkdtempSync, readdirSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 /**
- * Тесты getCms — точки, где сайт решает, откуда взять контент (WEB-01).
+ * getCms — точка, где витрина решает, что показать (решение владельца 10.11).
  *
- * Два РАЗНЫХ пути, которые легко спутать:
- *   1. «CMS не настроена» — CMS_API_URL пуст. Сайт ЗНАЕТ, что боевых данных
- *      не будет, и строит их сам. Сетевого вызова нет вообще.
- *   2. «CMS отвалилась в рантайме» — CMS_API_URL задан, сайт идёт за данными
- *      и УЗНАЁТ о недоступности по факту: отказ соединения, 5xx, таймаут,
- *      мусор вместо JSON. Здесь работает страховка cmsFetch.
+ * Контента в коде нет даже как запасного: прежде при любой ошибке CMS и на
+ * сборке без CMS подставлялись фикстуры из `lib/cms-mock.ts`, и стенд час
+ * после каждого деплоя показывал код вместо CMS. Теперь:
+ *   CMS ответила            → данные, и они сохраняются как «последние»;
+ *   CMS не ответила          → последняя сохранённая версия ответа CMS;
+ *   сохранённой нет          → CmsUnavailableError (страница → 503),
+ *                              а НЕ «пустые данные»: пустой ответ ISR
+ *                              закешировал бы поверх настоящей версии.
  *
- * lib/cms-mock.test.ts не покрывает ни один из них: он проверяет, что
- * билдеры фикстур соответствуют Zod-контракту, и getCms не вызывает.
- *
- * unstable_cache подменён: вне request-контекста Next бросает
- * «Invariant: incrementalCache missing». Кеш здесь не предмет проверки.
+ * Каталог последней версии — временный на каждый тест.
  */
 
 vi.mock('next/headers', () => ({ draftMode: () => ({ isEnabled: false }) }));
-vi.mock('next/cache', () => ({
-  unstable_cache: (fn: (...a: unknown[]) => unknown) => fn,
-}));
 
-const FIXTURE_ERROR = 'фикстура разъехалась с контрактом';
+const FAQ_LIVE = { sections: [{ title: 'Из CMS', items: [{ question: 'q', answer: 'a' }] }] };
 
-/**
- * Прогрев графа модулей (WEB-33).
- *
- * **Что было.** `main` мигал красным: падала первая проверка этого
- * файла, и только под полной нагрузкой — в одиночку файл зелёный.
- * Причина не в ней: `await import('./cms')` в ПЕРВОМ тесте платит за
- * превращение всего графа (~600 мс в покое), дальше работает кеш
- * преобразования и остальные импорты мгновенны. Под девятнадцатью
- * параллельными задачами эти 600 мс вырастают за предел в 5 с.
- *
- * То есть проверка мерила **работу загрузчика модулей, а не работу
- * кода**, и предел срабатывал на первой по списку — безотносительно
- * того, что она проверяет.
- *
- * **Почему не поднять предел.** Общий — спрячет стоимость: завтра
- * медленным станет что-то настоящее, и мы этого не увидим. Этому
- * файлу — честный запасной путь, но он здесь не нужен: подгрузка
- * выносится.
- *
- * **Импорт в каждом тесте при этом остаётся нарочным**: часть проверок
- * подменяет `./cms-mock` до загрузки, и `vi.resetModules()` в
- * `afterEach` сбрасывает реестр модулей ради чистого состояния. Кеш
- * преобразования сбросом реестра не затрагивается — поэтому прогрев
- * помогает, а свежесть состояния сохраняется.
- */
+let dir: string;
+
+// Прогрев графа модулей (WEB-33): первый импорт платит за трансформацию.
 beforeAll(async () => {
   await import('./cms');
 });
 
 beforeEach(() => {
+  dir = mkdtempSync(path.join(tmpdir(), 'cms-last-good-'));
+  vi.stubEnv('CMS_LAST_GOOD_DIR', dir);
+  vi.stubEnv('CMS_API_URL', 'http://cms.test');
+  vi.stubEnv('SITE_SLUG', 'apex-ru');
   vi.spyOn(console, 'error').mockImplementation(() => {});
-  vi.spyOn(console, 'warn').mockImplementation(() => {});
 });
 
 afterEach(() => {
@@ -63,7 +42,7 @@ afterEach(() => {
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
   vi.resetModules();
-  vi.doUnmock('./cms-mock');
+  rmSync(dir, { recursive: true, force: true });
 });
 
 function stubFetch(impl: () => Promise<Response>) {
@@ -72,227 +51,150 @@ function stubFetch(impl: () => Promise<Response>) {
   return mock;
 }
 
-describe('getCms · CMS не настроена (CMS_API_URL пуст)', () => {
-  it('отдаёт фикстуры, НЕ ходит в сеть и НЕ считает это аварией', async () => {
-    vi.stubEnv('CMS_API_URL', '');
-    const fetchMock = stubFetch(() => Promise.reject(new Error('сети быть не должно')));
+const errorLines = () =>
+  (console.error as unknown as { mock: { calls: unknown[][] } }).mock.calls.map((c) => String(c[0]));
 
+describe('CMS жива', () => {
+  it('отдаёт ответ CMS и сохраняет его как последнюю версию', async () => {
+    stubFetch(() => Promise.resolve(Response.json(FAQ_LIVE)));
     const { getCms } = await import('./cms');
-    const faq = await getCms('faq', { locale: 'ru' });
 
-    expect(faq.sections.length).toBeGreaterThan(0);
-    expect(fetchMock).not.toHaveBeenCalled();
-    // Отличает «не настроена» от «отвалилась»: во втором случае cmsFetch
-    // обязан прокричать в лог (R-15). Ненастроенная CMS — конфигурация
-    // контура, а не инцидент, и в логе ошибок ей делать нечего.
-    expect(console.error).not.toHaveBeenCalled();
+    expect((await getCms('faq', { locale: 'ru' })).sections[0]!.title).toBe('Из CMS');
+    expect(readdirSync(dir).some((f) => f.startsWith('faq.apex-ru.ru.'))).toBe(true);
+  });
+
+  it('теги: и общий cms:<ресурс>, и cms:<ресурс>:<слаг> (вебхук не-дефолтного сайта)', async () => {
+    vi.stubEnv('SITE_SLUG', 'apex-uk');
+    const mock = stubFetch(() => Promise.resolve(Response.json(FAQ_LIVE)));
+    const { getCms } = await import('./cms');
+    await getCms('faq', { locale: 'ru' });
+
+    const init = (mock.mock.calls[0] as unknown as [string, { next: { tags: string[] } }])[1];
+    expect(init.next.tags).toEqual(['cms:faq', 'cms:faq:apex-uk']);
+  });
+
+  it('пустой ответ CMS — это данные, а не ошибка', async () => {
+    stubFetch(() => Promise.resolve(Response.json({ sections: [] })));
+    const { getCms } = await import('./cms');
+    expect((await getCms('faq', { locale: 'ru' })).sections).toEqual([]);
   });
 });
 
-describe('getCms · CMS отвалилась в рантайме (CMS_API_URL задан)', () => {
-  beforeEach(() => {
-    vi.stubEnv('CMS_API_URL', 'http://cms.test');
-    // Тенант обязан быть назван: без слага в CMS не ходим вовсе
-    // (PKG-05), и эти сценарии проверяли бы не тот путь.
-    vi.stubEnv('SITE_SLUG', 'apex-ru');
-  });
+describe('CMS упала, последняя версия есть', () => {
+  it.each([
+    ['соединение отклонено', () => Promise.reject(new Error('ECONNREFUSED'))],
+    ['503', () => Promise.resolve(new Response('down', { status: 503 }))],
+    ['мусор мимо схемы', () => Promise.resolve(Response.json({ sections: 'не массив' }))],
+  ])('%s → последний ответ CMS + лог уровня error', async (_name, failing) => {
+    stubFetch(() => Promise.resolve(Response.json(FAQ_LIVE)));
+    let { getCms } = await import('./cms');
+    await getCms('faq', { locale: 'ru' });
 
-  it('соединение отклонено → фикстуры, страница живёт', async () => {
-    const fetchMock = stubFetch(() => Promise.reject(new Error('ECONNREFUSED')));
+    vi.resetModules(); // новый процесс: память о записанном сброшена, диск — нет
+    stubFetch(failing as () => Promise<Response>);
+    ({ getCms } = await import('./cms'));
 
-    const { getCms } = await import('./cms');
-    const faq = await getCms('faq', { locale: 'ru' });
-
-    expect(fetchMock).toHaveBeenCalled(); // сходили и узнали по факту
-    expect(faq.sections.length).toBeGreaterThan(0);
-    expect(console.error).toHaveBeenCalled(); // фолбэк без алерта — скрытая авария (R-15)
-  });
-
-  it('CMS отвечает 503 → фикстуры', async () => {
-    stubFetch(() => Promise.resolve(new Response('unavailable', { status: 503 })));
-
-    const { getCms } = await import('./cms');
-    expect((await getCms('faq', { locale: 'en' })).sections.length).toBeGreaterThan(0);
-  });
-
-  it('таймаут CMS → фикстуры (сайт не ждёт соседа дольше своего бюджета)', async () => {
-    stubFetch(
-      () =>
-        new Promise((_, reject) =>
-          setTimeout(() => reject(Object.assign(new Error('timeout'), { name: 'TimeoutError' })), 5),
-        ),
-    );
-
-    const { getCms } = await import('./cms');
-    expect((await getCms('faq', { locale: 'ru' })).sections.length).toBeGreaterThan(0);
-  });
-
-  it('CMS отвечает мусором мимо схемы → фикстуры (мусор не доходит до страниц)', async () => {
-    stubFetch(() => Promise.resolve(Response.json({ sections: 'не массив' })));
-
-    const { getCms } = await import('./cms');
-    const faq = await getCms('faq', { locale: 'ru' });
-
-    expect(Array.isArray(faq.sections)).toBe(true);
-    expect(faq.sections.length).toBeGreaterThan(0);
-  });
-
-  it('CMS жива → боевые данные, фикстуры не подмешиваются', async () => {
-    const live = { sections: [{ title: 'Из CMS', items: [{ question: 'q', answer: 'a' }] }] };
-    stubFetch(() => Promise.resolve(Response.json(live)));
-
-    const { getCms } = await import('./cms');
     expect((await getCms('faq', { locale: 'ru' })).sections[0]!.title).toBe('Из CMS');
+    expect(errorLines().some((l) => l.includes('последней версии'))).toBe(true);
+  });
+
+  it('версия хранится по сайту и локали: чужая не подставляется', async () => {
+    stubFetch(() => Promise.resolve(Response.json(FAQ_LIVE)));
+    const { getCms } = await import('./cms');
+    await getCms('faq', { locale: 'ru' });
+
+    stubFetch(() => Promise.reject(new Error('ECONNREFUSED')));
+    await expect(getCms('faq', { locale: 'en' })).rejects.toThrow(/сохранённой версии нет/);
+    vi.stubEnv('SITE_SLUG', 'apex-uk');
+    await expect(getCms('faq', { locale: 'ru' })).rejects.toThrow(/сохранённой версии нет/);
+  });
+});
+
+describe('CMS упала, сохранённой версии нет', () => {
+  it('бросает CmsUnavailableError, а не возвращает пустые данные; ALERT в логе', async () => {
+    stubFetch(() => Promise.reject(new Error('ECONNREFUSED')));
+    const { getCms, CmsUnavailableError } = await import('./cms');
+
+    await expect(getCms('faq', { locale: 'ru' })).rejects.toBeInstanceOf(CmsUnavailableError);
+    expect(errorLines().some((l) => l.startsWith('[cms] ALERT:'))).toBe(true);
+  });
+
+  it('отмечает отказ в хранилище запроса — обёртка сервера отдаст 503', async () => {
+    stubFetch(() => Promise.reject(new Error('ECONNREFUSED')));
+    const { AsyncLocalStorage } = await import('node:async_hooks');
+    const { CMS_OUTAGE_SYMBOL } = await import('./cms-outage');
+    const storage = new AsyncLocalStorage<{ outage?: { resource: string } }>();
+    (globalThis as Record<symbol, unknown>)[CMS_OUTAGE_SYMBOL] = storage;
+    const { getCms } = await import('./cms');
+
+    const store: { outage?: { resource: string } } = {};
+    await storage.run(store, () => getCms('faq', { locale: 'ru' }).catch(() => undefined));
+    expect(store.outage).toEqual({ resource: 'faq' });
+    delete (globalThis as Record<symbol, unknown>)[CMS_OUTAGE_SYMBOL];
+  });
+});
+
+describe('CMS не настроена', () => {
+  it('CMS_API_URL пуст → в сеть не ходим и фикстур нет: ошибка', async () => {
+    vi.stubEnv('CMS_API_URL', '');
+    const mock = stubFetch(() => Promise.reject(new Error('сети быть не должно')));
+    const { getCms } = await import('./cms');
+
+    await expect(getCms('brand', { locale: 'ru' })).rejects.toThrow(/CMS_API_URL/);
+    expect(mock).not.toHaveBeenCalled();
+  });
+
+  it('SITE_SLUG пуст → в CMS НЕ ходим (PKG-05: без слага — чужой сайт)', async () => {
+    vi.stubEnv('SITE_SLUG', '');
+    const mock = stubFetch(() => Promise.resolve(Response.json({ name: 'чужой' })));
+    const { getCms } = await import('./cms');
+
+    await expect(getCms('brand', { locale: 'ru' })).rejects.toThrow(/SITE_SLUG/);
+    expect(mock).not.toHaveBeenCalled();
+  });
+
+  it('слаг уходит в запрос как есть', async () => {
+    vi.stubEnv('SITE_SLUG', 'apex-uk');
+    const mock = stubFetch(() => Promise.reject(new Error('ECONNREFUSED')));
+    const { getCms } = await import('./cms');
+    await getCms('brand', { locale: 'ru' }).catch(() => undefined);
+
+    const url = String((mock.mock.calls[0] as unknown[])[0]);
+    expect(url).toContain('site=apex-uk');
+  });
+});
+
+describe('списки страниц для сборки', () => {
+  it('CMS не настроена → пустой список (страницы по первому запросу), без запроса', async () => {
+    vi.stubEnv('CMS_API_URL', '');
+    const { staticParamsFromCms } = await import('./cms');
+    const load = vi.fn(async () => [{ slug: 'x' }]);
+    expect(await staticParamsFromCms(load)).toEqual([]);
+    expect(load).not.toHaveBeenCalled();
+  });
+
+  it('CMS настроена, но не ответила → пустой список, сборка не падает', async () => {
+    const { staticParamsFromCms } = await import('./cms');
+    expect(await staticParamsFromCms(async () => Promise.reject(new Error('down')))).toEqual([]);
   });
 });
 
 /**
- * Переезд на CMS v2 (Р-040). Форма ответа бренда расширена: шесть слотов
- * картинок вместо двух и `primaryColor: string | null`.
- *
- * Проверка именно на уровне СВЯЗКИ, а не схемы: дефект здесь выглядел бы
- * не как ошибка разбора, а как «витрина показывает не тот бренд».
- * Строгая схема отвергла бы весь ответ из-за одного пустого поля,
- * `cmsFetch` подставил бы фикстуру, и наружу вышли бы чужое имя и чужой
- * логотип — при живой CMS и без единой ошибки в логе страницы.
+ * Бренд v2 (Р-040): строгая схема отвергла бы ответ из-за одного пустого
+ * поля. Раньше это давало чужой бренд из фикстуры, теперь — ошибку; оба
+ * исхода плохи, поэтому бренд разбирается мягко по полям.
  */
-describe('getCms · бренд из CMS v2', () => {
-  beforeEach(() => {
-    vi.stubEnv('CMS_API_URL', 'http://cms.test');
-    // Тенант обязан быть назван: без слага в CMS не ходим вовсе
-    // (PKG-05), и эти сценарии проверяли бы не тот путь.
-    vi.stubEnv('SITE_SLUG', 'apex-ru');
-  });
-
-  const V2_BRAND = {
-    name: 'Из CMS v2',
-    logo: null,
-    favicon: null,
-    primaryColor: null,
-    socials: [],
-  };
-
-  it('primaryColor: null → бренд остаётся боевым, подмены фикстурой нет', async () => {
-    stubFetch(() => Promise.resolve(Response.json(V2_BRAND)));
-
+describe('бренд из CMS v2', () => {
+  it('primaryColor: null → бренд остаётся боевым', async () => {
+    stubFetch(() =>
+      Promise.resolve(
+        Response.json({ name: 'Из CMS v2', logo: null, favicon: null, primaryColor: null, socials: [] }),
+      ),
+    );
     const { getCms } = await import('./cms');
     const brand = await getCms('brand', { locale: 'ru' });
 
     expect(brand.name).toBe('Из CMS v2');
     expect(brand.primaryColor).toBeNull();
-  });
-
-  it('неизвестные поля v2 отбрасываются, известные разобраны (строго/мягко)', async () => {
-    // Потребитель парсит мягко: шесть слотов картинок и прочие новые поля
-    // появятся раньше, чем витрина научится их показывать.
-    stubFetch(() =>
-      Promise.resolve(
-        Response.json({
-          ...V2_BRAND,
-          primaryColor: '#0b5fff',
-          logoDark: { url: 'http://cms.test/d.png', width: 1, height: 1, alt: 'd', mimeType: 'image/png' },
-          emailLogo: null,
-        }),
-      ),
-    );
-
-    const { getCms } = await import('./cms');
-    const brand = await getCms('brand', { locale: 'ru' });
-
-    expect(brand.primaryColor).toBe('#0b5fff');
-    expect(brand).not.toHaveProperty('logoDark');
-  });
-});
-
-/**
- * Отдельный класс: ломается не CMS, а сама страховка. Фикстура строится
- * синхронно ДО ухода в сеть, поэтому её исключение летит мимо try/catch
- * внутри cmsFetch — и роняет страницу, к которой боевая CMS отношения
- * не имеет (баг B-017).
- */
-describe('getCms · сломана сама фикстура', () => {
-  beforeEach(() => {
-    vi.stubEnv('CMS_API_URL', 'http://cms.test');
-    // Тенант обязан быть назван: без слага в CMS не ходим вовсе
-    // (PKG-05), и эти сценарии проверяли бы не тот путь.
-    vi.stubEnv('SITE_SLUG', 'apex-ru');
-    vi.doMock('./cms-mock', () => ({
-      CMS_MOCK: {
-        faq: () => {
-          throw new Error(FIXTURE_ERROR);
-        },
-      },
-      buildArticleDetail: () => null,
-    }));
-  });
-
-  it('живая CMS + сломанная фикстура → боевые данные, а не 500', async () => {
-    const live = { sections: [{ title: 'Из CMS', items: [{ question: 'q', answer: 'a' }] }] };
-    const fetchMock = stubFetch(() => Promise.resolve(Response.json(live)));
-
-    const { getCms } = await import('./cms');
-    const faq = await getCms('faq', { locale: 'ru' });
-
-    expect(fetchMock).toHaveBeenCalled();
-    expect(faq.sections[0]!.title).toBe('Из CMS');
-    expect(console.error).toHaveBeenCalled(); // поломку страховки видно
-  });
-
-  it('лежащая CMS + сломанная фикстура → ошибка наружу, а не тихая подмена', async () => {
-    stubFetch(() => Promise.reject(new Error('ECONNREFUSED')));
-
-    const { getCms } = await import('./cms');
-    await expect(getCms('faq', { locale: 'ru' })).rejects.toThrow();
-  });
-});
-
-describe('getCms · слаг не назван (PKG-05)', () => {
-  beforeEach(() => {
-    vi.stubEnv('CMS_API_URL', 'http://cms.test');
-  });
-
-  it('SITE_SLUG пуст → фикстуры, и в CMS НЕ ходим вовсе', async () => {
-    /**
-     * Запрос без слага ушёл бы как `?site=`, а мульти-тенантная CMS
-     * отдала бы **сайт по умолчанию** — чужой бренд и чужой контент с
-     * кодом 200 и без единой ошибки на странице. Поэтому адрес без
-     * слага не собирается: отдаём фикстуры, то есть уже существующий
-     * честный путь «CMS не настроена».
-     */
-    vi.stubEnv('SITE_SLUG', '');
-    const fetchMock = vi.fn();
-    vi.stubGlobal('fetch', fetchMock);
-
-    const { getCms } = await import('./cms');
-    const brand = await getCms('brand', { locale: 'ru' });
-
-    expect(fetchMock).not.toHaveBeenCalled();
-    expect(brand.name).toBeTruthy();
-  });
-
-  it('ПАРНАЯ: со слагом в CMS идём', async () => {
-    // Без парной проверка прошла бы и у реализации, которая не ходит в
-    // CMS никогда.
-    vi.stubEnv('SITE_SLUG', 'apex-ru');
-    const fetchMock = vi.fn(() => Promise.reject(new Error('ECONNREFUSED')));
-    vi.stubGlobal('fetch', fetchMock);
-
-    const { getCms } = await import('./cms');
-    await getCms('brand', { locale: 'ru' });
-
-    expect(fetchMock).toHaveBeenCalled();
-  });
-
-  it('слаг уходит в запрос как есть, а не подменяется умолчанием', async () => {
-    vi.stubEnv('SITE_SLUG', 'apex-uk');
-    const fetchMock = vi.fn(() => Promise.reject(new Error('ECONNREFUSED')));
-    vi.stubGlobal('fetch', fetchMock);
-
-    const { getCms } = await import('./cms');
-    await getCms('brand', { locale: 'ru' });
-
-    const url = String((fetchMock.mock.calls[0] as unknown[])[0]);
-    expect(url).toContain('site=apex-uk');
-    expect(url).not.toContain('apex-ru');
   });
 });

@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { getChromeBrand } from './chrome';
+import { getChromeBrand, resolveBrandName } from './chrome';
 
 /**
  * Хром кабинета при переезде на CMS v2 (Р-040).
@@ -59,5 +59,29 @@ describe('бренда нет', () => {
     stubFetch({ primaryColor: '#0b5fff' });
 
     expect(await getChromeBrand('ru')).toBeNull();
+  });
+});
+
+/**
+ * Имя бренда без строки бренда в коде (10.11): CMS → окружение ячейки
+ * `SITE_BRAND_NAME` (мост) → нейтральная метка интерфейса.
+ */
+describe('resolveBrandName', () => {
+  afterEach(() => vi.unstubAllEnvs());
+  const fromCms = { name: 'Из CMS', primaryColor: null, logo: null, socials: [] };
+
+  it('CMS ответила → имя из CMS, даже если окружение задано', () => {
+    vi.stubEnv('SITE_BRAND_NAME', 'Из окружения');
+    expect(resolveBrandName(fromCms, 'Личный кабинет')).toBe('Из CMS');
+  });
+
+  it('CMS нет → окружение ячейки', () => {
+    vi.stubEnv('SITE_BRAND_NAME', 'Из окружения');
+    expect(resolveBrandName(null, 'Личный кабинет')).toBe('Из окружения');
+  });
+
+  it('нет ни CMS, ни окружения → нейтральная метка, а не выдуманное имя', () => {
+    vi.stubEnv('SITE_BRAND_NAME', '');
+    expect(resolveBrandName(null, 'Личный кабинет')).toBe('Личный кабинет');
   });
 });

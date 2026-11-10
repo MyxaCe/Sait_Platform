@@ -13,7 +13,7 @@ export function SiteFooter(props: SiteFooterProps) {
   return (
     <UiSiteFooter
       {...props}
-      copyright={t('copyright', { year: new Date().getFullYear() })}
+      copyright={t('copyright', { year: new Date().getFullYear(), brand: props.brandName })}
       renderLink={(link) => (
         <Link
           href={link.href}
