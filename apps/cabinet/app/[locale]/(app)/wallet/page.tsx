@@ -13,6 +13,7 @@ import { DepositPanel } from '@/features/money/DepositPanel';
 import { WithdrawPanel } from '@/features/money/WithdrawPanel';
 import { OperationsHistory } from '@/features/money/MoneyHistory';
 import { NavIcon } from '@/features/shell/NavIcon';
+import { realMoneyCurrency } from '@broker/money/display-currency';
 import { Segmented } from '@/features/ui/Segmented';
 
 /**
@@ -54,7 +55,7 @@ export default async function WalletPage({
   const balance = account?.balanceCents ?? 0;
   // Доступно = свободная маржа (не больше баланса); терминал молчит — баланс.
   const available = freeMargin !== null ? Math.max(0, Math.min(freeMargin, balance)) : balance;
-  const currency = account?.currency ?? 'USDT';
+  const currency = realMoneyCurrency(account?.currency);
 
   return (
     <div className="mx-auto max-w-2xl space-y-4 sm:space-y-5">

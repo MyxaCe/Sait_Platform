@@ -1,10 +1,11 @@
-import { useTranslations } from 'next-intl';
-import { Link } from '@/i18n/navigation';
+import { useLocale, useTranslations } from 'next-intl';
+import { cabinetRegisterHref } from '@/lib/cabinet-links';
 import { Button, Container, Section } from '@broker/ui';
 
 export function CtaBand() {
   const t = useTranslations('home.cta');
   const tCommon = useTranslations('common');
+  const locale = useLocale();
 
   return (
     <Section>
@@ -24,16 +25,16 @@ export function CtaBand() {
             </h2>
             <p className="mt-4 text-secondary sm:text-lg">{t('subtitle')}</p>
             <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row sm:gap-4">
-              <Link href="/register" className="w-full sm:w-auto">
+              <a href={cabinetRegisterHref('/register', locale)} className="w-full sm:w-auto">
                 <Button size="lg" className="w-full sm:px-10" tabIndex={-1}>
                   {tCommon('openAccount')}
                 </Button>
-              </Link>
-              <Link href="/register?demo=1" className="w-full sm:w-auto">
+              </a>
+              <a href={cabinetRegisterHref('/register?demo=1', locale)} className="w-full sm:w-auto">
                 <Button variant="ghost" size="lg" className="w-full" tabIndex={-1}>
                   {tCommon('tryDemo')}
                 </Button>
-              </Link>
+              </a>
             </div>
           </div>
         </div>

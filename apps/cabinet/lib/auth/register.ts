@@ -4,6 +4,13 @@ import {
   LEAD_SUBMITTED_ROUTING_KEY,
   type LeadSubmittedData,
 } from '@broker/api-client';
+import type { Queryable } from '@broker/money';
+import {
+  readPromoSettings,
+  recordAttributionWithinTx,
+  resolveAttribution,
+  type ResolvedAttribution,
+} from '@broker/promo';
 import { getPool } from '../db';
 import { getTenantStartBalance } from '../tenant';
 import { hashPassword } from './password';
@@ -55,9 +62,54 @@ export type RegisterRefusal =
 
 export type RegisterResult = { ok: true; userId: string } | RegisterRefusal;
 
+/**
+ * Откуда пришёл человек (дизайн «ДЕМО-акции» §4.1, решение владельца №8):
+ * first-click cookie (`bp_ref` / `bp_promo`, ставят middleware витрины и
+ * кабинета) и параметры формы, IP запроса и страна по гео-заголовку прокси.
+ * Всё необязательно: без этих данных регистрация идёт как раньше.
+ */
+export interface RegisterContext {
+  cookies?: { ref?: string | null; promo?: string | null };
+  params?: { ref?: string | null; promo?: string | null };
+  ip?: string | null;
+  /** Страна по IP (ISO-2) из гео-заголовка прокси; `null` — заголовка нет. */
+  ipCountry?: string | null;
+  now?: Date;
+}
+
+/**
+ * Атрибуция по cookie/параметрам. Срок — из настроек платформы
+ * (`platform_promo_settings.attribution_window_days`); настроек нет или они
+ * не читаются — атрибуции нет (fail-closed: чужой срок не выдумываем), а
+ * регистрация НЕ отказывает — источник клиента не стоит его счёта.
+ */
+async function resolveRegistrationAttribution(ctx: RegisterContext): Promise<ResolvedAttribution | null> {
+  const any = ctx.cookies?.ref || ctx.cookies?.promo || ctx.params?.ref || ctx.params?.promo;
+  if (!any) return null;
+  try {
+    const settings = await readPromoSettings(getPool() as unknown as Queryable);
+    if (!settings) return null;
+    return resolveAttribution({
+      cookies: ctx.cookies ?? {},
+      params: ctx.params ?? {},
+      now: ctx.now ?? new Date(),
+      windowDays: settings.attributionWindowDays,
+    });
+  } catch (error) {
+    console.error('[register] атрибуция не прочитана (настройки акций) — регистрируем без неё', error);
+    return null;
+  }
+}
+
+const ISO2 = /^[A-Z]{2}$/;
+const iso2 = (v: string | null | undefined): string | null => {
+  const c = (v ?? '').trim().toUpperCase();
+  return ISO2.test(c) ? c : null;
+};
+
 const PG_UNIQUE_VIOLATION = '23505';
 
-export async function registerUser(input: RegisterInput): Promise<RegisterResult> {
+export async function registerUser(input: RegisterInput, ctx: RegisterContext = {}): Promise<RegisterResult> {
   const userId = randomUUID();
   const leadId = randomUUID();
   const occurredAt = new Date().toISOString();
@@ -106,6 +158,7 @@ export async function registerUser(input: RegisterInput): Promise<RegisterResult
       : { ok: false, reason: 'startBalanceUnavailable', detail: startBalance.reason };
   }
   const passwordHash = await hashPassword(input.password);
+  const attribution = await resolveRegistrationAttribution(ctx);
 
   const leadData: LeadSubmittedData = {
     kind: 'account-opening',
@@ -117,7 +170,8 @@ export async function registerUser(input: RegisterInput): Promise<RegisterResult
     country: input.country,
     accountType: input.accountType,
     locale: input.locale,
-    source: { promo: 'cabinet-registration' },
+    // Источник: слаг акции из ссылки (`?promo=`), иначе — прежняя метка.
+    source: { promo: attribution?.promo?.value ?? 'cabinet-registration' },
   };
   const envelope = buildLeadSubmittedEnvelope(randomUUID(), occurredAt, leadData);
 
@@ -125,9 +179,19 @@ export async function registerUser(input: RegisterInput): Promise<RegisterResult
   try {
     await client.query('BEGIN');
     await client.query(
-      `INSERT INTO users (id, email, password_hash, full_name, locale)
-       VALUES ($1, $2, $3, $4, $5)`,
-      [userId, input.email, passwordHash, `${input.firstName} ${input.lastName}`, input.locale],
+      `INSERT INTO users (id, email, password_hash, full_name, locale, country, registration_ip, registration_ip_country)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+      [
+        userId,
+        input.email,
+        passwordHash,
+        `${input.firstName} ${input.lastName}`,
+        input.locale,
+        // Страна клиента — из формы (комплаенс: профиль юрисдикции акций).
+        iso2(input.country),
+        ctx.ip?.trim() || null,
+        iso2(ctx.ipCountry),
+      ],
     );
     await client.query(
       `INSERT INTO leads (id, kind, email, locale, payload) VALUES ($1, $2, $3, $4, $5)`,
@@ -157,6 +221,19 @@ export async function registerUser(input: RegisterInput): Promise<RegisterResult
       `INSERT INTO notifications (id, user_id, type, params) VALUES ($1, $2, $3, $4)`,
       [randomUUID(), userId, 'welcome', JSON.stringify({ accountType: input.accountType })],
     );
+    /*
+      Атрибуция — той же транзакцией: клиент без своей записи «кто привёл»
+      не появляется. Самореферал (тот же IP / email, что у реферера)
+      отсекается внутри: строка `rejected` для аудита, наград по ней нет.
+    */
+    if (attribution) {
+      await recordAttributionWithinTx(client as unknown as Queryable, {
+        refereeUserId: userId,
+        refereeEmail: input.email,
+        ip: ctx.ip?.trim() || null,
+        resolved: attribution,
+      });
+    }
     await client.query('COMMIT');
     return { ok: true, userId };
   } catch (error) {

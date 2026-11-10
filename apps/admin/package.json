@@ -11,10 +11,12 @@
     "seed:admin": "tsx scripts/bootstrap-admin.ts",
     "seed:kyc-fixture": "tsx scripts/seed-kyc-fixture.ts",
     "seed:demo": "tsx scripts/seed-demo.ts",
+    "seed:promo": "tsx scripts/seed-promo.ts",
     "seed:support-demo": "tsx scripts/seed-support-demo.ts"
   },
   "dependencies": {
     "@broker/money": "workspace:*",
+    "@broker/promo": "workspace:*",
     "@broker/storage": "workspace:*",
     "@broker/support": "workspace:*",
     "@broker/ui": "workspace:*",

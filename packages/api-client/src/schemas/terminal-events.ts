@@ -178,6 +178,18 @@ export const terminalTradeExecutedSchema = z.object({
    * переводящая сама, — уже второе имя.
    */
   acrossGap: z.boolean().optional(),
+  /*
+   * Доход платформы со сделки (решение владельца 10.11, ветка терминала
+   * `demo-fees`). Шлются на ЗАКРЫТИИ, числа — за всю сделку (открытие +
+   * доливки + закрытие), в минорных единицах `currency`. **Опционально и
+   * терпимо**: старые события их не несут — это «не знаем», не ноль;
+   * мусор в поле не роняет событие (`.catch(undefined)`), как у `reason`.
+   * `marketPrice` — рыночная цена закрытия ДО наценки.
+   * `realizedPnlMinor` при этом GROSS (без комиссии).
+   */
+  commissionMinor: z.number().int().nonnegative().optional().catch(undefined),
+  markupMinor: z.number().int().nonnegative().optional().catch(undefined),
+  marketPrice: z.number().nonnegative().optional().catch(undefined),
 });
 
 /** Реестр «routing key → схема payload» терминальных событий (версия v1). */

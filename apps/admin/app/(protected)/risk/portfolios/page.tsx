@@ -7,6 +7,7 @@ import { formatLeverage } from '@/lib/leverage/resolve';
 import { RiskHeader } from '../_components/RiskHeader';
 import { countClientsInDefaultImplicitly } from '../_components/queries';
 import { PortfolioEditor } from './_components/PortfolioEditor';
+import { bpsText } from '@/lib/promo/labels';
 
 /**
  * Риск/плечо — портфели `/risk/portfolios` (WEB-47/45, Р-446, §3.9).
@@ -107,6 +108,35 @@ export default async function PortfoliosPage({
                     </dd>
                   </div>
                 </dl>
+                <dl className="border-border grid grid-cols-2 gap-3 border-t pt-3">
+                  <div>
+                    <dt className="text-muted text-xs">Наценка на спред</dt>
+                    <dd className="text-primary mt-0.5 text-sm font-medium tabular-nums">
+                      {p.markupBps > 0 ? (
+                        <>
+                          {p.markupBps} б.п. <span className="text-muted font-normal">· {bpsText(p.markupBps)}</span>
+                        </>
+                      ) : (
+                        <span className="text-muted">нет</span>
+                      )}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-muted text-xs">Комиссия</dt>
+                    <dd className="text-primary mt-0.5 text-sm font-medium tabular-nums">
+                      {p.commissionBps > 0 ? (
+                        <>
+                          {p.commissionBps} б.п. <span className="text-muted font-normal">· {bpsText(p.commissionBps)}</span>
+                        </>
+                      ) : (
+                        <span className="text-muted">нет</span>
+                      )}
+                    </dd>
+                  </div>
+                </dl>
+                <p className="text-secondary text-xs">
+                  Инструменты: {p.instruments ?? <span className="text-muted">не указаны</span>}
+                </p>
                 {otherClasses.length > 0 ? (
                   <p className="text-secondary text-xs tabular-nums">
                     Другие классы:{' '}
@@ -135,6 +165,10 @@ export default async function PortfoliosPage({
             cryptoLeverage={editing.classOverrides[TERMINAL_INSTRUMENT_CLASS] ?? null}
             clientCount={clientsOf(editing)}
             isDefault={editing.isDefault}
+            markupBps={editing.markupBps}
+            commissionBps={editing.commissionBps}
+            instruments={editing.instruments}
+            description={editing.description}
           />
         </div>
       ) : null}

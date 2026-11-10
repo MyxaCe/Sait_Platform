@@ -4,7 +4,8 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
 import path from 'node:path';
 import { revalidatePath } from 'next/cache';
-import { headers } from 'next/headers';
+import { cookies, headers } from 'next/headers';
+import { ATTRIBUTION_COOKIES } from '@broker/promo/attribution';
 import { redirect } from 'next/navigation';
 import { getPool } from './db';
 import { isRateLimited } from './rate-limit';
@@ -12,6 +13,7 @@ import { hashPassword, verifyPassword } from './auth/password';
 import { registerUser } from './auth/register';
 import { checkLogin } from './auth/login';
 import { resetDemoAccount, type TerminalFailure } from './terminal/client';
+import { safeLaunchNext } from './sso/launch';
 import { getTenantStartBalance } from './tenant';
 import {
   changePasswordSchema,
@@ -72,7 +74,28 @@ export async function registerAction(_prev: ActionState, formData: FormData): Pr
     return { fieldErrors: zodFieldErrors(parsed.error) };
   }
 
-  const result = await registerUser(parsed.data);
+  /*
+    Атрибуция (акции и рефералы): first-click cookie ставят middleware
+    витрины и кабинета по `?ref=` / `?promo=`; скрытые поля формы — запасной
+    путь. IP — как у ограничителя частоты; страна по IP — из гео-заголовка
+    прокси, ИМЯ заголовка — из окружения (`GEO_COUNTRY_HEADER`, напр.
+    `cf-ipcountry`): у каждой площадки свой прокси.
+  */
+  const jar = cookies();
+  const geoHeader = process.env.GEO_COUNTRY_HEADER?.trim();
+  const ip = clientIp();
+  const result = await registerUser(parsed.data, {
+    cookies: {
+      ref: jar.get(ATTRIBUTION_COOKIES.ref)?.value ?? null,
+      promo: jar.get(ATTRIBUTION_COOKIES.promo)?.value ?? null,
+    },
+    params: {
+      ref: typeof raw.ref === 'string' ? raw.ref : null,
+      promo: typeof raw.promo === 'string' ? raw.promo : null,
+    },
+    ip: ip === 'local' ? null : ip,
+    ipCountry: geoHeader ? headers().get(geoHeader) : null,
+  });
   if (!result.ok) {
     // Три причины отказа — три разных ответа формы. Прежде здесь любой
     // отказ превращался в «email занят»: один беззвучный исход на
@@ -105,7 +128,9 @@ export async function loginAction(_prev: ActionState, formData: FormData): Promi
 
   await getPool().query(`UPDATE users SET last_login_at = now() WHERE id = $1`, [check.userId]);
   await createSession(check.userId);
-  redirect(homePath(String(formData.get('uiLocale') ?? check.locale)));
+  // Вход начался с launch терминала (sso-pack v1.1) — продолжаем его; иначе на главную.
+  const next = safeLaunchNext(formData.get('next'));
+  redirect(next ?? homePath(String(formData.get('uiLocale') ?? check.locale)));
 }
 
 export async function logoutAction(formData: FormData): Promise<void> {

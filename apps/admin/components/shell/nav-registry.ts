@@ -57,6 +57,9 @@ export const NAV_ITEMS: NavItem[] = [
   // finance_operator, без второго аппрува (решение штаба). «Break-glass» по-прежнему
   // вне рельса — экранов нет.
   { key: 'money', group: 'money', label: 'Деньги', href: '/money', icon: 'money', roles: ['admin', 'finance_operator'] },
+  // «Акции и партнёры» (ДЕМО-акции, 10.11): видят admin и finance_operator (очередь
+  // начислений — денежное решение); создание/изменение акций — только admin (гейт на страницах).
+  { key: 'promo', group: 'money', label: 'Акции и партнёры', href: '/promo', icon: 'promo', roles: ['admin', 'finance_operator'] },
   { key: 'settings', group: 'control', label: 'Настройки платформы', href: '/settings', icon: 'settings', roles: ['admin'] },
 ];
 

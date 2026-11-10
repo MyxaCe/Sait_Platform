@@ -2,6 +2,7 @@ import { getFormatter, getTranslations } from 'next-intl/server';
 import { EmptyState, Money, StatusBadge, ToneBadge, cn, statusKeyOf } from '@broker/ui';
 import type { DepositView, WithdrawalView } from '@/lib/money';
 import { NavIcon } from '@/features/shell/NavIcon';
+import { REAL_ACCOUNT_CURRENCY } from '@broker/money/display-currency';
 import { MachineValue } from './TxLink';
 
 /**
@@ -104,7 +105,7 @@ export async function moneyOpRenderer() {
           <span className="text-sm font-medium">
             <Money
               minor={minor === null ? null : isDep ? minor : -minor}
-              currency="USDT"
+              currency={REAL_ACCOUNT_CURRENCY}
               signed
               className={cn(VOID.has(st) && 'text-muted line-through')}
             />

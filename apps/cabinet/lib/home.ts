@@ -1,6 +1,5 @@
 import {
   parseCabinetHomeModules,
-  promotionsResponseSchema,
   type CabinetHomeModule,
 } from '@broker/api-client';
 import { cmsGet } from './chrome';
@@ -35,22 +34,6 @@ export async function getHomeModules(locale: string): Promise<CabinetHomeModule[
   if (!data) return DEFAULT_MODULES;
   const modules = parseCabinetHomeModules(data);
   return modules.length > 0 ? modules : DEFAULT_MODULES;
-}
-
-export interface PromoItem {
-  id: string;
-  badge: string;
-  title: string;
-  description: string;
-  ctaLabel: string;
-  ctaHref: string;
-  featured: boolean;
-}
-
-export async function getPromotions(locale: string): Promise<PromoItem[]> {
-  const data = await cmsGet('promotions', locale);
-  const parsed = promotionsResponseSchema.safeParse(data);
-  return parsed.success ? parsed.data.items : [];
 }
 
 /** Каталог MDS для модуля «Рынки» (server-side). */

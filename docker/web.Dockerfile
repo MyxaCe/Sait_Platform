@@ -15,6 +15,7 @@ COPY packages/realtime/package.json packages/realtime/
 COPY packages/ui/package.json packages/ui/
 COPY packages/utils/package.json packages/utils/
 COPY packages/money/package.json packages/money/
+COPY packages/promo/package.json packages/promo/
 COPY packages/support/package.json packages/support/
 RUN pnpm install --frozen-lockfile
 

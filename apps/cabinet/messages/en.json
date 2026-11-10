@@ -37,7 +37,10 @@
       "deposit": "Deposit",
       "withdraw": "Withdraw",
       "wallet": "Wallet",
-      "history": "History"
+      "history": "History",
+      "promotions": "Promotions",
+      "referrals": "Friends",
+      "contest": "Contest"
     },
     "more": "More",
     "moreTitle": "All sections",
@@ -45,7 +48,11 @@
     "menu": "Account menu",
     "groupProfile": "Account",
     "wallet": "Wallet",
-    "groupGrowth": "Rewards"
+    "groupGrowth": "Rewards",
+    "promotions": "Promotions",
+    "referrals": "Invite a friend",
+    "contest": "Contest",
+    "accounts": "Account terms"
   },
   "connection": {
     "tickerAria": "Live quotes",
@@ -576,5 +583,326 @@
       "mailNotConfigured": "Email is temporarily unavailable. Please try later.",
       "generic": "Could not send the email."
     }
+  },
+  "promo": {
+    "title": "Promotions",
+    "lead": "Bonuses are paid in cash to your live account — after the conditions are met and reviewed.",
+    "unavailableTitle": "Promotions did not load",
+    "unavailable": "We could not fetch the data. Your participations and rewards are safe — refresh in a couple of minutes.",
+    "disabled": {
+      "platform_disabled": {
+        "title": "No promotions are running",
+        "body": "There are no active promotions on the platform. Rewards already credited or pending stay valid — see below."
+      },
+      "country_blocked": {
+        "title": "Promotions are not available in your country",
+        "body": "Under the rules of your jurisdiction we do not offer bonuses to clients from your country. Trading, deposits and withdrawals are not affected. Rewards credited earlier stay valid."
+      }
+    },
+    "participatingTitle": "Joined",
+    "availableTitle": "Available promotions",
+    "availableEmpty": "No new promotions right now. We will show them here when they appear.",
+    "rewardsTitle": "My rewards",
+    "rewardsEmpty": "No rewards yet. They appear here once a promotion's conditions are met.",
+    "enroll": "Join",
+    "enrollOk": "You are in. Track your progress under “Joined”.",
+    "enrollError": {
+      "platform_disabled": "Promotions are switched off on the platform.",
+      "country_blocked": "This promotion is not available in your country.",
+      "country_not_allowed": "This promotion is available in selected countries only.",
+      "not_active": "This promotion is not active.",
+      "not_started": "This promotion has not started yet.",
+      "ended": "This promotion has ended.",
+      "not_found": "Promotion not found.",
+      "not_enrollable": "This promotion cannot be joined manually.",
+      "already_enrolled": "You have already joined this promotion.",
+      "unavailable": "We could not record your participation. Try again in a minute.",
+      "tooOften": "Too many attempts — wait a minute.",
+      "noSession": "Your session has expired — sign in again."
+    },
+    "endsOn": "Until {date}",
+    "noEnd": "No end date",
+    "startsOn": "Starts {date}",
+    "daysLeft": "{days, plural, =0 {Last day} one {# day left} other {# days left}}",
+    "deadline": "Complete by {date}",
+    "expectedReward": "Expected reward",
+    "expectedRewardPending": "calculated after your deposit",
+    "fullTerms": "Full terms",
+    "keyTerms": "Key terms",
+    "type": {
+      "deposit_bonus": "Deposit bonus",
+      "cashback": "Cashback",
+      "contest": "Contest",
+      "referral": "Invite a friend"
+    },
+    "toContest": "Go to contest",
+    "state": {
+      "in_progress": "In progress",
+      "qualified": "Conditions met · under review",
+      "expired": "Expired",
+      "not_eligible": "Not eligible"
+    },
+    "status": {
+      "rewarded": "Reward credited",
+      "rejected": "Rejected",
+      "expired": "Expired",
+      "not_eligible": "Not eligible"
+    },
+    "reason": {
+      "withdrawal": "A withdrawal was made before payout — participation is void under the terms.",
+      "window": "Conditions were not met in time.",
+      "deposit_before_start": "Your first deposit was made before the promotion started.",
+      "below_minimum": "Your first deposit is below the promotion minimum."
+    },
+    "cond": {
+      "deposit": "Deposit of {target} or more",
+      "kyc": "Identity verification (KYC)",
+      "turnover": "Trading volume",
+      "turnoverValue": "{current} of {target}",
+      "no_withdrawal": "No withdrawals before payout",
+      "window": "Deadline",
+      "met": "done",
+      "notMet": "not done",
+      "kycAction": "Verify",
+      "depositAction": "Deposit"
+    },
+    "cashback": {
+      "period": "This month · {period}",
+      "fees": "Markup and commission paid",
+      "accrued": "Cashback this month",
+      "belowMinimum": "Below the minimum payout so far — it accumulates until month end.",
+      "withoutFees": "{n, plural, one {# trade} other {# trades}} without fee data not counted."
+    },
+    "rewardStatus": {
+      "processing": "Processing",
+      "credited": "Credited",
+      "rejected": "Rejected"
+    },
+    "rewardKind": {
+      "promo": "Promotion",
+      "referral": "Invite a friend",
+      "cashback": "Cashback",
+      "contest": "Contest prize",
+      "ib": "Partner programme"
+    },
+    "rewardReason": "Reason: {reason}",
+    "rewardCredited": "Credited {date}",
+    "rewardCreated": "Created {date}",
+    "rules": {
+      "bonus": "{percent} of the deposit, up to {cap}",
+      "minDeposit": "Deposit from {amount}",
+      "firstDepositOnly": "first deposit counts",
+      "turnoverMultiplier": "Trading volume {multiplier}× the bonus",
+      "hold": "{unit, select, min {Trades held {value} min or longer} other {Trades held {value} s or longer}}",
+      "window": "{days, plural, one {# day} other {# days}} to complete",
+      "kyc": "Verification (KYC) required",
+      "forfeit": "A withdrawal before payout voids the bonus",
+      "cashbackRate": "{percent} of the markup and commission you pay",
+      "cashbackPeriod": "Calculated per calendar month, paid in cash",
+      "minPayout": "Paid from {amount}",
+      "capPerPeriod": "Up to {amount} a month",
+      "startBalance": "Demo start {amount}",
+      "minTrades": "{n, plural, one {At least # closed trade} other {At least # closed trades}}",
+      "prizeKyc": "Prize after verification (KYC)",
+      "prizePool": "Prize pool {amount}"
+    },
+    "home": {
+      "title": "Promotions",
+      "all": "All promotions",
+      "conditionsMet": "{met} of {total} conditions met",
+      "unavailable": "Promotions did not load — your participations are in the Promotions section."
+    }
+  },
+  "referrals": {
+    "title": "Invite a friend",
+    "lead": "Share your link. When your friend meets the conditions, you both get a reward.",
+    "unavailableTitle": "This section did not load",
+    "unavailable": "We could not fetch your invitations. Your link and rewards are safe — refresh in a couple of minutes.",
+    "linkLabel": "Your link",
+    "codeLabel": "Invitation code",
+    "copyLink": "Copy",
+    "copyCode": "Copy",
+    "copied": "Copied",
+    "share": "Share",
+    "shareText": "Sign up with my link",
+    "qrLabel": "QR code of the invitation link",
+    "qrHint": "Your friend points the camera — the link opens right away.",
+    "linkMissing": "The link appears once the site address is configured. Your code is already reserved.",
+    "programTitle": "Programme terms",
+    "youGet": "You get",
+    "friendGets": "Your friend gets",
+    "perFriend": "per friend",
+    "friendMust": "Your friend needs to",
+    "cond": {
+      "kyc": "pass verification (KYC)",
+      "deposit": "deposit {amount} or more",
+      "turnover": "trade {amount} in volume within {days, plural, one {# day} other {# days}}",
+      "hold": "{unit, select, min {trades held {value} min or longer} other {trades held {value} s or longer}}",
+      "limit": "{n, plural, one {Up to # paid friend a month} other {Up to # paid friends a month}}",
+      "manual": "Rewards are credited after review"
+    },
+    "noProgram": "The invitation programme is not running right now. Your link still works: friends who sign up with it are linked to you.",
+    "disabled": {
+      "platform_disabled": "The invitation programme is switched off on the platform. Rewards credited earlier stay valid.",
+      "country_blocked": "The invitation programme is not available in your country. Rewards credited earlier stay valid."
+    },
+    "invitedTitle": "Invited friends",
+    "invitedEmpty": "Nobody has signed up with your link yet.",
+    "registeredOn": "Signed up {date}",
+    "stage": {
+      "registered": "Signed up",
+      "kyc": "Passed KYC",
+      "deposit": "Deposited",
+      "turnover": "Volume done",
+      "qualified": "Conditions met",
+      "rewarded": "Reward credited",
+      "expired": "Expired",
+      "rejected": "Rejected"
+    },
+    "steps": {
+      "registered": "Sign-up",
+      "kyc": "KYC",
+      "deposit": "Deposit",
+      "turnover": "Volume"
+    },
+    "myReward": "Your reward",
+    "deadline": "by {date}",
+    "totals": {
+      "invited": "Invited",
+      "qualified": "Met conditions",
+      "credited": "Credited",
+      "processing": "Processing"
+    },
+    "partner": {
+      "title": "Partner programme",
+      "lead": "You are partner “{name}”. Your terms are set by your agreement.",
+      "badge": "IB partner",
+      "modelLabel": "Model",
+      "model": {
+        "cpa": "Payment per qualified client (CPA)",
+        "revshare": "Share of platform revenue from your clients"
+      },
+      "cpaAmount": "Per client",
+      "revshare": "Your share",
+      "revshareHint": "of the markup and commission paid by your clients; calculated monthly",
+      "qualify": "Client qualification",
+      "termsMissing": "Your manager will confirm the qualification terms.",
+      "rewardsTitle": "Partner rewards",
+      "rewardsEmpty": "No rewards yet.",
+      "clientsTitle": "Your clients",
+      "period": "for {period}",
+      "pageLead": "Your link ties clients to you; payouts follow your agreement, after review."
+    }
+  },
+  "contest": {
+    "title": "Trading contest",
+    "lead": "A demo-account competition: everyone starts equal, prizes are paid in real USDT.",
+    "unavailableTitle": "The contest did not load",
+    "unavailable": "We could not fetch contest data. Your entry is safe — refresh in a couple of minutes.",
+    "empty": "No contests right now. The next one will appear here.",
+    "tabs": {
+      "label": "Contests",
+      "running": "Running",
+      "upcoming": "Upcoming",
+      "finished": "Finished"
+    },
+    "phase": {
+      "upcoming": "Starting soon",
+      "running": "Running",
+      "finished": "Results pending",
+      "finalized": "Final results"
+    },
+    "period": "{from} — {to}",
+    "startsIn": "{days, plural, =0 {Starts today} one {Starts in # day} other {Starts in # days}}",
+    "endsIn": "{days, plural, =0 {Ends today} one {# day to go} other {# days to go}}",
+    "participants": "{n, plural, one {# participant} other {# participants}}",
+    "rulesTitle": "Rules",
+    "ranking": "Ranking is by the return of closed demo trades during the contest relative to the starting balance.",
+    "prizesTitle": "Prizes",
+    "prizePlace": "Place {place}",
+    "prizesTotal": "Prize pool",
+    "prizesNote": "Prizes are paid in real USDT to your live account after the results are reviewed.",
+    "leaderboardTitle": "Leaderboard",
+    "leaderboardEmpty": "Nobody has closed enough trades to enter the table yet.",
+    "liveNote": "Calculated from closed trades as of opening this page.",
+    "finalNote": "Final results as of {date}.",
+    "col": {
+      "place": "Place",
+      "trader": "Trader",
+      "return": "Return",
+      "trades": "Trades",
+      "prize": "Prize"
+    },
+    "me": "You",
+    "myPlace": "Your place",
+    "myReturn": "Return",
+    "myTrades": "Trades",
+    "noPlace": "Not ranked yet",
+    "ineligible": {
+      "pending_reset": "Waiting for demo reset",
+      "disqualified": "Disqualified",
+      "withdrawn": "Entry not completed",
+      "min_trades": "{n, plural, one {# more trade needed} other {# more trades needed}}"
+    },
+    "myStatus": {
+      "pending_reset": "You are in · waiting for demo reset",
+      "active": "You are in",
+      "disqualified": "You are disqualified",
+      "withdrawn": "Entry not completed — you can try again"
+    },
+    "join": "Join",
+    "joinTitle": "Your demo account will be reset to the starting balance",
+    "joinBody": "So that everyone starts equal, joining resets your demo account to {amount}. Your current demo balance will be replaced. Your live account and its money are not affected.",
+    "joinFlat": "Close any open positions on your demo account first — the terminal will not reset an account with open trades.",
+    "joinConfirm": "Reset demo and join",
+    "cancel": "Cancel",
+    "joinOk": "Request accepted. Your demo account is being reset — start trading afterwards and your place will appear in the table.",
+    "joinError": {
+      "account_not_flat": "Your demo account has open positions — the terminal does not reset an account with them. Close them in the terminal and press “Join” again.",
+      "reset_refused": "The terminal refused to reset your demo account — you have not joined. Try later.",
+      "reset_unavailable": "The terminal is unavailable — you have not joined and your demo account is untouched. Try again in a few minutes.",
+      "already_joined": "You have already joined.",
+      "contest_finished": "The contest has ended.",
+      "platform_disabled": "Promotions and contests are switched off on the platform.",
+      "country_blocked": "The contest is not available in your country.",
+      "country_not_allowed": "The contest is available in selected countries only.",
+      "not_active": "The contest is not running.",
+      "unavailable": "We could not record your entry. Try again in a minute.",
+      "tooOften": "Too many attempts — wait a minute.",
+      "noSession": "Your session has expired — sign in again.",
+      "other": "You have not joined. Try later."
+    },
+    "toTerminal": "Trade on demo",
+    "factStart": "Demo start",
+    "factParticipants": "Participants",
+    "factDaysToEnd": "Days to finish",
+    "factDaysToStart": "Days to start",
+    "factDone": "Status"
+  },
+  "accounts": {
+    "title": "Account terms",
+    "lead": "Leverage, trading costs and instruments for each account type. Terms are set by the platform; yours is marked.",
+    "unavailableTitle": "Terms are temporarily unavailable",
+    "unavailable": "We could not load the account terms. Until we can confirm them we show no figures. Try again later.",
+    "empty": "No account types have been published yet.",
+    "yours": "Your account type",
+    "default": "For new clients",
+    "leverage": "Leverage",
+    "leverageValue": "up to 1:{n}",
+    "leverageBase": "base 1:{n}",
+    "classLeverage": "{class}: up to 1:{n}",
+    "classes": {
+      "crypto": "Crypto"
+    },
+    "cost": "Trading cost",
+    "fee": {
+      "none": "No markup or commission",
+      "markup": "Spread + {markup}",
+      "commission": "Commission {commission} of trade value",
+      "both": "Spread + {markup} and commission {commission} of trade value"
+    },
+    "instruments": "Instruments",
+    "notSpecified": "not specified",
+    "changeHint": "Your account type is assigned by the platform. Contact support to change it."
   }
 }

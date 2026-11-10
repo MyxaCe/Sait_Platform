@@ -1,6 +1,7 @@
 import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/server';
 import { EmptyState, Money, cn } from '@broker/ui';
 import { Link } from '@/i18n/navigation';
+import { TerminalLink } from '@/features/trade/TerminalLink';
 import { requireSessionUser } from '@/lib/auth/require';
 import { getAccountHistory, parsePeriod, periodStart, summarizeTrades, type TradeRow } from '@/lib/history';
 import { getRealAccount, listMyDeposits, listMyWithdrawals } from '@/lib/money';
@@ -233,10 +234,10 @@ export default async function HistoryPage({
                     {th('btnDeposit')}
                   </Link>
                 ) : (
-                  <Link href={`/terminal?account=${account}`} className={linkButton('primary')}>
+                  <TerminalLink account={account} className={linkButton('primary')}>
                     <NavIcon name="trade" className="size-[18px]" />
                     {t('emptyCta')}
-                  </Link>
+                  </TerminalLink>
                 )
               }
             />

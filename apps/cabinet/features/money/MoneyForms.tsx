@@ -10,6 +10,7 @@ import {
   type MoneyFormState,
 } from '@/lib/money-actions';
 import { parseAmount } from './amount';
+import { REAL_ACCOUNT_CURRENCY } from '@broker/money/display-currency';
 import { looksLikeTronAddress, looksLikeTxHash } from './tronscan';
 
 /**
@@ -137,9 +138,9 @@ export function WithdrawForm({
       ? null
       : t(`errors.amount_${parsed.reason}`)
     : parsed.cents < minMinor
-      ? t('amountBelowMin', { min: formatMoney(minMinor, 'USDT') })
+      ? t('amountBelowMin', { min: formatMoney(minMinor, REAL_ACCOUNT_CURRENCY) })
       : availableMinor !== null && parsed.cents > availableMinor
-        ? t('amountAboveAvailable', { available: formatMoney(availableMinor, 'USDT') })
+        ? t('amountAboveAvailable', { available: formatMoney(availableMinor, REAL_ACCOUNT_CURRENCY) })
         : null;
   const ready = addrOk && cents !== null && amountError === null;
   const showAddrErr = touched.address && address.trim() !== '' && !addrOk;
@@ -222,7 +223,7 @@ export function WithdrawForm({
             </div>
             <FieldError id={ids.amtErr}>{showAmtErr ? amountError : null}</FieldError>
             <p id={ids.amtHint} className="text-xs text-muted">
-              {t('minWithdraw', { min: formatMoney(minMinor, 'USDT') })}
+              {t('minWithdraw', { min: formatMoney(minMinor, REAL_ACCOUNT_CURRENCY) })}
             </p>
           </div>
 
@@ -248,7 +249,7 @@ export function WithdrawForm({
               <div>
                 <dt className="text-xs text-muted">{t('confirmAmount')}</dt>
                 <dd className="mt-0.5 text-lg font-semibold tabular-nums">
-                  {cents !== null ? formatMoney(cents, 'USDT') : '—'}
+                  {cents !== null ? formatMoney(cents, REAL_ACCOUNT_CURRENCY) : '—'}
                 </dd>
               </div>
               <div>

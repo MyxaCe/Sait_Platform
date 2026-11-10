@@ -15,7 +15,7 @@ function SubmitButton({ label }: { label: string }) {
   );
 }
 
-export function LoginForm() {
+export function LoginForm({ next }: { next?: string | null } = {}) {
   const t = useTranslations('auth');
   const locale = useLocale();
   const fieldError = useFieldError();
@@ -25,6 +25,7 @@ export function LoginForm() {
     <form action={formAction} className="flex flex-col gap-4" noValidate>
       <FormMessage error={state.error} />
       <input type="hidden" name="uiLocale" value={locale} />
+      {next ? <input type="hidden" name="next" value={next} /> : null}
       <input type="text" name="website" tabIndex={-1} autoComplete="off" className="hidden" aria-hidden />
 
       <FormField label={t('email')} htmlFor="email" required error={fieldError(state.fieldErrors?.email)}>

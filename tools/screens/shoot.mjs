@@ -75,8 +75,29 @@ const ADMIN_SHOTS = [
   ['11-journal', '/journal'],
   ['12-risk-leverage', '/risk/leverage'],
   ['13-risk-portfolios', '/risk/portfolios'],
+  ['13b-risk-portfolio-edit', '/risk/portfolios?edit=standard'],
   ['14-login', '/login'],
+  // Акции и партнёры (ДЕМО-акции, 10.11). null-пути подставляются ниже.
+  ['20-promo', '/promo'],
+  ['21-promo-card', null],
+  ['21b-promo-card-edit', null],
+  ['22-promo-new', '/promo/new'],
+  ['23-promo-queue', null],
+  ['24-promo-contests', '/promo/contests'],
+  ['24b-promo-contest-final', null],
+  ['25-promo-referrals', null],
+  ['26-promo-partners', null],
 ];
+
+/** Подстановка путей экранов акций: первая подходящая ссылка со страницы-списка. */
+const PROMO_PICK = {
+  '21-promo-card': ['/promo', 'a:has-text("Бонус 30%")', ''],
+  '21b-promo-card-edit': ['/promo', 'a:has-text("Бонус на повторное")', '?edit=1'],
+  '23-promo-queue': ['/promo/queue', 'tr:has-text("Реферал") a:has-text("Игорь Смирнов")', ''],
+  '24b-promo-contest-final': ['/promo/contests', 'a:has-text("октябрь")', ''],
+  '25-promo-referrals': ['/promo/referrals', 'a[href*="/promo/referrals?a="]:has-text("Анна Белова")', ''],
+  '26-promo-partners': ['/promo/partners', 'a:has-text("Fischer Capital")', ''],
+};
 
 const CABINET_SHOTS = [
   ['c01-home', '/ru'],
@@ -95,6 +116,14 @@ const CABINET_SHOTS = [
   ['c13-profile-documents', '/ru/profile?tab=documents'],
   // Нижняя навигация телефона: открытая шторка «Ещё» (только m390).
   ['c14-more', '/ru', { mobileOnly: true, click: 'nav[aria-label] button[aria-haspopup="dialog"]' }],
+  // Акции, рефералы, конкурс, условия счетов (кабинет-акции, 10.11). Клиент — `--cabinet-token`.
+  ['c20-promotions', '/ru/promotions'],
+  ['c21-referrals', '/ru/referrals'],
+  ['c22-contest', '/ru/contest'],
+  ['c22b-contest-join', '/ru/contest', { click: '[data-contest] button:has-text("Участвовать")' }],
+  ['c22c-contest-finished', '/ru/contest', { pickHref: 'a[href*="/contest?id="]:has-text("Завершённые")' }],
+  ['c23-accounts', '/ru/accounts'],
+  ['c24-home', '/ru'],
 ];
 const CABINET_TOKEN = opt('cabinet-token', 'demo-cabinet-token-0001');
 const SIZES = opt('sizes', 'm390,d1440').split(',');
@@ -117,6 +146,13 @@ async function shootAdmin(browser) {
       const href = await page.locator('a[href^="/clients/"]').first().getAttribute('href').catch(() => null);
       if (!href) continue;
       path = href;
+    }
+    if (path === null && PROMO_PICK[key]) {
+      const [list, sel, suffixQ] = PROMO_PICK[key];
+      await page.goto(`${ADMIN}${list}`, { waitUntil: 'networkidle', timeout: 120_000 });
+      const href = await page.locator(sel).first().getAttribute('href').catch(() => null);
+      if (!href) continue;
+      path = href.split('#')[0] + suffixQ;
     }
     if (path === null) {
       await page.goto(`${ADMIN}/kyc`, { waitUntil: 'networkidle' });
@@ -157,6 +193,12 @@ async function shootCabinet(browser) {
       if (extra.mobileOnly && tag !== 'm390') continue;
       await page.goto(`${CABINET}${path}`, { waitUntil: 'networkidle', timeout: 120_000 }).catch(() => {});
       await page.waitForTimeout(600);
+      if (extra.pickHref) {
+        const href = await page.locator(extra.pickHref).first().getAttribute('href').catch(() => null);
+        if (!href) continue;
+        await page.goto(`${CABINET}${href}`, { waitUntil: 'networkidle', timeout: 120_000 }).catch(() => {});
+        await page.waitForTimeout(600);
+      }
       if (extra.click) {
         await page.locator(extra.click).first().click().catch(() => {});
         await page.waitForTimeout(300);

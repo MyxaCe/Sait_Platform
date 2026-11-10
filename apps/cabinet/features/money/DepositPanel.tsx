@@ -5,6 +5,7 @@ import type { MoneyPolicy } from '@broker/money';
 import { DepositClaimForm } from './MoneyForms';
 import { CopyButtonLarge } from './CopyText';
 import { PolicyNotice } from './PolicyNotice';
+import { REAL_ACCOUNT_CURRENCY } from '@broker/money/display-currency';
 import { Step } from './Step';
 
 /**
@@ -58,7 +59,7 @@ export async function DepositPanel({ policy, address }: { policy: MoneyPolicy; a
                 />
                 <p className="text-xs text-muted">{t('copyHint')}</p>
                 <p className="text-xs text-secondary">
-                  {t('minDeposit', { min: formatMoney(policy.minDepositMinor, 'USDT') })}
+                  {t('minDeposit', { min: formatMoney(policy.minDepositMinor, REAL_ACCOUNT_CURRENCY) })}
                 </p>
               </div>
             </div>

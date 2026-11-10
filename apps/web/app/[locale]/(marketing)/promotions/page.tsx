@@ -3,6 +3,7 @@ import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { Badge, Button, Container, Section } from '@broker/ui';
 import { Link } from '@/i18n/navigation';
 import { getCms } from '@/lib/cms';
+import { cabinetRegisterHref } from '@/lib/cabinet-links';
 
 interface PageProps {
   params: { locale: string };
@@ -51,7 +52,8 @@ export default async function PromotionsPage({ params }: PageProps) {
               <p className="mt-4 rounded-xl bg-elevated px-4 py-3 text-xs leading-relaxed text-secondary">
                 {promo.terms}
               </p>
-              <Link href={promo.ctaHref} className="mt-5 block">
+              {/* CTA акции → регистрация КАБИНЕТА с ?promo= (атрибуция), не форма лида. */}
+              <Link href={cabinetRegisterHref(promo.ctaHref, params.locale)} className="mt-5 block">
                 <Button
                   variant={promo.featured ? 'primary' : 'secondary'}
                   className="w-full"
