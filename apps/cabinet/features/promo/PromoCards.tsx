@@ -74,8 +74,11 @@ export function ParticipationCard({ p, now }: { p: ParticipationView; now?: Date
   const open = p.status === 'enrolled' || p.status === 'qualified';
 
   return (
-    <article className={cn(CARD, 'space-y-4', open && 'border-accent/30')} data-participation={p.slug}>
-      <div className="flex items-start justify-between gap-3">
+    <article
+      className={cn(CARD, 'space-y-4 xl:grid xl:grid-cols-2 xl:gap-x-8 xl:gap-y-4 xl:space-y-0', open && 'border-accent/30')}
+      data-participation={p.slug}
+    >
+      <div className="flex items-start justify-between gap-3 xl:col-span-2">
         <div className="min-w-0">
           <p className="text-xs text-muted">{t(`type.${p.type}`)}</p>
           <h3 className="mt-0.5 text-[17px] font-semibold leading-6 tracking-tight">{p.texts.title}</h3>
@@ -85,6 +88,7 @@ export function ParticipationCard({ p, now }: { p: ParticipationView; now?: Date
         </ToneBadge>
       </div>
 
+      <div className="space-y-4">
       {p.cashback ? (
         <CashbackProgress p={p} />
       ) : p.conditions.length > 0 ? (
@@ -98,6 +102,9 @@ export function ParticipationCard({ p, now }: { p: ParticipationView; now?: Date
       )}
 
       {p.reason && !open ? <p className="text-sm text-secondary">{t(`reason.${p.reason}`)}</p> : null}
+      </div>
+
+      <div className="space-y-4">
 
       {open && p.type !== 'cashback' ? (
         <div className="flex items-center justify-between gap-3 rounded-xl bg-sunken px-3.5 py-3">
@@ -111,6 +118,7 @@ export function ParticipationCard({ p, now }: { p: ParticipationView; now?: Date
       ) : null}
 
       <FullTerms lines={lines} terms={p.texts.terms} label={t('fullTerms')} />
+      </div>
     </article>
   );
 }

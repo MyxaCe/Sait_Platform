@@ -163,7 +163,16 @@
     "kycNone": "Identity not verified",
     "kycRejected": "Verification failed",
     "stepDone": "Done",
-    "stepVerificationPendingShort": "Under review"
+    "stepVerificationPendingShort": "Under review",
+    "nextStepsTitle": "Next steps",
+    "recentTitle": "Recent activity",
+    "recentAll": "Full history",
+    "recentEmpty": "No activity yet",
+    "referralTitle": "Invite a friend",
+    "referralLead": "Share your link — when your friend meets the conditions, you both get a reward.",
+    "referralCode": "Your code",
+    "referralInvited": "Invited",
+    "referralOpen": "Invite"
   },
   "dashboard": {
     "greeting": "Hello, {name}!",
@@ -196,7 +205,10 @@
     "tabPersonal": "Personal",
     "tabVerification": "Verification",
     "tabSecurity": "Security",
-    "tabDocuments": "Documents"
+    "tabDocuments": "Documents",
+    "openVerification": "Go to verification",
+    "openSecurity": "Go to security",
+    "sessionsActive": "Active sessions: {n}. Password and sessions on other devices are under Security."
   },
   "security": {
     "title": "Security",
@@ -364,7 +376,17 @@
     "emptyMoney": "No operations in this period",
     "emptyMoneyHint": "Fund your live account with USDT — the request will appear here with its on-chain status.",
     "closedDealsTitle": "Execution at levels",
-    "closedDealsHint": "Closed trades from the terminal: where a stop filled away from its level, we explain why."
+    "closedDealsHint": "Closed trades from the terminal: where a stop filled away from its level, we explain why.",
+    "col": {
+      "time": "Time",
+      "type": "Type",
+      "instrument": "Instrument",
+      "side": "Side",
+      "volume": "Volume",
+      "price": "Price",
+      "amount": "P&L / amount, {currency}",
+      "status": "Status"
+    }
   },
   "money": {
     "depositTitle": "Deposit to live account",
@@ -501,7 +523,26 @@
     "opWithdrawal": "Withdrawal",
     "historyOperations": "Operations history",
     "historyEmptyOps": "No operations yet",
-    "historyEmptyOpsHint": "Deposits and withdrawals will appear here with statuses and transaction links."
+    "historyEmptyOpsHint": "Deposits and withdrawals will appear here with statuses and transaction links.",
+    "guideTitle": "How withdrawals work",
+    "guide": {
+      "address": {
+        "title": "Address and amount",
+        "text": "TRON network (TRC20) only. The address is checked before sending; the amount must fit within free margin."
+      },
+      "reserve": {
+        "title": "Reserve",
+        "text": "The amount is debited on submission so it cannot be traded away."
+      },
+      "review": {
+        "title": "Operator review",
+        "text": "Usually within a business day. If rejected, the funds return to your account."
+      },
+      "sent": {
+        "title": "Sending",
+        "text": "USDT is sent to your address; the transaction hash and a Tronscan link appear in the history."
+      }
+    }
   },
   "support": {
     "button": "Support",
@@ -902,6 +943,7 @@
     },
     "instruments": "Instruments",
     "notSpecified": "not specified",
-    "changeHint": "Your account type is assigned by the platform. Contact support to change it."
+    "changeHint": "Your account type is assigned by the platform. Contact support to change it.",
+    "compareParam": "Parameter"
   }
 }

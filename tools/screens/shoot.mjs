@@ -177,7 +177,7 @@ async function shootAdmin(browser) {
 }
 
 async function shootCabinet(browser) {
-  for (const [w, h, tag] of [[390, 844, 'm390'], [1440, 900, 'd1440']]) {
+  for (const [w, h, tag] of [[390, 844, 'm390'], [1440, 900, 'd1440'], [1920, 1080, 'd1920']]) {
     if (!SIZES.includes(tag)) continue;
     const ctx = await browser.newContext({
       viewport: { width: w, height: h },

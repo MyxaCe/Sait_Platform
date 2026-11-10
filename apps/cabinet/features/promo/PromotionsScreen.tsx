@@ -1,5 +1,7 @@
+import { PAGE } from '@/features/ui/page';
 import { useTranslations } from 'next-intl';
 import { Callout, EmptyState } from '@broker/ui';
+import { cn } from '@broker/ui';
 import type { ClientPromotionsView } from '@broker/promo';
 import { AvailablePromoCard, CARD, ParticipationCard } from './PromoCards';
 import { RewardList } from './RewardList';
@@ -14,7 +16,7 @@ export function PromotionsScreen({ view, now }: { view: ClientPromotionsView | n
   const t = useTranslations('promo');
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6">
+    <div className={cn(PAGE, 'space-y-6')}>
       <header>
         <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">{t('title')}</h1>
         <p className="mt-1 text-sm text-secondary">{t('lead')}</p>
@@ -37,7 +39,8 @@ export function PromotionsScreen({ view, now }: { view: ClientPromotionsView | n
               <SectionTitle id="promo-mine" count={view.participating.length}>
                 {t('participatingTitle')}
               </SectionTitle>
-              <div className="grid gap-3 lg:grid-cols-2 lg:gap-4">
+              {/* ≥ xl — широкие карточки: прогресс слева, условия справа. */}
+              <div className="grid gap-3 lg:grid-cols-2 lg:gap-4 xl:grid-cols-1 xl:gap-5 2xl:grid-cols-2">
                 {view.participating.map((p) => (
                   <ParticipationCard key={p.promotionId} p={p} now={now} />
                 ))}
@@ -51,7 +54,7 @@ export function PromotionsScreen({ view, now }: { view: ClientPromotionsView | n
                 {t('availableTitle')}
               </SectionTitle>
               {view.available.length > 0 ? (
-                <div className="grid gap-3 lg:grid-cols-2 lg:gap-4">
+                <div className="grid gap-3 lg:grid-cols-2 lg:gap-4 xl:grid-cols-3 xl:gap-5">
                   {[...view.available].sort((a, b) => Number(b.enrollable) - Number(a.enrollable)).map((p) => (
                     <AvailablePromoCard key={p.id} promo={p} />
                   ))}

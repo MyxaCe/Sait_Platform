@@ -1,4 +1,5 @@
 import { getFormatter, getTranslations } from 'next-intl/server';
+import { Link } from '@/i18n/navigation';
 import { EmptyState, ToneBadge, cn, type StatusTone } from '@broker/ui';
 import { listSessions, type SessionUser } from '@/lib/auth/session';
 import { revokeSessionAction } from '@/lib/actions';
@@ -57,7 +58,7 @@ export async function VerificationSection({ userId, state }: { userId: string; s
   ];
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 xl:grid xl:grid-cols-2 xl:items-start xl:gap-5 xl:space-y-0">
       <section
         className={cn(
           'rounded-2xl border p-4 sm:p-5',
@@ -128,7 +129,7 @@ export async function SecuritySection({ userId }: { userId: string }) {
   const format = await getFormatter();
   const sessions = await listSessions(userId);
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 xl:grid xl:grid-cols-2 xl:items-start xl:gap-5 xl:space-y-0">
       <Card title={t('changePassword')}>
         <PasswordForm />
       </Card>
@@ -173,7 +174,7 @@ export async function DocumentsSection({ userId }: { userId: string }) {
   const format = await getFormatter();
   const documents = await listDocuments(userId);
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 xl:grid xl:grid-cols-2 xl:items-start xl:gap-5 xl:space-y-0">
       <Card title={t('upload')} hint={t('hint')}>
         <UploadForm />
       </Card>
@@ -200,6 +201,37 @@ export async function DocumentsSection({ userId }: { userId: string }) {
           </ul>
         )}
       </section>
+    </div>
+  );
+}
+
+/**
+ * Сводка справа от «Личных данных» на десктопе: статус верификации с
+ * переходом в раздел и безопасность (активные сессии) — то, что владелец
+ * ждёт «во второй колонке». Только чтение.
+ */
+export async function AccountOverview({ userId, state }: { userId: string; state: VerificationState }) {
+  const t = await getTranslations('profile');
+  const tk = await getTranslations('kyc');
+  const ts = await getTranslations('security');
+  const sessions = await listSessions(userId);
+  return (
+    <div className="space-y-5">
+      <Card title={tk('title')}>
+        <div className="flex flex-wrap items-center gap-2">
+          <ToneBadge tone={KYC_TONE[state]}>{tk(`states.${state}` as never)}</ToneBadge>
+        </div>
+        <p className="mt-2 text-sm text-secondary">{tk(`stateText.${state}` as never)}</p>
+        <Link href="/profile?tab=verification" className="mt-3 inline-block text-sm font-medium text-accent hover:underline">
+          {t('openVerification')} →
+        </Link>
+      </Card>
+      <Card title={ts('title')}>
+        <p className="text-sm text-secondary">{t('sessionsActive', { n: sessions.length })}</p>
+        <Link href="/profile?tab=security" className="mt-3 inline-block text-sm font-medium text-accent hover:underline">
+          {t('openSecurity')} →
+        </Link>
+      </Card>
     </div>
   );
 }

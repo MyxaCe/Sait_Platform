@@ -7,7 +7,7 @@ import { Skeleton } from '@broker/ui';
  */
 export default function Loading() {
   return (
-    <div className="mx-auto flex max-w-5xl flex-col gap-4 lg:gap-5" aria-busy="true">
+    <div className="mx-auto flex w-full max-w-5xl flex-col gap-4 lg:gap-5 xl:max-w-[1600px]" aria-busy="true">
       <div className="flex items-center gap-4">
         <Skeleton className="size-12 rounded-full" />
         <div className="space-y-2">
@@ -15,7 +15,7 @@ export default function Loading() {
           <Skeleton className="h-4 w-60" />
         </div>
       </div>
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="grid gap-4 lg:grid-cols-2 xl:gap-5">
         {[0, 1].map((i) => (
           <div key={i} className="space-y-3 rounded-2xl border border-border bg-elevated p-5">
             <Skeleton className="h-4 w-28" />

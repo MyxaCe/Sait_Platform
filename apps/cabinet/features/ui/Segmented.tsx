@@ -11,14 +11,20 @@ export function Segmented({
   active,
   label,
   className,
+  vertical = false,
 }: {
   items: { key: string; label: React.ReactNode; href: string }[];
   active: string;
   label: string;
   className?: string;
+  /** ≥ xl — вертикальное меню разделов (подписи слева, во всю ширину). */
+  vertical?: boolean;
 }) {
   return (
-    <nav aria-label={label} className={cn('flex rounded-xl border border-border bg-sunken p-1', className)}>
+    <nav
+      aria-label={label}
+      className={cn('flex rounded-xl border border-border bg-sunken p-1', className, vertical && 'xl:flex xl:flex-col xl:gap-0.5')}
+    >
       {items.map((it) => {
         const on = it.key === active;
         return (
@@ -28,6 +34,7 @@ export function Segmented({
             aria-current={on ? 'page' : undefined}
             className={cn(
               'flex min-h-[40px] flex-1 items-center justify-center gap-2 whitespace-nowrap rounded-lg px-3 text-sm transition-colors',
+              vertical && 'xl:flex-none xl:justify-start',
               on ? 'bg-card font-semibold text-primary ring-1 ring-inset ring-border-strong' : 'text-secondary hover:text-primary',
             )}
           >
