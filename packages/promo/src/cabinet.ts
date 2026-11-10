@@ -583,3 +583,75 @@ export async function getContestLeaderboard(
     me,
   };
 }
+
+/* ── IB-партнёр: свои условия ─────────────────────────────────────────── */
+
+export interface MyPartnerView {
+  displayName: string;
+  model: 'cpa' | 'revshare';
+  /** CPA: сумма за квалифицированного клиента (минорные). */
+  cpaAmountMinor: number | null;
+  /** CPA: условия квалификации клиента (из договора в админке). */
+  cpaRules: {
+    kycRequired: boolean;
+    minDepositMinor: number;
+    turnoverNotionalMinor: number;
+    minHoldSeconds: number;
+    windowDays: number;
+  } | null;
+  /** Доля дохода платформы (наценка + комиссия клиентов), б.п. */
+  revshareBps: number | null;
+  /** Начисления партнёру по месяцам (доля дохода) и за клиентов (CPA). */
+  rewards: { period: string | null; amountMinor: number; status: ClientRewardStatus; createdAt: string }[];
+}
+
+/**
+ * Условия IB-партнёра для кабинета (партнёр видит свой договор: модель,
+ * ставку, условия квалификации). `null` — клиент не партнёр или партнёрство
+ * приостановлено.
+ */
+export async function getMyPartner(db: Queryable, userId: string): Promise<MyPartnerView | null> {
+  const r = await db.query(
+    `SELECT display_name, model, cpa_amount_minor, cpa_rules, revshare_bps
+       FROM ib_partners WHERE user_id::text = $1 AND status = 'active'`,
+    [userId],
+  );
+  const row = r.rows[0];
+  if (!row) return null;
+  const model = row.model === 'revshare' ? 'revshare' : 'cpa';
+  const rules = (row.cpa_rules ?? {}) as Record<string, unknown>;
+  const num = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) ? v : null);
+  const cpaRules =
+    model === 'cpa' &&
+    typeof rules.kycRequired === 'boolean' &&
+    num(rules.minDepositMinor) !== null &&
+    num(rules.turnoverNotionalMinor) !== null &&
+    num(rules.minHoldSeconds) !== null &&
+    num(rules.windowDays) !== null
+      ? {
+          kycRequired: rules.kycRequired,
+          minDepositMinor: num(rules.minDepositMinor)!,
+          turnoverNotionalMinor: num(rules.turnoverNotionalMinor)!,
+          minHoldSeconds: num(rules.minHoldSeconds)!,
+          windowDays: num(rules.windowDays)!,
+        }
+      : null;
+  const rw = await db.query(
+    `SELECT period, amount_minor, status, created_at FROM promo_rewards
+      WHERE user_id::text = $1 AND kind = 'ib' ORDER BY created_at DESC LIMIT 24`,
+    [userId],
+  );
+  return {
+    displayName: String(row.display_name),
+    model,
+    cpaAmountMinor: row.cpa_amount_minor === null || row.cpa_amount_minor === undefined ? null : Number(row.cpa_amount_minor),
+    cpaRules,
+    revshareBps: row.revshare_bps === null || row.revshare_bps === undefined ? null : Number(row.revshare_bps),
+    rewards: rw.rows.map((x) => ({
+      period: (x.period as string | null) ?? null,
+      amountMinor: Number(x.amount_minor),
+      status: clientStatus(String(x.status)),
+      createdAt: iso(x.created_at),
+    })),
+  };
+}
