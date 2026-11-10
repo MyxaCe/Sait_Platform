@@ -13,7 +13,16 @@ import { pickHomePromos, PROMO_CURRENCY, type HomePromo } from '@/features/promo
  * иначе доступные к вступлению. Выключено / не загрузилось — короткое
  * честное сообщение со ссылкой на раздел (модуль не исчезает молча).
  */
-export function PromotionsModule({ view, now }: { view: ClientPromotionsView | null; now?: Date }) {
+export function PromotionsModule({
+  view,
+  now,
+  compact = false,
+}: {
+  view: ClientPromotionsView | null;
+  now?: Date;
+  /** Узкая колонка десктоп-главной (≥ 2xl): карточки столбиком. */
+  compact?: boolean;
+}) {
   const t = useTranslations('promo');
 
   if (view === null) {
@@ -41,7 +50,7 @@ export function PromotionsModule({ view, now }: { view: ClientPromotionsView | n
   return (
     <section aria-labelledby="home-promo">
       <Head />
-      <div className={cn('mt-3 grid gap-3', picks.length > 1 && 'sm:grid-cols-2')}>
+      <div className={cn('mt-3 grid gap-3', picks.length > 1 && 'sm:grid-cols-2', compact && '2xl:grid-cols-1')}>
         {picks.map((p) => (
           <HomeCard key={p.kind === 'participation' ? p.item.promotionId : p.item.id} pick={p} now={now} />
         ))}

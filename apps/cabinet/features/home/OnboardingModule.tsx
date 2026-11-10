@@ -25,10 +25,17 @@ export async function OnboardingModule({
   config,
   verification,
   realFunded,
+  column = false,
 }: {
   config: OnboardingConfig;
   verification: VerificationStatus;
   realFunded: boolean;
+  /**
+   * Десктоп-раскладка главной: на ≥ 2xl модуль живёт в правой колонке
+   * «Следующие шаги» — карточки столбиком, выполненные сжаты в строку.
+   * Ниже 2xl вид прежний (ряд из трёх карточек равной высоты).
+   */
+  column?: boolean;
 }) {
   const t = await getTranslations('home');
   const steps: Step[] = [];
@@ -81,8 +88,13 @@ export async function OnboardingModule({
   // слот 44 px (кнопка или отметка «Выполнено»), поэтому кнопки стоят на
   // одной линии. На телефоне карточки идут столбиком: выполненный шаг там —
   // одна строка (место отдано счетам), высоту сравнивать не с чем.
+  const col = (cls: string) => (column ? cls : undefined);
   return (
-    <section className="grid gap-2 sm:grid-cols-3 sm:gap-3">
+    <section aria-labelledby="next-steps" className={cn('flex flex-col gap-2', col('2xl:h-full'))}>
+      <h2 id="next-steps" className={cn('sr-only', col('2xl:not-sr-only 2xl:text-sm 2xl:font-semibold'))}>
+        {t('nextStepsTitle')}
+      </h2>
+      <div className={cn('grid gap-2 sm:grid-cols-3 sm:gap-3', col('2xl:grid-cols-1 2xl:gap-2'))}>
       {steps.map((step, i) => (
         <div
           key={step.key}
@@ -93,6 +105,7 @@ export async function OnboardingModule({
             step.done
               ? 'border-positive/25 bg-positive/[0.04] px-4 py-3 sm:p-4'
               : 'border-border bg-elevated p-4',
+            step.done && col('2xl:px-4 2xl:py-3'),
           )}
         >
           <div className="flex items-center gap-2.5">
@@ -116,11 +129,18 @@ export async function OnboardingModule({
             className={cn(
               'mt-2 flex-1 text-xs leading-relaxed text-secondary',
               step.done && 'hidden sm:block',
+              step.done && col('2xl:hidden'),
             )}
           >
             {step.text}
           </p>
-          <div className={cn('mt-3 flex min-h-[44px] items-end', step.done && 'hidden sm:flex')}>
+          <div
+            className={cn(
+              'mt-3 flex min-h-[44px] items-end',
+              step.done && 'hidden sm:flex',
+              step.done && col('2xl:hidden'),
+            )}
+          >
             {step.action ? (
               <Link
                 href={step.action.href}
@@ -141,6 +161,7 @@ export async function OnboardingModule({
           </div>
         </div>
       ))}
+      </div>
     </section>
   );
 }
