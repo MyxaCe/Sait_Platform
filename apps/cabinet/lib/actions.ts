@@ -13,6 +13,7 @@ import { hashPassword, verifyPassword } from './auth/password';
 import { registerUser } from './auth/register';
 import { checkLogin } from './auth/login';
 import { resetDemoAccount, type TerminalFailure } from './terminal/client';
+import { safeLaunchNext } from './sso/launch';
 import { getTenantStartBalance } from './tenant';
 import {
   changePasswordSchema,
@@ -127,7 +128,9 @@ export async function loginAction(_prev: ActionState, formData: FormData): Promi
 
   await getPool().query(`UPDATE users SET last_login_at = now() WHERE id = $1`, [check.userId]);
   await createSession(check.userId);
-  redirect(homePath(String(formData.get('uiLocale') ?? check.locale)));
+  // Вход начался с launch терминала (sso-pack v1.1) — продолжаем его; иначе на главную.
+  const next = safeLaunchNext(formData.get('next'));
+  redirect(next ?? homePath(String(formData.get('uiLocale') ?? check.locale)));
 }
 
 export async function logoutAction(formData: FormData): Promise<void> {

@@ -2,7 +2,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import { Callout, cn, EmptyState, formatMoney, Money, ToneBadge, type StatusTone } from '@broker/ui';
 import type { ContestLeaderboard, ContestSummary, LeaderboardRow } from '@broker/promo';
 import { FilterChips } from '@/features/history/FilterChips';
-import { Link } from '@/i18n/navigation';
+import { TerminalLink } from '@/features/trade/TerminalLink';
 import { linkButton } from '@/features/ui/link-button';
 import { JoinContestForm } from './JoinContestForm';
 import { CARD } from './PromoCards';
@@ -149,9 +149,9 @@ function ContestHeader({ c, demoCurrency, now }: { c: ContestSummary; demoCurren
       ) : null}
       {canJoin ? <JoinContestForm promotionId={c.promotionId} startBalance={startBalance} /> : null}
       {c.myStatus === 'active' && c.phase === 'running' ? (
-        <Link href="/trade?account=demo" className={linkButton('secondary', 'w-full sm:w-auto')}>
+        <TerminalLink account="demo" className={linkButton('secondary', 'w-full sm:w-auto')}>
           {t('toTerminal')}
-        </Link>
+        </TerminalLink>
       ) : null}
     </section>
   );

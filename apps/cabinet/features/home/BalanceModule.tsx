@@ -8,6 +8,7 @@ import { PolicyNotice } from '@/features/money/PolicyNotice';
 import { linkButton } from '@/features/ui/link-button';
 import type { DemoAccount } from '@/lib/data';
 import type { TenantStartBalance } from '@/lib/tenant';
+import { TerminalLink } from '@/features/trade/TerminalLink';
 import type { RealAccountView } from '@/lib/money';
 
 type BalanceConfig = Extract<CabinetHomeModule, { type: 'balance' }>;
@@ -108,9 +109,9 @@ export async function BalanceModule({
         ) : null}
 
         <div className="mt-auto flex flex-col gap-2 pt-5 sm:flex-row sm:flex-wrap sm:items-start">
-          <Link href="/terminal?account=demo" className={linkButton('secondary', 'w-full sm:w-auto')}>
+          <TerminalLink account="demo" className={linkButton('secondary', 'w-full sm:w-auto')}>
             {t('tradeDemo')}
-          </Link>
+          </TerminalLink>
           {/* Сброс демо-счёта к стартовому балансу (server action). Сумму
               назначает владелец в CMS; не назначена — об этом написано рядом. */}
           {demo &&
@@ -263,9 +264,9 @@ async function RealAccountCard({
         ) : null}
         {/* Заморозку проверяет терминал: замороженный должен иметь возможность закрыть позиции. */}
         {!policy.blocked ? (
-          <Link href="/terminal?account=real" className={linkButton('secondary', 'px-2')}>
+          <TerminalLink account="real" className={linkButton('secondary', 'px-2')}>
             {t('btnTrade')}
-          </Link>
+          </TerminalLink>
         ) : null}
       </div>
 
