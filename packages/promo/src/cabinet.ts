@@ -15,7 +15,8 @@ import {
   type EvaluationState,
 } from './evaluate';
 import { readClientFacts, readPromoSettings, readPromotion, listPromotions, PROMOS_OFF, type PromotionRow } from './reader';
-import type { ContestRules, PromotionType, ReferralRules } from './rules';
+import { ibCpaRules, type ContestRules, type PromotionType, type ReferralRules } from './rules';
+import type { ClientFacts } from './facts';
 
 /**
  * API ДЛЯ КАБИНЕТА — функции, по которым кабинет строит экраны «Акции»,
@@ -367,6 +368,18 @@ export interface MyReferralView {
   totals: { invited: number; qualified: number; creditedMinor: number; processingMinor: number };
 }
 
+/**
+ * Этапы клиента по фактам (без целей) — для партнёра с долей дохода, у
+ * которого нет условий квалификации: KYC пройден, был депозит, была сделка.
+ */
+export function factualConditions(facts: Pick<ClientFacts, 'kycVerified' | 'deposits' | 'trades'>): ConditionView[] {
+  return [
+    { key: 'kyc', met: facts.kycVerified },
+    { key: 'deposit', met: facts.deposits.length > 0 },
+    { key: 'turnover', met: facts.trades.length > 0 },
+  ];
+}
+
 function stageOf(conditions: ConditionView[], status: string, state: EvaluationState | null): InviteeStage {
   if (status === 'rewarded') return 'rewarded';
   if (status === 'rejected') return 'rejected';
@@ -393,7 +406,18 @@ export async function getMyReferral(
   const base = opts.linkBase?.trim();
   const link = base ? `${base}${base.includes('?') ? '&' : '?'}ref=${encodeURIComponent(code)}` : null;
 
-  const ib = await pool.query(`SELECT 1 FROM ib_partners WHERE user_id::text = $1 AND status = 'active'`, [userId]);
+  // IB-партнёр: этапы его клиентов — по CPA-условиям ЕГО договора (ib_partners), а не по
+  // реферальной программе; у доли дохода (revshare) условий квалификации нет — этапы по фактам.
+  const ib = await pool.query(
+    `SELECT id::text AS id, model, cpa_rules FROM ib_partners WHERE user_id::text = $1 AND status = 'active'`,
+    [userId],
+  );
+  const partner = ib.rows[0]
+    ? {
+        model: ib.rows[0].model === 'revshare' ? ('revshare' as const) : ('cpa' as const),
+        cpa: ibCpaRules.safeParse(ib.rows[0].cpa_rules ?? {}),
+      }
+    : null;
   const programs = (await listPromotions(pool, { type: 'referral' })).filter((p) => p.status === 'active' && p.parsed);
   const program = programs[0] ?? null;
   const rules = program?.parsed?.type === 'referral' ? (program.parsed.rules as ReferralRules) : null;
@@ -422,7 +446,20 @@ export async function getMyReferral(
     let deadline: string | null = null;
     let partStatus = 'enrolled';
     let state: EvaluationState | null = null;
-    if (program && rules) {
+    const myReward = rewardByFriend.get(friendId) ?? null;
+    if (partner) {
+      // Статус — по начислению партнёру за этого клиента (CPA): нет — идёт квалификация.
+      partStatus = !myReward ? 'enrolled' : myReward.status === 'rejected' ? 'rejected' : myReward.status === 'credited' ? 'rewarded' : 'qualified';
+      const facts = await readClientFacts(pool, friendId, { tradesFrom: attributedAt });
+      if (facts && partner.model === 'cpa' && partner.cpa.success) {
+        const ev = evaluateReferee(partner.cpa.data, { attributedAt, rewardMinor: 0 }, facts, now);
+        conditions = ev.conditions;
+        deadline = ev.deadline;
+        state = ev.state;
+      } else if (facts) {
+        conditions = factualConditions(facts);
+      }
+    } else if (program && rules) {
       const part = await pool.query(
         `SELECT status FROM promo_participations WHERE promotion_id::text = $1 AND user_id::text = $2`,
         [program.id, friendId],
@@ -436,7 +473,6 @@ export async function getMyReferral(
         state = ev.state;
       }
     }
-    const myReward = rewardByFriend.get(friendId) ?? null;
     invited.push({
       displayName: maskName(String(inv.full_name ?? '')),
       registeredAt: attributedAt,
@@ -467,7 +503,7 @@ export async function getMyReferral(
       program && rules
         ? { promotionId: program.id, texts: textsFor(program, opts.locale), rules: publicRules(program) as Extract<PublicRules, { type: 'referral' }> }
         : null,
-    isPartner: ib.rows.length > 0,
+    isPartner: partner !== null,
     invited,
     totals: {
       invited: invited.length,
