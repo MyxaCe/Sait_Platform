@@ -265,32 +265,30 @@
     "accessReason": "reason: {reason}"
   },
   "accounts": {
-    "title": "Account Types & Pricing",
-    "subtitle": "Three accounts for different trading styles — from first steps to interbank liquidity. Transparent conditions: all the math is below.",
-    "metaDescription": "Compare trading accounts: Standard, Pro and ECN Prime. Spreads from 0.0 pips, deposits from $100. Use the commission calculator to pick the best plan.",
-    "table": {
-      "popular": "Popular",
-      "popularChoice": "Popular choice",
-      "terms": "Conditions",
-      "minDeposit": "Minimum deposit",
-      "from": "from",
-      "deposit": "deposit",
-      "openCta": "Open Account"
+    "title": "Account types",
+    "subtitle": "Leverage, trading cost and instruments for each account type. The platform publishes these terms and they are shown here unchanged.",
+    "metaDescription": "Compare account types: leverage, markup or commission, instruments — as published by the platform.",
+    "unavailableTitle": "Terms are temporarily unavailable",
+    "unavailable": "We could not fetch the current account terms. Until we can confirm them we show no figures — please check back shortly.",
+    "empty": "No account types have been published yet.",
+    "default": "Opened by default",
+    "leverage": "Leverage",
+    "leverageValue": "up to 1:{n}",
+    "leverageBase": "base 1:{n}",
+    "classLeverage": "{class}: up to 1:{n}",
+    "classes": {
+      "crypto": "Crypto"
     },
-    "calcTitle": "Commission Calculator",
-    "calcSubtitle": "Move the sliders to match your trading style — and see which account costs less.",
-    "calc": {
-      "volume": "Trade volume",
-      "lots": "{lots} lots",
-      "trades": "Trades per month",
-      "perMonth": "per month",
-      "cheapest": "Best value",
-      "perTrade": "Per trade",
-      "spread": "Spread",
-      "spreadUnit": "{pips} pips",
-      "commissionRT": "Round-turn commission",
-      "note": "Based on EURUSD (pip value — $10 per lot): average spread + round-turn commission. Actual costs depend on the instrument and market conditions."
-    }
+    "cost": "Trading cost",
+    "fee": {
+      "none": "No markup or commission",
+      "markup": "Spread + {markup}",
+      "commission": "Commission {commission} of trade value",
+      "both": "Spread + {markup} and commission {commission} of trade value"
+    },
+    "instruments": "Instruments",
+    "notSpecified": "not specified",
+    "openCta": "Open an account"
   },
   "analytics": {
     "title": "Market Analytics",
