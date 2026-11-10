@@ -50,4 +50,7 @@ export const EXPECTED_MIGRATIONS: readonly string[] = [
   // шаблоны, роль support_operator; затем одноразовые токены auth-писем.
   '1795310000000_support',
   '1795320000000_auth_mail_tokens',
+  // ── Менеджеры клиентов (ветка admin-managers, 10.11) ──────────────────
+  // Флаг operators.is_client_manager + закрепление client_managers.
+  '1795410000000_client_managers',
 ];
