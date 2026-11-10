@@ -43,4 +43,6 @@ export const EXPECTED_MIGRATIONS: readonly string[] = [
   '1794600000000_crypto_money',
   // Проекция реального счёта — параллельные real_* таблицы (демо/реал разделены, 09.11).
   '1794700000000_real_account_projection',
+  // Акции, рефералы, конкурсы, IB, тарифы портфелей, страна/IP клиента (ДЕМО-акции, 10.11).
+  '1794800000000_promotions_referrals',
 ];
