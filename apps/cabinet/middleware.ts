@@ -4,44 +4,39 @@ import { routing } from './i18n/routing';
 import { SESSION_COOKIE } from './lib/auth/constants';
 import { legacyTarget } from './lib/legacy-routes';
 import { applyAttributionCookies } from './lib/attribution-cookies';
+import { homePathFor, isMailLinkPath, isPublicAuthPath, loginPathFor } from './lib/auth/public-paths';
 
 const intl = createMiddleware(routing);
 
-/** Публичные маршруты кабинета (с учётом /en-префикса) */
-const PUBLIC_PATH = /^\/(en\/?)?(login|register|forgot-password)(\/|$)/;
-/**
- * Ссылки из писем (поддержка, 10.11): открываются и гостем, и вошедшим —
- * сброс пароля и подтверждение email не должны уводить на вход/главную.
- */
-const MAIL_LINK_PATH = /^\/(en\/?)?(reset-password|verify-email)(\/|$)/;
-
 /**
  * Гейт по НАЛИЧИЮ сессионной куки (в middleware нет БД — edge);
- * настоящая валидация сессии — в layout защищённой зоны.
+ * настоящая валидация сессии — в layout защищённой зоны. Пути — с префиксом
+ * любой локали (`/ru/…`, `/en/…`) или без него (lib/auth/public-paths.ts).
  */
 export default function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const hasSessionCookie = request.cookies.has(SESSION_COOKIE);
-  const isPublic = PUBLIC_PATH.test(pathname) || pathname === '/en';
+  const isPublic = isPublicAuthPath(pathname);
 
-  if (MAIL_LINK_PATH.test(pathname)) return intl(request);
+  // Ссылки из писем (поддержка, 10.11): и гостю, и вошедшему.
+  if (isMailLinkPath(pathname)) return intl(request);
 
-  if (!hasSessionCookie && !PUBLIC_PATH.test(pathname)) {
+  if (!hasSessionCookie && !isPublic) {
     const url = request.nextUrl.clone();
-    url.pathname = pathname === '/en' || pathname.startsWith('/en/') ? '/en/login' : '/login';
+    url.pathname = loginPathFor(pathname);
     url.search = '';
     return NextResponse.redirect(url);
   }
 
-  if (hasSessionCookie && PUBLIC_PATH.test(pathname)) {
+  if (hasSessionCookie && isPublic) {
     const url = request.nextUrl.clone();
-    url.pathname = pathname.startsWith('/en') ? '/en' : '/';
+    url.pathname = homePathFor(pathname);
     url.search = '';
     return NextResponse.redirect(url);
   }
 
   // Регистрация по ссылке акции / реф-ссылке: first-click cookie (атрибуция).
-  if (PUBLIC_PATH.test(pathname)) {
+  if (isPublic) {
     return applyAttributionCookies(request, intl(request));
   }
 
