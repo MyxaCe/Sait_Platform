@@ -18,9 +18,11 @@ interface TerminalFrameProps {
   title: string;
   /** Счёт входа: демо или реальный (claim `account_kind` в SSO). */
   accountKind?: 'demo' | 'real';
+  /** Высота/вид — задаёт страница (полноэкранный режим r2). */
+  className?: string;
 }
 
-export function TerminalFrame({ terminalUrl, site, title, accountKind = 'demo' }: TerminalFrameProps) {
+export function TerminalFrame({ terminalUrl, site, title, accountKind = 'demo', className }: TerminalFrameProps) {
   const frameRef = useRef<HTMLIFrameElement>(null);
   const locale = useLocale();
   const src = `${terminalUrl}?site=${encodeURIComponent(site)}&locale=${locale}`;
@@ -61,7 +63,7 @@ export function TerminalFrame({ terminalUrl, site, title, accountKind = 'demo' }
       src={src}
       title={title}
       onLoad={() => void sendToken()}
-      className="block h-[calc(100svh-7rem)] w-full border-0 bg-elevated lg:h-svh"
+      className={className ?? 'block h-svh w-full border-0 bg-elevated'}
       allow="clipboard-write"
     />
   );
