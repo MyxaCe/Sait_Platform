@@ -98,5 +98,6 @@ export async function submitKycDocumentAction(
   }
 
   revalidatePath('/verification');
+  revalidatePath('/profile'); // r2: верификация — вкладка «Профиля»
   return { ok: true };
 }

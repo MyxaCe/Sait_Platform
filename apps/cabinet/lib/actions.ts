@@ -159,6 +159,7 @@ export async function revokeSessionAction(formData: FormData): Promise<void> {
   const sessionId = String(formData.get('sessionId') ?? '');
   if (sessionId) await revokeSession(user.id, sessionId);
   revalidatePath('/security');
+  revalidatePath('/profile'); // r2: безопасность — вкладка «Профиля»
 }
 
 /* ------------------------------------------------------------------ */
@@ -201,6 +202,7 @@ export async function uploadDocumentAction(_prev: ActionState, formData: FormDat
     [randomUUID(), user.id, JSON.stringify({ filename: file.name.slice(0, 200) })],
   );
   revalidatePath('/documents');
+  revalidatePath('/profile'); // r2: документы — вкладка «Профиля»
   return { ok: true };
 }
 

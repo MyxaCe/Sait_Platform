@@ -78,14 +78,21 @@ const ADMIN_SHOTS = [
 
 const CABINET_SHOTS = [
   ['c01-home', '/ru'],
-  ['c02-deposit', '/ru/deposit'],
-  ['c03-withdraw', '/ru/withdraw'],
-  ['c04-history', '/ru/history'],
-  ['c05-verification', '/ru/verification'],
-  // Нижняя навигация телефона: открытая шторка «Ещё» (только m390).
-  ['c06-more', '/ru', { mobileOnly: true, click: 'nav[aria-label] button[aria-haspopup="dialog"]' }],
+  ['c02-trade', '/ru/trade'],
+  ['c03-terminal', '/ru/terminal?account=real'],
+  ['c04-wallet-deposit', '/ru/wallet'],
+  ['c05-wallet-withdraw', '/ru/wallet?tab=withdraw'],
   // Вывод: шаг подтверждения (адрес и сумма заполнены, «Продолжить»).
-  ['c07-withdraw-confirm', '/ru/withdraw', { fill: true }],
+  ['c06-withdraw-confirm', '/ru/wallet?tab=withdraw', { fill: true }],
+  ['c07-history', '/ru/history'],
+  ['c08-history-demo', '/ru/history?account=demo&period=all'],
+  ['c09-history-money', '/ru/history?account=real&type=money&period=90d'],
+  ['c10-profile', '/ru/profile'],
+  ['c11-profile-verification', '/ru/profile?tab=verification'],
+  ['c12-profile-security', '/ru/profile?tab=security'],
+  ['c13-profile-documents', '/ru/profile?tab=documents'],
+  // Нижняя навигация телефона: открытая шторка «Ещё» (только m390).
+  ['c14-more', '/ru', { mobileOnly: true, click: 'nav[aria-label] button[aria-haspopup="dialog"]' }],
 ];
 const CABINET_TOKEN = opt('cabinet-token', 'demo-cabinet-token-0001');
 const SIZES = opt('sizes', 'm390,d1440').split(',');
@@ -153,7 +160,7 @@ async function shootCabinet(browser) {
         await page.waitForTimeout(300);
       }
       if (extra.fill) {
-        await page.locator('#wd-address').fill('TJYeasTPa6gpEEfYqN1JLBhBumK3HzZAfX').catch(() => {});
+        await page.locator('#wd-address').fill('TRbrer2M9awcrEckpFG568rhsBVRpN4w8k').catch(() => {});
         await page.locator('#wd-amount').fill('250').catch(() => {});
         await page.locator('#wd-amount').blur().catch(() => {});
         await page.getByRole('button', { name: /Продолжить/ }).click().catch(() => {});
