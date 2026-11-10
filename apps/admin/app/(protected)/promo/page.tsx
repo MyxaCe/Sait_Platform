@@ -7,7 +7,7 @@ import { getPromoSettings, listPromotionsWithStats, queueCounts, type PromotionL
 import { fmtAge, fmtDate, fmtDateTime } from '@/lib/ui/format';
 import { PromoHeader } from './_components/PromoHeader';
 import { BudgetBar, PromoStatusBadge, TypeLabel } from './_components/badges';
-import { REAL_ACCOUNT_CURRENCY } from '@broker/money';
+import { REAL_ACCOUNT_CURRENCY } from '@broker/money/display-currency';
 import { SyncForm } from './_components/PromoForms';
 
 /**

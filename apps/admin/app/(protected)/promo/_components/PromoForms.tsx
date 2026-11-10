@@ -15,7 +15,7 @@ import {
   type PromoActionState,
 } from '@/lib/promo/actions';
 import { promoErrorText } from '@/lib/promo/labels';
-import { REAL_ACCOUNT_CURRENCY } from '@broker/money';
+import { REAL_ACCOUNT_CURRENCY } from '@broker/money/display-currency';
 import { ActionForm, ConfirmFacts, type ConfirmSpec } from '../../_money/ActionForm';
 
 /**

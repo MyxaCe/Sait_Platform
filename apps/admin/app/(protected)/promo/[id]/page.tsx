@@ -29,7 +29,7 @@ import { PromoHeader } from '../_components/PromoHeader';
 import { PromotionForm } from '../_components/PromotionForm';
 import { CashbackForm, StatusForms, SyncForm } from '../_components/PromoForms';
 import { RulesList } from '../_components/RulesList';
-import { REAL_ACCOUNT_CURRENCY } from '@broker/money';
+import { REAL_ACCOUNT_CURRENCY } from '@broker/money/display-currency';
 import {
   ConditionList,
   ParticipationBadge,

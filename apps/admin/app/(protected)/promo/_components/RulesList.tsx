@@ -1,6 +1,6 @@
 import { DescriptionList, Money, type DescriptionItem } from '@broker/ui';
 import type { ParsedRules } from '@broker/promo';
-import { REAL_ACCOUNT_CURRENCY } from '@broker/money';
+import { REAL_ACCOUNT_CURRENCY } from '@broker/money/display-currency';
 import { bpsText } from '@/lib/promo/labels';
 
 const yes = (v: boolean) => (v ? 'да' : 'нет');

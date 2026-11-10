@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { Money, ToneBadge } from '@broker/ui';
 import type { LinkSignal } from '@broker/promo';
-import { REAL_ACCOUNT_CURRENCY } from '@broker/money';
+import { REAL_ACCOUNT_CURRENCY } from '@broker/money/display-currency';
 import {
   CONDITION_LABELS,
   PARTICIPATION_STATUS,

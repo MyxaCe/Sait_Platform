@@ -20,7 +20,7 @@ import { DecisionArea } from '../../_money/ActionForm';
 import { Segmented } from '../../_money/Segmented';
 import { PromoHeader } from '../_components/PromoHeader';
 import { RewardActions } from '../_components/PromoForms';
-import { REAL_ACCOUNT_CURRENCY } from '@broker/money';
+import { REAL_ACCOUNT_CURRENCY } from '@broker/money/display-currency';
 import { RewardStatusBadge, SignalBadges, SignalDetails } from '../_components/badges';
 
 /**

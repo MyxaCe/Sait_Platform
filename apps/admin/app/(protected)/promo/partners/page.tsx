@@ -6,7 +6,7 @@ import { bpsText } from '@/lib/promo/labels';
 import { getPromoSettings, listPartners, queueCounts, type PartnerRow } from '@/lib/promo/queries';
 import { canManagePromo, canViewPromo } from '@/lib/promo/runtime';
 import { PromoHeader } from '../_components/PromoHeader';
-import { REAL_ACCOUNT_CURRENCY } from '@broker/money';
+import { REAL_ACCOUNT_CURRENCY } from '@broker/money/display-currency';
 import { PartnerForm, RevshareForm, SyncForm, type PartnerInitial } from '../_components/PromoForms';
 
 /**
