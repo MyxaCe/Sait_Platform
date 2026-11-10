@@ -31,7 +31,7 @@ export async function PolicyNotice({
   );
   const action = reasons.includes('kyc_required') ? (
     <Link
-      href="/verification"
+      href="/profile?tab=verification"
       className="inline-flex h-9 items-center whitespace-nowrap rounded-lg bg-accent px-3.5 text-sm font-medium text-on-accent hover:bg-accent-hover"
     >
       {t('goVerify')}

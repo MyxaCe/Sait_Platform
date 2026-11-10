@@ -108,7 +108,7 @@ export async function BalanceModule({
         ) : null}
 
         <div className="mt-auto flex flex-col gap-2 pt-5 sm:flex-row sm:flex-wrap sm:items-start">
-          <Link href="/trade?account=demo" className={linkButton('secondary', 'w-full sm:w-auto')}>
+          <Link href="/terminal?account=demo" className={linkButton('secondary', 'w-full sm:w-auto')}>
             {t('tradeDemo')}
           </Link>
           {/* Сброс демо-счёта к стартовому балансу (server action). Сумму
@@ -238,7 +238,7 @@ async function RealAccountCard({
         {showDeposit ? (
           <div data-money-button="deposit" data-allowed={String(policy.depositAllowed)} className="grid">
             {policy.depositAllowed && real.depositAddressReady ? (
-              <Link href="/deposit" className={linkButton('primary', 'px-2')}>
+              <Link href="/wallet?tab=deposit" className={linkButton('primary', 'px-2')}>
                 {t('btnDeposit')}
               </Link>
             ) : (
@@ -251,7 +251,7 @@ async function RealAccountCard({
         {showWithdraw ? (
           <div data-money-button="withdraw" data-allowed={String(policy.withdrawAllowed)} className="grid">
             {policy.withdrawAllowed ? (
-              <Link href="/withdraw" className={linkButton('secondary', 'px-2')}>
+              <Link href="/wallet?tab=withdraw" className={linkButton('secondary', 'px-2')}>
                 {t('btnWithdraw')}
               </Link>
             ) : (
@@ -263,7 +263,7 @@ async function RealAccountCard({
         ) : null}
         {/* Заморозку проверяет терминал: замороженный должен иметь возможность закрыть позиции. */}
         {!policy.blocked ? (
-          <Link href="/trade?account=real" className={linkButton('secondary', 'px-2')}>
+          <Link href="/terminal?account=real" className={linkButton('secondary', 'px-2')}>
             {t('btnTrade')}
           </Link>
         ) : null}

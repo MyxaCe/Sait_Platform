@@ -7,6 +7,7 @@ export type NavIconName =
   | 'trade'
   | 'deposit'
   | 'withdraw'
+  | 'wallet'
   | 'history'
   | 'profile'
   | 'security'
@@ -39,6 +40,13 @@ const PATHS: Record<NavIconName, React.ReactNode> = {
     <>
       <path d="M10 12.75v-9M6.25 7.25 10 3.5l3.75 3.75" strokeLinecap="round" strokeLinejoin="round" />
       <path d="M4 14.5v2h12v-2" strokeLinecap="round" strokeLinejoin="round" />
+    </>
+  ),
+  wallet: (
+    <>
+      <path d="M3.5 6.25A1.75 1.75 0 0 1 5.25 4.5h9.25v2.75" strokeLinejoin="round" />
+      <rect x="3.5" y="6.5" width="13" height="9.5" rx="1.75" />
+      <path d="M12.75 11.25h1.5" strokeLinecap="round" />
     </>
   ),
   history: (

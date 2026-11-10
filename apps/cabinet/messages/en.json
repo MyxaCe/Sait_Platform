@@ -28,20 +28,24 @@
     "documents": "Documents",
     "verification": "Verification",
     "notifications": "Notifications",
-    "history": "Trade history",
+    "history": "History",
     "deposit": "Deposit",
     "withdraw": "Withdraw",
     "short": {
       "dashboard": "Home",
       "trade": "Trade",
       "deposit": "Deposit",
-      "withdraw": "Withdraw"
+      "withdraw": "Withdraw",
+      "wallet": "Wallet",
+      "history": "History"
     },
     "more": "More",
     "moreTitle": "All sections",
     "close": "Close",
     "menu": "Account menu",
-    "groupProfile": "Profile & security"
+    "groupProfile": "Account",
+    "wallet": "Wallet",
+    "groupGrowth": "Rewards"
   },
   "connection": {
     "tickerAria": "Live quotes",
@@ -151,7 +155,9 @@
     "kycVerified": "Identity verified",
     "kycPending": "Documents under review",
     "kycNone": "Identity not verified",
-    "kycRejected": "Verification failed"
+    "kycRejected": "Verification failed",
+    "stepDone": "Done",
+    "stepVerificationPendingShort": "Under review"
   },
   "dashboard": {
     "greeting": "Hello, {name}!",
@@ -177,7 +183,14 @@
     "email": "Email",
     "emailHint": "Email change will be available once confirmations are enabled",
     "language": "Interface language",
-    "memberSince": "Client since {date}"
+    "memberSince": "Client since {date}",
+    "personalTitle": "Personal details",
+    "personalHint": "Your name is shown in the account and documents. Language changes the interface and emails.",
+    "tabsLabel": "Profile sections",
+    "tabPersonal": "Personal",
+    "tabVerification": "Verification",
+    "tabSecurity": "Security",
+    "tabDocuments": "Documents"
   },
   "security": {
     "title": "Security",
@@ -230,7 +243,16 @@
       "pending": "Under review",
       "verified": "Verified",
       "rejected": "Rejected"
-    }
+    },
+    "stepReview": "Operator review",
+    "stateText": {
+      "unverified": "Verify your identity to unlock withdrawals. Upload documents below; review usually takes up to one business day.",
+      "pending": "Documents under review — usually up to one business day. We will notify you of the decision.",
+      "verified": "Identity verified. Deposits and withdrawals are available.",
+      "rejected": "Verification failed. Upload documents again and we will review once more."
+    },
+    "submittedTitle": "Submitted documents",
+    "emptyHint": "Submitted documents will appear here with the submission date."
   },
   "notifications": {
     "title": "Notifications",
@@ -249,13 +271,21 @@
     }
   },
   "trade": {
-    "title": "Trade",
+    "title": "Trading",
     "comingSoon": "Terminal is on its way",
-    "comingSoonHint": "The trading terminal will appear here once the integration is complete — your demo account is ready.",
-    "badgeDemo": "DEMO",
-    "badgeReal": "REAL",
+    "comingSoonHint": "The trading terminal is not connected on this environment. Go back to your account — balances and operations are there.",
+    "badgeDemo": "Demo",
+    "badgeReal": "Live",
     "switchToReal": "Switch to real account",
-    "switchToDemo": "Switch to demo account"
+    "switchToDemo": "Switch to demo account",
+    "chooseLead": "Choose an account — the terminal opens full screen. Use the “Account” button at the top to come back.",
+    "realHint": "Real funds in USDT. Profits are withdrawable.",
+    "demoHint": "Practice funds — same markets and instruments, no risk.",
+    "realEmpty": "No funds on the account yet.",
+    "openTerminal": "Open terminal",
+    "fullscreenNote": "The terminal opens in this tab. On a phone, landscape works best.",
+    "backToCabinet": "Account",
+    "accountSwitch": "Terminal account"
   },
   "validation": {
     "required": "This field is required",
@@ -279,7 +309,7 @@
     "startBalanceUnavailable": "The account cannot be opened right now: the site settings could not be retrieved. Please try again later — your form data is not lost."
   },
   "history": {
-    "title": "Trade history",
+    "title": "History",
     "empty": "No closed trades yet.",
     "unavailable": "Trade history is temporarily unavailable — the terminal did not respond. This is our fault, not an absence of trades. Please refresh later.",
     "columns": "{side} {volume} {symbol}",
@@ -288,7 +318,45 @@
     "slippageAgainst": "Closed {amount} worse than your level {level}: a stop fills at the first observed price, not at the level.",
     "slippageFavour": "Closed {amount} better than your level {level}.",
     "slippageNone": "Closed exactly at your level {level}.",
-    "gap": "The price moved across a gap at that moment — there were no prices in between."
+    "gap": "The price moved across a gap at that moment — there were no prices in between.",
+    "lead": "Trades, positions, deposits and withdrawals for the account.",
+    "accountSwitch": "Account",
+    "periodLabel": "Period",
+    "period": {
+      "7d": "7 days",
+      "30d": "30 days",
+      "90d": "90 days",
+      "all": "All time"
+    },
+    "typeLabel": "Operation type",
+    "type": {
+      "all": "All",
+      "trades": "Trades",
+      "money": "Deposits & withdrawals"
+    },
+    "sumTurnover": "Turnover",
+    "sumPnl": "Result (P&L)",
+    "sumTrades": "Trades",
+    "sumWinRate": "Win rate",
+    "winHint": "{wins} of {closed} closes",
+    "winNone": "no closes yet",
+    "openPositions": "Open positions",
+    "positionLine": "{volume} at {price}",
+    "feedTitle": "Activity",
+    "buy": "Buy",
+    "sell": "Sell",
+    "fill": "Volume {volume} · price {price}",
+    "opening": "opening",
+    "closing": "closing",
+    "today": "Today",
+    "yesterday": "Yesterday",
+    "emptyTitle": "No trades in this period",
+    "emptyHint": "Open the terminal and place a trade — it will appear here with its result. Or pick a longer period.",
+    "emptyCta": "Open terminal",
+    "emptyMoney": "No operations in this period",
+    "emptyMoneyHint": "Fund your live account with USDT — the request will appear here with its on-chain status.",
+    "closedDealsTitle": "Execution at levels",
+    "closedDealsHint": "Closed trades from the terminal: where a stop filled away from its level, we explain why."
   },
   "money": {
     "depositTitle": "Deposit to live account",
@@ -417,6 +485,14 @@
         "withdraw_banned": "Withdrawals are restricted. Contact support for details.",
         "kyc_required": "Withdrawals open after identity verification."
       }
-    }
+    },
+    "walletTitle": "Wallet",
+    "walletLead": "Deposits and withdrawals for your live account — USDT on TRON (TRC20).",
+    "walletTabs": "Operation",
+    "opDeposit": "Deposit",
+    "opWithdrawal": "Withdrawal",
+    "historyOperations": "Operations history",
+    "historyEmptyOps": "No operations yet",
+    "historyEmptyOpsHint": "Deposits and withdrawals will appear here with statuses and transaction links."
   }
 }

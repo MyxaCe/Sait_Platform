@@ -50,7 +50,7 @@ export async function OnboardingModule({
       action:
         done || verification === 'pending'
           ? undefined
-          : { href: '/verification', label: t('stepVerificationCta'), primary: true },
+          : { href: '/profile?tab=verification', label: t('stepVerificationCta'), primary: true },
     });
   }
   if (config.steps.deposit) {
@@ -59,7 +59,7 @@ export async function OnboardingModule({
       title: t('stepDepositTitle'),
       text: realFunded ? t('stepDepositDone') : t('stepDepositText'),
       done: realFunded,
-      action: realFunded ? undefined : { href: '/deposit', label: t('stepDepositCta') },
+      action: realFunded ? undefined : { href: '/wallet', label: t('stepDepositCta') },
     });
   }
   if (config.steps.firstTrade) {
@@ -73,9 +73,16 @@ export async function OnboardingModule({
   }
 
   if (steps.length === 0) return null;
+  const doneLabel = t('stepDone');
+  const pendingLabel = t('stepVerificationPendingShort');
 
+  // Равная высота (замечание владельца r2): на ≥ sm карточки в одной строке
+  // сетки тянутся до самой высокой, текст занимает остаток, а низ — всегда
+  // слот 44 px (кнопка или отметка «Выполнено»), поэтому кнопки стоят на
+  // одной линии. На телефоне карточки идут столбиком: выполненный шаг там —
+  // одна строка (место отдано счетам), высоту сравнивать не с чем.
   return (
-    <section className="grid gap-2 sm:grid-cols-3 sm:items-start sm:gap-3">
+    <section className="grid gap-2 sm:grid-cols-3 sm:gap-3">
       {steps.map((step, i) => (
         <div
           key={step.key}
@@ -83,8 +90,9 @@ export async function OnboardingModule({
           data-done={String(step.done)}
           className={cn(
             'flex flex-col rounded-2xl border',
-            // Выполненный шаг — одна строка: место на телефоне отдано счетам.
-            step.done ? 'border-positive/25 bg-positive/[0.04] px-4 py-3' : 'border-border bg-elevated p-4',
+            step.done
+              ? 'border-positive/25 bg-positive/[0.04] px-4 py-3 sm:p-4'
+              : 'border-border bg-elevated p-4',
           )}
         >
           <div className="flex items-center gap-2.5">
@@ -104,19 +112,33 @@ export async function OnboardingModule({
             </span>
             <h3 className="text-sm font-semibold">{step.title}</h3>
           </div>
-          {step.done ? (
-            <p className="sr-only">{step.text}</p>
-          ) : (
-            <p className="mt-2 flex-1 text-xs leading-relaxed text-secondary">{step.text}</p>
-          )}
-          {step.action ? (
-            <Link
-              href={step.action.href}
-              className={linkButton(step.action.primary ? 'primary' : 'secondary', 'mt-3 w-full sm:w-auto sm:self-start')}
-            >
-              {step.action.label}
-            </Link>
-          ) : null}
+          <p
+            className={cn(
+              'mt-2 flex-1 text-xs leading-relaxed text-secondary',
+              step.done && 'hidden sm:block',
+            )}
+          >
+            {step.text}
+          </p>
+          <div className={cn('mt-3 flex min-h-[44px] items-end', step.done && 'hidden sm:flex')}>
+            {step.action ? (
+              <Link
+                href={step.action.href}
+                className={linkButton(step.action.primary ? 'primary' : 'secondary', 'w-full')}
+              >
+                {step.action.label}
+              </Link>
+            ) : (
+              <span
+                className={cn(
+                  'inline-flex h-[44px] items-center gap-1.5 text-sm font-medium',
+                  step.done ? 'text-positive' : 'text-warning',
+                )}
+              >
+                {step.done ? doneLabel : pendingLabel}
+              </span>
+            )}
+          </div>
         </div>
       ))}
     </section>

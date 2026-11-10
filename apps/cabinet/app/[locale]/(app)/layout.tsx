@@ -33,29 +33,29 @@ export default async function AppLayout({ children, params }: LayoutProps) {
   ]);
   const brandName = brand?.name ?? tCommon('brand');
 
-  // Две группы: деньги и торговля (главное) / профиль и комплаенс.
+  // Навигация (r2): 4 раздела счёта + аккаунт. Кошелёк = пополнение и вывод,
+  // Профиль = личные данные, верификация, безопасность и документы.
+  // Место под «Акции» / «Пригласи друга» — третья группа (их проектирует
+  // отдельная команда; добавить = строка в `growthNav`).
   const accountNav: NavItem[] = [
     { href: '/', label: tNav('dashboard'), icon: 'home' },
     { href: '/trade', label: tNav('trade'), icon: 'trade' },
-    { href: '/deposit', label: tNav('deposit'), icon: 'deposit' },
-    { href: '/withdraw', label: tNav('withdraw'), icon: 'withdraw' },
+    { href: '/wallet', label: tNav('wallet'), icon: 'wallet' },
     { href: '/history', label: tNav('history'), icon: 'history' },
   ];
   const profileNav: NavItem[] = [
-    { href: '/verification', label: tNav('verification'), icon: 'verification' },
     { href: '/profile', label: tNav('profile'), icon: 'profile' },
-    { href: '/security', label: tNav('security'), icon: 'security' },
-    { href: '/documents', label: tNav('documents'), icon: 'documents' },
     { href: '/notifications', label: tNav('notifications'), icon: 'notifications', badge: unread },
   ];
-  // Телефон: 4 главных + «Ещё» (аудит К1). Короткие подписи — чтобы влезали в 390 px.
+  const growthNav: NavItem[] = [];
+  // Телефон: 4 главных + «Ещё». Короткие подписи — чтобы влезали в 390 px.
   const mobilePrimary: NavItem[] = [
     { href: '/', label: tNav('short.dashboard'), icon: 'home' },
     { href: '/trade', label: tNav('short.trade'), icon: 'trade' },
-    { href: '/deposit', label: tNav('short.deposit'), icon: 'deposit' },
-    { href: '/withdraw', label: tNav('short.withdraw'), icon: 'withdraw' },
+    { href: '/wallet', label: tNav('short.wallet'), icon: 'wallet' },
+    { href: '/history', label: tNav('short.history'), icon: 'history' },
   ];
-  const mobileMore: NavItem[] = [accountNav[4]!, ...profileNav];
+  const mobileMore: NavItem[] = [...profileNav, ...growthNav];
 
   return (
     <div className="flex min-h-svh flex-col">
@@ -97,6 +97,14 @@ export default async function AppLayout({ children, params }: LayoutProps) {
             {profileNav.map((item) => (
               <NavLink key={item.href} item={item} />
             ))}
+            {growthNav.length > 0 ? (
+              <>
+                <p className="mt-5 px-3 pb-1.5 text-[11px] font-medium text-muted">{tNav('groupGrowth')}</p>
+                {growthNav.map((item) => (
+                  <NavLink key={item.href} item={item} />
+                ))}
+              </>
+            ) : null}
           </nav>
           <a
             href={siteHref('/', params.locale)}
