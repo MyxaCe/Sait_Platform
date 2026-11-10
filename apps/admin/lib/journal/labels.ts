@@ -32,7 +32,9 @@ export type ActionGroup =
   | 'support'
   | 'client_auth'
   // ── Менеджеры клиентов (ветка admin-managers) ──
-  | 'managers';
+  | 'managers'
+  // ── Учётные данные клиента (ветка admin-credentials) ──
+  | 'credentials';
 
 /** Группы — в порядке вывода в фильтре. */
 export const ACTION_GROUPS: { key: ActionGroup; label: string }[] = [
@@ -56,6 +58,8 @@ export const ACTION_GROUPS: { key: ActionGroup; label: string }[] = [
   { key: 'client_auth', label: 'Вход клиента: сброс пароля и email' },
   // ── Менеджеры клиентов (ветка admin-managers) ──
   { key: 'managers', label: 'Менеджеры клиентов' },
+  // ── Учётные данные клиента (ветка admin-credentials) ──
+  { key: 'credentials', label: 'Учётные данные клиента: email, пароль, адрес вывода' },
 ];
 
 export interface ActionMeta {
@@ -342,6 +346,43 @@ export const ACTION_LABELS: Record<string, ActionMeta> = {
   'client.manager_unassigned': { label: 'Менеджер клиента снят', tone: 'neutral', group: 'managers' },
   'operator.client_manager_granted': { label: 'Оператор стал менеджером клиентов', tone: 'info', group: 'managers' },
   'operator.client_manager_revoked': { label: 'Снят флаг «менеджер клиентов»', tone: 'neutral', group: 'managers' },
+
+  // ── Учётные данные клиента (ветка admin-credentials, 10.11). Правку проводит менеджер
+  //    клиента или admin. Payload: basis, ticket, checklist (снимок пунктов и отметок),
+  //    actorAs; до/после — ТОЛЬКО маскированно (email a***@d***.com, адрес TXXXX…XXXX). ──
+  'client.credentials.email_changed': { label: 'Email клиента изменён', tone: 'warning', group: 'credentials' },
+  'client.credentials.password_reset_link_sent': {
+    label: 'Ссылка сброса пароля отправлена клиенту',
+    tone: 'info',
+    group: 'credentials',
+  },
+  'client.credentials.temp_password_issued': {
+    label: 'Выдан временный пароль, сессии погашены',
+    tone: 'warning',
+    group: 'credentials',
+  },
+  'client.credentials.temp_password_replaced': {
+    label: 'Клиент сменил временный пароль',
+    tone: 'positive',
+    group: 'credentials',
+  },
+  'client.credentials.withdrawal_address_changed': {
+    label: 'Адрес в заявке на вывод исправлен',
+    tone: 'warning',
+    group: 'credentials',
+  },
+  'client.credentials.withdraw_hold_set': { label: 'Вывод заморожен менеджером', tone: 'negative', group: 'credentials' },
+  'client.credentials.withdraw_hold_auto_set': {
+    label: 'Автозаморозка вывода после правки данных',
+    tone: 'negative',
+    group: 'credentials',
+  },
+  'client.credentials.withdraw_hold_lifted': { label: 'Заморозка вывода снята', tone: 'positive', group: 'credentials' },
+  'platform.credential_settings.updated': {
+    label: 'Изменены настройки безопасности учётных данных',
+    tone: 'info',
+    group: 'platform',
+  },
 };
 
 export function actionLabel(action: string): { label: string; tone: StatusTone } {
@@ -382,6 +423,8 @@ export const STATIC_SUBJECT_NAMES: Record<string, string> = {
   // ── Поддержка (ветка demo-support) ──
   'platform:support:settings': 'Настройки поддержки',
   'platform:support:leads': 'Обращения с формы контактов',
+  // ── Учётные данные клиента (ветка admin-credentials) ──
+  'platform:credential_settings': 'Безопасность учётных данных',
 };
 
 /**
