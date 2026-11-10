@@ -1,5 +1,11 @@
 import { AML_STATUSES, type AmlStatus } from '../aml/lists';
 import { VERIFICATION_STATES, type VerificationState } from './verification-state';
+import {
+  managerFilterValue,
+  parseManagerFilter,
+  sameManagerFilter,
+  type ManagerFilter,
+} from '../managers/policy';
 
 /**
  * Параметры реестра клиентов из URL (client-safe: без `pg`). Всё, что пришло
@@ -23,6 +29,18 @@ export interface RegistryQuery {
   sort: RegistrySortKey;
   dir: 'asc' | 'desc';
   page: number;
+  /** Фильтр по менеджеру (`?mgr=`): all | mine | none | id менеджера. */
+  mgr: ManagerFilter;
+  /**
+   * Умолчание фильтра менеджера ДЛЯ ЭТОГО ЗРИТЕЛЯ: менеджеру — «мои», прочим —
+   * «все». В URL пишется только отличие от умолчания.
+   */
+  mgrDefault: 'all' | 'mine';
+}
+
+export interface RegistryParseOptions {
+  /** Зритель — менеджер клиентов: реестр по умолчанию открывается на «Мои клиенты». */
+  defaultMine?: boolean;
 }
 
 const SORT_KEYS: readonly RegistrySortKey[] = ['name', 'registered', 'activity', 'balance'];
@@ -41,7 +59,8 @@ function one(v: string | string[] | undefined): string {
   return (Array.isArray(v) ? v[0] : v)?.trim() ?? '';
 }
 
-export function parseRegistryQuery(sp: Raw): RegistryQuery {
+export function parseRegistryQuery(sp: Raw, opts: RegistryParseOptions = {}): RegistryQuery {
+  const mgrDefault: 'all' | 'mine' = opts.defaultMine ? 'mine' : 'all';
   const kyc = one(sp.kyc ?? sp.state);
   const aml = one(sp.aml);
   const access = one(sp.access);
@@ -68,12 +87,20 @@ export function parseRegistryQuery(sp: Raw): RegistryQuery {
     sort,
     dir,
     page: Number.isFinite(page) && page > 0 ? page : 1,
+    mgr: parseManagerFilter(one(sp.mgr), mgrDefault),
+    mgrDefault,
   };
 }
 
 /** Есть ли активный фильтр (для пустого состояния «ничего не найдено» и «Сбросить»). */
 export function hasRegistryFilter(q: RegistryQuery): boolean {
-  return q.q !== '' || q.kyc !== 'all' || q.aml !== 'all' || q.access !== 'all';
+  return (
+    q.q !== '' ||
+    q.kyc !== 'all' ||
+    q.aml !== 'all' ||
+    q.access !== 'all' ||
+    !sameManagerFilter(q.mgr, q.mgrDefault)
+  );
 }
 
 /** URL реестра с подменой части параметров; значения по умолчанию в URL не пишем. */
@@ -84,6 +111,7 @@ export function registryHref(q: RegistryQuery, patch: Partial<RegistryQuery> = {
   if (n.kyc !== 'all') p.set('kyc', n.kyc);
   if (n.aml !== 'all') p.set('aml', n.aml);
   if (n.access !== 'all') p.set('access', n.access);
+  if (!sameManagerFilter(n.mgr, n.mgrDefault)) p.set('mgr', managerFilterValue(n.mgr));
   if (!(n.sort === 'registered' && n.dir === 'desc')) {
     p.set('sort', n.sort);
     p.set('dir', n.dir);

@@ -21,10 +21,13 @@ export function OperatorsTable({
   operators,
   currentOperatorId,
   selectedId,
+  managerClients = new Map(),
 }: {
   operators: OperatorListItem[];
   currentOperatorId: string;
   selectedId?: string;
+  /** Число закреплённых клиентов по оператору (ветка admin-managers). */
+  managerClients?: Map<string, number>;
 }) {
   const columns: DataTableColumn<OperatorListItem>[] = [
     {
@@ -57,7 +60,16 @@ export function OperatorsTable({
       key: 'role',
       header: 'Роль',
       width: '10rem',
-      cell: (op) => <span className="text-primary">{ROLE_LABEL[op.role]}</span>,
+      cell: (op) => (
+        <span className="flex flex-col items-start gap-0.5">
+          <span className="text-primary">{ROLE_LABEL[op.role]}</span>
+          {op.isClientManager ? (
+            <span className="text-secondary text-xs tabular-nums">
+              менеджер · клиентов {managerClients.get(op.id) ?? 0}
+            </span>
+          ) : null}
+        </span>
+      ),
     },
     {
       key: 'access',
