@@ -84,7 +84,7 @@ export function BulkAssignBar({ managers }: { managers: ManagerChoice[] }) {
         <p className="text-primary min-w-[9rem] pb-2 text-[13px] font-medium tabular-nums">
           Выбрано: {count}
         </p>
-        <Field label="Назначить менеджера" htmlFor="bulk-manager" className="w-56">
+        <Field label="Назначить менеджера" htmlFor="bulk-manager" className="w-64">
           <Select
             id="bulk-manager"
             name="managerId"
@@ -95,7 +95,7 @@ export function BulkAssignBar({ managers }: { managers: ManagerChoice[] }) {
             <option value="">— выберите —</option>
             {managers.map((m) => (
               <option key={m.id} value={m.id}>
-                {m.displayName} · клиентов {m.clients}
+                {m.displayName} ({m.clients})
               </option>
             ))}
             <option value="none">Снять менеджера</option>

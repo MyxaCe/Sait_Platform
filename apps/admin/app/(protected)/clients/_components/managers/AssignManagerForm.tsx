@@ -52,7 +52,7 @@ export function AssignManagerForm({
           <option value="">— выберите —</option>
           {options.map((m) => (
             <option key={m.id} value={m.id}>
-              {m.displayName} · клиентов {m.clients}
+              {m.displayName} ({m.clients})
             </option>
           ))}
           {currentManagerId ? <option value="none">Снять менеджера</option> : null}

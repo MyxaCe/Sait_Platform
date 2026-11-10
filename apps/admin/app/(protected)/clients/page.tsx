@@ -101,7 +101,7 @@ function columns(
       width: '9rem',
       cell: (c) =>
         c.managerId === null ? (
-          <span className="text-muted">не закреплён</span>
+          <span className="text-muted" title="Менеджер не закреплён">нет</span>
         ) : c.managerId === opts.viewerId ? (
           <span className="text-primary font-medium">вы</span>
         ) : (
