@@ -119,6 +119,7 @@ export async function issueHandoffToken(
   userId: string,
   accountKind: AccountKind = 'demo',
   leverage: number | null = null,
+  fees: { markupBps: number; commissionBps: number } | null = null,
 ): Promise<HandoffToken> {
   const { privateKey } = await getKeys();
   const claims: Record<string, unknown> = { tenant: tenantSlug(), account_kind: accountKind };
@@ -128,6 +129,22 @@ export async function issueHandoffToken(
       throw new Error(`плечо для токена вне 1..1000: ${String(leverage)}`);
     }
     claims.leverage = leverage;
+  }
+  /*
+   * Тариф счёта (claims `markup_bps`, `commission_bps`, ветка терминала
+   * demo-fees): тариф портфеля клиента из админки. Терминал синхронизирует
+   * его при входе/продлении — так тариф доезжает до счёта, которого в момент
+   * смены тарифа портфеля ещё не было (`account_not_opened`). Обе ставки —
+   * вместе или ни одной; вне 0..500 терминал отверг бы токен.
+   */
+  if (fees !== null) {
+    for (const v of [fees.markupBps, fees.commissionBps]) {
+      if (!Number.isInteger(v) || v < 0 || v > 500) {
+        throw new Error(`тариф для токена вне 0..500 б.п.: ${String(v)}`);
+      }
+    }
+    claims.markup_bps = fees.markupBps;
+    claims.commission_bps = fees.commissionBps;
   }
   const token = await new SignJWT(claims)
     .setProtectedHeader({ alg: 'RS256', kid: SSO_KEY_ID, typ: 'JWT' })

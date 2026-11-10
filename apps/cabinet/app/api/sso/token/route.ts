@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getSessionUser } from '@/lib/auth/session';
 import { isRateLimited } from '@/lib/rate-limit';
 import { terminalLeverageFor } from '@/lib/leverage';
+import { terminalFeesFor } from '@/lib/fees';
 import {
   issueHandoffToken,
   isSsoConfigured,
@@ -98,9 +99,22 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'leverage_unavailable' }, { status: 503 });
   }
 
+  /*
+   * Тариф счёта (claims markup_bps/commission_bps). В отличие от плеча, сбой
+   * чтения токен НЕ гасит: смену тарифа портфеля админка уже довезла до
+   * терминала напрямую (fail-closed там), claim — догоняющая синхронизация
+   * для счетов, открытых позже. Без claim терминал держит последний тариф.
+   */
+  let fees: { markupBps: number; commissionBps: number } | null = null;
+  try {
+    fees = await terminalFeesFor(user.id);
+  } catch (error) {
+    console.error('[sso] тариф клиента не прочитан — claim не кладём', error);
+  }
+
   let handoff: HandoffToken;
   try {
-    handoff = await issueHandoffToken(user.id, accountKind, leverage);
+    handoff = await issueHandoffToken(user.id, accountKind, leverage, fees);
   } catch (error) {
     if (error instanceof TokenWithoutExpiryError) {
       console.error(`[sso] ${error.message} — токен не отдаём (Р-100, CAB-07)`);

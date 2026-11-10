@@ -54,6 +54,9 @@ vi.mock('@/lib/sso/jwt', async () => {
 });
 vi.mock('@/lib/auth/session', () => ({ getSessionUser }));
 vi.mock('@/lib/leverage', () => ({ terminalLeverageFor }));
+const FEES = { markupBps: 15, commissionBps: 0 };
+const terminalFeesFor = vi.hoisted(() => vi.fn(async () => ({ markupBps: 15, commissionBps: 0 })));
+vi.mock('@/lib/fees', () => ({ terminalFeesFor }));
 
 const USER = { id: 'user-1', uid: 1, email: 'a@b.c', fullName: 'A', locale: 'ru', vipLevel: 0 };
 
@@ -196,13 +199,13 @@ describe('POST /api/sso/token · выбор счёта (account_kind, 09.11)', (
   it('без параметра — демо (как раньше)', async () => {
     const res = await postWith('');
     expect(res.status).toBe(200);
-    expect(issueHandoffToken).toHaveBeenCalledWith('user-1', 'demo', 10);
+    expect(issueHandoffToken).toHaveBeenCalledWith('user-1', 'demo', 10, FEES);
   });
 
   it('?account=real — токен с account_kind=real', async () => {
     const res = await postWith('?account=real');
     expect(res.status).toBe(200);
-    expect(issueHandoffToken).toHaveBeenCalledWith('user-1', 'real', 10);
+    expect(issueHandoffToken).toHaveBeenCalledWith('user-1', 'real', 10, FEES);
     await expect(res.json()).resolves.toMatchObject({ accountKind: 'real' });
   });
 
@@ -226,7 +229,7 @@ describe('POST /api/sso/token · плечо счёта (claim leverage, Р-446)'
 
     expect(res.status).toBe(200);
     expect(terminalLeverageFor).toHaveBeenCalledWith(USER.id);
-    expect(issueHandoffToken).toHaveBeenCalledWith(USER.id, 'demo', 10);
+    expect(issueHandoffToken).toHaveBeenCalledWith(USER.id, 'demo', 10, FEES);
   });
 
   it('конфигурация плеча клиенту ничего не задаёт — токен без claim-а', async () => {
@@ -235,7 +238,7 @@ describe('POST /api/sso/token · плечо счёта (claim leverage, Р-446)'
     const res = await post();
 
     expect(res.status).toBe(200);
-    expect(issueHandoffToken).toHaveBeenCalledWith(USER.id, 'demo', null);
+    expect(issueHandoffToken).toHaveBeenCalledWith(USER.id, 'demo', null, FEES);
   });
 
   it('плечо не прочиталось — 503 leverage_unavailable, токен НЕ выпущен', async () => {
@@ -246,5 +249,14 @@ describe('POST /api/sso/token · плечо счёта (claim leverage, Р-446)'
     expect(res.status).toBe(503);
     await expect(res.json()).resolves.toEqual({ error: 'leverage_unavailable' });
     expect(issueHandoffToken).not.toHaveBeenCalled();
+  });
+});
+
+describe('POST /api/sso/token · тариф счёта (claims markup_bps/commission_bps)', () => {
+  it('тариф не прочитался — токен всё равно выпускается, без claim тарифа', async () => {
+    terminalFeesFor.mockRejectedValueOnce(new Error('db down'));
+    const res = await post();
+    expect(res.status).toBe(200);
+    expect(issueHandoffToken).toHaveBeenCalledWith(USER.id, 'demo', 10, null);
   });
 });
