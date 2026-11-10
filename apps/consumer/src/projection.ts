@@ -5,6 +5,7 @@ import {
   type ParsedTerminalEvent,
   moneyFromEvent,
 } from '@broker/api-client';
+import { applyDemoResetToContests } from './contest-reset';
 
 /**
  * Проекция событий терминала в БД кабинета (demo_accounts + позиции +
@@ -329,6 +330,12 @@ export async function applyTerminalEvent(
           `INSERT INTO notifications (id, user_id, type, params) VALUES ($1, $2, 'demoReset', $3)`,
           [cfg.newId(), d.userId, JSON.stringify({ balanceCents: applied })],
         );
+        // Конкурс на демо-счетах: сброс ставит участнику базу (contest-reset.ts).
+        await applyDemoResetToContests(db, {
+          userId: d.userId,
+          balanceMinor: Number(applied),
+          at: new Date().toISOString(),
+        });
       }
 
       // Снапшот позиций (если пришёл) заменяем целиком — проекция идемпотентна
@@ -348,8 +355,9 @@ export async function applyTerminalEvent(
       const d = event.data;
       await db.query(
         `INSERT INTO ${T.trades}
-           (id, user_id, event_id, trade_id, symbol, side, volume, price, realized_pnl_cents, executed_at)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+           (id, user_id, event_id, trade_id, symbol, side, volume, price, realized_pnl_cents, executed_at,
+            commission_minor, markup_minor, market_price)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
          ON CONFLICT (event_id) DO NOTHING`,
         [
           cfg.newId(),
@@ -369,6 +377,11 @@ export async function applyTerminalEvent(
             currencyMinorUnits: d.currencyMinorUnits,
           })?.minor ?? null,
           d.executedAt,
+          // Доход платформы со сделки (аддитивно, demo-fees): нет поля — NULL
+          // («не знаем»), а не ноль — кешбэк и IB от NULL дают 0 явно.
+          d.commissionMinor ?? null,
+          d.markupMinor ?? null,
+          d.marketPrice ?? null,
         ],
       );
       await db.query(
