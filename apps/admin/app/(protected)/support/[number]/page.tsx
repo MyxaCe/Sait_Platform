@@ -186,7 +186,7 @@ function ContextPanel({ ctx, canOpenCard }: { ctx: ClientContext; canOpenCard: b
                     {o.amountMinor !== undefined ? (
                       <Money minor={o.amountMinor} currency="USDT" className="ml-auto" />
                     ) : (
-                      <span className="text-muted ml-auto text-xs">сумма скрыта</span>
+                      <span className="text-muted ml-auto text-xs" title="Сумма скрыта ролью">скрыта</span>
                     )}
                     <span className="text-muted w-[6.5rem] shrink-0 text-right text-xs tabular-nums">{fmtDateTime(o.at).slice(0, 10)}</span>
                   </li>

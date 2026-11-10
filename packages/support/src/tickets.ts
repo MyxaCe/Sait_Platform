@@ -337,6 +337,12 @@ export async function createWebFormTicketTx(
 
 /* ─── Чат кабинета ──────────────────────────────────────────────────── */
 
+/** Тема чат-обращения: первая строка, не длиннее 60 символов (с «…»). */
+export function chatSubject(body: string): string {
+  const first = body.trim().split('\n')[0]!.trim();
+  return first.length > 60 ? `${first.slice(0, 59).trimEnd()}…` : first;
+}
+
 export interface ChatPostInput {
   userId: string;
   body: string;
@@ -416,7 +422,7 @@ export async function postClientChatMessage(
         locale,
         origin: 'chat',
         replyChannel: 'chat',
-        subject: (body || 'Вложение').split('\n')[0]!.slice(0, 80),
+        subject: chatSubject(body || (locale === 'en' ? 'Attachment' : 'Вложение')),
         category: input.category ?? null,
         body: text,
         createdAt: now,
