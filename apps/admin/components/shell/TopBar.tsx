@@ -22,6 +22,7 @@ const ROLE_LABEL: Record<OperatorRole, string> = {
   admin: 'Администратор',
   operator: 'Оператор',
   finance_operator: 'Финансы',
+  support_operator: 'Поддержка',
 };
 
 export function TopBar({ operator }: { operator: OperatorSession }) {

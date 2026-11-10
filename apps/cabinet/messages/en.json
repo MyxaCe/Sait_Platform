@@ -267,7 +267,9 @@
       "marginCalled": "Margin level {level}%. {remaining}% left before forced close-out at {stopOut}%. Equity {equity}, used margin {usedMargin}.",
       "marginCalledNoStopOut": "Margin level {level}%. No forced close-out level is set, so no margin close-out will happen. Equity {equity}, used margin {usedMargin}.",
       "tradeExecutedWorse": "Trade executed: {side, select, buy {buy} sell {sell} other {{side}}} {volume} {symbol} at {price}. That is {slippage} worse than your level {level}: a stop fills at the first observed price, not at the level.",
-      "tradeExecutedBetter": "Trade executed: {side, select, buy {buy} sell {sell} other {{side}}} {volume} {symbol} at {price}. That is {slippage} better than your level {level}."
+      "tradeExecutedBetter": "Trade executed: {side, select, buy {buy} sell {sell} other {{side}}} {volume} {symbol} at {price}. That is {slippage} better than your level {level}.",
+      "supportReply": "Support replied to request #{number}. Open the support chat in the bottom right corner.",
+      "supportResolved": "Request #{number} is resolved. Please rate the support in the chat."
     }
   },
   "trade": {
@@ -494,5 +496,85 @@
     "historyOperations": "Operations history",
     "historyEmptyOps": "No operations yet",
     "historyEmptyOpsHint": "Deposits and withdrawals will appear here with statuses and transaction links."
+  },
+  "support": {
+    "button": "Support",
+    "open": "Open support chat",
+    "openWithUnread": "Open support chat, new replies: {count}",
+    "title": "Support",
+    "close": "Close",
+    "loading": "Loading…",
+    "online": "Online · reply ~{minutes} min",
+    "offline": "Outside business hours · we reply {hours}",
+    "history": "History",
+    "backToChat": "Back to chat",
+    "you": "You",
+    "agent": "Support",
+    "autoReply": "Auto-reply",
+    "placeholder": "Type a message…",
+    "send": "Send",
+    "attach": "Attach a file",
+    "removeFile": "Remove",
+    "attachHint": "PDF, JPG, PNG up to {mb} MB. Enter to send, Shift+Enter for a new line.",
+    "resolvedTitle": "Request #{number} resolved",
+    "rated": "Thank you for rating: {score} of 5.",
+    "rateLabel": "Rate the support reply",
+    "rateN": "Rate {n} of 5",
+    "reopenHint": "Still have a question? Just write — the request will reopen.",
+    "closedHint": "The previous request is closed — a new message starts a new one.",
+    "status": {
+      "new": "New",
+      "open": "In progress",
+      "waiting_client": "Awaiting you",
+      "waiting_internal": "In progress",
+      "resolved": "Resolved",
+      "closed": "Closed",
+      "spam": "Closed"
+    },
+    "errors": {
+      "rateLimited": "Too many messages in a row — wait a minute.",
+      "fileTooLarge": "The file exceeds the size limit.",
+      "unsupportedFormat": "PDF, JPG and PNG are supported.",
+      "attachmentsUnavailable": "Attachments are temporarily unavailable — send text.",
+      "channelDisabled": "Support chat is currently off.",
+      "emptyBody": "An empty message cannot be sent.",
+      "generic": "Could not send. Please try again."
+    }
+  },
+  "authMail": {
+    "forgotLink": "Forgot password?",
+    "forgotTitle": "Password recovery",
+    "forgotSubtitle": "Enter your email — we will send a link to set a new password.",
+    "forgotButton": "Send link",
+    "forgotSent": "If such an account exists, an email with a link is on its way.",
+    "forgotSentHint": "The link is valid for 30 minutes. Nothing arrived? Check spam or request again in a couple of minutes.",
+    "backToLogin": "Back to sign in",
+    "resetTitle": "New password",
+    "resetSubtitle": "Choose a new password. All sessions will be signed out after the change.",
+    "newPassword": "New password",
+    "newPasswordHint": "At least 8 characters",
+    "confirmPassword": "Repeat password",
+    "resetButton": "Save password",
+    "resetDone": "Password changed. Sign in with the new password.",
+    "requestNew": "Request a new link",
+    "token": {
+      "invalidToken": "The link is invalid.",
+      "expiredToken": "The link has expired.",
+      "usedToken": "The link has already been used."
+    },
+    "verifyTitle": "Email confirmation",
+    "verifySubtitle": "Press the button to confirm your email address.",
+    "verifyButton": "Confirm email",
+    "verifyDone": "Email confirmed. Thank you!",
+    "toCabinet": "Go to the cabinet",
+    "verifyNoticeTitle": "Confirm your email",
+    "verifyNoticeText": "Support replies and sign-in links come to this address. We will send a confirmation link.",
+    "verifySend": "Send email",
+    "verifySent": "Email sent — open the link inside (valid for 24 hours).",
+    "verifyErrors": {
+      "rateLimited": "An email was sent recently — check your inbox or try later.",
+      "mailNotConfigured": "Email is temporarily unavailable. Please try later.",
+      "generic": "Could not send the email."
+    }
   }
 }

@@ -22,7 +22,10 @@ export type ActionGroup =
   | 'leverage'
   | 'money_command'
   | 'operators'
-  | 'platform';
+  | 'platform'
+  // ── Поддержка и auth-письма (ветка demo-support) ──
+  | 'support'
+  | 'client_auth';
 
 /** Группы — в порядке вывода в фильтре. */
 export const ACTION_GROUPS: { key: ActionGroup; label: string }[] = [
@@ -36,6 +39,9 @@ export const ACTION_GROUPS: { key: ActionGroup; label: string }[] = [
   { key: 'money_command', label: 'Денежные команды' },
   { key: 'operators', label: 'Операторы и вход' },
   { key: 'platform', label: 'Платформа и журнал' },
+  // ── Поддержка и auth-письма (ветка demo-support) ──
+  { key: 'support', label: 'Поддержка: обращения клиентов' },
+  { key: 'client_auth', label: 'Вход клиента: сброс пароля и email' },
 ];
 
 export interface ActionMeta {
@@ -230,6 +236,28 @@ export const ACTION_LABELS: Record<string, ActionMeta> = {
     group: 'platform',
   },
   'journal.exported': { label: 'Выгрузка журнала', tone: 'neutral', group: 'platform' },
+
+  // ── Поддержка (ветка demo-support, 10.11). Текст ответов в журнал не пишется — sha256. ──
+  'support.ticket.assigned': { label: 'Обращение назначено', tone: 'info', group: 'support' },
+  'support.ticket.status_changed': { label: 'Статус обращения изменён', tone: 'info', group: 'support' },
+  'support.ticket.marked_spam': { label: 'Обращение помечено как спам', tone: 'warning', group: 'support' },
+  'support.ticket.linked_client': { label: 'Обращение привязано к клиенту', tone: 'info', group: 'support' },
+  'support.ticket.auto_closed': { label: 'Обращение закрыто автоматически', tone: 'neutral', group: 'support' },
+  'support.reply.sent': { label: 'Ответ клиенту отправлен', tone: 'positive', group: 'support' },
+  'support.note.added': { label: 'Внутренняя заметка к обращению', tone: 'neutral', group: 'support' },
+  'support.client_context.viewed': { label: 'Просмотр контекста клиента (поддержка)', tone: 'neutral', group: 'support' },
+  'support.attachment.viewed': { label: 'Просмотр вложения обращения', tone: 'neutral', group: 'support' },
+  'support.settings.updated': { label: 'Изменены настройки поддержки', tone: 'warning', group: 'support' },
+  'support.template.saved': { label: 'Шаблон ответа сохранён', tone: 'info', group: 'support' },
+  'support.template.deactivated': { label: 'Шаблон ответа выключен', tone: 'neutral', group: 'support' },
+  'support.blocklist.added': { label: 'Отправитель добавлен в блок-лист', tone: 'warning', group: 'support' },
+  'support.leads.recovered': { label: 'Восстановлены обращения с формы контактов', tone: 'info', group: 'support' },
+
+  // ── Вход клиента: auth-письма (ветка demo-support) ──
+  'auth.password_reset.requested': { label: 'Запрошен сброс пароля', tone: 'neutral', group: 'client_auth' },
+  'auth.password_reset.completed': { label: 'Пароль сброшен, сессии погашены', tone: 'warning', group: 'client_auth' },
+  'auth.email_verify.sent': { label: 'Отправлено письмо подтверждения email', tone: 'neutral', group: 'client_auth' },
+  'auth.email_verify.confirmed': { label: 'Email подтверждён', tone: 'positive', group: 'client_auth' },
 };
 
 export function actionLabel(action: string): { label: string; tone: StatusTone } {
@@ -251,6 +279,9 @@ export const SUBJECT_KIND_LABELS: Record<string, string> = {
   money_command: 'Денежная команда',
   platform: 'Платформа',
   journal: 'Журнал',
+  // ── Поддержка (ветка demo-support) ──
+  support_ticket: 'Обращение',
+  support_template: 'Шаблон ответа',
 };
 
 export function subjectKindLabel(kind: string): string {
@@ -260,6 +291,9 @@ export function subjectKindLabel(kind: string): string {
 /** Субъекты с постоянным машинным id (не из справочников) — их имя. */
 export const STATIC_SUBJECT_NAMES: Record<string, string> = {
   'platform:money_settings': 'Денежные настройки',
+  // ── Поддержка (ветка demo-support) ──
+  'platform:support:settings': 'Настройки поддержки',
+  'platform:support:leads': 'Обращения с формы контактов',
 };
 
 /**

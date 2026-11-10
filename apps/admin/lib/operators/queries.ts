@@ -25,7 +25,7 @@ export interface OperatorListItem {
 
 /** Приводим строку БД к известной роли или бросаем (fail-closed, строка сломана). */
 export function asRole(value: unknown): OperatorRole {
-  if (value === 'admin' || value === 'operator' || value === 'finance_operator') return value;
+  if (value === 'admin' || value === 'operator' || value === 'finance_operator' || value === 'support_operator') return value;
   throw new Error(`operators.role вне допустимого множества: ${String(value)}`);
 }
 

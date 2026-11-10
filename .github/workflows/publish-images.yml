@@ -243,6 +243,12 @@ jobs:
             dockerfile: docker/chain-watcher.Dockerfile
             arg-names: ''
             public-args: ''
+          # Почтовый воркер поддержки (SMTP/IMAP ящика cPanel) — окружение-агностичен:
+          # хост, логин и пароль ящика приходят окружением ячейки при запуске.
+          - image: broker-support-mail
+            dockerfile: docker/support-mail.Dockerfile
+            arg-names: ''
+            public-args: ''
     steps:
       - uses: actions/checkout@v4
 
@@ -424,7 +430,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        image: [broker-web, broker-cabinet, broker-admin, broker-relay, broker-consumer, broker-chain-watcher]
+        image: [broker-web, broker-cabinet, broker-admin, broker-relay, broker-consumer, broker-chain-watcher, broker-support-mail]
     steps:
       # Отдельное задание на чистом раннере — иначе «скачивается» проверялось бы
       # на машине, где образ уже лежит в демоне с момента сборки. Проверка

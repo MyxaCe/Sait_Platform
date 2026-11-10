@@ -10,11 +10,13 @@
     "test": "vitest run",
     "seed:admin": "tsx scripts/bootstrap-admin.ts",
     "seed:kyc-fixture": "tsx scripts/seed-kyc-fixture.ts",
-    "seed:demo": "tsx scripts/seed-demo.ts"
+    "seed:demo": "tsx scripts/seed-demo.ts",
+    "seed:support-demo": "tsx scripts/seed-support-demo.ts"
   },
   "dependencies": {
     "@broker/money": "workspace:*",
     "@broker/storage": "workspace:*",
+    "@broker/support": "workspace:*",
     "@broker/ui": "workspace:*",
     "@broker/utils": "workspace:*",
     "@node-rs/argon2": "^2.0.2",

@@ -1,6 +1,7 @@
 import { getTranslations } from 'next-intl/server';
 import { SiteFooter } from '@/components/layout/SiteFooter';
 import { SiteHeader } from '@/components/layout/SiteHeader';
+import { SupportFab } from '@/components/layout/SupportFab';
 import { TickerGate } from '@/features/quotes/TickerGate';
 import { getCms } from '@/lib/cms';
 
@@ -56,6 +57,7 @@ export default async function MarketingLayout({ children, params }: LayoutProps)
         quotesEmptyText={t('quotesEmptyStrip')}
       />
       <main className="flex-1">{children}</main>
+      <SupportFab locale={locale} />
       <SiteFooter
         columns={navigation.footer.columns}
         riskWarning={navigation.footer.riskWarning}

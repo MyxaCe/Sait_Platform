@@ -1,0 +1,23 @@
+{
+  "name": "@broker/support",
+  "version": "0.0.1",
+  "private": true,
+  "exports": {
+    ".": "./src/index.ts",
+    "./testing": "./src/testing/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@broker/money": "workspace:*"
+  },
+  "devDependencies": {
+    "@broker/config": "workspace:*",
+    "@electric-sql/pglite": "^0.3.0",
+    "@types/node": "^20.14.12",
+    "typescript": "^5.5.4",
+    "vitest": "^2.0.5"
+  }
+}

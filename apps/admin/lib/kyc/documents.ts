@@ -1,5 +1,6 @@
 'use server';
 
+import { isNarrowRole } from '@/lib/auth/role-scope';
 import { getOperatorSession } from '../auth/current';
 import { getPool } from '../db';
 import { appendJournalEntry } from '../journal/journal';
@@ -49,6 +50,8 @@ export async function issueDocumentViewUrlAction(docId: string): Promise<ViewUrl
     // Личность автора доступа обязана быть из валидной сессии — иначе отказ.
     return { ok: false, reason: 'unauthorized' };
   }
+  // Поддержка KYC-документы не видит (решение владельца 10.11) — fail-closed.
+  if (isNarrowRole(operator.role)) return { ok: false, reason: 'unauthorized' };
 
   const id = String(docId ?? '').trim();
   if (!id) return { ok: false, reason: 'notFound' };

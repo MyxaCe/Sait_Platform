@@ -61,6 +61,20 @@ export const STATUS_DICTIONARY = {
   executed: { tone: 'positive', label: 'Исполнено' },
   money_rejected: { tone: 'negative', label: 'Отклонено' },
   break_glass: { tone: 'negative', label: 'Break-glass' },
+  // ── Обращение в поддержку (support_tickets.status, ветка demo-support) ──
+  support_new: { tone: 'warning', label: 'Новое' },
+  support_open: { tone: 'warning', label: 'В работе' },
+  support_waiting_client: { tone: 'info', label: 'Ждём клиента' },
+  support_waiting_internal: { tone: 'info', label: 'Эскалация' },
+  support_resolved: { tone: 'positive', label: 'Решено' },
+  support_closed: { tone: 'neutral', label: 'Закрыто' },
+  support_spam: { tone: 'negative', label: 'Спам' },
+  // Доставка письма (outbound_mail.status)
+  mail_queued: { tone: 'info', label: 'В очереди' },
+  mail_sending: { tone: 'info', label: 'Отправляется' },
+  mail_sent: { tone: 'positive', label: 'Отправлено' },
+  mail_failed: { tone: 'negative', label: 'Не доставлено' },
+  mail_cancelled: { tone: 'neutral', label: 'Отменено' },
 } as const satisfies Record<string, { tone: StatusTone; label: string }>;
 
 export type StatusKey = keyof typeof STATUS_DICTIONARY;

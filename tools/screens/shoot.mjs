@@ -39,6 +39,8 @@ const HERO = '00000000-0000-4000-8000-0000000c0001';
 const ROLES = {
   admin: { sub: '00000000-0000-4000-8000-00000000a001', login: 'i.kovaleva', name: 'Ирина Ковалёва', role: 'admin' },
   operator: { sub: '00000000-0000-4000-8000-00000000a002', login: 'd.sokolov', name: 'Дмитрий Соколов', role: 'operator' },
+  // Оператор поддержки — засеян seed:support-demo (ветка demo-support).
+  support: { sub: '00000000-0000-4000-8000-00000000a005', login: 'o.belova', name: 'Ольга Белова', role: 'support_operator' },
 };
 
 async function adminToken(who = 'admin') {
@@ -186,6 +188,11 @@ const browser = await chromium.launch();
 try {
   if (set === 'admin' || set === 'all') await shootAdmin(browser);
   if (set === 'cabinet' || set === 'all') await shootCabinet(browser);
+  // Поддержка (ветка demo-support): отдельный набор — `--set support`.
+  if (set === 'support') {
+    const { shootSupport } = await import('./support-shots.mjs');
+    await shootSupport(browser, { outDir, ADMIN, CABINET, adminToken, CABINET_TOKEN, only });
+  }
 } finally {
   await browser.close();
 }

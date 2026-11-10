@@ -42,6 +42,10 @@ import { sanctionsListLabel } from '@/lib/aml/lists';
 import { fmtDate, fmtDateTime } from '@/lib/ui/format';
 import { actionLabel } from '@/lib/journal/labels';
 import { TronRef } from '../../_money/tron';
+// ── Поддержка (ветка demo-support) ──
+import { listClientTickets } from '@broker/support';
+import { getPool } from '@/lib/db';
+import { SupportTab } from './_components/SupportTab';
 
 /**
  * Карточка клиента `/clients/[id]` (ADM-02, §3.2) — ЭТАЛОННЫЙ экран редизайна
@@ -59,7 +63,7 @@ import { TronRef } from '../../_money/tron';
  */
 export const dynamic = 'force-dynamic';
 
-const TAB_KEYS = ['overview', 'trading', 'money', 'compliance', 'access', 'journal'] as const;
+const TAB_KEYS = ['overview', 'trading', 'money', 'compliance', 'access', 'support', 'journal'] as const;
 type TabKey = (typeof TAB_KEYS)[number];
 
 function asTab(v: string | undefined): TabKey {
@@ -263,6 +267,8 @@ export default async function ClientCardPage({
     getAmlCard(card.userId),
   ]);
   const policy = computeMoneyPolicy(policyInputs);
+  const supportTickets = await listClientTickets(getPool(), card.userId, card.email);
+  const supportAwaiting = supportTickets.filter((t) => t.status === 'new' || t.status === 'open').length;
   const liveOf = (kind: 'demo' | 'real'): LiveAccount | null => {
     if (live.state !== 'ok') return null;
     const a = live.accounts.find((x) => x.kind === kind);
@@ -399,6 +405,13 @@ export default async function ClientCardPage({
             countTone: card.state === 'pending' || amlStatus === 'escalated' ? 'warning' : 'default',
           },
           { key: 'access', label: 'Доступ и сессии', href: tabHref('access'), count: card.sessions.length },
+          {
+            key: 'support',
+            label: 'Поддержка',
+            href: tabHref('support'),
+            count: supportTickets.length,
+            countTone: supportAwaiting ? 'warning' : 'default',
+          },
           { key: 'journal', label: 'Журнал', href: tabHref('journal'), count: card.journal.length },
         ]}
       />
@@ -673,6 +686,8 @@ export default async function ClientCardPage({
           ) : null}
         </div>
       ) : null}
+
+      {tab === 'support' ? <SupportTab rows={supportTickets} /> : null}
 
       {tab === 'journal' ? (
         <Panel

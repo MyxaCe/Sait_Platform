@@ -94,6 +94,8 @@ const nextConfig = {
     '@broker/realtime',
     '@broker/api-client',
     '@broker/tenant',
+    '@broker/money',
+    '@broker/support',
   ],
   images: {
     formats: ['image/avif', 'image/webp'],
