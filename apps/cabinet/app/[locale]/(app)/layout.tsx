@@ -10,6 +10,10 @@ import { Link } from '@/i18n/navigation';
 import { getSessionUser } from '@/lib/auth/session';
 import { getChromeBrand, getChromeFooter, siteHref } from '@/lib/chrome';
 import { countUnread } from '@/lib/data';
+// ── Поддержка (ветка demo-support) ──
+import { countClientUnread, loadSupportSettings } from '@broker/support';
+import { SupportWidget } from '@/features/support/SupportWidget';
+import { getPool } from '@/lib/db';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -32,6 +36,11 @@ export default async function AppLayout({ children, params }: LayoutProps) {
     getChromeFooter(params.locale),
   ]);
   const brandName = brand?.name ?? tCommon('brand');
+  // Поддержка: бейдж кнопки и вкл/выкл канала чата — из базы (настройки админки).
+  // Сбой чтения не роняет кабинет: кнопки просто нет (fail-closed для виджета).
+  const support = await Promise.all([loadSupportSettings(getPool()), countClientUnread(getPool(), user.id)])
+    .then(([s, n]) => ({ enabled: s.channels.chat, unread: n }))
+    .catch(() => ({ enabled: false, unread: 0 }));
 
   // Навигация (r2): 4 раздела счёта + аккаунт. Кошелёк = пополнение и вывод,
   // Профиль = личные данные, верификация, безопасность и документы.
@@ -134,6 +143,8 @@ export default async function AppLayout({ children, params }: LayoutProps) {
           )}
         </div>
       </div>
+
+      <SupportWidget initialUnread={support.unread} locale={params.locale} enabled={support.enabled} />
 
       <MobileNav
         primary={mobilePrimary}

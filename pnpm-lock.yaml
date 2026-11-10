@@ -114,6 +114,9 @@ importers:
       '@broker/storage':
         specifier: workspace:*
         version: link:../../packages/storage
+      '@broker/support':
+        specifier: workspace:*
+        version: link:../../packages/support
       '@broker/tenant':
         specifier: workspace:*
         version: link:../../packages/tenant
@@ -407,6 +410,9 @@ importers:
       '@broker/realtime':
         specifier: workspace:*
         version: link:../../packages/realtime
+      '@broker/support':
+        specifier: workspace:*
+        version: link:../../packages/support
       '@broker/tenant':
         specifier: workspace:*
         version: link:../../packages/tenant

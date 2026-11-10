@@ -45,9 +45,14 @@ export async function POST(request: Request) {
   });
 
   if (!result.ok) {
+    // Форма обращений выключена в настройках поддержки (админка).
+    if (result.reason === 'channelDisabled') {
+      return NextResponse.json({ ok: false, error: 'channelDisabled' }, { status: 503 });
+    }
     // Для contact дубликатов нет по схеме БД; ветка на будущее
     return NextResponse.json({ ok: false, error: 'generic' }, { status: 500 });
   }
 
-  return NextResponse.json({ ok: true, ticketId: result.leadId }, { status: 201 });
+  // ticketId — прежнее поле (id лида), не ломаем; ticketNumber — номер обращения в поддержке.
+  return NextResponse.json({ ok: true, ticketId: result.leadId, ticketNumber: result.ticketNumber ?? null }, { status: 201 });
 }

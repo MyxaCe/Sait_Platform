@@ -24,6 +24,7 @@ const nextConfig = {
     '@broker/tenant',
     '@broker/storage',
     '@broker/money',
+    '@broker/support',
   ],
   headers: async () => [
     {

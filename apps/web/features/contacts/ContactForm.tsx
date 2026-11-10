@@ -8,6 +8,10 @@ import { useForm } from 'react-hook-form';
 import { Button, FormField, Input, Select } from '@broker/ui';
 import { CONTACT_TOPIC_VALUES, contactSchema, type ContactInput } from './schema';
 
+interface ApiOk {
+  ticketNumber?: number | null;
+}
+
 interface ApiFieldErrors {
   fieldErrors?: Partial<Record<keyof ContactInput, string>>;
   error?: string;
@@ -26,7 +30,7 @@ async function submitContact(data: ContactInput & { locale: string }) {
   });
   const json = (await res.json().catch(() => ({}))) as ApiFieldErrors;
   if (!res.ok) throw Object.assign(new Error(json.error ?? 'generic'), json);
-  return json;
+  return json as ApiOk;
 }
 
 export function ContactForm() {
@@ -75,6 +79,9 @@ export function ContactForm() {
     return (
       <div className="rounded-2xl border border-positive/40 bg-positive/5 p-6 text-center">
         <h3 className="font-semibold text-primary">{t('successTitle')}</h3>
+        {mutation.data?.ticketNumber ? (
+          <p className="mt-2 text-sm font-medium text-primary">{t('ticketNumber', { number: mutation.data.ticketNumber })}</p>
+        ) : null}
         <p className="mt-2 text-sm leading-relaxed text-secondary">{t('successText')}</p>
         <Button
           variant="secondary"

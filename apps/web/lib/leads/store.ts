@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { Pool } from 'pg';
+import { createWebFormTicketTx, loadSupportSettings } from '@broker/support';
 import {
   buildLeadSubmittedEnvelope,
   LEAD_SUBMITTED_ROUTING_KEY,
@@ -19,8 +20,8 @@ export type LeadDraft = Omit<Extract<LeadSubmittedData, { kind: 'account-opening
   | Omit<Extract<LeadSubmittedData, { kind: 'contact' }>, 'leadId'>;
 
 export type CreateLeadResult =
-  | { ok: true; leadId: string }
-  | { ok: false; reason: 'duplicate' };
+  | { ok: true; leadId: string; ticketNumber?: number }
+  | { ok: false; reason: 'duplicate' | 'channelDisabled' };
 
 export interface LeadStore {
   createLead(draft: LeadDraft): Promise<CreateLeadResult>;
@@ -28,7 +29,7 @@ export interface LeadStore {
 
 const PG_UNIQUE_VIOLATION = '23505';
 
-class PgLeadStore implements LeadStore {
+export class PgLeadStore implements LeadStore {
   constructor(private readonly pool: Pool) {}
 
   async createLead(draft: LeadDraft): Promise<CreateLeadResult> {
@@ -40,6 +41,14 @@ class PgLeadStore implements LeadStore {
     const client = await this.pool.connect();
     try {
       await client.query('BEGIN');
+      // Поддержка (10.11): обращение с формы контактов — сразу тикет `web_form`
+      // в той же транзакции, что лид и событие. Раньше событие `lead.submitted`
+      // уходило в шину без единой привязки, и обращения не видел никто.
+      const settings = draft.kind === 'contact' ? await loadSupportSettings(client) : null;
+      if (settings && !settings.channels.webForm) {
+        await client.query('ROLLBACK');
+        return { ok: false, reason: 'channelDisabled' };
+      }
       await client.query(
         `INSERT INTO leads (id, kind, email, locale, payload) VALUES ($1, $2, $3, $4, $5)`,
         [leadId, draft.kind, draft.email, draft.locale, JSON.stringify(data)],
@@ -48,8 +57,21 @@ class PgLeadStore implements LeadStore {
         `INSERT INTO outbox (event_id, routing_key, payload, occurred_at) VALUES ($1, $2, $3, $4)`,
         [envelope.event_id, LEAD_SUBMITTED_ROUTING_KEY, JSON.stringify(envelope), occurredAt],
       );
+      let ticketNumber: number | undefined;
+      if (settings && draft.kind === 'contact') {
+        const t = await createWebFormTicketTx(client, settings, {
+          name: draft.name,
+          email: draft.email,
+          subject: topicSubject(draft.topic, draft.locale),
+          body: draft.message,
+          locale: draft.locale,
+          category: TOPIC_CATEGORY[draft.topic] ?? null,
+          leadId,
+        });
+        if (t.ok) ticketNumber = t.number;
+      }
       await client.query('COMMIT');
-      return { ok: true, leadId };
+      return { ok: true, leadId, ticketNumber };
     } catch (error) {
       await client.query('ROLLBACK').catch(() => {});
       if ((error as { code?: string }).code === PG_UNIQUE_VIOLATION) {
@@ -60,6 +82,19 @@ class PgLeadStore implements LeadStore {
       client.release();
     }
   }
+}
+
+/** Тема формы → тема тикета и категория поддержки (ключи категорий — из настроек по умолчанию). */
+const TOPIC_SUBJECT: Record<string, { ru: string; en: string }> = {
+  general: { ru: 'Общий вопрос', en: 'General question' },
+  account: { ru: 'Счёт и верификация', en: 'Account and verification' },
+  payments: { ru: 'Пополнение и вывод', en: 'Deposits and withdrawals' },
+  partnership: { ru: 'Партнёрство', en: 'Partnership' },
+};
+const TOPIC_CATEGORY: Record<string, string> = { general: 'other', account: 'account', payments: 'deposit', partnership: 'other' };
+
+function topicSubject(topic: string, locale: 'ru' | 'en'): string {
+  return TOPIC_SUBJECT[topic]?.[locale] ?? topic;
 }
 
 /** Dev/e2e-фолбэк без Postgres: та же семантика, события — в лог. */

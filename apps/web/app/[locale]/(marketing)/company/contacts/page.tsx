@@ -48,7 +48,7 @@ export default async function ContactsPage({ params }: PageProps) {
               : 'mt-14 max-w-2xl'
           }
         >
-          <div>
+          <div id="write-us" className="scroll-mt-24">
             <h2 className="text-2xl font-semibold tracking-tight text-primary sm:text-3xl">
               {t('writeUs')}
             </h2>

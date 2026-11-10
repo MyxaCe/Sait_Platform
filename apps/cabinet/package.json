@@ -15,6 +15,7 @@
     "@broker/money": "workspace:*",
     "@broker/realtime": "workspace:*",
     "@broker/storage": "workspace:*",
+    "@broker/support": "workspace:*",
     "@broker/tenant": "workspace:*",
     "@broker/ui": "workspace:*",
     "@broker/utils": "workspace:*",

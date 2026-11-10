@@ -9,6 +9,8 @@ import {
   SecuritySection,
   VerificationSection,
 } from '@/features/profile/ProfileSections';
+// ── Поддержка: подтверждение email (ветка demo-support) ──
+import { EmailVerifyNotice } from '@/features/auth/EmailVerifyNotice';
 
 /**
  * «Профиль» (r2, замечание владельца): личные данные, верификация,
@@ -82,6 +84,7 @@ export default async function ProfilePage({
         ]}
       />
 
+      {tab === 'personal' ? <EmailVerifyNotice userId={user.id} /> : null}
       {tab === 'personal' ? <PersonalSection user={user} /> : null}
       {tab === 'verification' ? <VerificationSection userId={user.id} state={state} /> : null}
       {tab === 'security' ? <SecuritySection userId={user.id} /> : null}

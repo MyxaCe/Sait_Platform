@@ -27,7 +27,8 @@
     "rateLimited": "Too many requests. Please try again in a minute.",
     "invalidRequest": "Invalid request",
     "emailExists": "This email is already registered. Please log in.",
-    "generic": "Failed to send. Please try again."
+    "generic": "Failed to send. Please try again.",
+    "channelDisabled": "The request form is temporarily disabled. Please email support."
   },
   "connection": {
     "connected": "Connection established",
@@ -492,7 +493,8 @@
       "submit": "Send message",
       "successTitle": "Message sent",
       "successText": "We will reply to your email within one business day.",
-      "writeAgain": "Write another"
+      "writeAgain": "Write another",
+      "ticketNumber": "Request number: #{number}"
     }
   },
   "about": {
@@ -835,5 +837,9 @@
     "technical": "The instrument is unavailable for a technical reason",
     "shortLimited": "not offered yet",
     "shortFault": "no price"
+  },
+  "supportFab": {
+    "label": "Support",
+    "aria": "Contact support"
   }
 }

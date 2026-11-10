@@ -7,7 +7,12 @@ import { legacyTarget } from './lib/legacy-routes';
 const intl = createMiddleware(routing);
 
 /** Публичные маршруты кабинета (с учётом /en-префикса) */
-const PUBLIC_PATH = /^\/(en\/?)?(login|register)(\/|$)/;
+const PUBLIC_PATH = /^\/(en\/?)?(login|register|forgot-password)(\/|$)/;
+/**
+ * Ссылки из писем (поддержка, 10.11): открываются и гостем, и вошедшим —
+ * сброс пароля и подтверждение email не должны уводить на вход/главную.
+ */
+const MAIL_LINK_PATH = /^\/(en\/?)?(reset-password|verify-email)(\/|$)/;
 
 /**
  * Гейт по НАЛИЧИЮ сессионной куки (в middleware нет БД — edge);
@@ -17,6 +22,8 @@ export default function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const hasSessionCookie = request.cookies.has(SESSION_COOKIE);
   const isPublic = PUBLIC_PATH.test(pathname) || pathname === '/en';
+
+  if (MAIL_LINK_PATH.test(pathname)) return intl(request);
 
   if (!hasSessionCookie && !PUBLIC_PATH.test(pathname)) {
     const url = request.nextUrl.clone();
