@@ -14,6 +14,7 @@ import {
 } from '@broker/money';
 import { ChainUnavailableError, type ChainReader } from './trongrid';
 import { verifyDeposit, verifyPayout } from './verify';
+import { describeError, formatError, secretsFromEnv, type ErrorInfo } from './errors';
 
 /**
  * Один проход наблюдателя (опрос раз в 15 с). Ключей нет — только чтение
@@ -36,6 +37,19 @@ export interface WatcherDeps {
   exchangeAddress: string;
   now?: () => number;
   log?: (msg: string) => void;
+  /** Ошибки прохода — с причиной (по умолчанию console.error). */
+  logError?: (msg: string, detail: TickError) => void;
+  /** Значения, которые нельзя печатать (по умолчанию — секреты из env). */
+  secrets?: readonly string[];
+}
+
+/** Причина одной ошибки прохода: этап, заявка, тип и сообщение (без секретов). */
+export interface TickError extends ErrorInfo {
+  stage: 'deposit' | 'scan' | 'payout' | 'debit';
+  /** id заявки (депозит/вывод), если ошибка про заявку. */
+  id?: string;
+  /** Хэш транзакции заявки, если есть. */
+  txHash?: string;
 }
 
 export const UNIDENTIFIED_AFTER_MS = 10 * 60_000;
@@ -63,6 +77,17 @@ export async function runTick(deps: WatcherDeps): Promise<TickStats> {
   const now = deps.now ?? Date.now;
   const log = deps.log ?? ((m: string) => console.info(`[chain-watcher] ${m}`));
   const s: TickStats = { credited: 0, rejected: 0, waiting: 0, unidentified: 0, settled: 0, review: 0, debits: 0, errors: 0 };
+  const secrets = deps.secrets ?? secretsFromEnv();
+  const logError =
+    deps.logError ?? ((m: string, d: TickError) => console.error(`[chain-watcher] ${m}`, JSON.stringify(d)));
+  /** Счётчик + строка с причиной: «errors:1» без причины больше не бывает. */
+  const fail = (where: Omit<TickError, keyof ErrorInfo>, e: unknown, info = describeError(e, secrets)): ErrorInfo => {
+    s.errors++;
+    const detail: TickError = { ...where, ...info };
+    const ref = [where.id ? `заявка ${where.id}` : null, where.txHash ? `хэш ${where.txHash}` : null].filter(Boolean).join(', ');
+    logError(`ошибка (${where.stage}${ref ? `; ${ref}` : ''}): ${formatError(info)}`, detail);
+    return info;
+  };
   const settings = await readPlatformMoneySettings(deps.pool);
 
   // (а) заявленные депозиты
@@ -114,14 +139,16 @@ export async function runTick(deps: WatcherDeps): Promise<TickStats> {
         await noteDepositCheck(deps.pool, id, 'сеть подтвердила, терминал не ответил — повторим');
         s.waiting++;
       } else if (r.state === 'terminal-refused') {
-        s.errors++;
-        log(`депозит ${hash}: терминал отказал (${r.code})`);
+        fail({ stage: 'deposit', id, txHash: hash }, null, {
+          type: 'TerminalRefused',
+          message: 'терминал отказал в зачислении',
+          code: String(r.code),
+        });
       }
     } catch (e) {
-      s.errors++;
-      const msg = e instanceof ChainUnavailableError ? e.message : `ошибка: ${(e as Error).message}`;
+      const info = fail({ stage: 'deposit', id, txHash: hash }, e);
+      const msg = e instanceof ChainUnavailableError ? info.message : `ошибка: ${formatError(info)}`;
       await noteDepositCheck(deps.pool, id, msg).catch(() => {});
-      log(`депозит ${hash}: ${msg}`);
     }
   }
 
@@ -136,8 +163,7 @@ export async function runTick(deps: WatcherDeps): Promise<TickStats> {
       }
     }
   } catch (e) {
-    s.errors++;
-    log(`скан входящих: ${(e as Error).message}`);
+    fail({ stage: 'scan' }, e);
   }
 
   // (в) выплаты с внесённым хэшем
@@ -174,9 +200,8 @@ export async function runTick(deps: WatcherDeps): Promise<TickStats> {
         log(`выплата ${hash}: не сошлось — на проверку (${v.reason})`);
       }
     } catch (e) {
-      s.errors++;
-      await noteWithdrawalCheck(deps.pool, id, (e as Error).message).catch(() => {});
-      log(`выплата ${hash}: ${(e as Error).message}`);
+      const info = fail({ stage: 'payout', id, txHash: hash }, e);
+      await noteWithdrawalCheck(deps.pool, id, formatError(info)).catch(() => {});
     }
   }
 
@@ -191,8 +216,7 @@ export async function runTick(deps: WatcherDeps): Promise<TickStats> {
       const r = await ensureWithdrawalDebited(deps.pool, deps.terminal, row.id as string);
       if (r.state !== 'pending') s.debits++;
     } catch (e) {
-      s.errors++;
-      log(`списание ${String(row.id)}: ${(e as Error).message}`);
+      fail({ stage: 'debit', id: String(row.id) }, e);
     }
   }
 

@@ -119,6 +119,34 @@ describe('наблюдатель · заявленные депозиты', () =
     expect([...db.deposits.values()][0]!.status).toBe('claimed');
   });
 
+  it('ошибка прохода логируется с причиной: этап, заявка, хэш, тип, сообщение (волна 3)', async () => {
+    const { db, term, pool } = setup();
+    await claimDeposit(db, { userId: U, txHash: H('5') });
+    await claimDeposit(db, { userId: U, txHash: H('6') });
+    const lines: { msg: string; detail: Record<string, unknown> }[] = [];
+    const c = chain({ [H('5')]: 'down' });
+    // Второй хэш: сеть бросает не-Error с секретом в тексте — причина есть, секрета нет.
+    const orig = c.getSolidTx;
+    c.getSolidTx = async (h) => {
+      if (h === H('6')) throw new TypeError('fetch failed', { cause: new Error('ECONNRESET apikey=SECRETKEY123') });
+      return orig(h);
+    };
+    const s = await runTick({
+      pool, chain: c, terminal: term, exchangeAddress: ADDR.exchange, now: () => T0, log: () => {},
+      secrets: ['SECRETKEY123'],
+      logError: (msg, detail) => lines.push({ msg, detail: { ...detail } }),
+    });
+    expect(s.errors).toBe(2);
+    expect(lines).toHaveLength(2);
+    const ids = [...db.deposits.values()].map((d) => d.id);
+    expect(lines[0]!.detail).toMatchObject({ stage: 'deposit', txHash: H('5'), type: 'ChainUnavailableError', message: 'TronGrid недоступен: test' });
+    expect(ids).toContain(lines[0]!.detail.id);
+    expect(lines[0]!.msg).toContain(H('5'));
+    expect(lines[1]!.detail).toMatchObject({ stage: 'deposit', txHash: H('6'), type: 'TypeError', message: 'fetch failed' });
+    expect(String(lines[1]!.detail.cause)).toContain('ECONNRESET');
+    expect(JSON.stringify(lines)).not.toContain('SECRETKEY123');
+  });
+
   it('терминал не ответил — остаётся claimed, следующий проход зачисляет ровно один раз', async () => {
     const { db, term, pool } = setup();
     await claimDeposit(db, { userId: U, txHash: H('1') });
