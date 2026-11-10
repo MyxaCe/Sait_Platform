@@ -29,6 +29,7 @@ export async function claimDepositAction(_prev: MoneyFormState, fd: FormData): P
 
   const r = await claimDeposit(moneyPool(), { userId: user.id, txHash: String(fd.get('txHash') ?? '') });
   revalidatePath('/deposit');
+  revalidatePath('/wallet'); // r2: ввод и вывод — одна страница «Кошелёк»
   if (r.ok) return { ok: true };
   if (r.reason === 'policy') return { error: 'policy', reasons: r.policyReasons };
   return { error: r.reason };
@@ -48,6 +49,7 @@ export async function requestWithdrawalAction(_prev: MoneyFormState, fd: FormDat
     amountMinor: amount.cents,
   });
   revalidatePath('/withdraw');
+  revalidatePath('/wallet');
   revalidatePath('/', 'layout');
   if (r.ok) return { ok: true, pending: r.debit === 'pending' };
   if (r.reason === 'policy') return { error: 'policy', reasons: r.policyReasons };

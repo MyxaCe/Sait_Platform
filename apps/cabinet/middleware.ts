@@ -2,6 +2,7 @@ import createMiddleware from 'next-intl/middleware';
 import { NextResponse, type NextRequest } from 'next/server';
 import { routing } from './i18n/routing';
 import { SESSION_COOKIE } from './lib/auth/constants';
+import { legacyTarget } from './lib/legacy-routes';
 
 const intl = createMiddleware(routing);
 
@@ -29,6 +30,11 @@ export default function middleware(request: NextRequest) {
     url.pathname = pathname.startsWith('/en') ? '/en' : '/';
     url.search = '';
     return NextResponse.redirect(url);
+  }
+
+  const legacy = legacyTarget(pathname, request.nextUrl.search);
+  if (legacy) {
+    return NextResponse.redirect(new URL(legacy, request.url), 307);
   }
 
   return intl(request);
