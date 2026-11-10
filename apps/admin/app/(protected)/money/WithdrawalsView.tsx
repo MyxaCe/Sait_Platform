@@ -25,6 +25,8 @@ import { WithdrawalActions } from './MoneyForms';
 import {
   WITHDRAWAL_SLA_HOURS,
   asWithdrawalFilter,
+  awaitingSend,
+  requestsWord,
   awaitsOperator,
   hoursSince,
   isOpenWithdrawal,
@@ -331,17 +333,72 @@ export function WithdrawalsView({
     </Panel>
   );
 
-  if (!selected) return table;
+  const banner = <AwaitingSendBanner rows={rows} filter={filter} selectedId={selected?.id} />;
+
+  if (!selected) {
+    return (
+      <div className="space-y-5">
+        {banner}
+        {table}
+      </div>
+    );
+  }
 
   return (
-    <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(0,26rem)]">
-      <div className="min-w-0">{table}</div>
-      <aside
-        aria-label="Решение по заявке"
-        className="min-w-0"
-      >
-        <DecisionPanel key={selected.id} w={selected} />
-      </aside>
+    <div className="space-y-5">
+      {banner}
+      <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(0,26rem)]">
+        <div className="min-w-0">{table}</div>
+        <aside
+          aria-label="Решение по заявке"
+          className="min-w-0"
+        >
+          <DecisionPanel key={selected.id} w={selected} />
+        </aside>
+      </div>
     </div>
+  );
+}
+
+/**
+ * Плашка над очередью (волна 3): одобренные выводы без хэша ждут ОПЕРАТОРА —
+ * деньги клиенту никто, кроме него, не отправит. KPI «Ждут отправки» наверху
+ * страницы легко пропустить; здесь — заметно, с суммой и следующим шагом.
+ */
+export function AwaitingSendBanner({
+  rows,
+  filter,
+  selectedId,
+}: {
+  rows: WithdrawalRowView[];
+  filter: string;
+  selectedId: string | undefined;
+}) {
+  const a = awaitingSend(rows);
+  if (a.count === 0 || !a.oldest) return null;
+  const openOldest = a.oldest.id !== selectedId;
+  return (
+    <Callout
+      tone="warning"
+      title={
+        <>
+          Ждут вашей отправки: {a.count} {requestsWord(a.count)} на <Money minor={a.totalMinor} currency="USDT" />
+        </>
+      }
+      actions={
+        openOldest ? (
+          <Link
+            href={moneyHref({ tab: 'withdrawals', f: filter === 'closed' ? 'open' : filter, w: a.oldest.id, anchor: 'decision' })}
+            className="inline-flex h-9 items-center rounded-md border border-border-strong px-3.5 text-sm font-medium text-primary hover:bg-primary/5"
+          >
+            Открыть старейшую →
+          </Link>
+        ) : undefined
+      }
+    >
+      Заявки одобрены, выплаты ещё нет. Следующий шаг: отправьте USDT (TRC20) с кошелька биржи на
+      адрес из заявки ровно на сумму заявки, затем в заявке нажмите «Внести хэш» — наблюдатель
+      сверит транзакцию в сети и отметит вывод исполненным. Старейшая подана {fmtAge(a.oldest.requestedAt)} назад.
+    </Callout>
   );
 }

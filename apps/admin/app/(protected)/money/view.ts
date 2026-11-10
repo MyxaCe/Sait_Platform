@@ -76,3 +76,30 @@ export function moneyHref(params: {
 export function sumMinor(rows: Array<{ amountMinor: number | null }>): number {
   return rows.reduce((s, r) => s + (r.amountMinor ?? 0), 0);
 }
+
+/**
+ * «Ждут вашей отправки» (волна 3): одобрены, хэша выплаты ещё нет — следующий
+ * шаг за оператором (отправить USDT с кошелька биржи и внести хэш). Старейшие
+ * первыми: их клиент ждёт дольше всех.
+ */
+export interface AwaitingSend {
+  count: number;
+  totalMinor: number;
+  oldest: WithdrawalRowView | null;
+}
+
+export function awaitingSend(rows: WithdrawalRowView[]): AwaitingSend {
+  const list = rows
+    .filter((w) => w.status === 'approved' && !w.payoutTxHash)
+    .sort((a, b) => a.requestedAt.localeCompare(b.requestedAt));
+  return { count: list.length, totalMinor: sumMinor(list), oldest: list[0] ?? null };
+}
+
+/** «1 заявка», «2 заявки», «5 заявок». */
+export function requestsWord(n: number): string {
+  const m10 = n % 10;
+  const m100 = n % 100;
+  if (m10 === 1 && m100 !== 11) return 'заявка';
+  if (m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14)) return 'заявки';
+  return 'заявок';
+}
