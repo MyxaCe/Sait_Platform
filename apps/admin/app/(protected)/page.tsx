@@ -27,6 +27,9 @@ import { fmtAge, fmtDateTime, fmtRelativeDay } from '@/lib/ui/format';
 import { queueStats } from '@broker/support';
 import { getPool } from '@/lib/db';
 import { supportActor } from '@/lib/support/runtime';
+// ── Менеджеры клиентов (ветка admin-managers) ──
+import { getMyClientsSummary, isClientManager, listMyClients } from '@/lib/managers/queries';
+import { MyClientsKpis, MyClientsPanel } from './_managers/MyClientsSection';
 
 /**
  * Дашборд `/` (эталонный экран редизайна, концепция §7.3). Операционный пульт,
@@ -150,6 +153,11 @@ export default async function ControlCenterHome() {
   // ── Поддержка (ветка demo-support): та же видимость, что у очереди (по роли). ──
   const supportActorNow = await supportActor();
   const support = supportActorNow ? await queueStats(getPool(), supportActorNow) : null;
+  // ── Менеджер клиентов: свой портфель — первым блоком («где меня ждут»). ──
+  const manager = await isClientManager(operator.operatorId).catch(() => false);
+  const [mySummary, myClients] = manager
+    ? await Promise.all([getMyClientsSummary(operator.operatorId), listMyClients(operator.operatorId, 8)])
+    : [null, []];
   const oldest = pending[0];
   const overdue = pending.filter((p) => isOverdue(p.updatedAt)).length;
 
@@ -164,6 +172,8 @@ export default async function ControlCenterHome() {
           </span>
         }
       />
+
+      {mySummary ? <MyClientsKpis summary={mySummary} /> : null}
 
       <section aria-label="Комплаенс и клиенты" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         {kyc ? (
@@ -270,6 +280,8 @@ export default async function ControlCenterHome() {
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
         <div className="min-w-0 space-y-6">
+          {mySummary ? <MyClientsPanel rows={myClients} total={mySummary.total} /> : null}
+
           {kyc ? (
           <Panel
             title="Очередь верификации"

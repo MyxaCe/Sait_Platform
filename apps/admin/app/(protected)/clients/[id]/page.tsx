@@ -47,6 +47,10 @@ import { TronRef } from '../../_money/tron';
 import { listClientTickets } from '@broker/support';
 import { getPool } from '@/lib/db';
 import { SupportTab } from './_components/SupportTab';
+// ── Менеджеры клиентов (ветка admin-managers) ──
+import { getClientManager, listClientManagers } from '@/lib/managers/queries';
+import { canAssignManagers } from '@/lib/managers/policy';
+import { AssignManagerForm } from '../_components/managers/AssignManagerForm';
 
 /**
  * Карточка клиента `/clients/[id]` (ADM-02, §3.2) — ЭТАЛОННЫЙ экран редизайна
@@ -270,6 +274,13 @@ export default async function ClientCardPage({
   const policy = computeMoneyPolicy(policyInputs);
   const supportTickets = await listClientTickets(getPool(), card.userId, card.email);
   const supportAwaiting = supportTickets.filter((t) => t.status === 'new' || t.status === 'open').length;
+  // ── Менеджер клиента: видят все роли карточки, меняет только admin. ──
+  const canAssignManager = canAssignManagers(operator?.role);
+  const [manager, managerChoices] = await Promise.all([
+    getClientManager(card.userId),
+    canAssignManager ? listClientManagers() : Promise.resolve([]),
+  ]);
+  const managerIsMe = manager !== null && manager.managerId === operator?.operatorId;
   const liveOf = (kind: 'demo' | 'real'): LiveAccount | null => {
     if (live.state !== 'ok') return null;
     const a = live.accounts.find((x) => x.kind === kind);
@@ -326,6 +337,14 @@ export default async function ClientCardPage({
           <span key="reg">клиент с {fmtDate(card.registeredAt)}</span>,
           <span key="login">вход {card.lastLoginAt ? fmtDateTime(card.lastLoginAt) : 'никогда'}</span>,
           <span key="loc">язык: {LOCALE_LABEL[card.locale] ?? card.locale}</span>,
+          <span key="mgr">
+            менеджер:{' '}
+            {manager ? (
+              <span className="text-primary">{managerIsMe ? `${manager.managerName} (вы)` : manager.managerName}</span>
+            ) : (
+              'не закреплён'
+            )}
+          </span>,
         ]}
         actions={
           <>
@@ -480,6 +499,39 @@ export default async function ClientCardPage({
           </div>
 
           <aside className="min-w-0 space-y-5">
+            <Panel
+              title="Менеджер клиента"
+              description={canAssignManager ? 'Смена — с основанием, запись в журнал' : 'Закрепляет администратор'}
+            >
+              <div className="space-y-4">
+                <DescriptionList
+                  columns={1}
+                  items={
+                    manager
+                      ? [
+                          {
+                            term: 'Менеджер',
+                            value: managerIsMe ? `${manager.managerName} (вы)` : manager.managerName,
+                            hint: `закреплён ${fmtDateTime(manager.assignedAt)}${manager.assignedByName ? ` · ${manager.assignedByName}` : ''}`,
+                          },
+                          { term: 'Основание', value: <span className="line-clamp-3">{manager.reason}</span> },
+                        ]
+                      : [{ term: 'Менеджер', value: <span className="text-muted">не закреплён</span> }]
+                  }
+                />
+                {canAssignManager ? (
+                  <div className="border-border border-t pt-4">
+                    <AssignManagerForm
+                      key={manager?.managerId ?? 'none'}
+                      userId={card.userId}
+                      currentManagerId={manager?.managerId ?? null}
+                      managers={managerChoices}
+                    />
+                  </div>
+                ) : null}
+              </div>
+            </Panel>
+
             <Panel title="Комплаенс">
               <DescriptionList
                 columns={1}

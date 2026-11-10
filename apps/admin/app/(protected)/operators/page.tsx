@@ -8,7 +8,11 @@ import { fmtDateTime } from '@/lib/ui/format';
 import { CreateOperatorForm } from './_components/CreateOperatorForm';
 import { ChangeRoleForm, DisableOperatorForm } from './_components/OperatorRowActions';
 import { OperatorsTable } from './_components/OperatorsTable';
-import { ROLES, ROLE_LABEL, ROLE_SCOPE } from './_components/roles';
+import { MANAGER_SCOPE, ROLES, ROLE_LABEL, ROLE_SCOPE } from './_components/roles';
+// ── Менеджеры клиентов (ветка admin-managers) ──
+import { managerClientCounts } from '@/lib/managers/queries';
+import { roleCanManageClients } from '@/lib/managers/policy';
+import { ManagerFlagForm } from './_components/ManagerFlagForm';
 
 /**
  * Операторы `/operators` (ADM-04, Р-394, Р-049; концепция §7.1 + боковая колонка).
@@ -35,7 +39,7 @@ export default async function OperatorsPage({
   // именно отсутствует (404), чтобы роль-гейт нельзя было обойти POST-ом в UI.
   if (operator.role !== 'admin') notFound();
 
-  const all = await listOperators();
+  const [all, managerClients] = await Promise.all([listOperators(), managerClientCounts()]);
   // Служебные учётные записи (`system:*`) подписывают автоматические действия
   // (кабинет клиента, наблюдатель сети) — войти под ними нельзя. Показываем
   // их отдельно, чтобы не путать с людьми.
@@ -82,6 +86,7 @@ export default async function OperatorsPage({
               operators={operators}
               currentOperatorId={operator.operatorId}
               selectedId={selected?.id}
+              managerClients={managerClients}
             />
           </Panel>
 
@@ -94,6 +99,9 @@ export default async function OperatorsPage({
                 </div>
               ))}
             </dl>
+            <p className="text-secondary border-border mt-4 border-t pt-3 text-[13px]">
+              <span className="text-primary font-medium">Менеджер клиентов</span> — {MANAGER_SCOPE}
+            </p>
           </Panel>
 
           {system.length > 0 ? (
@@ -151,6 +159,16 @@ export default async function OperatorsPage({
                       },
                       { term: 'Заведён', value: fmtDateTime(selected.createdAt), numeric: true },
                       {
+                        term: 'Менеджер клиентов',
+                        value: selected.isClientManager ? (
+                          <Link href={`/clients?mgr=${selected.id}`} className="text-accent font-medium hover:underline">
+                            Да · клиентов {managerClients.get(selected.id) ?? 0} →
+                          </Link>
+                        ) : (
+                          'нет'
+                        ),
+                      },
+                      {
                         term: 'Журнал',
                         value: (
                           <Link
@@ -163,6 +181,21 @@ export default async function OperatorsPage({
                       },
                     ]}
                   />
+                  {selected.isClientManager || roleCanManageClients(selected.role) ? (
+                    <div className="border-border border-t pt-4">
+                      <h3 className="text-primary mb-1 text-sm font-semibold">Менеджер клиентов</h3>
+                      <p className="text-muted mb-3 text-xs">
+                        Менеджер — не роль: доступ к разделам не меняется. Флаг разрешает закреплять за
+                        оператором клиентов; у него появится фильтр «Мои клиенты» и блок на дашборде.
+                      </p>
+                      <ManagerFlagForm
+                        key={`${selected.id}-${selected.isClientManager}`}
+                        operatorId={selected.id}
+                        enabled={selected.isClientManager}
+                        clients={managerClients.get(selected.id) ?? 0}
+                      />
+                    </div>
+                  ) : null}
                   <div className="border-border border-t pt-4">
                     <h3 className="text-primary mb-3 text-sm font-semibold">Сменить роль</h3>
                     <ChangeRoleForm

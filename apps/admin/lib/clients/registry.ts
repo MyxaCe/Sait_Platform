@@ -33,6 +33,9 @@ export interface RegistryRow {
   /** Баланс реального счёта (проекция `real_accounts`), минорные единицы; `null` — счёта нет. */
   balanceMinor: number | null;
   currency: string | null;
+  /** Закреплённый менеджер (`client_managers`); `null` — не закреплён. */
+  managerId: string | null;
+  managerName: string | null;
 }
 
 export interface RegistryPage {
@@ -50,9 +53,27 @@ const SORT_SQL: Record<RegistrySortKey, string> = {
 export async function listClientRegistry(
   query: RegistryQuery,
   db: Queryable = getPool(),
+  /** `operators.id` зрителя — для фильтра «Мои клиенты» (из сессии, не из URL). */
+  viewerId: string | null = null,
 ): Promise<RegistryPage> {
   const where: string[] = [];
   const params: unknown[] = [];
+
+  // Менеджер. «Мои» без известного зрителя — пустой результат (fail-closed),
+  // а не «все»: иначе сбой сессии показал бы менеджеру чужой портфель как свой.
+  if (query.mgr === 'mine') {
+    if (viewerId) {
+      params.push(viewerId);
+      where.push(`cm.manager_id = $${params.length}`);
+    } else {
+      where.push('false');
+    }
+  } else if (query.mgr === 'none') {
+    where.push('cm.manager_id IS NULL');
+  } else if (typeof query.mgr === 'object') {
+    params.push(query.mgr.managerId);
+    where.push(`cm.manager_id = $${params.length}`);
+  }
 
   if (query.q) {
     params.push(`%${query.q}%`);
@@ -84,6 +105,8 @@ export async function listClientRegistry(
        LEFT JOIN client_blocks cb ON cb.user_id = u.id
        LEFT JOIN client_money_flags mf ON mf.user_id = u.id
        LEFT JOIN real_accounts ra ON ra.user_id = u.id
+       LEFT JOIN client_managers cm ON cm.user_id = u.id
+       LEFT JOIN operators mo ON mo.id = cm.manager_id
        ${whereSql}`;
 
   const offset = (query.page - 1) * REGISTRY_PAGE_SIZE;
@@ -96,7 +119,8 @@ export async function listClientRegistry(
               COALESCE(cb.blocked, false) AS blocked,
               COALESCE(mf.frozen, false) AS frozen,
               COALESCE(mf.withdraw_banned, false) AS withdraw_banned,
-              ra.balance_cents, ra.currency
+              ra.balance_cents, ra.currency,
+              cm.manager_id, mo.display_name AS manager_name
          ${from}
         ORDER BY ${orderSql}
         LIMIT ${REGISTRY_PAGE_SIZE} OFFSET ${offset}`,
@@ -120,6 +144,8 @@ export async function listClientRegistry(
       balanceMinor:
         r.balance_cents === null || r.balance_cents === undefined ? null : Number(r.balance_cents),
       currency: (r.currency as string | null) ?? null,
+      managerId: (r.manager_id as string | null) ?? null,
+      managerName: (r.manager_name as string | null) ?? null,
     })),
   };
 }

@@ -21,6 +21,8 @@ export interface OperatorListItem {
   disabledAt: string | null;
   /** `true`, если TOTP подтверждён (totp_enrolled_at IS NOT NULL). */
   totpEnrolled: boolean;
+  /** Флаг «менеджер клиентов» (ветка admin-managers): может быть закреплён за клиентами. */
+  isClientManager: boolean;
 }
 
 /** Приводим строку БД к известной роли или бросаем (fail-closed, строка сломана). */
@@ -36,7 +38,7 @@ export function asRole(value: unknown): OperatorRole {
  */
 export async function listOperators(db: Queryable = getPool()): Promise<OperatorListItem[]> {
   const result = await db.query(
-    `SELECT id, login, display_name, role, created_at, disabled_at, totp_enrolled_at
+    `SELECT id, login, display_name, role, created_at, disabled_at, totp_enrolled_at, is_client_manager
        FROM operators
       ORDER BY created_at DESC`,
   );
@@ -48,5 +50,6 @@ export async function listOperators(db: Queryable = getPool()): Promise<Operator
     createdAt: new Date(r.created_at as string | Date).toISOString(),
     disabledAt: r.disabled_at ? new Date(r.disabled_at as string | Date).toISOString() : null,
     totpEnrolled: r.totp_enrolled_at !== null && r.totp_enrolled_at !== undefined,
+    isClientManager: Boolean(r.is_client_manager),
   }));
 }

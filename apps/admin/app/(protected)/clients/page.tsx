@@ -21,6 +21,11 @@ import {
 import { fmtDate, fmtDateTime } from '@/lib/ui/format';
 import { FilterBar } from './_components/FilterBar';
 import { AML_SHORT, ACCESS_OPTIONS, AML_OPTIONS, KYC_OPTIONS, amlKey } from './_components/compliance-labels';
+// ── Менеджеры клиентов (ветка admin-managers) ──
+import { requireSection } from '@/lib/auth/section-guard';
+import { isClientManager, listClientManagers, type ManagerOption } from '@/lib/managers/queries';
+import { canAssignManagers, managerFilterValue } from '@/lib/managers/policy';
+import { BulkAssignBar, RowCheckbox, SelectAllOnPage } from './_components/managers/BulkAssignBar';
 
 /**
  * Реестр клиентов `/clients` (ADM-02, §3.1; концепция §7.1 «страница-список»).
@@ -30,6 +35,10 @@ import { AML_SHORT, ACCESS_OPTIONS, AML_OPTIONS, KYC_OPTIONS, amlKey } from './_
  *
  * Только чтение (`lib/clients/registry.ts`), чтение не журналируется (§3.1).
  * Доступ — operator+admin, гейт в middleware + layout `(protected)`.
+ *
+ * Менеджеры клиентов (ветка admin-managers): колонка «Менеджер», фильтр `?mgr=`
+ * (менеджеру по умолчанию — «Мои клиенты»), у admin — чекбоксы строк и
+ * массовое назначение (`BulkAssignBar`, форма связана с чекбоксами атрибутом `form`).
  */
 export const dynamic = 'force-dynamic';
 
@@ -46,8 +55,22 @@ function accessBadges(c: RegistryRow) {
   );
 }
 
-function columns(currency: string | null): DataTableColumn<RegistryRow>[] {
+function columns(
+  currency: string | null,
+  opts: { selectable: boolean; viewerId: string },
+): DataTableColumn<RegistryRow>[] {
+  const select: DataTableColumn<RegistryRow>[] = opts.selectable
+    ? [
+        {
+          key: 'select',
+          header: <SelectAllOnPage />,
+          width: '2.5rem',
+          cell: (c) => <RowCheckbox userId={c.userId} label={c.fullName} />,
+        },
+      ]
+    : [];
   return [
+    ...select,
     {
       key: 'name',
       header: 'Клиент',
@@ -72,6 +95,21 @@ function columns(currency: string | null): DataTableColumn<RegistryRow>[] {
       cell: (c) => <StatusBadge status={amlKey(c.aml)} label={AML_SHORT[c.aml]} />,
     },
     { key: 'access', header: 'Доступ', width: '9.5rem', cell: accessBadges },
+    {
+      key: 'manager',
+      header: 'Менеджер',
+      width: '9rem',
+      cell: (c) =>
+        c.managerId === null ? (
+          <span className="text-muted">не закреплён</span>
+        ) : c.managerId === opts.viewerId ? (
+          <span className="text-primary font-medium">вы</span>
+        ) : (
+          <span className="text-secondary block truncate" title={c.managerName ?? undefined}>
+            {c.managerName}
+          </span>
+        ),
+    },
     {
       key: 'balance',
       header: currency ? `Реальный счёт, ${currency}` : 'Реальный счёт',
@@ -127,15 +165,38 @@ export default async function ClientsRegistryPage({
 }: {
   searchParams: Record<string, string | string[] | undefined>;
 }) {
-  const query = parseRegistryQuery(searchParams);
+  const operator = await requireSection('clients');
+  // Менеджер клиентов открывает реестр на «Моих клиентах»; «Все» — одним выбором.
+  let viewerIsManager = false;
+  let managers: ManagerOption[] = [];
+  try {
+    [viewerIsManager, managers] = await Promise.all([
+      isClientManager(operator.operatorId),
+      listClientManagers(),
+    ]);
+  } catch (error) {
+    console.error('[clients] менеджеры не прочитаны', error instanceof Error ? error.message : error);
+  }
+  const query = parseRegistryQuery(searchParams, { defaultMine: viewerIsManager });
   const filtered = hasRegistryFilter(query);
+  const canAssign = canAssignManagers(operator.role);
 
   let data: RegistryPage | null = null;
   try {
-    data = await listClientRegistry(query);
+    data = await listClientRegistry(query, undefined, operator.operatorId);
   } catch (error) {
     console.error('[clients] реестр не прочитан', error instanceof Error ? error.message : error);
   }
+
+  const mgrOptions = [
+    { value: 'all', label: 'Все клиенты' },
+    ...(viewerIsManager ? [{ value: 'mine', label: 'Мои клиенты' }] : []),
+    { value: 'none', label: 'Без менеджера' },
+    ...managers
+      .filter((m) => m.id !== operator.operatorId)
+      .map((m) => ({ value: m.id, label: `${m.displayName} (${m.clients})` })),
+  ];
+  const mineView = query.mgr === 'mine';
 
   // Валюта в заголовке колонки, если на странице она одна (концепция §4.2).
   const currencies = new Set((data?.rows ?? []).filter((r) => r.balanceMinor !== null).map((r) => r.currency));
@@ -147,8 +208,12 @@ export default async function ClientsRegistryPage({
   return (
     <div className="space-y-5">
       <PageHeader
-        title="Клиенты"
-        description="Реестр клиентов платформы: верификация, AML, доступ и реальный счёт."
+        title={mineView ? 'Мои клиенты' : 'Клиенты'}
+        description={
+          mineView
+            ? 'Клиенты, закреплённые за вами как за менеджером. Все клиенты платформы — фильтр «Менеджер».'
+            : 'Реестр клиентов платформы: верификация, AML, доступ, менеджер и реальный счёт.'
+        }
         meta={
           data ? (
             <span className="tabular-nums">
@@ -170,12 +235,14 @@ export default async function ClientsRegistryPage({
           <DataTable
             bare
             aria-label="Реестр клиентов"
-            columns={columns(currency)}
+            columns={columns(currency, { selectable: canAssign, viewerId: operator.operatorId })}
             rows={data.rows}
             rowKey={(c) => c.userId}
             rowTone={(c) => (c.blocked || c.frozen || c.withdrawBanned ? 'negative' : undefined)}
             sort={{ key: query.sort, dir: query.dir, hrefFor: sortHref, linkComponent: Link }}
             toolbar={
+              <>
+              {canAssign && data.rows.length > 0 ? <BulkAssignBar managers={managers} /> : null}
               <FilterBar
                 action="/clients"
                 search={{ name: 'q', value: query.q, label: 'Поиск', placeholder: 'Имя, email или id' }}
@@ -183,14 +250,20 @@ export default async function ClientsRegistryPage({
                   { name: 'kyc', label: 'KYC', value: query.kyc, options: KYC_OPTIONS },
                   { name: 'aml', label: 'AML', value: query.aml, options: AML_OPTIONS },
                   { name: 'access', label: 'Доступ', value: query.access, options: ACCESS_OPTIONS },
+                  { name: 'mgr', label: 'Менеджер', value: managerFilterValue(query.mgr), options: mgrOptions, width: 'w-48' },
                 ]}
                 hidden={
                   query.sort === 'registered' && query.dir === 'desc'
                     ? {}
                     : { sort: query.sort, dir: query.dir }
                 }
-                resetHref={filtered ? registryHref(query, { q: '', kyc: 'all', aml: 'all', access: 'all', page: 1 }) : null}
+                resetHref={
+                  filtered
+                    ? registryHref(query, { q: '', kyc: 'all', aml: 'all', access: 'all', mgr: query.mgrDefault, page: 1 })
+                    : null
+                }
               />
+              </>
             }
             footer={
               data.total > 0 ? (
@@ -205,19 +278,35 @@ export default async function ClientsRegistryPage({
             }
             empty={
               filtered || query.page > 1 ? (
+                mineView && !filtered ? (
+                <EmptyState
+                  size="compact"
+                  title="За вами пока не закреплено ни одного клиента"
+                  description="Клиентов закрепляет администратор — в карточке клиента или массово из реестра."
+                  action={
+                    <Link
+                      href={registryHref(query, { mgr: 'all', page: 1 })}
+                      className="inline-flex h-9 items-center rounded-md border border-border-strong px-3.5 text-sm text-primary hover:bg-primary/5"
+                    >
+                      Все клиенты
+                    </Link>
+                  }
+                />
+                ) : (
                 <EmptyState
                   size="compact"
                   title="Ничего не найдено"
                   description="Ни один клиент не подходит под поиск и фильтры."
                   action={
                     <Link
-                      href="/clients"
+                      href={registryHref(query, { q: '', kyc: 'all', aml: 'all', access: 'all', mgr: query.mgrDefault, page: 1 })}
                       className="inline-flex h-9 items-center rounded-md border border-border-strong px-3.5 text-sm text-primary hover:bg-primary/5"
                     >
                       Сбросить фильтр
                     </Link>
                   }
                 />
+                )
               ) : (
                 <EmptyState
                   size="compact"
