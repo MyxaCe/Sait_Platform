@@ -9,3 +9,5 @@ export * from './policy';
 export * from './system-operators';
 export * from './deposits';
 export * from './withdrawals';
+export * from './fees-contract';
+export * from './fees';

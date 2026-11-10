@@ -14,6 +14,8 @@
   },
   "dependencies": {
     "@broker/api-client": "workspace:*",
+    "@broker/money": "workspace:*",
+    "@broker/promo": "workspace:*",
     "@broker/realtime": "workspace:*",
     "@broker/tenant": "workspace:*",
     "@broker/ui": "workspace:*",
@@ -22,13 +24,13 @@
     "@sentry/nextjs": "^8.42.0",
     "@serwist/next": "^9.0.5",
     "@tanstack/react-query": "^5.51.1",
-    "react-hook-form": "^7.52.1",
     "next": "^14.2.5",
     "next-intl": "^4.0.0",
     "next-themes": "^0.3.0",
     "pg": "^8.12.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "react-hook-form": "^7.52.1",
     "zod": "^3.23.8",
     "zustand": "^4.5.4"
   },

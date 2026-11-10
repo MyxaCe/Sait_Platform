@@ -1,0 +1,26 @@
+{
+  "name": "@broker/promo",
+  "version": "0.0.1",
+  "private": true,
+  "exports": {
+    ".": "./src/index.ts",
+    "./attribution": "./src/attribution.ts",
+    "./testing": "./src/testing/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@broker/money": "workspace:*",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@broker/config": "workspace:*",
+    "@types/node": "^20.14.12",
+    "@types/pg": "^8.11.6",
+    "pg": "^8.12.0",
+    "typescript": "^5.5.4",
+    "vitest": "^2.0.5"
+  }
+}
