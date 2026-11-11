@@ -9,11 +9,27 @@ import { normalizeMessageId } from './text';
  * Оператор видит состояние доставки у своего ответа.
  */
 
-export type MailPurpose = 'support_reply' | 'support_ack' | 'password_reset' | 'email_verify';
+export type MailPurpose =
+  | 'support_reply'
+  | 'support_ack'
+  | 'password_reset'
+  | 'email_verify'
+  // ── Перевод на другую платформу группы (ветка client-transfer): приглашение
+  //    цели (одноразовая ссылка) и уведомление о возврате перевода. ──
+  | 'transfer_invite'
+  | 'transfer_notice';
 export type MailStatus = 'queued' | 'sending' | 'sent' | 'failed' | 'cancelled';
 
 /** Письма с одноразовыми ссылками — тело стирается после отправки. */
-export const SECRET_BODY_PURPOSES: readonly MailPurpose[] = ['password_reset', 'email_verify'];
+export const SECRET_BODY_PURPOSES: readonly MailPurpose[] = ['password_reset', 'email_verify', 'transfer_invite'];
+
+/** Системные письма (не переписка): уходят всегда, даже когда почтовый канал поддержки выключен. */
+export const SYSTEM_MAIL_PURPOSES: readonly MailPurpose[] = [
+  'password_reset',
+  'email_verify',
+  'transfer_invite',
+  'transfer_notice',
+];
 
 export interface EnqueueInput {
   purpose: MailPurpose;
@@ -90,7 +106,7 @@ export async function claimDueMail(
       WHERE status = 'queued' AND expires_at IS NOT NULL AND expires_at < $1`,
     [now],
   );
-  const purposes = opts.purposes ?? ['support_reply', 'support_ack', 'password_reset', 'email_verify'];
+  const purposes = opts.purposes ?? ['support_reply', 'support_ack', ...SYSTEM_MAIL_PURPOSES];
   const r = await db.query(
     `UPDATE outbound_mail o
         SET status = 'sending', attempts = o.attempts + 1, locked_at = $1,
