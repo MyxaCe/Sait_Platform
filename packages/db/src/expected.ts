@@ -53,4 +53,8 @@ export const EXPECTED_MIGRATIONS: readonly string[] = [
   // ── Менеджеры клиентов (ветка admin-managers, 10.11) ──────────────────
   // Флаг operators.is_client_manager + закрепление client_managers.
   '1795410000000_client_managers',
+  // ── Перевод клиента на другую платформу группы (ветка client-transfer, 10.11) ──
+  // Реестр платформ группы, исходящие/входящие переводы, подписанный канал
+  // (outbox/nonce/inbox), системный автор, письма перевода в outbound_mail.
+  '1795710000000_platform_transfers',
 ];
