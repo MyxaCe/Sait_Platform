@@ -41,7 +41,7 @@ export const QUEUE_FILTER_LABEL = {
   all: 'Все',
 } as const;
 
-const ERRORS: Record<SupportFailure | 'invalid' | 'duplicate' | 'unauthorized', string> = {
+const ERRORS: Record<SupportFailure | 'invalid' | 'duplicate' | 'unauthorized' | 'templateMentionsGroupPlatform', string> = {
   notFound: 'Обращение не найдено.',
   forbidden: 'Недостаточно прав для этого действия.',
   invalidTransition: 'Такой переход статуса недопустим. Обновите страницу — статус мог измениться.',
@@ -58,6 +58,9 @@ const ERRORS: Record<SupportFailure | 'invalid' | 'duplicate' | 'unauthorized', 
   invalid: 'Проверьте поля формы.',
   duplicate: 'Шаблон с таким ключом и языком уже есть.',
   unauthorized: 'Сессия истекла — войдите заново.',
+  // ── Перевод на другую платформу группы (ветка client-transfer) ──
+  templateMentionsGroupPlatform:
+    'Шаблон упоминает другую платформу группы. Предлагать перевод нельзя — только по заявлению клиента; шаблоны для этого не используются.',
 };
 
 export function supportErrorText(code: string | undefined): string {

@@ -4,7 +4,7 @@ const nextConfig = {
   // standalone — только для Docker-сборки (docker/admin.Dockerfile, пакет C).
   // По образцу cabinet: образ не знает адресов, сервер стартует из server.js.
   output: process.env.BUILD_STANDALONE ? 'standalone' : undefined,
-  transpilePackages: ['@broker/money', '@broker/promo', '@broker/storage', '@broker/support', '@broker/ui', '@broker/utils'],
+  transpilePackages: ['@broker/money', '@broker/promo', '@broker/storage', '@broker/support', '@broker/transfer', '@broker/ui', '@broker/utils'],
   // @node-rs/argon2 — нативный аддон (.node). Его НЕЛЬЗЯ бандлить webpack'ом:
   // `next build` падает «Module parse failed» на бинаре. Выносим в external
   // серверной сборки — требуется из node_modules в рантайме (standalone-трейс
@@ -14,6 +14,8 @@ const nextConfig = {
   // крупный: держим его в node_modules серверной сборки, а не в бандле, —
   // @broker/storage транспилируется, а требование к aws-sdk остаётся внешним.
   experimental: {
+    // instrumentation.ts (такт канала переводов между платформами) — в Next 14.2 за флагом.
+    instrumentationHook: true,
     serverComponentsExternalPackages: [
       '@node-rs/argon2',
       '@aws-sdk/client-s3',

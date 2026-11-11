@@ -8,6 +8,8 @@ import { TronRef } from '../_money/tron';
 import { SettingsForm } from './SettingsForm';
 import { getPromoSettings } from '@/lib/promo/queries';
 import { PromoSettingsForm } from '../promo/_components/PromoForms';
+// ── Реестр платформ группы (ветка client-transfer) ──
+import { GroupPlatformsPanel } from './GroupPlatformsPanel';
 
 /**
  * «Настройки платформы» (дизайн §3) — только admin. Денежные гейты и
@@ -113,6 +115,9 @@ export default async function PlatformSettingsPage() {
             </Callout>
           )}
         </Panel>
+
+        {/* ── Реестр платформ группы (ветка client-transfer) ── */}
+        <GroupPlatformsPanel />
         </div>
 
         <aside className="min-w-0 space-y-5">

@@ -22,12 +22,15 @@ export function OperatorsTable({
   currentOperatorId,
   selectedId,
   managerClients = new Map(),
+  revokedTransfers = new Map(),
 }: {
   operators: OperatorListItem[];
   currentOperatorId: string;
   selectedId?: string;
   /** Число закреплённых клиентов по оператору (ветка admin-managers). */
   managerClients?: Map<string, number>;
+  /** Возвращённые admin переводы, проведённые оператором (ветка client-transfer). */
+  revokedTransfers?: Map<string, number>;
 }) {
   const columns: DataTableColumn<OperatorListItem>[] = [
     {
@@ -67,6 +70,10 @@ export function OperatorsTable({
             <span className="text-secondary text-xs tabular-nums">
               менеджер · клиентов {managerClients.get(op.id) ?? 0}
             </span>
+          ) : null}
+          {/* ── Переводы клиентов (ветка client-transfer): возвращённые переводы менеджера ── */}
+          {revokedTransfers.get(op.id) ? (
+            <span className="text-negative text-xs tabular-nums">возвращено переводов {revokedTransfers.get(op.id)}</span>
           ) : null}
         </span>
       ),

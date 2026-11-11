@@ -79,6 +79,7 @@ describe('/api default-deny (Р-451)', () => {
 
   it('allowlist минимален: health и только то, что названо явно', () => {
     // Растяжка на сам список: разрастётся молча — заметим здесь.
-    expect([...API_PUBLIC_PATHS]).toEqual(['/api/health']);
+    // + приём межплатформенных сообщений перевода (своя проверка подписи).
+    expect([...API_PUBLIC_PATHS]).toEqual(['/api/health', '/api/platform-transfer/v1/messages']);
   });
 });

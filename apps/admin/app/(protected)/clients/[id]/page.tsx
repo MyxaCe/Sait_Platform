@@ -51,6 +51,8 @@ import { SupportTab } from './_components/SupportTab';
 import { getClientManager, listClientManagers } from '@/lib/managers/queries';
 import { canAssignManagers } from '@/lib/managers/policy';
 import { AssignManagerForm } from '../_components/managers/AssignManagerForm';
+// ── Перевод на другую платформу группы (ветка client-transfer) ──
+import { TransferPanel } from './_components/TransferPanel';
 
 /**
  * Карточка клиента `/clients/[id]` (ADM-02, §3.2) — ЭТАЛОННЫЙ экран редизайна
@@ -348,6 +350,15 @@ export default async function ClientCardPage({
         ]}
         actions={
           <>
+            {/* ── Перевод на другую платформу группы (ветка client-transfer): отдельная кнопка, только закреплённый менеджер ── */}
+            {managerIsMe ? (
+              <Link
+                href={`/clients/${card.userId}/transfer`}
+                className="inline-flex h-9 items-center rounded-md border border-border-strong px-3.5 text-sm text-primary hover:bg-primary/5"
+              >
+                Перевести на другую платформу группы…
+              </Link>
+            ) : null}
             {canAml ? (
               <Link
                 href={`/aml/${card.userId}`}
@@ -531,6 +542,9 @@ export default async function ClientCardPage({
                 ) : null}
               </div>
             </Panel>
+
+            {/* ── Перевод на другую платформу группы (ветка client-transfer) ── */}
+            <TransferPanel userId={card.userId} canTransfer={managerIsMe} />
 
             <Panel title="Комплаенс">
               <DescriptionList

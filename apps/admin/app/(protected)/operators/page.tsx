@@ -12,6 +12,9 @@ import { MANAGER_SCOPE, ROLES, ROLE_LABEL, ROLE_SCOPE } from './_components/role
 // ── Менеджеры клиентов (ветка admin-managers) ──
 import { managerClientCounts } from '@/lib/managers/queries';
 import { roleCanManageClients } from '@/lib/managers/policy';
+// ── Переводы клиентов (ветка client-transfer): счётчик возвращённых переводов ──
+import { revokedCountsByInitiator } from '@broker/transfer';
+import { getPool } from '@/lib/db';
 import { ManagerFlagForm } from './_components/ManagerFlagForm';
 
 /**
@@ -40,6 +43,7 @@ export default async function OperatorsPage({
   if (operator.role !== 'admin') notFound();
 
   const [all, managerClients] = await Promise.all([listOperators(), managerClientCounts()]);
+  const revokedTransfers = await revokedCountsByInitiator(getPool()).catch(() => new Map<string, number>());
   // Служебные учётные записи (`system:*`) подписывают автоматические действия
   // (кабинет клиента, наблюдатель сети) — войти под ними нельзя. Показываем
   // их отдельно, чтобы не путать с людьми.
@@ -87,6 +91,7 @@ export default async function OperatorsPage({
               currentOperatorId={operator.operatorId}
               selectedId={selected?.id}
               managerClients={managerClients}
+              revokedTransfers={revokedTransfers}
             />
           </Panel>
 
@@ -167,6 +172,18 @@ export default async function OperatorsPage({
                         ) : (
                           'нет'
                         ),
+                      },
+                      // ── Переводы клиентов (ветка client-transfer) ──
+                      {
+                        term: 'Возвращённые переводы',
+                        value: revokedTransfers.get(selected.id) ? (
+                          <Link href="/clients/transfers?tab=report" className="text-negative font-medium hover:underline">
+                            {revokedTransfers.get(selected.id)} →
+                          </Link>
+                        ) : (
+                          'нет'
+                        ),
+                        hint: 'переводы клиентов, которые администратор вернул',
                       },
                       {
                         term: 'Журнал',

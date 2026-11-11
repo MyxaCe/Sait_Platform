@@ -32,6 +32,9 @@ importers:
       '@broker/support':
         specifier: workspace:*
         version: link:../../packages/support
+      '@broker/transfer':
+        specifier: workspace:*
+        version: link:../../packages/transfer
       '@broker/ui':
         specifier: workspace:*
         version: link:../../packages/ui
@@ -126,6 +129,9 @@ importers:
       '@broker/tenant':
         specifier: workspace:*
         version: link:../../packages/tenant
+      '@broker/transfer':
+        specifier: workspace:*
+        version: link:../../packages/transfer
       '@broker/ui':
         specifier: workspace:*
         version: link:../../packages/ui
