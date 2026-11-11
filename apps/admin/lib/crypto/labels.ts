@@ -7,6 +7,8 @@ export const MONEY_ERRORS: Record<string, string> = {
   clientNotFound: 'Клиент не найден: укажите точный email, UID или id.',
   noChange: 'Изменений нет — нечего записывать.',
   invalidMinimum: 'Минимум — сумма в USDT, не больше двух знаков после запятой.',
+  invalidPercent: 'Процент — число от 0 до 100, не больше двух знаков после запятой.',
+  invalidStopBps: 'Расстояние — целое число б.п. от 0 до 10 000.',
   terminalUnavailable:
     'Терминал не ответил — ничего не изменено. Повторите позже (повтор безопасен).',
   terminalRefused: 'Терминал отказал',

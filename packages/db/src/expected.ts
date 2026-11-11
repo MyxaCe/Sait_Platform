@@ -61,4 +61,7 @@ export const EXPECTED_MIGRATIONS: readonly string[] = [
   // Реестр платформ группы, исходящие/входящие переводы, подписанный канал
   // (outbox/nonce/inbox), системный автор, письма перевода в outbound_mail.
   '1795710000000_platform_transfers',
+  // ── Вывод без верификации до X % (ветка demo-withdraw-limits, 11.11) ──
+  // Доля в б.п.: платформа (по умолчанию 500 = 5 %) + переопределение у клиента.
+  '1795830000000_withdraw_kyc_allowance',
 ];

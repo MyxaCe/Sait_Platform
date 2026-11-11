@@ -127,6 +127,12 @@ export const ACTION_LABELS: Record<string, ActionMeta> = {
     tone: 'info',
     group: 'client_money',
   },
+  // ── Вывод без верификации до X % (ветка demo-withdraw-limits) ──
+  'client.money.unverified_withdraw_limit_changed': {
+    label: 'Изменён лимит вывода без верификации',
+    tone: 'warning',
+    group: 'client_money',
+  },
 
   // Пополнения
   'crypto.deposit.claimed': { label: 'Пополнение заявлено', tone: 'info', group: 'deposit' },
@@ -312,6 +318,12 @@ export const ACTION_LABELS: Record<string, ActionMeta> = {
   // Платформа
   'platform.money_settings.updated': {
     label: 'Изменены денежные настройки платформы',
+    tone: 'warning',
+    group: 'platform',
+  },
+  // ── Минимальная дистанция SL/TP в терминале (ветка demo-withdraw-limits) ──
+  'platform.terminal_stops.updated': {
+    label: 'Изменена минимальная дистанция SL/TP',
     tone: 'warning',
     group: 'platform',
   },

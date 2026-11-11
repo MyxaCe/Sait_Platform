@@ -50,6 +50,16 @@ function Outcome({ state, okKey, op }: { state: MoneyFormState; okKey: string; o
       </Callout>
     );
   }
+  if (state.error === 'kycLimitExceeded' && state.kycLimit) {
+    return (
+      <Callout tone="negative">
+        {t('errors.kycLimitExceeded', {
+          remaining: formatMoney(state.kycLimit.remainingMinor, REAL_ACCOUNT_CURRENCY),
+          limit: formatMoney(state.kycLimit.limitMinor, REAL_ACCOUNT_CURRENCY),
+        })}
+      </Callout>
+    );
+  }
   return (
     <Callout tone="negative">{t.has(`errors.${state.error}`) ? t(`errors.${state.error}`) : t('errors.generic')}</Callout>
   );

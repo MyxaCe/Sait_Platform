@@ -20,6 +20,8 @@ export interface MoneyFormState {
   reasons?: string[];
   /** Заявка принята, но списание ещё подтверждается. */
   pending?: boolean;
+  /** Отказ по лимиту вывода без верификации: остаток и потолок (центы). */
+  kycLimit?: { remainingMinor: number; limitMinor: number };
 }
 
 export async function claimDepositAction(_prev: MoneyFormState, fd: FormData): Promise<MoneyFormState> {
@@ -54,5 +56,8 @@ export async function requestWithdrawalAction(_prev: MoneyFormState, fd: FormDat
   if (r.ok) return { ok: true, pending: r.debit === 'pending' };
   if (r.reason === 'policy') return { error: 'policy', reasons: r.policyReasons };
   if (r.reason === 'terminalRefused') return { error: `terminal_${r.code}` };
+  if (r.reason === 'kycLimitExceeded') {
+    return { error: 'kycLimitExceeded', kycLimit: { remainingMinor: r.remainingMinor, limitMinor: r.limitMinor } };
+  }
   return { error: r.reason };
 }

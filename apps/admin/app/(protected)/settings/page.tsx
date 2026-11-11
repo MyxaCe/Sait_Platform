@@ -6,6 +6,10 @@ import { exchangeTronAddress } from '@/lib/crypto/runtime';
 import { getPlatformMoneySettings } from '@/lib/crypto/settings';
 import { TronRef } from '../_money/tron';
 import { SettingsForm } from './SettingsForm';
+// ── Лимит вывода без верификации + мин. расстояние SL/TP (ветка demo-withdraw-limits) ──
+import { formatBpsPercent } from '@/lib/crypto/withdraw-limit';
+import { readMinStop } from '@/lib/terminal-settings/stops';
+import { MinStopForm } from './MinStopForm';
 import { getPromoSettings } from '@/lib/promo/queries';
 import { PromoSettingsForm } from '../promo/_components/PromoForms';
 // ── Учётные данные клиента (ветка admin-credentials) ──
@@ -32,10 +36,11 @@ function KycValue({ required }: { required: boolean }) {
 export default async function PlatformSettingsPage() {
   const operator = await getOperatorSession();
   if (operator?.role !== 'admin') notFound();
-  const [settings, promo, cred] = await Promise.all([
+  const [settings, promo, cred, minStop] = await Promise.all([
     getPlatformMoneySettings(),
     getPromoSettings(),
     readCredentialSettings(moneyPool()),
+    readMinStop(),
   ]);
   const address = exchangeTronAddress();
 
@@ -61,6 +66,16 @@ export default async function PlatformSettingsPage() {
                   { term: 'Ввод', value: <KycValue required={settings.depositRequiresKyc} /> },
                   { term: 'Вывод', value: <KycValue required={settings.withdrawRequiresKyc} /> },
                   {
+                    term: 'Вывод без верификации',
+                    value:
+                      settings.unverifiedWithdrawBps === 0
+                        ? 'запрещён'
+                        : `до ${formatBpsPercent(settings.unverifiedWithdrawBps)}`,
+                    hint: settings.withdrawRequiresKyc
+                      ? 'суммарно, от баланса до выводов'
+                      : 'не действует: вывод без KYC открыт',
+                  },
+                  {
                     term: 'Минимальный ввод',
                     value: <Money minor={settings.minDepositMinor} currency="USDT" />,
                     hint: settings.minDepositMinor === 0 ? 'без минимума' : undefined,
@@ -80,8 +95,49 @@ export default async function PlatformSettingsPage() {
                   withdrawRequiresKyc: settings.withdrawRequiresKyc,
                   minDeposit: (settings.minDepositMinor / 100).toFixed(2),
                   minWithdraw: (settings.minWithdrawMinor / 100).toFixed(2),
+                  unverifiedWithdrawPct: (settings.unverifiedWithdrawBps / 100).toFixed(2).replace(/\.?0+$/, ''),
                 }}
               />
+            </div>
+          </div>
+        </Panel>
+
+        <Panel
+          id="stops"
+          title="Терминал: стоп-лосс и тейк-профит"
+          description="Значение хранится в терминале и действует для всех счетов площадки. Изменение — с основанием, пишется в журнал (до и после)."
+          actions={
+            minStop.state === 'ok' ? (
+              <ToneBadge tone="neutral">сейчас {minStop.minStopBps} bps</ToneBadge>
+            ) : (
+              <ToneBadge tone="negative">терминал не ответил</ToneBadge>
+            )
+          }
+        >
+          <div className="space-y-5">
+            {minStop.state === 'ok' ? (
+              <DescriptionList
+                columns={2}
+                items={[
+                  {
+                    term: 'Минимальное расстояние SL/TP',
+                    value: `${minStop.minStopBps} bps`,
+                    hint:
+                      minStop.minStopBps === 0
+                        ? 'без ограничения'
+                        : `${(minStop.minStopBps / 100).toLocaleString('ru-RU', { maximumFractionDigits: 2 })} % от цены`,
+                  },
+                ]}
+              />
+            ) : (
+              <Callout tone="warning" title="Текущее значение неизвестно">
+                Терминал не ответил на чтение настройки
+                {minStop.state === 'refused' ? ` (отказ: ${minStop.code})` : ` (${minStop.reason})`}. Сохранить
+                можно — но изменение будет записано, только если терминал его примет.
+              </Callout>
+            )}
+            <div className="border-border border-t pt-5">
+              <MinStopForm initial={minStop.state === 'ok' ? minStop.minStopBps : null} />
             </div>
           </div>
         </Panel>
@@ -187,6 +243,12 @@ export default async function PlatformSettingsPage() {
               <li>
                 У клиента KYC-гейт может быть «наследовать», «да» или «нет». По умолчанию — наследует
                 отсюда; карточка клиента показывает итог и источник.
+              </li>
+              <li>
+                Вывод без верификации: при включённом «Вывод только после KYC» неверифицированный клиент
+                может вывести суммарно не больше заданного процента от «баланса до выводов» (баланс
+                реального счёта + выведенное и заявленное; отклонённые и отменённые заявки не считаются).
+                Проверка — на сервере при подаче заявки; терминал не дал баланс — заявка не принимается.
               </li>
               <li>
                 Минимум вывода проверяется, когда клиент подаёт заявку. Поступление меньше минимума

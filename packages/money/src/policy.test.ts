@@ -24,13 +24,14 @@ function* combos(): Generator<MoneyPolicyInputs> {
             for (const withdrawRequiresKyc of BOOLS)
               for (const depositKyc of KYC)
                 for (const withdrawKyc of KYC)
-                  yield {
-                    clientExists: true,
-                    blocked,
-                    kycVerified,
-                    settings: { ...DEFAULT_PLATFORM_SETTINGS, depositRequiresKyc, withdrawRequiresKyc },
-                    flags: { depositKyc, withdrawKyc, frozen, withdrawBanned },
-                  };
+                  for (const unverifiedWithdrawBps of [0, 500])
+                    yield {
+                      clientExists: true,
+                      blocked,
+                      kycVerified,
+                      settings: { ...DEFAULT_PLATFORM_SETTINGS, depositRequiresKyc, withdrawRequiresKyc, unverifiedWithdrawBps },
+                      flags: { depositKyc, withdrawKyc, frozen, withdrawBanned },
+                    };
 }
 
 const needs = (flag: KycSetting, platform: boolean) =>
@@ -39,8 +40,8 @@ const needs = (flag: KycSetting, platform: boolean) =>
 describe('resolveMoneyPolicy · все комбинации гейтов', () => {
   const all = [...combos()];
 
-  it(`перебрано ${2 ** 6 * 9} комбинаций`, () => {
-    expect(all).toHaveLength(576);
+  it(`перебрано ${2 ** 7 * 9} комбинаций`, () => {
+    expect(all).toHaveLength(1152);
   });
 
   it('ввод/вывод/реальная торговля совпадают с формулой дизайна в каждой', () => {
@@ -49,8 +50,11 @@ describe('resolveMoneyPolicy · все комбинации гейтов', () =>
       const depKyc = needs(c.flags.depositKyc, c.settings.depositRequiresKyc);
       const wdKyc = needs(c.flags.withdrawKyc, c.settings.withdrawRequiresKyc);
       const expDeposit = !c.blocked && (!depKyc || c.kycVerified);
+      // Доля вывода без верификации > 0 — вывод открыт, но под потолком.
+      const allowance = c.settings.unverifiedWithdrawBps > 0;
       const expWithdraw =
-        !c.blocked && !c.flags.frozen && !c.flags.withdrawBanned && (!wdKyc || c.kycVerified);
+        !c.blocked && !c.flags.frozen && !c.flags.withdrawBanned && (!wdKyc || c.kycVerified || allowance);
+      expect(p.withdrawKycLimited).toBe(expWithdraw && wdKyc && !c.kycVerified);
       expect({ c, dep: p.depositAllowed, wd: p.withdrawAllowed, rt: p.realTradingAllowed }).toEqual({
         c,
         dep: expDeposit,
@@ -84,7 +88,7 @@ describe('resolveMoneyPolicy · все комбинации гейтов', () =>
     expect(p.withdrawReasons).toEqual(['frozen']);
   });
 
-  it('умолчания платформы: ввод без KYC, вывод только после KYC', () => {
+  it('умолчания платформы: ввод без KYC, вывод без KYC — только в пределах 5 %', () => {
     const p = computeMoneyPolicy({
       clientExists: true,
       blocked: false,
@@ -93,8 +97,44 @@ describe('resolveMoneyPolicy · все комбинации гейтов', () =>
       flags: { depositKyc: 'inherit', withdrawKyc: 'inherit', frozen: false, withdrawBanned: false },
     });
     expect(p.depositAllowed).toBe(true);
-    expect(p.withdrawAllowed).toBe(false);
-    expect(p.withdrawReasons).toEqual(['kyc_required']);
+    expect(p.withdrawAllowed).toBe(true);
+    expect(p.withdrawKycLimited).toBe(true);
+    expect(p.unverifiedWithdraw).toEqual({ bps: 500, source: 'platform' });
+  });
+
+  it('доля 0 % (платформа или клиент) — прежнее поведение: вывод только после KYC', () => {
+    const base = {
+      clientExists: true,
+      blocked: false,
+      kycVerified: false,
+      flags: { depositKyc: 'inherit', withdrawKyc: 'inherit', frozen: false, withdrawBanned: false } as const,
+    };
+    const platform0 = computeMoneyPolicy({ ...base, settings: { ...DEFAULT_PLATFORM_SETTINGS, unverifiedWithdrawBps: 0 } });
+    expect(platform0.withdrawReasons).toEqual(['kyc_required']);
+    expect(platform0.withdrawKycLimited).toBe(false);
+    const client0 = computeMoneyPolicy({ ...base, settings: DEFAULT_PLATFORM_SETTINGS, unverifiedWithdrawBpsOverride: 0 });
+    expect(client0.withdrawReasons).toEqual(['kyc_required']);
+    expect(client0.unverifiedWithdraw).toEqual({ bps: 0, source: 'client' });
+    // Переопределение у клиента сильнее платформы и в обратную сторону.
+    const client10 = computeMoneyPolicy({
+      ...base,
+      settings: { ...DEFAULT_PLATFORM_SETTINGS, unverifiedWithdrawBps: 0 },
+      unverifiedWithdrawBpsOverride: 1000,
+    });
+    expect(client10.withdrawAllowed).toBe(true);
+    expect(client10.unverifiedWithdraw).toEqual({ bps: 1000, source: 'client' });
+  });
+
+  it('верифицированный клиент — лимит не действует', () => {
+    const p = computeMoneyPolicy({
+      clientExists: true,
+      blocked: false,
+      kycVerified: true,
+      settings: DEFAULT_PLATFORM_SETTINGS,
+      flags: { depositKyc: 'inherit', withdrawKyc: 'inherit', frozen: false, withdrawBanned: false },
+    });
+    expect(p.withdrawAllowed).toBe(true);
+    expect(p.withdrawKycLimited).toBe(false);
   });
 
   it('нет клиента — всё закрыто (fail-closed)', async () => {

@@ -16,6 +16,8 @@ import { LOGIN_PATH } from '../auth/constants';
 import { canOperateMoney, moneyPool, terminalMoney } from './runtime';
 import { setClientMoneyFlags } from './flags';
 import { updatePlatformMoneySettings } from './settings';
+import { percentToBps, setClientUnverifiedWithdrawLimit } from './withdraw-limit';
+import { updateMinStop } from '../terminal-settings/stops';
 import { findClientForBinding } from './queries';
 
 /**
@@ -63,6 +65,8 @@ export async function updatePlatformSettingsAction(
   const minDeposit = minorFromField(fd, 'minDeposit');
   const minWithdraw = minorFromField(fd, 'minWithdraw');
   if (minDeposit === null || minWithdraw === null) return { error: 'invalidMinimum' };
+  const unverifiedWithdrawBps = percentToBps(str(fd, 'unverifiedWithdrawPct'));
+  if (unverifiedWithdrawBps === null) return { error: 'invalidPercent' };
 
   const r = await updatePlatformMoneySettings({
     operatorId: operator.operatorId,
@@ -72,8 +76,23 @@ export async function updatePlatformSettingsAction(
       withdrawRequiresKyc: fd.get('withdrawRequiresKyc') === 'on',
       minDepositMinor: minDeposit,
       minWithdrawMinor: minWithdraw,
+      unverifiedWithdrawBps,
     },
   });
+  revalidatePath('/settings');
+  return fromResult(r);
+}
+
+/* ── Минимальное расстояние SL/TP в терминале (admin, как настройки платформы) ── */
+
+export async function updateMinStopAction(_prev: MoneyActionState, fd: FormData): Promise<MoneyActionState> {
+  const operator = await getOperatorSession();
+  if (!operator) redirect(LOGIN_PATH);
+  if (operator.role !== 'admin') return { error: 'forbidden' };
+
+  const raw = str(fd, 'minStopBps');
+  const minStopBps = /^\d{1,5}$/.test(raw) ? Number(raw) : NaN;
+  const r = await updateMinStop({ operatorId: operator.operatorId, reason: str(fd, 'reason'), minStopBps });
   revalidatePath('/settings');
   return fromResult(r);
 }
@@ -104,6 +123,33 @@ export async function setClientMoneyFlagsAction(
       frozen: fd.get('frozen') === 'on',
       withdrawBanned: fd.get('withdrawBanned') === 'on',
     },
+  });
+  revalidatePath(`/clients/${userId}`);
+  return fromResult(r);
+}
+
+/* ── Лимит вывода без верификации у клиента (admin, finance_operator) ── */
+
+export async function setClientWithdrawLimitAction(
+  _prev: MoneyActionState,
+  fd: FormData,
+): Promise<MoneyActionState> {
+  const operator = await requireMoneyOperator();
+  if (!operator) return { error: 'forbidden' };
+  const userId = str(fd, 'userId');
+  if (!userId) return { error: 'noClient' };
+
+  // «Наследовать» — пустое переопределение; иначе процент из поля.
+  let bps: number | null = null;
+  if (str(fd, 'mode') !== 'inherit') {
+    bps = percentToBps(str(fd, 'pct'));
+    if (bps === null) return { error: 'invalidPercent' };
+  }
+  const r = await setClientUnverifiedWithdrawLimit({
+    operatorId: operator.operatorId,
+    userId,
+    reason: str(fd, 'reason'),
+    bps,
   });
   revalidatePath(`/clients/${userId}`);
   return fromResult(r);

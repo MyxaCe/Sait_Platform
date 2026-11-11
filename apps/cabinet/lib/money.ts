@@ -1,5 +1,8 @@
 import {
+  computeKycAllowance,
   createTerminalMoneyClient,
+  loadKycWithdrawUsage,
+  type KycAllowance,
   isValidTronAddress,
   isUsableExchangeAddress,
   resolveMoneyPolicy,
@@ -51,6 +54,26 @@ export function terminalReader(): FullClient {
 
 export async function getMoneyPolicy(userId: string): Promise<MoneyPolicy> {
   return resolveMoneyPolicy(userId, moneyPool());
+}
+
+/**
+ * Остаток лимита вывода без верификации для показа в кошельке — та же формула,
+ * что проверяет сервер при подаче (`@broker/money` kyc-allowance). Баланс —
+ * из уже прочитанных счетов терминала (`accounts`): `null` — терминал не
+ * ответил, остаток неизвестен. Окончательно решает сервер при подаче заявки.
+ */
+export async function getKycAllowance(
+  userId: string,
+  policy: MoneyPolicy,
+  live: AccountsOutcome | { state: 'unavailable' },
+): Promise<KycAllowance | null> {
+  if (!policy.withdrawKycLimited || live.state !== 'ok') return null;
+  const real = live.accounts.find((a) => a.kind === 'real');
+  const balanceMinor = !real || !real.opened ? 0 : real.balanceMinor;
+  if (balanceMinor === null) return null;
+  const usage = await loadKycWithdrawUsage(moneyPool(), userId).catch(() => null);
+  if (!usage) return null;
+  return computeKycAllowance({ bps: policy.unverifiedWithdraw.bps, balanceMinor, usage });
 }
 
 /**

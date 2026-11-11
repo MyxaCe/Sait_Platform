@@ -55,10 +55,36 @@ function Minimum({ name, label, defaultValue }: { name: string; label: string; d
   );
 }
 
+function Percent({ name, label, defaultValue }: { name: string; label: string; defaultValue: string }) {
+  return (
+    <label className="block space-y-1.5">
+      <span className="text-muted block text-xs">{label}</span>
+      <span className="relative block w-48">
+        <Input
+          name={name}
+          defaultValue={defaultValue}
+          controlSize="compact"
+          inputMode="decimal"
+          autoComplete="off"
+          className="pr-10 text-right tabular-nums"
+        />
+        <span className="text-muted pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs">%</span>
+      </span>
+    </label>
+  );
+}
+
 export function SettingsForm({
   initial,
 }: {
-  initial: { depositRequiresKyc: boolean; withdrawRequiresKyc: boolean; minDeposit: string; minWithdraw: string };
+  initial: {
+    depositRequiresKyc: boolean;
+    withdrawRequiresKyc: boolean;
+    minDeposit: string;
+    minWithdraw: string;
+    /** Доля вывода без верификации, проценты строкой («5», «2.5»). */
+    unverifiedWithdrawPct: string;
+  };
 }) {
   return (
     <ActionForm
@@ -79,9 +105,21 @@ export function SettingsForm({
           name="withdrawRequiresKyc"
           defaultChecked={initial.withdrawRequiresKyc}
           title="Вывод только после KYC"
-          on="заявку на вывод принимают только от верифицированного."
-          off="вывод доступен без верификации."
+          on="без верификации — только в пределах лимита ниже, дальше после верификации."
+          off="вывод доступен без верификации и без лимита."
         />
+      </div>
+      <div className="space-y-1.5">
+        <Percent
+          name="unverifiedWithdrawPct"
+          label="Вывод без верификации — не больше, % от баланса"
+          defaultValue={initial.unverifiedWithdrawPct}
+        />
+        <p className="text-muted text-xs">
+          Суммарно за всё время, от «баланса до выводов» (баланс реального счёта + уже выведенное и
+          заявленное). 0 — без верификации вывод запрещён полностью. Действует, когда включён «Вывод
+          только после KYC»; у клиента можно задать своё значение в карточке.
+        </p>
       </div>
       <div className="flex flex-wrap gap-x-6 gap-y-3">
         <Minimum name="minDeposit" label="Минимальный ввод" defaultValue={initial.minDeposit} />

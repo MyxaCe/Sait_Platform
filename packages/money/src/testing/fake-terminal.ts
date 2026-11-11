@@ -1,5 +1,11 @@
 import type { AccountKind, LeverageBody } from '../terminal-contract';
-import type { FreezeOutcome, LeverageOutcome, MoneyMoveOutcome, TerminalMoneyClient } from '../terminal-money';
+import type {
+  AccountsOutcome,
+  FreezeOutcome,
+  LeverageOutcome,
+  MoneyMoveOutcome,
+  TerminalMoneyClient,
+} from '../terminal-money';
 
 /**
  * Фейк терминала с ИДЕМПОТЕНТНОСТЬЮ по external_ref (как обязан вести себя
@@ -64,6 +70,32 @@ export class FakeTerminal implements TerminalMoneyClient {
     const previous = this.leverage.get(key) ?? this.platformLeverage;
     this.leverage.set(key, body.leverage);
     return { state: 'ok', leverage: body.leverage, previousLeverage: previous, changed: previous !== body.leverage, seq: ++this.seq };
+  }
+
+  /** Чтение счетов (баланс реального счёта). `accountsUnavailable` — терминал молчит. */
+  accountsUnavailable = false;
+  async accounts(userId: string): Promise<AccountsOutcome> {
+    this.calls.push({ op: 'accounts', userId });
+    if (this.accountsUnavailable) return { state: 'unavailable', reason: 'network' };
+    const opened = this.balances.has(userId);
+    return {
+      state: 'ok',
+      accounts: [
+        {
+          kind: 'real',
+          accountId: opened ? `acc-${userId}` : null,
+          opened,
+          currency: 'USD',
+          balanceMinor: opened ? this.balances.get(userId)! : null,
+          equityMinor: null,
+          freeMarginMinor: null,
+          usedMarginMinor: null,
+          openPositions: 0,
+          tradingFrozen: this.frozen.get(userId) ?? false,
+          leverage: null,
+        },
+      ],
+    };
   }
 
   async tradingFreeze(userId: string, body: { frozen: boolean }): Promise<FreezeOutcome> {

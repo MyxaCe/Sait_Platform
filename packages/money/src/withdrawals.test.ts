@@ -62,7 +62,8 @@ describe('подача заявки на вывод', () => {
       ok: false,
       reason: 'belowMinimum',
     });
-    db.clients.set(U, { kycState: 'pending' });
+    // Доля вывода без верификации 0 % — прежнее поведение: без KYC вывода нет.
+    db.clients.set(U, { kycState: 'pending', unverifiedWithdrawBps: 0 });
     expect(await requestWithdrawal(db, term, { userId: U, toAddress: ADDR, amountMinor: 5000 })).toMatchObject({
       reason: 'policy',
       policyReasons: ['kyc_required'],

@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import {
@@ -29,7 +30,14 @@ import { BlockPanel } from './_components/BlockPanel';
 import { AccountStats, TradingSection, type LiveAccount } from './_components/TradingSection';
 import { MoneyFlagsPanel } from './_components/MoneyFlagsPanel';
 import { getClientTrading } from '@/lib/clients/trading';
-import { loadMoneyPolicyInputs, computeMoneyPolicy, type MoneyPolicy } from '@broker/money';
+import {
+  loadMoneyPolicyInputs,
+  computeMoneyPolicy,
+  computeKycAllowance,
+  loadKycWithdrawUsage,
+  type KycAllowance,
+  type MoneyPolicy,
+} from '@broker/money';
 import { canOperateMoney, moneyPool, terminalReader } from '@/lib/crypto/runtime';
 import {
   listClientDeposits,
@@ -56,6 +64,9 @@ import { getCredentialsView } from '@/lib/credentials/queries';
 import { CredentialsTab } from './_components/CredentialsTab';
 // ── Перевод на другую платформу группы (ветка client-transfer) ──
 import { TransferPanel } from './_components/TransferPanel';
+// ── Лимит вывода без верификации (ветка demo-withdraw-limits) ──
+import { WithdrawLimitPanel } from './_components/WithdrawLimitPanel';
+import { formatBpsPercent } from '@/lib/crypto/withdraw-limit';
 
 /**
  * Карточка клиента `/clients/[id]` (ADM-02, §3.2) — ЭТАЛОННЫЙ экран редизайна
@@ -188,7 +199,37 @@ const MONEY_COLUMNS: DataTableColumn<MoneyRow>[] = [
 
 const SOURCE: Record<string, string> = { platform: 'из настроек платформы', client: 'индивидуально' };
 
-function PolicySummary({ policy }: { policy: MoneyPolicy }) {
+/**
+ * Лимит вывода без верификации в карточке: `allowance` — посчитан (баланс
+ * терминала известен), `null` — терминал не дал баланс.
+ */
+function unverifiedWithdrawItems(policy: MoneyPolicy, allowance: KycAllowance | null) {
+  const pct = policy.unverifiedWithdraw.bps === 0 ? 'запрещён' : `до ${formatBpsPercent(policy.unverifiedWithdraw.bps)}`;
+  const items: { term: string; value: ReactNode; hint?: string; tone?: 'default' | 'positive' | 'negative' | 'warning' }[] = [
+    {
+      term: 'Вывод без верификации',
+      value: pct,
+      hint: `${SOURCE[policy.unverifiedWithdraw.source]}${policy.withdrawKycLimited ? '' : ' · сейчас не действует'}`,
+    },
+  ];
+  if (!policy.withdrawKycLimited) return items;
+  if (!allowance) {
+    items.push({ term: 'Лимит / использовано / остаток', value: 'терминал не дал баланс', tone: 'warning' });
+    return items;
+  }
+  items.push(
+    { term: 'Лимит без верификации', value: <Money minor={allowance.limitMinor} currency="USDT" />, hint: `от ${(allowance.baseMinor / 100).toFixed(2)} USDT до выводов` },
+    { term: 'Использовано', value: <Money minor={allowance.usedMinor} currency="USDT" />, hint: 'заявки в ожидании и исполненные' },
+    {
+      term: 'Остаток',
+      value: <Money minor={allowance.remainingMinor} currency="USDT" />,
+      tone: allowance.remainingMinor === 0 ? 'negative' : 'positive',
+    },
+  );
+  return items;
+}
+
+function PolicySummary({ policy, allowance }: { policy: MoneyPolicy; allowance: KycAllowance | null }) {
   const reasons = (list: string[]) => list.map((r) => POLICY_REASON[r] ?? r).join(', ');
   return (
     <DescriptionList
@@ -201,8 +242,12 @@ function PolicySummary({ policy }: { policy: MoneyPolicy }) {
         },
         {
           term: 'Вывод',
-          value: policy.withdrawAllowed ? 'Разрешён' : `Закрыт: ${reasons(policy.withdrawReasons)}`,
-          tone: policy.withdrawAllowed ? 'positive' : 'negative',
+          value: policy.withdrawAllowed
+            ? policy.withdrawKycLimited
+              ? 'Разрешён в пределах лимита без верификации'
+              : 'Разрешён'
+            : `Закрыт: ${reasons(policy.withdrawReasons)}`,
+          tone: policy.withdrawAllowed ? (policy.withdrawKycLimited ? 'warning' : 'positive') : 'negative',
         },
         { term: 'Ввод только после KYC', value: policy.depositKyc.required ? 'Да' : 'Нет', hint: SOURCE[policy.depositKyc.source] },
         { term: 'Вывод только после KYC', value: policy.withdrawKyc.required ? 'Да' : 'Нет', hint: SOURCE[policy.withdrawKyc.source] },
@@ -214,6 +259,7 @@ function PolicySummary({ policy }: { policy: MoneyPolicy }) {
           tone: policy.realTradingAllowed ? 'default' : 'negative',
         },
         { term: 'KYC', value: policy.kycVerified ? 'Подтверждён' : 'Не подтверждён', tone: policy.kycVerified ? 'default' : 'warning' },
+        ...unverifiedWithdrawItems(policy, allowance),
       ]}
     />
   );
@@ -265,7 +311,7 @@ export default async function ClientCardPage({
 
   // Проекция торговли — после проверки, что клиент есть (UUID уже валиден).
   // Демо и реальный счёт разделены (09.11): показываем раздельно.
-  const [demo, real, policyInputs, live, deposits, withdrawals, aml] = await Promise.all([
+  const [demo, real, policyInputs, live, deposits, withdrawals, aml, kycUsage] = await Promise.all([
     getClientTrading(card.userId, undefined, 'demo'),
     getClientTrading(card.userId, undefined, 'real'),
     loadMoneyPolicyInputs(moneyPool(), card.userId),
@@ -275,8 +321,19 @@ export default async function ClientCardPage({
     listClientDeposits(card.userId),
     listClientWithdrawals(card.userId),
     getAmlCard(card.userId),
+    loadKycWithdrawUsage(moneyPool(), card.userId),
   ]);
   const policy = computeMoneyPolicy(policyInputs);
+  // Лимит вывода без верификации: та же формула, что проверяет сервер при подаче
+  // заявки (`@broker/money` kyc-allowance). Баланс — из терминала; нет — «неизвестно».
+  const liveRealAccount = live.state === 'ok' ? live.accounts.find((a) => a.kind === 'real') : undefined;
+  const allowanceBalance =
+    live.state !== 'ok' ? null : !liveRealAccount || !liveRealAccount.opened ? 0 : liveRealAccount.balanceMinor;
+  const kycAllowance: KycAllowance | null =
+    allowanceBalance === null
+      ? null
+      : computeKycAllowance({ bps: policy.unverifiedWithdraw.bps, balanceMinor: allowanceBalance, usage: kycUsage });
+  const pctText = (bps: number) => (bps / 100).toFixed(2).replace(/\.?0+$/, '');
   const supportTickets = await listClientTickets(getPool(), card.userId, card.email);
   const supportAwaiting = supportTickets.filter((t) => t.status === 'new' || t.status === 'open').length;
   // ── Менеджер клиента: видят все роли карточки, меняет только admin. ──
@@ -598,7 +655,7 @@ export default async function ClientCardPage({
             </Panel>
 
             <Panel title="Правила ввода и вывода" description="Итог настроек платформы и флагов клиента">
-              <PolicySummary policy={policy} />
+              <PolicySummary policy={policy} allowance={kycAllowance} />
             </Panel>
 
             <Panel
@@ -649,7 +706,7 @@ export default async function ClientCardPage({
           </Panel>
           <div className="grid gap-5 xl:grid-cols-2">
             <Panel title="Правила ввода и вывода" description="Итог настроек платформы и флагов клиента" className="self-start">
-              <PolicySummary policy={policy} />
+              <PolicySummary policy={policy} allowance={kycAllowance} />
             </Panel>
             {canMoney ? (
               <Panel
@@ -664,6 +721,23 @@ export default async function ClientCardPage({
                     frozen: policyInputs.flags.frozen,
                     withdrawBanned: policyInputs.flags.withdrawBanned,
                   }}
+                />
+              </Panel>
+            ) : null}
+            {canMoney ? (
+              <Panel
+                title="Лимит вывода без верификации"
+                description="Сколько клиент может вывести суммарно, пока не прошёл KYC. Изменение — с основанием, пишется в журнал."
+              >
+                <WithdrawLimitPanel
+                  userId={card.userId}
+                  overridePct={
+                    policyInputs.unverifiedWithdrawBpsOverride === null ||
+                    policyInputs.unverifiedWithdrawBpsOverride === undefined
+                      ? null
+                      : pctText(policyInputs.unverifiedWithdrawBpsOverride)
+                  }
+                  platformPct={pctText(policyInputs.settings.unverifiedWithdrawBps)}
                 />
               </Panel>
             ) : null}

@@ -23,7 +23,7 @@ function fake() {
   const state = {
     exists: true,
     flags: null as null | { deposit_kyc: string; withdraw_kyc: string; frozen: boolean; withdraw_banned: boolean },
-    settings: { deposit_requires_kyc: false, withdraw_requires_kyc: true, min_deposit_minor: 1000, min_withdraw_minor: 1000 },
+    settings: { deposit_requires_kyc: false, withdraw_requires_kyc: true, min_deposit_minor: 1000, min_withdraw_minor: 1000, unverified_withdraw_bps: 500 },
     journal: [] as { action: string; payload: Record<string, unknown>; entry_hash: string }[],
     committed: 0,
     rolledBack: 0,
@@ -57,7 +57,7 @@ function fake() {
       if (s.startsWith('SELECT id FROM platform_money_settings')) return { rows: [{ id: 1 }] };
       if (s.startsWith('SELECT deposit_requires_kyc')) return { rows: [{ ...state.settings }] };
       if (s.startsWith('UPDATE platform_money_settings SET deposit_requires_kyc')) {
-        state.settings = { deposit_requires_kyc: p[0] as boolean, withdraw_requires_kyc: p[1] as boolean, min_deposit_minor: p[2] as number, min_withdraw_minor: p[3] as number };
+        state.settings = { deposit_requires_kyc: p[0] as boolean, withdraw_requires_kyc: p[1] as boolean, min_deposit_minor: p[2] as number, min_withdraw_minor: p[3] as number, unverified_withdraw_bps: p[5] as number };
         return { rows: [] };
       }
       if (s.startsWith('UPDATE platform_money_settings SET last_journal_seq')) return { rows: [] };
@@ -158,7 +158,7 @@ describe('денежные флаги клиента', () => {
 });
 
 describe('настройки платформы', () => {
-  const NEXT_S = { depositRequiresKyc: true, withdrawRequiresKyc: true, minDepositMinor: 2000, minWithdrawMinor: 1000 };
+  const NEXT_S = { depositRequiresKyc: true, withdrawRequiresKyc: true, minDepositMinor: 2000, minWithdrawMinor: 1000, unverifiedWithdrawBps: 500 };
 
   it('изменение с основанием → журнал platform.money_settings.updated (до/после)', async () => {
     const { state, pool } = fake();
@@ -176,12 +176,32 @@ describe('настройки платформы', () => {
     });
     expect(
       await updatePlatformMoneySettings(
-        { operatorId: OP, reason: 'x', next: { depositRequiresKyc: false, withdrawRequiresKyc: true, minDepositMinor: 1000, minWithdrawMinor: 1000 } },
+        { operatorId: OP, reason: 'x', next: { depositRequiresKyc: false, withdrawRequiresKyc: true, minDepositMinor: 1000, minWithdrawMinor: 1000, unverifiedWithdrawBps: 500 } },
         fake().pool,
       ),
     ).toEqual({ ok: false, reason: 'noChange' });
     expect(
       await updatePlatformMoneySettings({ operatorId: OP, reason: 'x', next: { ...NEXT_S, minWithdrawMinor: -1 } }, fake().pool),
     ).toEqual({ ok: false, reason: 'invalidMinimum' });
+    for (const bad of [-1, 10_001, 2.5]) {
+      expect(
+        await updatePlatformMoneySettings({ operatorId: OP, reason: 'x', next: { ...NEXT_S, unverifiedWithdrawBps: bad } }, fake().pool),
+      ).toEqual({ ok: false, reason: 'invalidPercent' });
+    }
+  });
+
+  it('доля вывода без верификации: изменение одной доли пишется в журнал (до/после)', async () => {
+    const { state, pool } = fake();
+    const r = await updatePlatformMoneySettings(
+      { operatorId: OP, reason: 'решение владельца', next: { ...NEXT_S, depositRequiresKyc: false, minDepositMinor: 1000, unverifiedWithdrawBps: 250 } },
+      pool,
+    );
+    expect(r).toMatchObject({ ok: true });
+    expect(state.settings.unverified_withdraw_bps).toBe(250);
+    expect(state.journal[0]!.payload).toMatchObject({
+      changed: ['unverifiedWithdrawBps'],
+      before: { unverifiedWithdrawBps: 500 },
+      after: { unverifiedWithdrawBps: 250 },
+    });
   });
 });

@@ -51,6 +51,8 @@ export interface ClientState {
   withdrawKyc?: string | null;
   frozen?: boolean;
   withdrawBanned?: boolean;
+  /** Доля вывода без KYC у клиента (б.п.); нет — наследовать. */
+  unverifiedWithdrawBps?: number | null;
 }
 
 export interface JournalRow {
@@ -70,6 +72,7 @@ export class FakeDb implements PoolLike {
     withdraw_requires_kyc: true,
     min_deposit_minor: 1000,
     min_withdraw_minor: 1000,
+    unverified_withdraw_bps: 500,
   };
   deposits = new Map<string, DepositRow>();
   withdrawals = new Map<string, WithdrawalRow>();
@@ -167,6 +170,15 @@ export class FakeDb implements PoolLike {
         frozen: c.frozen ?? false,
         withdraw_banned: c.withdrawBanned ?? false,
         ...this.settings,
+        client_unverified_withdraw_bps: c.unverifiedWithdrawBps ?? null,
+      });
+    }
+    if (s.startsWith('SELECT COALESCE(SUM(amount_minor), 0) AS used_minor')) {
+      const counted = new Set(['requested', 'approved', 'sent', 'settled', 'needs_review']);
+      const rows = [...this.withdrawals.values()].filter((w) => w.user_id === p[0] && counted.has(w.status));
+      return one({
+        used_minor: rows.reduce((a, w) => a + w.amount_minor, 0),
+        used_debited_minor: rows.filter((w) => w.debit_state === 'debited').reduce((a, w) => a + w.amount_minor, 0),
       });
     }
     if (s.startsWith('SELECT 1 FROM users WHERE id')) return one(this.clients.has(p[0] as string) ? { x: 1 } : null);

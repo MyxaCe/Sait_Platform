@@ -1,5 +1,6 @@
 import { inTransaction, isUniqueViolation, rollback, type PoolLike, type Queryable } from './db';
 import { appendJournalSeqWithinTx } from './journal';
+import { resolveKycAllowance } from './kyc-allowance';
 import { computeMoneyPolicy, loadMoneyPolicyInputs, type MoneyPolicyReason } from './policy';
 import { SYSTEM_OPERATORS } from './system-operators';
 import { externalRef } from './terminal-contract';
@@ -43,6 +44,10 @@ export type RequestResult =
   | { ok: true; withdrawalId: string; debit: 'debited' | 'pending' }
   | { ok: false; reason: 'invalidAddress' | 'belowMinimum' | 'invalidAmount' }
   | { ok: false; reason: 'policy'; policyReasons: MoneyPolicyReason[] }
+  /** Вывод без верификации: сумма больше остатка потолка (`kyc-allowance.ts`). */
+  | { ok: false; reason: 'kycLimitExceeded'; limitMinor: number; usedMinor: number; remainingMinor: number }
+  /** Потолок без верификации посчитать не удалось (терминал не дал баланс) — fail-closed. */
+  | { ok: false; reason: 'kycLimitUnavailable' }
   | { ok: false; reason: 'terminalRefused'; code: string; withdrawalId: string };
 
 function moneyPayload(outcome: MoneyMoveOutcome): Record<string, unknown> {
@@ -80,6 +85,29 @@ export async function requestWithdrawal(
     if (input.amountMinor < policy.minWithdrawMinor) {
       return rollback<RequestResult | { id: string }>({ ok: false, reason: 'belowMinimum' });
     }
+    if (policy.withdrawKycLimited) {
+      // Заявки одного клиента под потолком — по очереди: вторая параллельная
+      // заявка ждёт COMMIT первой и видит её в «использовано». Ключ блокировки
+      // свой (не журнальный) и берётся ДО журнала — порядок всегда один.
+      await tx.query(`SELECT pg_advisory_xact_lock(hashtextextended($1, 0))`, [
+        `wd-kyc-allowance:${input.userId}`,
+      ]);
+      const allowance = await resolveKycAllowance(tx, terminal, input.userId, policy.unverifiedWithdraw.bps).catch(
+        () => null,
+      );
+      if (!allowance) {
+        return rollback<RequestResult | { id: string }>({ ok: false, reason: 'kycLimitUnavailable' });
+      }
+      if (input.amountMinor > allowance.remainingMinor) {
+        return rollback<RequestResult | { id: string }>({
+          ok: false,
+          reason: 'kycLimitExceeded',
+          limitMinor: allowance.limitMinor,
+          usedMinor: allowance.usedMinor,
+          remainingMinor: allowance.remainingMinor,
+        });
+      }
+    }
     const ins = await tx.query(
       `INSERT INTO crypto_withdrawals (user_id, to_address, amount_minor, status, debit_state)
             VALUES ($1, $2, $3, 'requested', 'pending')
@@ -93,7 +121,12 @@ export async function requestWithdrawal(
         action: 'crypto.withdrawal.requested',
         subjectKind: 'client',
         subjectId: input.userId,
-        payload: { withdrawalId: id, toAddress, amountMinor: input.amountMinor },
+        payload: {
+          withdrawalId: id,
+          toAddress,
+          amountMinor: input.amountMinor,
+          ...(policy.withdrawKycLimited ? { kycAllowanceBps: policy.unverifiedWithdraw.bps } : {}),
+        },
       },
       tx,
     );

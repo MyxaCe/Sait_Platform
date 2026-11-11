@@ -457,6 +457,8 @@
       "terminal_account_frozen": "Account frozen — withdrawals unavailable.",
       "terminal_account_not_opened": "Real account not opened yet — make a deposit first.",
       "terminal_account_quarantined": "Account under review — please contact support.",
+      "kycLimitExceeded": "Without verification you can withdraw {remaining} more out of {limit}. Verify your identity to remove the limit.",
+      "kycLimitUnavailable": "We could not check the unverified withdrawal limit, so the request was not accepted. Try again later or verify your identity.",
       "generic": "Could not complete. Try again later or contact support."
     },
     "depositLead": "USDT on the TRON network (TRC20). Credited after the transaction is verified on-chain.",
@@ -500,6 +502,12 @@
     "confirmNote": "The amount is reserved immediately. Blockchain transfers are irreversible — make sure the address is correct.",
     "confirmSubmit": "Confirm withdrawal",
     "edit": "Edit",
+    "kycLimit": {
+      "title": "Withdrawals without verification are limited",
+      "remaining": "Without verification you can withdraw {remaining} more out of {limit}. Verify your identity to remove the limit.",
+      "exhausted": "The withdrawal limit without verification ({limit}) is used up. Verify your identity to remove the limit.",
+      "unknown": "Without verification you can withdraw up to {percent}% of your balance. We could not calculate the remaining amount right now — try again later or verify your identity to remove the limit."
+    },
     "goVerify": "Verify identity",
     "policyText": {
       "deposit": {

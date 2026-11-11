@@ -1,6 +1,7 @@
 import {
   appendJournalSeqWithinTx,
   inTransaction,
+  MAX_UNVERIFIED_WITHDRAW_BPS,
   readPlatformMoneySettings,
   rollback,
   type PlatformMoneySettings,
@@ -9,15 +10,15 @@ import {
 import { moneyPool } from './runtime';
 
 /**
- * «Настройки платформы» — денежные (дизайн §3): KYC-гейты ввода/вывода и
- * минимумы. Строка-синглтон `platform_money_settings`. Изменение — только с
+ * «Настройки платформы» — денежные (дизайн §3): KYC-гейты ввода/вывода,
+ * минимумы и доля вывода без верификации (б.п., ветка demo-withdraw-limits). Строка-синглтон `platform_money_settings`. Изменение — только с
  * основанием, журнал `platform.money_settings.updated` (до/после) той же
  * транзакцией. Пустое изменение не пишется.
  */
 
 export type SettingsResult =
   | { ok: true; journalSeq: number }
-  | { ok: false; reason: 'missingReason' | 'invalidMinimum' | 'noChange' };
+  | { ok: false; reason: 'missingReason' | 'invalidMinimum' | 'invalidPercent' | 'noChange' };
 
 /** Предел минимума — 1 млн USDT (защита от опечатки «лишние нули»). */
 const MAX_MIN = 100_000_000;
@@ -30,6 +31,10 @@ export async function updatePlatformMoneySettings(
   if (!reason) return { ok: false, reason: 'missingReason' };
   for (const v of [input.next.minDepositMinor, input.next.minWithdrawMinor]) {
     if (!Number.isSafeInteger(v) || v < 0 || v > MAX_MIN) return { ok: false, reason: 'invalidMinimum' };
+  }
+  const bps = input.next.unverifiedWithdrawBps;
+  if (!Number.isInteger(bps) || bps < 0 || bps > MAX_UNVERIFIED_WITHDRAW_BPS) {
+    return { ok: false, reason: 'invalidPercent' };
   }
 
   return inTransaction<SettingsResult>(pool, async (tx) => {
@@ -45,6 +50,7 @@ export async function updatePlatformMoneySettings(
       `UPDATE platform_money_settings
           SET deposit_requires_kyc = $1, withdraw_requires_kyc = $2,
               min_deposit_minor = $3, min_withdraw_minor = $4,
+              unverified_withdraw_bps = $6,
               updated_at = now(), updated_by = $5
         WHERE id = 1`,
       [
@@ -53,6 +59,7 @@ export async function updatePlatformMoneySettings(
         input.next.minDepositMinor,
         input.next.minWithdrawMinor,
         input.operatorId,
+        input.next.unverifiedWithdrawBps,
       ],
     );
     const seq = await appendJournalSeqWithinTx(

@@ -9,6 +9,8 @@ export * from './policy';
 export * from './system-operators';
 export * from './deposits';
 export * from './withdrawals';
+export * from './kyc-allowance';
+export * from './terminal-stops';
 export * from './fees-contract';
 export * from './fees';
 export * from './display-currency';

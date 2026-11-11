@@ -3,6 +3,7 @@ import { Callout, Money, cn } from '@broker/ui';
 import { requireSessionUser } from '@/lib/auth/require';
 import {
   exchangeAddress,
+  getKycAllowance,
   getMoneyPolicy,
   getRealAccount,
   listMyDeposits,
@@ -59,6 +60,9 @@ export default async function WalletPage({
   // Доступно = свободная маржа (не больше баланса); терминал молчит — баланс.
   const available = freeMargin !== null ? Math.max(0, Math.min(freeMargin, balance)) : balance;
   const currency = realMoneyCurrency(account?.currency);
+  // Лимит вывода без верификации (ветка demo-withdraw-limits): только на вкладке «Вывести».
+  const kycAllowance =
+    tab === 'withdraw' && policy.withdrawKycLimited ? await getKycAllowance(user.id, policy, live) : null;
 
   const balanceCard = (
     <section
@@ -148,7 +152,7 @@ export default async function WalletPage({
         {tab === 'deposit' ? (
           <DepositPanel policy={policy} address={exchangeAddress()} />
         ) : (
-          <WithdrawPanel policy={policy} availableMinor={available} />
+          <WithdrawPanel policy={policy} availableMinor={available} kycAllowance={kycAllowance} />
         )}
 
         <div className="xl:hidden">
