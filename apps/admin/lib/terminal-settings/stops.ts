@@ -24,7 +24,9 @@ import { moneyPool } from '../crypto/runtime';
 
 export type StopsResult =
   | { ok: true; minStopBps: number; journalSeq: number }
-  | { ok: false; reason: 'missingReason' | 'invalidStopBps' | 'noChange' | 'terminalUnavailable' }
+  | { ok: false; reason: 'missingReason' | 'invalidStopBps' | 'noChange' }
+  /** `code` — почему недоступно (network / auth / http-error…): оператору видно, что чинить. */
+  | { ok: false; reason: 'terminalUnavailable'; code: string }
   | { ok: false; reason: 'terminalRefused'; code: string };
 
 const store = globalThis as unknown as { __adminTerminalStops?: TerminalStopsClient; __adminTerminalStopsReader?: TerminalStopsClient };
@@ -63,7 +65,7 @@ export async function updateMinStop(
       .setMinStop(input.minStopBps)
       .catch(() => ({ state: 'unavailable' as const, reason: 'network' as const }));
     if (out.state === 'refused') return rollback<StopsResult>({ ok: false, reason: 'terminalRefused', code: out.code });
-    if (out.state === 'unavailable') return rollback<StopsResult>({ ok: false, reason: 'terminalUnavailable' });
+    if (out.state === 'unavailable') return rollback<StopsResult>({ ok: false, reason: 'terminalUnavailable', code: out.reason });
 
     const seq = await appendJournalSeqWithinTx(
       {

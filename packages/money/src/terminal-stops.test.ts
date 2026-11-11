@@ -52,9 +52,14 @@ describe('terminal-stops', () => {
     expect(await client(() => json(503, { error: 'x' })).c.setMinStop(10)).toEqual({ state: 'unavailable', reason: 'http-error' });
     expect(await client(() => json(200, { nope: 1 })).c.setMinStop(10)).toEqual({ state: 'unavailable', reason: 'malformed' });
     expect(await client(() => json(401, { error: 'invalid_internal_token' })).c.getMinStop()).toEqual({ state: 'unavailable', reason: 'auth' });
-    expect(await client(() => new Response('not found', { status: 404 })).c.getMinStop()).toEqual({
-      state: 'unavailable',
-      reason: 'http-error',
+    // Контракт терминала: 401 без заголовка, 403 неверный токен, 404 токен не задан.
+    for (const status of [401, 403, 404]) {
+      expect(await client(() => new Response('', { status })).c.setMinStop(10)).toEqual({ state: 'unavailable', reason: 'auth' });
+    }
+    expect(await client(() => new Response('', { status: 400 })).c.setMinStop(10)).toEqual({
+      state: 'refused',
+      code: 'invalid_min_stop_bps',
+      status: 400,
     });
     expect(await client(() => json(400, { error: 'invalid_min_stop_bps' })).c.setMinStop(10)).toEqual({
       state: 'refused',

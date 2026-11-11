@@ -67,6 +67,7 @@ describe('минимальная дистанция SL/TP', () => {
     expect(await updateMinStop({ operatorId: admin, reason: 'x', minStopBps: 10 }, db, term)).toEqual({
       ok: false,
       reason: 'terminalUnavailable',
+      code: 'network',
     });
     term.next = { state: 'refused', code: 'invalid_min_stop_bps', status: 400 };
     expect(await updateMinStop({ operatorId: admin, reason: 'x', minStopBps: 10 }, db, term)).toEqual({

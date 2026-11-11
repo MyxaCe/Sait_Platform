@@ -11,6 +11,10 @@ import type { TerminalUnavailable } from './terminal-money';
  *       200   { "min_stop_bps": N }
  *   GET  того же пути → 200 { "min_stop_bps": N } — текущее значение.
  *
+ * Ответы терминала: 401 — нет заголовка, 403 — неверный токен, 404 — токен
+ * на терминале не задан (всё → «недоступно», не сохранено); 400 — значение
+ * невалидно (→ отказ).
+ *
  * tenant = SITE_SLUG. Исходы как у остальных внутренних маршрутов: `ok`,
  * `refused` (4xx с кодом ошибки по существу) и `unavailable` (сеть, 5xx,
  * ответ не по контракту, ошибка доступа) — «не знаем, применено ли».
@@ -76,7 +80,13 @@ export function createTerminalStopsClient(config: {
       const v = parseStopsResponse(json);
       return v === null ? { state: 'unavailable', reason: 'malformed' } : { state: 'ok', minStopBps: v };
     }
-    if (res.status === 401 || res.status === 403) return { state: 'unavailable', reason: 'auth' };
+    // Терминал (11.11): без заголовка — 401, неверный токен — 403, токен на
+    // терминале не задан — 404. Всё это — «не сохранено», ошибка доступа.
+    if (res.status === 401 || res.status === 403 || res.status === 404) return { state: 'unavailable', reason: 'auth' };
+    if (res.status === 400) {
+      const code = (json as { error?: unknown } | null)?.error;
+      return { state: 'refused', code: typeof code === 'string' && code ? code : 'invalid_min_stop_bps', status: 400 };
+    }
     if (res.status >= 400 && res.status < 500) {
       const code = (json as { error?: unknown } | null)?.error;
       // 4xx без кода (маршрута нет / секрет не задан) — «недоступно», не отказ.

@@ -64,7 +64,10 @@ export function TerminalFrame({ terminalUrl, site, title, accountKind = 'demo', 
       title={title}
       onLoad={() => void sendToken()}
       className={className ?? 'block h-svh w-full border-0 bg-elevated'}
-      allow="clipboard-write"
+      // fullscreen: терминал — другой origin, без делегирования Fullscreen API
+      // внутри iframe заблокирован (кнопка «во весь экран» терминала не работает).
+      allow="clipboard-write; fullscreen"
+      allowFullScreen
     />
   );
 }
