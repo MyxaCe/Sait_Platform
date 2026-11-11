@@ -20,9 +20,7 @@ concurrency:
 
 jobs:
   ci:
-    # ubuntu-latest переезжает на Ubuntu 26 (с 19.10.2026): там `playwright install
-    # --with-deps` падает на системных зависимостях. Пин до обновления Playwright.
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     timeout-minutes: 25
 
     # Тенант прогона. С PKG-05 процесс, не знающий своего тенанта, не
