@@ -17,6 +17,10 @@ export default defineConfig({
   },
   test: {
     poolOptions,
+    // Тесты учётных данных (admin-credentials) поднимают PGlite и гонят ВСЕ
+    // миграции — холодный старт под нагрузкой CI >5 с (как в integration-demo3).
+    testTimeout: 60_000,
+    hookTimeout: 120_000,
     environment: 'node',
     globals: true,
     environmentMatchGlobs: [['**/*.test.tsx', 'jsdom']],

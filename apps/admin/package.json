@@ -13,6 +13,7 @@
     "seed:demo": "tsx scripts/seed-demo.ts",
     "seed:promo": "tsx scripts/seed-promo.ts",
     "seed:support-demo": "tsx scripts/seed-support-demo.ts",
+    "seed:group-registry": "tsx scripts/seed-group-registry.ts",
     "support:always-open": "tsx scripts/support-always-open.ts"
   },
   "dependencies": {
@@ -20,6 +21,7 @@
     "@broker/promo": "workspace:*",
     "@broker/storage": "workspace:*",
     "@broker/support": "workspace:*",
+    "@broker/transfer": "workspace:*",
     "@broker/ui": "workspace:*",
     "@broker/utils": "workspace:*",
     "@node-rs/argon2": "^2.0.2",

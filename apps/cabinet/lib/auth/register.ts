@@ -11,6 +11,7 @@ import {
   resolveAttribution,
   type ResolvedAttribution,
 } from '@broker/promo';
+import { bindInviteWithinTx } from '@broker/transfer';
 import { getPool } from '../db';
 import { getTenantStartBalance } from '../tenant';
 import { hashPassword } from './password';
@@ -75,6 +76,12 @@ export interface RegisterContext {
   /** Страна по IP (ISO-2) из гео-заголовка прокси; `null` — заголовка нет. */
   ipCountry?: string | null;
   now?: Date;
+  /**
+   * Токен приглашения по переводу с другой платформы группы (ветка
+   * client-transfer). Связь «приглашение → новый клиент» пишется той же
+   * транзакцией; неверный/использованный токен регистрацию не ломает.
+   */
+  invite?: string | null;
 }
 
 /**
@@ -226,6 +233,10 @@ export async function registerUser(input: RegisterInput, ctx: RegisterContext = 
       не появляется. Самореферал (тот же IP / email, что у реферера)
       отсекается внутри: строка `rejected` для аудита, наград по ней нет.
     */
+    // ── Перевод с другой платформы группы (ветка client-transfer) ──
+    if (ctx.invite) {
+      await bindInviteWithinTx(client as unknown as Queryable, { token: ctx.invite, userId });
+    }
     if (attribution) {
       await recordAttributionWithinTx(client as unknown as Queryable, {
         refereeUserId: userId,

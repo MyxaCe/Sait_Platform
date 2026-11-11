@@ -15,7 +15,16 @@ function SubmitButton({ label }: { label: string }) {
   );
 }
 
-export function RegisterForm() {
+/** Предзаполнение по приглашению перевода с другой платформы группы (ветка client-transfer). */
+export interface RegisterPrefill {
+  invite: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  country: string;
+}
+
+export function RegisterForm({ prefill }: { prefill?: RegisterPrefill } = {}) {
   const t = useTranslations('auth');
   const locale = useLocale();
   const fieldError = useFieldError();
@@ -25,20 +34,21 @@ export function RegisterForm() {
     <form action={formAction} className="flex flex-col gap-4" noValidate>
       <FormMessage error={state.error} />
       <input type="hidden" name="locale" value={locale} />
+      {prefill ? <input type="hidden" name="invite" value={prefill.invite} /> : null}
       {/* honeypot */}
       <input type="text" name="website" tabIndex={-1} autoComplete="off" className="hidden" aria-hidden />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <FormField label={t('firstName')} htmlFor="firstName" required error={fieldError(state.fieldErrors?.firstName)}>
-          <Input id="firstName" name="firstName" autoComplete="given-name" invalid={!!state.fieldErrors?.firstName} />
+          <Input id="firstName" name="firstName" autoComplete="given-name" defaultValue={prefill?.firstName} invalid={!!state.fieldErrors?.firstName} />
         </FormField>
         <FormField label={t('lastName')} htmlFor="lastName" required error={fieldError(state.fieldErrors?.lastName)}>
-          <Input id="lastName" name="lastName" autoComplete="family-name" invalid={!!state.fieldErrors?.lastName} />
+          <Input id="lastName" name="lastName" autoComplete="family-name" defaultValue={prefill?.lastName} invalid={!!state.fieldErrors?.lastName} />
         </FormField>
       </div>
 
       <FormField label={t('email')} htmlFor="email" required error={fieldError(state.fieldErrors?.email)}>
-        <Input id="email" name="email" type="email" autoComplete="email" invalid={!!state.fieldErrors?.email} />
+        <Input id="email" name="email" type="email" autoComplete="email" defaultValue={prefill?.email} invalid={!!state.fieldErrors?.email} />
       </FormField>
 
       <FormField label={t('phone')} htmlFor="phone" required error={fieldError(state.fieldErrors?.phone)}>
@@ -47,7 +57,7 @@ export function RegisterForm() {
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <FormField label={t('country')} htmlFor="country" required error={fieldError(state.fieldErrors?.country)}>
-          <Input id="country" name="country" autoComplete="country-name" invalid={!!state.fieldErrors?.country} />
+          <Input id="country" name="country" autoComplete="country-name" defaultValue={prefill?.country} invalid={!!state.fieldErrors?.country} />
         </FormField>
         <FormField label={t('accountType')} htmlFor="accountType" required>
           <Select id="accountType" name="accountType" defaultValue="standard">

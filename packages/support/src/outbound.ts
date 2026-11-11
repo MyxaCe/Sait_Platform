@@ -9,18 +9,37 @@ import { normalizeMessageId } from './text';
  * Оператор видит состояние доставки у своего ответа.
  */
 
-export type MailPurpose = 'support_reply' | 'support_ack' | 'password_reset' | 'email_verify' | 'credentials_notice';
+export type MailPurpose =
+  | 'support_reply'
+  | 'support_ack'
+  | 'password_reset'
+  | 'email_verify'
+  // ── Правка учётных данных менеджером (ветка admin-credentials): уведомление клиенту. ──
+  | 'credentials_notice'
+  // ── Перевод на другую платформу группы (ветка client-transfer): приглашение
+  //    цели (одноразовая ссылка) и уведомление о возврате перевода. ──
+  | 'transfer_invite'
+  | 'transfer_notice';
 
 /**
- * Служебные письма доступа к аккаунту: уходят всегда, даже если канал
- * поддержки по почте выключен. `credentials_notice` — уведомление клиенту о
- * правке учётных данных менеджером (ветка admin-credentials, 10.11).
+ * Служебные письма доступа к аккаунту (без копии в «Отправленные»).
+ * `credentials_notice` — уведомление клиенту о правке учётных данных
+ * менеджером (ветка admin-credentials, 10.11).
  */
 export const AUTH_MAIL_PURPOSES: readonly MailPurpose[] = ['password_reset', 'email_verify', 'credentials_notice'];
 export type MailStatus = 'queued' | 'sending' | 'sent' | 'failed' | 'cancelled';
 
 /** Письма с одноразовыми ссылками — тело стирается после отправки. */
-export const SECRET_BODY_PURPOSES: readonly MailPurpose[] = ['password_reset', 'email_verify'];
+export const SECRET_BODY_PURPOSES: readonly MailPurpose[] = ['password_reset', 'email_verify', 'transfer_invite'];
+
+/** Системные письма (не переписка): уходят всегда, даже когда почтовый канал поддержки выключен. */
+export const SYSTEM_MAIL_PURPOSES: readonly MailPurpose[] = [
+  'password_reset',
+  'email_verify',
+  'credentials_notice',
+  'transfer_invite',
+  'transfer_notice',
+];
 
 export interface EnqueueInput {
   purpose: MailPurpose;
@@ -97,7 +116,7 @@ export async function claimDueMail(
       WHERE status = 'queued' AND expires_at IS NOT NULL AND expires_at < $1`,
     [now],
   );
-  const purposes = opts.purposes ?? ['support_reply', 'support_ack', ...AUTH_MAIL_PURPOSES];
+  const purposes = opts.purposes ?? ['support_reply', 'support_ack', ...SYSTEM_MAIL_PURPOSES];
   const r = await db.query(
     `UPDATE outbound_mail o
         SET status = 'sending', attempts = o.attempts + 1, locked_at = $1,

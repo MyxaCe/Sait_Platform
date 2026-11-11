@@ -14,6 +14,8 @@ import {
 } from '@/features/profile/ProfileSections';
 // ── Поддержка: подтверждение email (ветка demo-support) ──
 import { EmailVerifyNotice } from '@/features/auth/EmailVerifyNotice';
+// ── Перевод на другую платформу группы (ветка client-transfer): только статус и инструкция ──
+import { TransferNotice } from '@/features/transfer/TransferNotice';
 
 /**
  * «Профиль» (r2, замечание владельца): личные данные, верификация,
@@ -104,6 +106,7 @@ export default async function ProfilePage({
 
       <div className="space-y-5 xl:col-span-9">
         {/* Поддержка (demo-support): напоминание подтвердить email — над личными данными. */}
+        {tab === 'personal' ? <TransferNotice userId={user.id} /> : null}
         {tab === 'personal' ? <EmailVerifyNotice userId={user.id} /> : null}
         {tab === 'personal' ? (
           <div className="xl:grid xl:grid-cols-2 xl:items-start xl:gap-5">

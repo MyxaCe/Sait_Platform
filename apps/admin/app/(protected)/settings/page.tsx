@@ -13,6 +13,8 @@ import { moneyPool } from '@/lib/crypto/runtime';
 import { readCredentialSettings } from '@/lib/credentials/core';
 import { checklistToText } from '@/lib/credentials/policy';
 import { CredentialSettingsForm } from './CredentialSettingsForm';
+// ── Реестр платформ группы (ветка client-transfer) ──
+import { GroupPlatformsPanel } from './GroupPlatformsPanel';
 
 /**
  * «Настройки платформы» (дизайн §3) — только admin. Денежные гейты и
@@ -144,6 +146,8 @@ export default async function PlatformSettingsPage() {
             }}
           />
         </Panel>
+        {/* ── Реестр платформ группы (ветка client-transfer) ── */}
+        <GroupPlatformsPanel />
         </div>
 
         <aside className="min-w-0 space-y-5">

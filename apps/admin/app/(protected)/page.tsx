@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import {
+  Callout,
   DataTable,
   EmptyState,
   KpiTile,
@@ -33,6 +34,8 @@ import { MyClientsKpis, MyClientsPanel } from './_managers/MyClientsSection';
 // ── Учётные данные клиента (ветка admin-credentials) ──
 import { getCredentialsAlerts } from '@/lib/credentials/queries';
 import { moneyPool } from '@/lib/crypto/runtime';
+// ── Перевод на другую платформу группы (ветка client-transfer) ──
+import { unseenTransferCounts } from '@broker/transfer';
 
 /**
  * Дашборд `/` (эталонный экран редизайна, концепция §7.3). Операционный пульт,
@@ -164,6 +167,9 @@ export default async function ControlCenterHome() {
   // ── Сигнал службе безопасности (только admin): правки учётных данных за сутки
   //    и операторы сверх порога. Информационно — ничего не блокирует. ──
   const credAlerts = operator.role === 'admin' ? await getCredentialsAlerts(moneyPool()).catch(() => null) : null;
+  // ── Переводы клиентов (ветка client-transfer): admin видит постфактум — уведомление о непросмотренных. ──
+  const transfers =
+    operator.role === 'admin' ? await unseenTransferCounts(getPool()).catch(() => null) : null;
   const oldest = pending[0];
   const overdue = pending.filter((p) => isOverdue(p.updatedAt)).length;
 
@@ -180,6 +186,20 @@ export default async function ControlCenterHome() {
       />
 
       {mySummary ? <MyClientsKpis summary={mySummary} /> : null}
+
+      {/* ── Переводы клиентов (ветка client-transfer) ── */}
+      {transfers && transfers.outgoing + transfers.inbound + transfers.refundTasks > 0 ? (
+        <Callout
+          tone="warning"
+          title={`Переводы клиентов между платформами: новых ${transfers.outgoing + transfers.inbound}${transfers.refundTasks ? ` · задач «вернуть средства» ${transfers.refundTasks}` : ''}`}
+        >
+          Менеджеры провели переводы по заявлениям клиентов. Проверьте основания и подсказки юрисдикций; неверный перевод можно
+          вернуть.{' '}
+          <Link href="/clients/transfers" className="text-accent font-medium hover:underline">
+            Открыть «Переводы клиентов» →
+          </Link>
+        </Callout>
+      ) : null}
 
       <section aria-label="Комплаенс и клиенты" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         {kyc ? (

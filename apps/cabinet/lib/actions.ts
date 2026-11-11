@@ -96,6 +96,8 @@ export async function registerAction(_prev: ActionState, formData: FormData): Pr
     },
     ip: ip === 'local' ? null : ip,
     ipCountry: geoHeader ? headers().get(geoHeader) : null,
+    // ── Перевод с другой платформы группы (ветка client-transfer) ──
+    invite: typeof raw.invite === 'string' && raw.invite ? raw.invite : null,
   });
   if (!result.ok) {
     // Три причины отказа — три разных ответа формы. Прежде здесь любой

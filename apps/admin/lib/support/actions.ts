@@ -21,6 +21,8 @@ import {
 import { LOGIN_PATH } from '../auth/constants';
 import { getPool } from '../db';
 import { supportActor, supportPool } from './runtime';
+// ── Перевод на другую платформу группы (ветка client-transfer): шаблон не может предлагать перевод ──
+import { listGroupPlatforms, mentionsOtherPlatform } from '@broker/transfer';
 
 /**
  * Server actions раздела «Поддержка». Личность — из сессии (Р-451), права —
@@ -179,6 +181,14 @@ export async function saveSettingsAction(_prev: SupportActionState, fd: FormData
 
 export async function saveTemplateAction(_prev: SupportActionState, fd: FormData): Promise<SupportActionState> {
   const actor = await actorOrLogin();
+  // ── Перевод (ветка client-transfer): шаблоны — инструмент массовых ответов; упоминание
+  //    другой платформы группы в шаблоне = предложение перевода, а перевод — только по
+  //    инициативе клиента (решение юристов 10.11). Реестра нет (миграция не применена) — не мешаем. ──
+  const platforms = await listGroupPlatforms(getPool()).catch(() => []);
+  if (mentionsOtherPlatform(`${str(fd, 'title')}
+${str(fd, 'body')}`, platforms, process.env.SITE_SLUG?.trim() ?? '')) {
+    return { error: 'templateMentionsGroupPlatform' };
+  }
   const r = await saveTemplate(supportPool(), actor, {
     id: str(fd, 'id') || null,
     key: str(fd, 'key').trim(),

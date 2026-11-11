@@ -34,7 +34,9 @@ export type ActionGroup =
   // ── Менеджеры клиентов (ветка admin-managers) ──
   | 'managers'
   // ── Учётные данные клиента (ветка admin-credentials) ──
-  | 'credentials';
+  | 'credentials'
+  // ── Переводы клиентов между платформами группы (ветка client-transfer) ──
+  | 'transfers';
 
 /** Группы — в порядке вывода в фильтре. */
 export const ACTION_GROUPS: { key: ActionGroup; label: string }[] = [
@@ -60,6 +62,8 @@ export const ACTION_GROUPS: { key: ActionGroup; label: string }[] = [
   { key: 'managers', label: 'Менеджеры клиентов' },
   // ── Учётные данные клиента (ветка admin-credentials) ──
   { key: 'credentials', label: 'Учётные данные клиента: email, пароль, адрес вывода' },
+  // ── Переводы клиентов между платформами группы (ветка client-transfer) ──
+  { key: 'transfers', label: 'Переводы клиентов между платформами' },
 ];
 
 export interface ActionMeta {
@@ -383,6 +387,36 @@ export const ACTION_LABELS: Record<string, ActionMeta> = {
     tone: 'info',
     group: 'platform',
   },
+  // ── Переводы клиентов между платформами группы (ветка client-transfer, 10.11). Коды —
+  //    TRANSFER_ACTIONS в @broker/transfer. Общий номер перевода (payload.number) связывает
+  //    записи источника и цели. ──
+  // источник
+  'client.transfer.sent': { label: 'Перевод на другую платформу проведён менеджером', tone: 'warning', group: 'transfers' },
+  'client.transfer.delivered': { label: 'Перевод: пакет принят платформой-целью', tone: 'info', group: 'transfers' },
+  'client.transfer.refused': { label: 'Перевод: платформа-цель отказала', tone: 'negative', group: 'transfers' },
+  'client.transfer.target_invited': { label: 'Перевод: цель отправила приглашение', tone: 'info', group: 'transfers' },
+  'client.transfer.target_registered': { label: 'Перевод: клиент зарегистрировался в цели', tone: 'info', group: 'transfers' },
+  'client.transfer.target_kyc_passed': { label: 'Перевод: клиент прошёл KYC в цели', tone: 'positive', group: 'transfers' },
+  'client.transfer.target_expired': { label: 'Перевод: приглашение истекло', tone: 'neutral', group: 'transfers' },
+  'client.transfer.source_closed': { label: 'Счёт закрыт по переводу', tone: 'warning', group: 'transfers' },
+  'client.transfer.revoked': { label: 'Перевод возвращён администратором', tone: 'negative', group: 'transfers' },
+  'client.transfer.revoke_applied': { label: 'Перевод: цель подтвердила возврат', tone: 'info', group: 'transfers' },
+  'client.transfer.source_restored': { label: 'Перевод: клиент восстановлен (торговля разморожена)', tone: 'positive', group: 'transfers' },
+  'client.transfer.delivery_retried': { label: 'Перевод: доставка запущена повторно', tone: 'neutral', group: 'transfers' },
+  'client.transfer.reviewed': { label: 'Переводы просмотрены администратором', tone: 'neutral', group: 'transfers' },
+  // цель
+  'client.transfer.received': { label: 'Входящий перевод принят', tone: 'info', group: 'transfers' },
+  'client.transfer.invite_queued': { label: 'Входящий перевод: письмо-приглашение в очереди', tone: 'neutral', group: 'transfers' },
+  'client.transfer.invited': { label: 'Входящий перевод: приглашение отправлено', tone: 'info', group: 'transfers' },
+  'client.transfer.registered': { label: 'Клиент зарегистрировался по приглашению перевода', tone: 'positive', group: 'transfers' },
+  'client.transfer.kyc_passed': { label: 'Входящий перевод: KYC пройден', tone: 'positive', group: 'transfers' },
+  'client.transfer.expired': { label: 'Входящий перевод: приглашение истекло', tone: 'neutral', group: 'transfers' },
+  'client.transfer.invite_revoked': { label: 'Входящий перевод отозван — приглашение недействительно', tone: 'negative', group: 'transfers' },
+  'client.transfer.revoked_by_group': { label: 'Перевод отозван группой — счёт заморожен', tone: 'negative', group: 'transfers' },
+  'client.transfer.refund_task_done': { label: 'Средства по отозванному переводу возвращены', tone: 'positive', group: 'transfers' },
+  // канал и реестр
+  'platform.transfer_channel.refused': { label: 'Межплатформенное сообщение отвергнуто получателем', tone: 'negative', group: 'transfers' },
+  'platform.group_registry.upserted': { label: 'Изменён реестр платформ группы', tone: 'warning', group: 'transfers' },
 };
 
 export function actionLabel(action: string): { label: string; tone: StatusTone } {
@@ -409,6 +443,8 @@ export const SUBJECT_KIND_LABELS: Record<string, string> = {
   // ── Поддержка (ветка demo-support) ──
   support_ticket: 'Обращение',
   support_template: 'Шаблон ответа',
+  // ── Переводы клиентов (ветка client-transfer) ──
+  platform_transfer: 'Перевод между платформами',
 };
 
 export function subjectKindLabel(kind: string): string {
@@ -425,6 +461,8 @@ export const STATIC_SUBJECT_NAMES: Record<string, string> = {
   'platform:support:leads': 'Обращения с формы контактов',
   // ── Учётные данные клиента (ветка admin-credentials) ──
   'platform:credential_settings': 'Безопасность учётных данных',
+  // ── Переводы клиентов (ветка client-transfer) ──
+  'platform:transfers': 'Переводы клиентов',
 };
 
 /**

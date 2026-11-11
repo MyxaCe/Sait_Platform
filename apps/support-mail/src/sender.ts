@@ -1,6 +1,16 @@
 import MailComposer from 'nodemailer/lib/mail-composer';
 import type { Queryable } from '@broker/money';
-import { AUTH_MAIL_PURPOSES, claimDueMail, markMailFailed, markMailSent, writeMailEvent, type ClaimedMail, type MailPurpose } from '@broker/support';
+import {
+  AUTH_MAIL_PURPOSES,
+  claimDueMail,
+  markMailFailed,
+  markMailSent,
+  SECRET_BODY_PURPOSES,
+  SYSTEM_MAIL_PURPOSES,
+  writeMailEvent,
+  type ClaimedMail,
+  type MailPurpose,
+} from '@broker/support';
 
 /**
  * Отправка очереди `outbound_mail` через SMTP хостинга (cPanel). Письмо
@@ -32,7 +42,7 @@ export interface SenderDeps {
 /** RFC 3834: автоответ помечается, чтобы чужой автоответчик не ответил на него. */
 function autoSubmitted(purpose: MailPurpose): string | undefined {
   if (purpose === 'support_ack') return 'auto-replied';
-  if (AUTH_MAIL_PURPOSES.includes(purpose)) return 'auto-generated';
+  if (SYSTEM_MAIL_PURPOSES.includes(purpose)) return 'auto-generated';
   return undefined;
 }
 
@@ -72,8 +82,8 @@ export async function sendTick(deps: SenderDeps): Promise<{ sent: number; failed
     return out;
   }
   const purposes: MailPurpose[] = deps.supportEmailEnabled
-    ? [...AUTH_MAIL_PURPOSES, 'support_reply', 'support_ack']
-    : [...AUTH_MAIL_PURPOSES];
+    ? [...SYSTEM_MAIL_PURPOSES, 'support_reply', 'support_ack']
+    : [...SYSTEM_MAIL_PURPOSES];
   const batch = await claimDueMail(deps.db, { limit: Math.min(room, 10), domain: deps.domain, purposes });
   for (const m of batch) {
     let raw: Buffer;
@@ -93,7 +103,8 @@ export async function sendTick(deps: SenderDeps): Promise<{ sent: number; failed
       continue;
     }
     // Копия в «Отправленные» — после успешной отправки и не влияет на её итог.
-    if (deps.sentCopy && !AUTH_MAIL_PURPOSES.includes(m.purpose)) {
+    // Без копии: письма с одноразовой ссылкой (тело стёрто) и служебные письма доступа.
+    if (deps.sentCopy && !SECRET_BODY_PURPOSES.includes(m.purpose) && !AUTH_MAIL_PURPOSES.includes(m.purpose)) {
       await deps.sentCopy.append(raw).catch((e: Error) => deps.log?.(`копия в Sent не легла: ${e.message}`));
     }
   }

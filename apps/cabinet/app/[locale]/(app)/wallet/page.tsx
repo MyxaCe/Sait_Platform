@@ -16,6 +16,8 @@ import { NavIcon } from '@/features/shell/NavIcon';
 import { realMoneyCurrency } from '@broker/money/display-currency';
 import { Segmented } from '@/features/ui/Segmented';
 import { PAGE_NARROW } from '@/features/ui/page';
+// ── Перевод на другую платформу группы (ветка client-transfer) ──
+import { TransferNotice } from '@/features/transfer/TransferNotice';
 
 /**
  * «Кошелёк» (r2, замечание владельца): пополнение и вывод — одна страница.
@@ -106,6 +108,7 @@ export default async function WalletPage({
           <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">{t('walletTitle')}</h1>
           <p className="mt-1 text-sm text-secondary">{t('walletLead')}</p>
         </div>
+        <TransferNotice userId={user.id} withWithdrawLink={tab !== 'withdraw'} />
 
         <div className="xl:hidden">{balanceCard}</div>
 
