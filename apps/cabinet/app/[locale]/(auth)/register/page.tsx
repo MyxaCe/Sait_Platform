@@ -3,6 +3,8 @@ import { Link } from '@/i18n/navigation';
 import { RegisterForm } from '@/features/auth/RegisterForm';
 import { registerSubtitle } from '@/lib/register-copy';
 import { getTenantStartBalance } from '@/lib/tenant';
+// ── Перевод с другой платформы группы (ветка client-transfer) ──
+import { InviteNotice, loadInvite } from '@/features/auth/TransferInvite';
 
 /**
  * Подпись регистрации называет сумму ТОЛЬКО когда её назначил тенант
@@ -29,10 +31,17 @@ import { getTenantStartBalance } from '@/lib/tenant';
  * разметке, как в B-026 у витрины. Пометка оставлена намеренно:
  * появится у кабинета статика — этот вызов придётся пересматривать.
  */
-export default async function RegisterPage({ params }: { params: { locale: string } }) {
+export default async function RegisterPage({
+  params,
+  searchParams,
+}: {
+  params: { locale: string };
+  searchParams?: { invite?: string };
+}) {
   setRequestLocale(params.locale);
   const t = await getTranslations('auth');
   const startBalance = await getTenantStartBalance();
+  const invite = await loadInvite(searchParams?.invite);
 
   // Выбор подписи — в `lib/register-copy.ts`: внутри разметки его
   // нельзя было покрасить мутацией.
@@ -46,7 +55,8 @@ export default async function RegisterPage({ params }: { params: { locale: strin
     <>
       <h1 className="text-2xl font-semibold">{t('registerTitle')}</h1>
       <p className="mb-6 mt-1 text-sm text-secondary">{subtitle}</p>
-      <RegisterForm />
+      <InviteNotice invite={invite} />
+      <RegisterForm prefill={invite.state === 'ok' ? invite.prefill : undefined} />
       <p className="mt-6 text-center text-sm text-secondary">
         {t('haveAccount')}{' '}
         <Link href="/login" className="text-accent hover:underline">

@@ -18,6 +18,7 @@
     "@broker/storage": "workspace:*",
     "@broker/support": "workspace:*",
     "@broker/tenant": "workspace:*",
+    "@broker/transfer": "workspace:*",
     "@broker/ui": "workspace:*",
     "@broker/utils": "workspace:*",
     "@sentry/nextjs": "^8.42.0",

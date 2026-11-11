@@ -945,5 +945,26 @@
     "notSpecified": "not specified",
     "changeHint": "Your account type is assigned by the platform. Contact support to change it.",
     "compareParam": "Parameter"
+  },
+  "platformTransfer": {
+    "inviteTitle": "Invitation for transfer {number}",
+    "inviteBody": "You asked {source} support for a transfer. We prefilled the form with the data {source} passed with your consent. Please check it: you open the account yourself, under this platform's terms, and pass identity verification (KYC) again.",
+    "inviteFunds": "Funds are not moved automatically: withdraw them from {source} in the usual way and deposit to your new account.",
+    "inviteInvalid": "This invitation link is invalid or already used. You can register in the usual way.",
+    "inviteExpired": "The invitation has expired. Register in the usual way or contact support.",
+    "inviteRevoked": "The invitation has been withdrawn. Contact support if you have questions.",
+    "outgoingTitle": "Transfer to {target}",
+    "outgoingBody": "At your request to support, transfer {number} has been arranged. {target} will send you an invitation email: register via the link and pass identity verification.",
+    "outgoingFunds": "Funds are not moved automatically. Withdraw them here with a regular withdrawal and deposit to the new platform.",
+    "outgoingToWithdraw": "Withdraw funds",
+    "outgoingStatus": "Status: {status}",
+    "status": {
+      "sent": "arranged",
+      "delivered": "passed to the platform",
+      "invited": "invitation sent",
+      "registered": "you have registered",
+      "kyc_passed": "verification passed",
+      "source_closed": "account here closed"
+    }
   }
 }
