@@ -47,7 +47,7 @@ function fake() {
         state.flags ??= { deposit_kyc: 'inherit', withdraw_kyc: 'inherit', frozen: false, withdraw_banned: false };
         return { rows: [] };
       }
-      if (s.startsWith('SELECT deposit_kyc, withdraw_kyc, frozen, withdraw_banned')) return { rows: [{ ...state.flags }] };
+      if (s.startsWith('SELECT deposit_kyc, withdraw_kyc, frozen,')) return { rows: [{ ...state.flags }] };
       if (s.startsWith('UPDATE client_money_flags SET deposit_kyc')) {
         state.flags = { deposit_kyc: p[1] as string, withdraw_kyc: p[2] as string, frozen: p[3] as boolean, withdraw_banned: p[4] as boolean };
         return { rows: [] };

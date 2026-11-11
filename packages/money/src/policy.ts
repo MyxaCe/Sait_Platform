@@ -55,12 +55,24 @@ export const DEFAULT_CLIENT_FLAGS: ClientMoneyFlags = {
   withdrawBanned: false,
 };
 
+/**
+ * Происхождение «Запрета вывода» (миграция 1795520000000): поставлен в
+ * денежных флагах, менеджером по распоряжению или автозаморозкой после смены
+ * учётных данных. Сущность одна — флаг `withdraw_banned`; здесь только срок и
+ * источник, чтобы клиенту и оператору показать «до …» и кто может снять.
+ */
+export type WithdrawBanKind = 'money_flags' | 'credentials_manual' | 'credentials_auto';
+
 export interface MoneyPolicyInputs {
   clientExists: boolean;
   blocked: boolean;
   kycVerified: boolean;
   settings: PlatformMoneySettings;
+  /** `withdrawBanned` — ДЕЙСТВУЮЩИЙ запрет (истёкший срок уже учтён в SQL). */
   flags: ClientMoneyFlags;
+  /** Срок действующего запрета вывода; `null` — бессрочно или запрета нет. */
+  withdrawBanUntil?: string | null;
+  withdrawBanKind?: WithdrawBanKind | null;
 }
 
 export interface EffectiveKyc {
@@ -83,6 +95,9 @@ export interface MoneyPolicy {
   blocked: boolean;
   frozen: boolean;
   withdrawBanned: boolean;
+  /** До какого момента действует запрет вывода (`null` — бессрочно / нет запрета). */
+  withdrawBanUntil: string | null;
+  withdrawBanKind: WithdrawBanKind | null;
   minDepositMinor: number;
   minWithdrawMinor: number;
 }
@@ -129,6 +144,8 @@ export function computeMoneyPolicy(input: MoneyPolicyInputs): MoneyPolicy {
     blocked: input.blocked,
     frozen: input.flags.frozen,
     withdrawBanned: input.flags.withdrawBanned,
+    withdrawBanUntil: input.flags.withdrawBanned ? (input.withdrawBanUntil ?? null) : null,
+    withdrawBanKind: input.flags.withdrawBanned ? (input.withdrawBanKind ?? 'money_flags') : null,
     minDepositMinor: input.settings.minDepositMinor,
     minWithdrawMinor: input.settings.minWithdrawMinor,
   };
@@ -137,6 +154,23 @@ export function computeMoneyPolicy(input: MoneyPolicyInputs): MoneyPolicy {
 function asKyc(v: unknown): KycSetting {
   return v === 'required' || v === 'not_required' ? v : 'inherit';
 }
+
+/**
+ * Действующий «Запрет вывода» в SQL (алиас таблицы флагов — параметр). Запрет
+ * со сроком (`withdraw_ban_until`) сам перестаёт действовать, когда срок
+ * прошёл: снимать его фоновой задачей не нужно, а истёкший запрет не может
+ * «залипнуть». Одно выражение на кабинет, админку и поддержку.
+ */
+export function activeWithdrawBanSql(alias: string): string {
+  return `COALESCE(${alias}.withdraw_banned AND (${alias}.withdraw_ban_until IS NULL OR ${alias}.withdraw_ban_until > now()), false)`;
+}
+
+function asBanKind(v: unknown): WithdrawBanKind {
+  return v === 'credentials_manual' || v === 'credentials_auto' ? v : 'money_flags';
+}
+
+const isoOrNull = (v: unknown): string | null =>
+  v === null || v === undefined ? null : v instanceof Date ? v.toISOString() : String(v);
 
 /** Настройки платформы (строка-синглтон; нет строки — умолчания миграции). */
 export async function readPlatformMoneySettings(db: Queryable): Promise<PlatformMoneySettings> {
@@ -165,7 +199,8 @@ export async function loadMoneyPolicyInputs(
             cv.state AS kyc_state,
             f.deposit_kyc, f.withdraw_kyc,
             COALESCE(f.frozen, false) AS frozen,
-            COALESCE(f.withdraw_banned, false) AS withdraw_banned,
+            ${activeWithdrawBanSql('f')} AS withdraw_banned,
+            f.withdraw_ban_until, f.withdraw_ban_kind,
             s.deposit_requires_kyc, s.withdraw_requires_kyc,
             s.min_deposit_minor, s.min_withdraw_minor
        FROM users u
@@ -205,6 +240,8 @@ export async function loadMoneyPolicyInputs(
       frozen: Boolean(row.frozen),
       withdrawBanned: Boolean(row.withdraw_banned),
     },
+    withdrawBanUntil: row.withdraw_banned ? isoOrNull(row.withdraw_ban_until) : null,
+    withdrawBanKind: row.withdraw_banned ? asBanKind(row.withdraw_ban_kind) : null,
   };
 }
 

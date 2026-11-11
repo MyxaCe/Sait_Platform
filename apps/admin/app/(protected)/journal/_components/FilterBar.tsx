@@ -50,6 +50,8 @@ export function FilterBar({
         <span className={label}>Тип действия</span>
         <Select name="action" controlSize="compact" defaultValue={filters.action ?? ''}>
           <option value="">Все действия</option>
+          {/* Служба безопасности: все правки учётных данных клиентов одним выбором. */}
+          <option value="client.credentials.*">Все правки учётных данных клиентов</option>
           {ACTION_GROUPS.map((g) => {
             const items = [...known].filter((a) => actionGroup(a) === g.key);
             if (items.length === 0) return null;

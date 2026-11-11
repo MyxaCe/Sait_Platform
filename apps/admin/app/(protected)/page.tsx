@@ -30,6 +30,9 @@ import { supportActor } from '@/lib/support/runtime';
 // ── Менеджеры клиентов (ветка admin-managers) ──
 import { getMyClientsSummary, isClientManager, listMyClients } from '@/lib/managers/queries';
 import { MyClientsKpis, MyClientsPanel } from './_managers/MyClientsSection';
+// ── Учётные данные клиента (ветка admin-credentials) ──
+import { getCredentialsAlerts } from '@/lib/credentials/queries';
+import { moneyPool } from '@/lib/crypto/runtime';
 
 /**
  * Дашборд `/` (эталонный экран редизайна, концепция §7.3). Операционный пульт,
@@ -158,6 +161,9 @@ export default async function ControlCenterHome() {
   const [mySummary, myClients] = manager
     ? await Promise.all([getMyClientsSummary(operator.operatorId), listMyClients(operator.operatorId, 8)])
     : [null, []];
+  // ── Сигнал службе безопасности (только admin): правки учётных данных за сутки
+  //    и операторы сверх порога. Информационно — ничего не блокирует. ──
+  const credAlerts = operator.role === 'admin' ? await getCredentialsAlerts(moneyPool()).catch(() => null) : null;
   const oldest = pending[0];
   const overdue = pending.filter((p) => isOverdue(p.updatedAt)).length;
 
@@ -212,6 +218,36 @@ export default async function ControlCenterHome() {
           action={<OpenLink href="/clients" />}
         />
       </section>
+
+      {credAlerts ? (
+        <section aria-label="Правки учётных данных" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <KpiTile
+            label="Правки учётных данных за 24 ч"
+            value={credAlerts.risky24h}
+            hint={`email, пароль, адрес, снятие заморозки · всего с заморозками ${credAlerts.total24h}`}
+            action={<OpenLink href={`/journal?action=${encodeURIComponent('client.credentials.*')}`} />}
+          />
+          <KpiTile
+            label="Необычная активность"
+            value={credAlerts.unusual.length}
+            tone={credAlerts.unusual.length > 0 ? 'negative' : 'default'}
+            hint={
+              credAlerts.unusual.length > 0
+                ? credAlerts.unusual.map((u) => `${u.operatorName}: ${u.count}`).join(' · ')
+                : `никто не превысил ${credAlerts.threshold} правок за сутки`
+            }
+            action={
+              credAlerts.unusual[0] ? (
+                <OpenLink
+                  href={`/journal?action=${encodeURIComponent('client.credentials.*')}&operatorId=${credAlerts.unusual[0].operatorId}`}
+                />
+              ) : (
+                <OpenLink href="/settings#credentials">Порог →</OpenLink>
+              )
+            }
+          />
+        </section>
+      ) : null}
 
       {support ? (
         <section aria-label="Поддержка" className="grid grid-cols-2 gap-3 lg:grid-cols-4">

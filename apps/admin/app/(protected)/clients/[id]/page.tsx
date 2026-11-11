@@ -51,6 +51,9 @@ import { SupportTab } from './_components/SupportTab';
 import { getClientManager, listClientManagers } from '@/lib/managers/queries';
 import { canAssignManagers } from '@/lib/managers/policy';
 import { AssignManagerForm } from '../_components/managers/AssignManagerForm';
+// ── Учётные данные клиента (ветка admin-credentials) ──
+import { getCredentialsView } from '@/lib/credentials/queries';
+import { CredentialsTab } from './_components/CredentialsTab';
 
 /**
  * Карточка клиента `/clients/[id]` (ADM-02, §3.2) — ЭТАЛОННЫЙ экран редизайна
@@ -68,7 +71,7 @@ import { AssignManagerForm } from '../_components/managers/AssignManagerForm';
  */
 export const dynamic = 'force-dynamic';
 
-const TAB_KEYS = ['overview', 'trading', 'money', 'compliance', 'access', 'support', 'journal'] as const;
+const TAB_KEYS = ['overview', 'trading', 'money', 'compliance', 'access', 'credentials', 'support', 'journal'] as const;
 type TabKey = (typeof TAB_KEYS)[number];
 
 function asTab(v: string | undefined): TabKey {
@@ -281,6 +284,12 @@ export default async function ClientCardPage({
     canAssignManager ? listClientManagers() : Promise.resolve([]),
   ]);
   const managerIsMe = manager !== null && manager.managerId === operator?.operatorId;
+  // ── Учётные данные: права зрителя (admin / менеджер этого клиента) — из базы. ──
+  const credentials = await getCredentialsView(moneyPool(), {
+    userId: card.userId,
+    operatorId: operator?.operatorId ?? '00000000-0000-0000-0000-000000000000',
+    role: operator?.role,
+  });
   const liveOf = (kind: 'demo' | 'real'): LiveAccount | null => {
     if (live.state !== 'ok') return null;
     const a = live.accounts.find((x) => x.kind === kind);
@@ -406,7 +415,9 @@ export default async function ClientCardPage({
         <Callout tone="warning" title={policy.frozen ? 'Реальный счёт заморожен' : 'Вывод средств запрещён'}>
           {policy.frozen
             ? 'Торговля и вывод на реальном счёте закрыты; закрытие позиций работает. Снять — во вкладке «Деньги».'
-            : 'Заявки на вывод не принимаются. Снять — во вкладке «Деньги».'}
+            : policy.withdrawBanKind === 'credentials_manual' || policy.withdrawBanKind === 'credentials_auto'
+              ? `Заявки на вывод не принимаются${policy.withdrawBanUntil ? ` до ${fmtDateTime(policy.withdrawBanUntil)}` : ''} — заморозка после правки учётных данных. Снять — во вкладке «Учётные данные».`
+              : 'Заявки на вывод не принимаются. Снять — во вкладке «Деньги».'}
         </Callout>
       ) : null}
 
@@ -432,6 +443,13 @@ export default async function ClientCardPage({
             countTone: card.state === 'pending' || amlStatus === 'escalated' ? 'warning' : 'default',
           },
           { key: 'access', label: 'Доступ и сессии', href: tabHref('access'), count: card.sessions.length },
+          {
+            key: 'credentials',
+            label: 'Учётные данные',
+            href: tabHref('credentials'),
+            countTone: credentials.passwordMustChange || policy.withdrawBanned ? 'warning' : 'default',
+            count: card.journal.filter((e) => e.action.startsWith('client.credentials.')).length || undefined,
+          },
           {
             key: 'support',
             label: 'Поддержка',
@@ -753,6 +771,19 @@ export default async function ClientCardPage({
             </Panel>
           ) : null}
         </div>
+      ) : null}
+
+      {tab === 'credentials' ? (
+        <CredentialsTab
+          userId={card.userId}
+          email={card.email}
+          emailVerifiedAt={card.emailVerifiedAt}
+          journal={card.journal}
+          view={credentials}
+          policy={policy}
+          managerName={manager ? (managerIsMe ? `${manager.managerName} (вы)` : manager.managerName) : null}
+          tickets={supportTickets.map((t) => ({ number: t.number, subject: t.subject }))}
+        />
       ) : null}
 
       {tab === 'support' ? <SupportTab rows={supportTickets} /> : null}

@@ -8,6 +8,11 @@ import { TronRef } from '../_money/tron';
 import { SettingsForm } from './SettingsForm';
 import { getPromoSettings } from '@/lib/promo/queries';
 import { PromoSettingsForm } from '../promo/_components/PromoForms';
+// ── Учётные данные клиента (ветка admin-credentials) ──
+import { moneyPool } from '@/lib/crypto/runtime';
+import { readCredentialSettings } from '@/lib/credentials/core';
+import { checklistToText } from '@/lib/credentials/policy';
+import { CredentialSettingsForm } from './CredentialSettingsForm';
 
 /**
  * «Настройки платформы» (дизайн §3) — только admin. Денежные гейты и
@@ -25,7 +30,11 @@ function KycValue({ required }: { required: boolean }) {
 export default async function PlatformSettingsPage() {
   const operator = await getOperatorSession();
   if (operator?.role !== 'admin') notFound();
-  const [settings, promo] = await Promise.all([getPlatformMoneySettings(), getPromoSettings()]);
+  const [settings, promo, cred] = await Promise.all([
+    getPlatformMoneySettings(),
+    getPromoSettings(),
+    readCredentialSettings(moneyPool()),
+  ]);
   const address = exchangeTronAddress();
 
   return (
@@ -112,6 +121,28 @@ export default async function PlatformSettingsPage() {
               Миграция акций на этой базе не применена — акции считаются выключенными.
             </Callout>
           )}
+        </Panel>
+
+        <Panel
+          id="credentials"
+          title="Безопасность учётных данных"
+          description="Правку email, пароля и адреса вывода проводит менеджер клиента или администратор — с основанием и проверкой личности по этому чек-листу."
+          actions={
+            <ToneBadge tone={cred.autoHoldEnabled ? 'warning' : 'neutral'}>
+              {cred.autoHoldEnabled ? `автозаморозка ${cred.autoHoldHours} ч` : 'автозаморозка выключена'}
+            </ToneBadge>
+          }
+        >
+          <CredentialSettingsForm
+            initial={{
+              checklistText: checklistToText(cred.checklist),
+              minChecked: cred.minChecked,
+              autoHoldEnabled: cred.autoHoldEnabled,
+              autoHoldHours: cred.autoHoldHours,
+              alertPerOperatorDay: cred.alertPerOperatorDay,
+              tempPasswordHours: cred.tempPasswordHours,
+            }}
+          />
         </Panel>
         </div>
 

@@ -24,7 +24,7 @@ export async function WithdrawPanel({
     <div className="space-y-4 2xl:grid 2xl:grid-cols-2 2xl:items-start 2xl:gap-5 2xl:space-y-0">
       {notice ? (
         <div className="2xl:col-span-2">
-          <PolicyNotice op="withdraw" reasons={reasons} />
+          <PolicyNotice op="withdraw" reasons={reasons} banUntil={policy.withdrawBanUntil} />
         </div>
       ) : null}
       <section className="rounded-2xl border border-border bg-elevated p-4 sm:p-5">

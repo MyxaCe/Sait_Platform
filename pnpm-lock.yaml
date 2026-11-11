@@ -41,6 +41,9 @@ importers:
       '@node-rs/argon2':
         specifier: ^2.0.2
         version: 2.2.2
+      bcryptjs:
+        specifier: ^2.4.3
+        version: 2.4.3
       jose:
         specifier: ^6.2.4
         version: 6.2.4
@@ -63,6 +66,12 @@ importers:
       '@broker/config':
         specifier: workspace:*
         version: link:../../packages/config
+      '@electric-sql/pglite':
+        specifier: ^0.3.0
+        version: 0.3.16
+      '@types/bcryptjs':
+        specifier: ^2.4.6
+        version: 2.4.6
       '@types/node':
         specifier: ^20.14.12
         version: 20.19.43

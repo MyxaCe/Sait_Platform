@@ -1,9 +1,10 @@
 'use server';
 
-import { headers } from 'next/headers';
+import { cookies, headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { readEnv } from '@broker/utils';
 import {
+  completeForcedPasswordChange,
   completePasswordReset,
   confirmEmail,
   loadSupportSettings,
@@ -13,7 +14,8 @@ import {
 } from '@broker/support';
 import { getPool } from '../db';
 import { hashPassword } from '../auth/password';
-import { getSessionUser } from '../auth/session';
+import { getSessionUser, hashToken } from '../auth/session';
+import { SESSION_COOKIE } from '../auth/constants';
 import { isRateLimited } from '../rate-limit';
 import { supportPool } from './state';
 
@@ -95,4 +97,26 @@ export async function requestEmailVerifyAction(_prev: AuthMailState): Promise<Au
 export async function confirmEmailAction(_prev: AuthMailState, fd: FormData): Promise<AuthMailState> {
   const r = await confirmEmail(supportPool(), { token: String(fd.get('token') ?? '') });
   return r.ok ? { ok: true } : { error: r.reason };
+}
+
+/**
+ * Вход по временному паролю от менеджера → свой пароль (функция 3, 10.11).
+ * Текущая сессия остаётся, остальные гасятся; после — в кабинет.
+ */
+export async function forcedPasswordChangeAction(_prev: AuthMailState, fd: FormData): Promise<AuthMailState> {
+  const user = await getSessionUser();
+  if (!user) return { error: 'unauthorized' };
+  const password = String(fd.get('newPassword') ?? '');
+  const confirm = String(fd.get('confirmPassword') ?? '');
+  if (password.length < 8) return { fieldErrors: { newPassword: 'passwordTooShort' } };
+  if (password.length > 200) return { fieldErrors: { newPassword: 'tooLong' } };
+  if (password !== confirm) return { fieldErrors: { confirmPassword: 'passwordsMismatch' } };
+  if (isRateLimited(`forced:${user.id}`, 10, 60_000)) return { error: 'rateLimited' };
+  const token = cookies().get(SESSION_COOKIE)?.value ?? null;
+  await completeForcedPasswordChange(supportPool(), {
+    userId: user.id,
+    passwordHash: await hashPassword(password),
+    keepSessionTokenHash: token ? hashToken(token) : null,
+  });
+  redirect(user.locale === 'en' ? '/en' : '/');
 }

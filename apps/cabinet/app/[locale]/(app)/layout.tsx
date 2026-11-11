@@ -29,6 +29,10 @@ export default async function AppLayout({ children, params }: LayoutProps) {
   if (!user) {
     redirect(params.locale === 'en' ? '/en/login' : '/login');
   }
+  // Временный пароль от менеджера: пока свой не задан — только смена пароля.
+  if (user.mustChangePassword) {
+    redirect(params.locale === 'en' ? '/en/change-password' : '/change-password');
+  }
 
   const [tNav, tCommon, unread, brand, footer, contests] = await Promise.all([
     getTranslations('nav'),

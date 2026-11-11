@@ -65,6 +65,10 @@ export async function POST(request: Request) {
   if (!user) {
     return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
   }
+  // Вход по временному паролю: пока клиент не задал свой — терминалу токена нет.
+  if (user.mustChangePassword) {
+    return NextResponse.json({ error: 'password_change_required' }, { status: 403 });
+  }
   if (isRateLimited(`sso:${user.id}`, 30, 60_000)) {
     return NextResponse.json({ error: 'rateLimited' }, { status: 429 });
   }

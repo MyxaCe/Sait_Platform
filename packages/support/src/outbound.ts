@@ -9,7 +9,14 @@ import { normalizeMessageId } from './text';
  * Оператор видит состояние доставки у своего ответа.
  */
 
-export type MailPurpose = 'support_reply' | 'support_ack' | 'password_reset' | 'email_verify';
+export type MailPurpose = 'support_reply' | 'support_ack' | 'password_reset' | 'email_verify' | 'credentials_notice';
+
+/**
+ * Служебные письма доступа к аккаунту: уходят всегда, даже если канал
+ * поддержки по почте выключен. `credentials_notice` — уведомление клиенту о
+ * правке учётных данных менеджером (ветка admin-credentials, 10.11).
+ */
+export const AUTH_MAIL_PURPOSES: readonly MailPurpose[] = ['password_reset', 'email_verify', 'credentials_notice'];
 export type MailStatus = 'queued' | 'sending' | 'sent' | 'failed' | 'cancelled';
 
 /** Письма с одноразовыми ссылками — тело стирается после отправки. */
@@ -90,7 +97,7 @@ export async function claimDueMail(
       WHERE status = 'queued' AND expires_at IS NOT NULL AND expires_at < $1`,
     [now],
   );
-  const purposes = opts.purposes ?? ['support_reply', 'support_ack', 'password_reset', 'email_verify'];
+  const purposes = opts.purposes ?? ['support_reply', 'support_ack', ...AUTH_MAIL_PURPOSES];
   const r = await db.query(
     `UPDATE outbound_mail o
         SET status = 'sending', attempts = o.attempts + 1, locked_at = $1,

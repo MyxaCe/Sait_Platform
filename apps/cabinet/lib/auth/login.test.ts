@@ -39,7 +39,18 @@ describe('checkLogin · блокировка клиента', () => {
       ok: true,
       userId: 'user-1',
       locale: 'ru',
+      mustChangePassword: false,
     });
+  });
+
+  it('временный пароль от менеджера: вход есть, но с обязательной сменой; истёк — отказ', async () => {
+    state.row = { ...ROW, blocked: false, password_must_change: true, temp_expired: false };
+    const { checkLogin } = await import('./login');
+    await expect(checkLogin('a@b.c', 'secret-pass')).resolves.toMatchObject({ ok: true, mustChangePassword: true });
+    state.row = { ...ROW, blocked: false, password_must_change: true, temp_expired: true };
+    await expect(checkLogin('a@b.c', 'secret-pass')).resolves.toEqual({ ok: false, error: 'tempPasswordExpired' });
+    // Неверный пароль при истёкшем временном — не оракул: invalidCredentials.
+    await expect(checkLogin('a@b.c', 'wrong')).resolves.toEqual({ ok: false, error: 'invalidCredentials' });
   });
 
   it('заблокирован, верный пароль → accessRestricted, сессии не будет', async () => {

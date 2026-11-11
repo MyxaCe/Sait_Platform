@@ -26,6 +26,12 @@ export interface SessionUser {
   locale: 'ru' | 'en';
   vipLevel: number;
   createdAt: Date;
+  /**
+   * Вход по временному паролю от менеджера: пока клиент не задал свой
+   * пароль, кабинет пускает только на страницу смены пароля, терминал
+   * токена не получает (функция 3, 10.11).
+   */
+  mustChangePassword: boolean;
 }
 
 export function hashToken(token: string): string {
@@ -63,7 +69,7 @@ export async function getSessionUser(): Promise<SessionUser | null> {
   const token = cookies().get(SESSION_COOKIE)?.value;
   if (!token) return null;
   const result = await getPool().query(
-    `SELECT u.id, u.uid, u.email, u.full_name, u.locale, u.vip_level, u.created_at,
+    `SELECT u.id, u.uid, u.email, u.full_name, u.locale, u.vip_level, u.created_at, u.password_must_change,
             COALESCE(cb.blocked, false) AS blocked
        FROM sessions s JOIN users u ON u.id = s.user_id
        LEFT JOIN client_blocks cb ON cb.user_id = u.id
@@ -108,6 +114,7 @@ export async function getSessionUser(): Promise<SessionUser | null> {
     // неправдой наоборот. Приведение оставлено осознанно.
     vipLevel: Number(row.vip_level),
     createdAt: row.created_at,
+    mustChangePassword: row.password_must_change === true,
   };
 }
 

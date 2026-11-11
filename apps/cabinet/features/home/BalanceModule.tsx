@@ -273,7 +273,7 @@ async function RealAccountCard({
 
       {hasNotes ? (
         <div className="mt-3 flex flex-col gap-2">
-          {withdrawReasons.length > 0 ? <PolicyNotice op="withdraw" reasons={withdrawReasons} compact /> : null}
+          {withdrawReasons.length > 0 ? <PolicyNotice op="withdraw" reasons={withdrawReasons} banUntil={policy.withdrawBanUntil} compact /> : null}
           {depositReasons.length > 0 ? <PolicyNotice op="deposit" reasons={depositReasons} compact /> : null}
           {addressMissing ? <Callout tone="neutral">{tm('addressMissingTitle')}</Callout> : null}
         </div>

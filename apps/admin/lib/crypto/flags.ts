@@ -1,4 +1,5 @@
 import {
+  activeWithdrawBanSql,
   appendJournalSeqWithinTx,
   inTransaction,
   rollback,
@@ -61,8 +62,10 @@ export async function setClientMoneyFlags(
       [input.userId],
     );
     const cur = await tx.query(
-      `SELECT deposit_kyc, withdraw_kyc, frozen, withdraw_banned
-         FROM client_money_flags WHERE user_id = $1 FOR UPDATE`,
+      // Запрет вывода — ДЕЙСТВУЮЩИЙ (истёкший срок не считается запретом):
+      // форма показывает и сравнивает то же, что видит политика денег.
+      `SELECT deposit_kyc, withdraw_kyc, frozen, ${activeWithdrawBanSql('f')} AS withdraw_banned
+         FROM client_money_flags f WHERE user_id = $1 FOR UPDATE`,
       [input.userId],
     );
     const r = cur.rows[0]!;
@@ -94,6 +97,11 @@ export async function setClientMoneyFlags(
     await tx.query(
       `UPDATE client_money_flags
           SET deposit_kyc = $2, withdraw_kyc = $3, frozen = $4, withdraw_banned = $5,
+              -- Запрет из денежных флагов — бессрочный; смена флага сбрасывает срок
+              -- и происхождение (заморозку «учётных данных» финансы снимают здесь же).
+              withdraw_ban_until = CASE WHEN $7::boolean THEN NULL ELSE withdraw_ban_until END,
+              withdraw_ban_kind = CASE WHEN $7::boolean THEN (CASE WHEN $5::boolean THEN 'money_flags' ELSE NULL END) ELSE withdraw_ban_kind END,
+              withdraw_ban_reason = CASE WHEN $7::boolean THEN (CASE WHEN $5::boolean THEN $8 ELSE NULL END) ELSE withdraw_ban_reason END,
               updated_at = now(), updated_by = $6
         WHERE user_id = $1`,
       [
@@ -103,6 +111,8 @@ export async function setClientMoneyFlags(
         input.next.frozen,
         input.next.withdrawBanned,
         input.operatorId,
+        changed.includes('withdrawBanned'),
+        reason,
       ],
     );
 
