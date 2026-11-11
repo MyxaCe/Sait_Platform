@@ -109,8 +109,17 @@ function buildWhere(opts: Pick<JournalListOptions, 'role' | 'selfOperatorId' | '
     where.push(`j.operator_id = $${params.length}`);
   }
   if (f.action) {
-    params.push(f.action);
-    where.push(`j.action = $${params.length}`);
+    // `префикс.*` — все действия группы (фильтр «правки учётных данных» для
+    // службы безопасности); иначе точное совпадение. Префикс — из [a-z_.]
+    // (код действия), `_` экранируется для LIKE.
+    const prefix = f.action.endsWith('.*') ? f.action.slice(0, -1) : null;
+    if (prefix !== null && /^[a-z_.]+$/.test(prefix)) {
+      params.push(`${prefix.replaceAll('_', '\\_')}%`);
+      where.push(`j.action LIKE $${params.length}`);
+    } else {
+      params.push(f.action);
+      where.push(`j.action = $${params.length}`);
+    }
   }
   if (f.subjectKind) {
     params.push(f.subjectKind);

@@ -19,15 +19,18 @@ import { verifyPassword } from './password';
  * Хеш сверяем и для несуществующего email — одинаковое время ответа.
  */
 export type LoginCheck =
-  | { ok: true; userId: string; locale: string }
-  | { ok: false; error: 'invalidCredentials' | 'accessRestricted' };
+  | { ok: true; userId: string; locale: string; mustChangePassword: boolean }
+  | { ok: false; error: 'invalidCredentials' | 'accessRestricted' | 'tempPasswordExpired' };
 
 /** Хеш-заглушка для несуществующего email: сверка идёт, совпадения не будет. */
 const DUMMY_HASH = '$2a$12$invalidsaltinvalidsaltinvalidsaltinval';
 
 export async function checkLogin(email: string, password: string): Promise<LoginCheck> {
   const r = await getPool().query(
-    `SELECT u.id, u.password_hash, u.locale, COALESCE(cb.blocked, false) AS blocked
+    `SELECT u.id, u.password_hash, u.locale, COALESCE(cb.blocked, false) AS blocked,
+            u.password_must_change,
+            (u.password_must_change AND u.temp_password_expires_at IS NOT NULL
+               AND u.temp_password_expires_at <= now()) AS temp_expired
        FROM users u
        LEFT JOIN client_blocks cb ON cb.user_id = u.id
       WHERE lower(u.email) = lower($1)`,
@@ -39,5 +42,16 @@ export async function checkLogin(email: string, password: string): Promise<Login
     : await verifyPassword(password, DUMMY_HASH);
   if (!row || !ok) return { ok: false, error: 'invalidCredentials' };
   if (row.blocked) return { ok: false, error: 'accessRestricted' };
-  return { ok: true, userId: row.id as string, locale: String(row.locale ?? 'ru') };
+  /*
+   * Временный пароль, выданный менеджером (функция 3, 10.11): действует
+   * ограниченный срок; после — входа им нет, нужен новый (через поддержку
+   * или «Забыли пароль?»). Как и блок — только после верного пароля.
+   */
+  if (row.temp_expired === true) return { ok: false, error: 'tempPasswordExpired' };
+  return {
+    ok: true,
+    userId: row.id as string,
+    locale: String(row.locale ?? 'ru'),
+    mustChangePassword: row.password_must_change === true,
+  };
 }

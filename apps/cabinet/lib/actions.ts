@@ -129,6 +129,10 @@ export async function loginAction(_prev: ActionState, formData: FormData): Promi
 
   await getPool().query(`UPDATE users SET last_login_at = now() WHERE id = $1`, [check.userId]);
   await createSession(check.userId);
+  // Временный пароль от менеджера — сначала свой пароль, потом всё остальное.
+  if (check.mustChangePassword) {
+    redirect(`${String(formData.get('uiLocale') ?? check.locale) === 'en' ? '/en' : ''}/change-password`);
+  }
   // Вход начался с launch терминала (sso-pack v1.1) — продолжаем его; иначе на главную.
   const next = safeLaunchNext(formData.get('next'));
   redirect(next ?? homePath(String(formData.get('uiLocale') ?? check.locale)));

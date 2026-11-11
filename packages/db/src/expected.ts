@@ -53,4 +53,8 @@ export const EXPECTED_MIGRATIONS: readonly string[] = [
   // ── Менеджеры клиентов (ветка admin-managers, 10.11) ──────────────────
   // Флаг operators.is_client_manager + закрепление client_managers.
   '1795410000000_client_managers',
+  // ── Правка учётных данных клиента (ветка admin-credentials, 10.11) ─────
+  // Временный пароль (обязательная смена), срок/происхождение «Запрета
+  // вывода», письмо-уведомление credentials_notice, настройки безопасности.
+  '1795520000000_client_credentials',
 ];

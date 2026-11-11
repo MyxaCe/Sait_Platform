@@ -1,4 +1,5 @@
 import { getPool, type Queryable } from '../db';
+import { activeWithdrawBanSql } from '@broker/money';
 import { asAmlStatus, type AmlStatus } from '../aml/lists';
 import { asState, type VerificationState } from './verification-state';
 import {
@@ -91,7 +92,7 @@ export async function listClientRegistry(
   if (query.access === 'blocked') where.push('COALESCE(cb.blocked, false)');
   if (query.access === 'active') where.push('NOT COALESCE(cb.blocked, false)');
   if (query.access === 'restricted') {
-    where.push('(COALESCE(mf.frozen, false) OR COALESCE(mf.withdraw_banned, false))');
+    where.push(`(COALESCE(mf.frozen, false) OR ${activeWithdrawBanSql('mf')})`);
   }
 
   const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
@@ -118,7 +119,7 @@ export async function listClientRegistry(
               COALESCE(a.status, 'unscreened') AS aml,
               COALESCE(cb.blocked, false) AS blocked,
               COALESCE(mf.frozen, false) AS frozen,
-              COALESCE(mf.withdraw_banned, false) AS withdraw_banned,
+              ${activeWithdrawBanSql('mf')} AS withdraw_banned,
               ra.balance_cents, ra.currency,
               cm.manager_id, mo.display_name AS manager_name
          ${from}

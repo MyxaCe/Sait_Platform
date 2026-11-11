@@ -6,6 +6,7 @@ import { Button, FormField, Input } from '@broker/ui';
 import { Link } from '@/i18n/navigation';
 import {
   confirmEmailAction,
+  forcedPasswordChangeAction,
   forgotPasswordAction,
   requestEmailVerifyAction,
   resetPasswordAction,
@@ -130,6 +131,25 @@ export function RequestVerifyEmail() {
           {t.has(`verifyErrors.${state.error}`) ? t(`verifyErrors.${state.error}`) : t('verifyErrors.generic')}
         </span>
       ) : null}
+    </form>
+  );
+}
+
+/** Обязательная смена временного пароля (выдан менеджером). */
+export function ForcedPasswordForm() {
+  const t = useTranslations('authMail');
+  const fieldError = useFieldError();
+  const [state, action] = useFormState<AuthMailState, FormData>(forcedPasswordChangeAction, {});
+  return (
+    <form action={action} className="flex flex-col gap-4" noValidate>
+      <FormMessage error={state.error} />
+      <FormField label={t('newPassword')} htmlFor="newPassword" required error={fieldError(state.fieldErrors?.newPassword)} hint={t('newPasswordHint')}>
+        <Input id="newPassword" name="newPassword" type="password" autoComplete="new-password" invalid={!!state.fieldErrors?.newPassword} />
+      </FormField>
+      <FormField label={t('confirmPassword')} htmlFor="confirmPassword" required error={fieldError(state.fieldErrors?.confirmPassword)}>
+        <Input id="confirmPassword" name="confirmPassword" type="password" autoComplete="new-password" invalid={!!state.fieldErrors?.confirmPassword} />
+      </FormField>
+      <Submit label={t('forced.button')} />
     </form>
   );
 }

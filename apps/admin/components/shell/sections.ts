@@ -130,3 +130,23 @@ export function sectionHome(key: SectionKey): string {
 export function canViewKycDocuments(role: OperatorRole | null | undefined): boolean {
   return canAccessSection(role, 'kyc');
 }
+
+/**
+ * Правка учётных данных клиента — email, пароль, адрес в заявке на вывод,
+ * заморозка вывода (функция 3, решения владельца 10.11). Раздел «Клиенты»
+ * открывает карточку, но править может НЕ вся роль:
+ *  - admin — любого клиента;
+ *  - менеджер клиента (флаг `is_client_manager` + закрепление за ним) — только
+ *    своих закреплённых, какой бы ни была его роль раздела (operator,
+ *    finance_operator);
+ *  - остальные — нет (в т.ч. support_operator: карточки клиента он не видит).
+ * Здесь — ролевая часть; флаг и закрепление server action перепроверяет в
+ * базе внутри своей транзакции (`lib/credentials/core.ts`, fail-closed).
+ */
+export function canEditClientCredentials(
+  role: OperatorRole | null | undefined,
+  ctx: { isAssignedManager: boolean },
+): boolean {
+  if (role === 'admin') return true;
+  return canAccessSection(role, 'clients') && ctx.isAssignedManager;
+}

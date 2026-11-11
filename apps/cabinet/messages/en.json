@@ -326,7 +326,8 @@
     "invalidRequest": "Invalid request",
     "bot": "Submission error",
     "startBalanceUnset": "The account cannot be opened right now: the demo starting amount has not been set. We do not substitute one — please contact support, it is fixed in the site settings.",
-    "startBalanceUnavailable": "The account cannot be opened right now: the site settings could not be retrieved. Please try again later — your form data is not lost."
+    "startBalanceUnavailable": "The account cannot be opened right now: the site settings could not be retrieved. Please try again later — your form data is not lost.",
+    "tempPasswordExpired": "Your temporary password has expired. Ask your manager for a new one or use “Forgot password?”."
   },
   "history": {
     "title": "History",
@@ -514,7 +515,8 @@
         "frozen": "Account frozen: withdrawals and new trades are closed; open positions can be closed.",
         "withdraw_banned": "Withdrawals are restricted. Contact support for details.",
         "kyc_required": "Withdrawals open after identity verification."
-      }
+      },
+      "withdrawBannedUntil": "Withdrawals are temporarily unavailable until {until, date, short} {until, time, short} after a change of your sign-in details. If you did not request it, contact support."
     },
     "walletTitle": "Wallet",
     "walletLead": "Deposits and withdrawals for your live account — USDT on TRON (TRC20).",
@@ -622,6 +624,11 @@
       "rateLimited": "An email was sent recently — check your inbox or try later.",
       "mailNotConfigured": "Email is temporarily unavailable. Please try later.",
       "generic": "Could not send the email."
+    },
+    "forced": {
+      "title": "Set a new password",
+      "subtitle": "You signed in with a temporary password from your manager. To continue, set your own password — the temporary one will stop working and other sessions will be signed out.",
+      "button": "Save password"
     }
   },
   "promo": {

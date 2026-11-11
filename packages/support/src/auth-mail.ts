@@ -32,6 +32,11 @@ function newToken(): string {
   return randomBytes(32).toString('base64url');
 }
 
+/** Лимит частоты auth-писем (по email и IP, по базе). Экспорт — для писем по просьбе менеджера. */
+export async function authMailLimited(tx: Queryable, purpose: string, email: string, ip: string | null, now: Date): Promise<boolean> {
+  return limited(tx, purpose, email, ip, now);
+}
+
 async function limited(tx: Queryable, purpose: string, email: string, ip: string | null, now: Date): Promise<boolean> {
   const since = new Date(now.getTime() - 3_600_000);
   const byEmail = await tx.query(
@@ -51,6 +56,82 @@ async function limited(tx: Queryable, purpose: string, email: string, ip: string
 
 export interface LinkBuilder {
   (path: string, token: string, locale: 'ru' | 'en'): string;
+}
+
+/** Клиент, которому уходит auth-письмо (строка `users`). */
+export interface AuthMailUser {
+  id: string;
+  email: string;
+  fullName: string;
+  locale: string;
+}
+
+/**
+ * Токен сброса пароля + письмо со ссылкой — ВНУТРИ транзакции вызывающего,
+ * без журнала (журналирует вызывающий: кабинет — от system:cabinet, менеджер
+ * — от себя). Один механизм для «Забыли пароль?» и кнопки менеджера.
+ */
+export async function issuePasswordResetMail(
+  tx: Queryable,
+  settings: SupportSettings,
+  input: { user: AuthMailUser; link: LinkBuilder; ip: string | null; now: Date },
+): Promise<{ expiresAt: Date }> {
+  const { user, now } = input;
+  const email = normalizeEmail(user.email);
+  const token = newToken();
+  const locale = user.locale === 'en' ? 'en' : 'ru';
+  const expiresAt = new Date(now.getTime() + RESET_TTL_MINUTES * 60_000);
+  await tx.query(
+    `INSERT INTO auth_mail_tokens (purpose, user_id, email, token_hash, request_ip, expires_at, created_at)
+     VALUES ('password_reset', $1, $2, $3, $4, $5, $6)`,
+    [user.id, email, hashToken(token), input.ip, expiresAt, now],
+  );
+  const t = settings.texts[locale];
+  const vars = {
+    client: { firstName: firstNameOf(user.fullName) },
+    link: input.link('/reset-password', token, locale),
+    ttlMinutes: RESET_TTL_MINUTES,
+  };
+  await enqueueMail(tx, {
+    purpose: 'password_reset',
+    to: email,
+    subject: renderTemplate(t.passwordResetSubject, vars),
+    bodyText: renderTemplate(t.passwordResetBody, vars),
+    expiresAt,
+  });
+  return { expiresAt };
+}
+
+/** Токен подтверждения email + письмо — внутри транзакции вызывающего, без журнала. */
+export async function issueEmailVerifyMail(
+  tx: Queryable,
+  settings: SupportSettings,
+  input: { user: AuthMailUser; link: LinkBuilder; ip: string | null; now: Date },
+): Promise<{ expiresAt: Date }> {
+  const { user, now } = input;
+  const email = normalizeEmail(user.email);
+  const token = newToken();
+  const locale = user.locale === 'en' ? 'en' : 'ru';
+  const expiresAt = new Date(now.getTime() + VERIFY_TTL_HOURS * 3_600_000);
+  await tx.query(
+    `INSERT INTO auth_mail_tokens (purpose, user_id, email, token_hash, request_ip, expires_at, created_at)
+     VALUES ('email_verify', $1, $2, $3, $4, $5, $6)`,
+    [user.id, email, hashToken(token), input.ip, expiresAt, now],
+  );
+  const t = settings.texts[locale];
+  const vars = {
+    client: { firstName: firstNameOf(user.fullName) },
+    link: input.link('/verify-email', token, locale),
+    ttlHours: VERIFY_TTL_HOURS,
+  };
+  await enqueueMail(tx, {
+    purpose: 'email_verify',
+    to: email,
+    subject: renderTemplate(t.emailVerifySubject, vars),
+    bodyText: renderTemplate(t.emailVerifyBody, vars),
+    expiresAt,
+  });
+  return { expiresAt };
 }
 
 /** Ответ запроса сброса — ВСЕГДА один и тот же (не оракул существования email). */
@@ -76,25 +157,11 @@ export async function requestPasswordReset(
       );
       return { ok: true as const, internal: 'unknownEmail' as const };
     }
-    const token = newToken();
-    const locale = user.locale === 'en' ? 'en' : 'ru';
-    await tx.query(
-      `INSERT INTO auth_mail_tokens (purpose, user_id, email, token_hash, request_ip, expires_at, created_at)
-       VALUES ('password_reset', $1, $2, $3, $4, $5, $6)`,
-      [user.id, email, hashToken(token), input.ip, expiresAt, now],
-    );
-    const t = settings.texts[locale];
-    const vars = {
-      client: { firstName: firstNameOf(String(user.full_name)) },
-      link: input.link('/reset-password', token, locale),
-      ttlMinutes: RESET_TTL_MINUTES,
-    };
-    await enqueueMail(tx, {
-      purpose: 'password_reset',
-      to: email,
-      subject: renderTemplate(t.passwordResetSubject, vars),
-      bodyText: renderTemplate(t.passwordResetBody, vars),
-      expiresAt,
+    await issuePasswordResetMail(tx, settings, {
+      user: { id: String(user.id), email, fullName: String(user.full_name), locale: String(user.locale) },
+      link: input.link,
+      ip: input.ip,
+      now,
     });
     await appendJournalWithinTx(
       {
@@ -192,26 +259,11 @@ export async function requestEmailVerification(
     if (user.email_verified_at) return 'alreadyVerified' as const;
     const email = normalizeEmail(String(user.email));
     if (await limited(tx, 'email_verify', email, input.ip, now)) return 'rateLimited' as const;
-    const token = newToken();
-    const locale = user.locale === 'en' ? 'en' : 'ru';
-    const expiresAt = new Date(now.getTime() + VERIFY_TTL_HOURS * 3_600_000);
-    await tx.query(
-      `INSERT INTO auth_mail_tokens (purpose, user_id, email, token_hash, request_ip, expires_at, created_at)
-       VALUES ('email_verify', $1, $2, $3, $4, $5, $6)`,
-      [user.id, email, hashToken(token), input.ip, expiresAt, now],
-    );
-    const t = settings.texts[locale];
-    const vars = {
-      client: { firstName: firstNameOf(String(user.full_name)) },
-      link: input.link('/verify-email', token, locale),
-      ttlHours: VERIFY_TTL_HOURS,
-    };
-    await enqueueMail(tx, {
-      purpose: 'email_verify',
-      to: email,
-      subject: renderTemplate(t.emailVerifySubject, vars),
-      bodyText: renderTemplate(t.emailVerifyBody, vars),
-      expiresAt,
+    await issueEmailVerifyMail(tx, settings, {
+      user: { id: String(user.id), email, fullName: String(user.full_name), locale: String(user.locale) },
+      link: input.link,
+      ip: input.ip,
+      now,
     });
     await appendJournalWithinTx(
       {
@@ -262,5 +314,49 @@ export async function confirmEmail(
       tx,
     );
     return { ok: true as const, userId };
+  });
+}
+
+/**
+ * Смена ВРЕМЕННОГО пароля, выданного менеджером (функция 3, 10.11). Клиент
+ * вошёл по временному паролю и обязан задать свой: только тогда снимается
+ * `password_must_change`. Другие сессии гасятся (текущая — та, в которой
+ * клиент сейчас, — остаётся), живые ссылки сброса — тоже. Если флага нет,
+ * ничего не меняется (`notRequired`): обычная смена пароля идёт через
+ * профиль с текущим паролем.
+ */
+export type ForcedChangeResult = { ok: true; sessionsRevoked: number } | { ok: false; reason: 'notRequired' };
+
+export async function completeForcedPasswordChange(
+  db: PoolLike,
+  input: { userId: string; passwordHash: string; keepSessionTokenHash: string | null; now?: Date },
+): Promise<ForcedChangeResult> {
+  const now = input.now ?? new Date();
+  return inTransaction<ForcedChangeResult>(db, async (tx) => {
+    const r = await tx.query(
+      `UPDATE users SET password_hash = $2, password_must_change = false, temp_password_expires_at = NULL
+        WHERE id = $1 AND password_must_change RETURNING id`,
+      [input.userId, input.passwordHash],
+    );
+    if (r.rows.length === 0) return rollback<ForcedChangeResult>({ ok: false, reason: 'notRequired' });
+    const s = await tx.query(
+      `DELETE FROM sessions WHERE user_id = $1 AND token_hash IS DISTINCT FROM $2 RETURNING id`,
+      [input.userId, input.keepSessionTokenHash],
+    );
+    await tx.query(
+      `UPDATE auth_mail_tokens SET used_at = $2 WHERE user_id = $1 AND purpose = 'password_reset' AND used_at IS NULL`,
+      [input.userId, now],
+    );
+    await appendJournalWithinTx(
+      {
+        operatorId: SYSTEM_OPERATORS.cabinet,
+        action: 'client.credentials.temp_password_replaced',
+        subjectKind: 'client',
+        subjectId: input.userId,
+        payload: { otherSessionsRevoked: s.rows.length },
+      },
+      tx,
+    );
+    return { ok: true as const, sessionsRevoked: s.rows.length };
   });
 }

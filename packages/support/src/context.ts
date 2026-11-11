@@ -1,4 +1,4 @@
-import type { Queryable } from '@broker/money';
+import { activeWithdrawBanSql, type Queryable } from '@broker/money';
 import { supportAccess, type SupportRole } from './model';
 
 /**
@@ -62,7 +62,7 @@ export async function loadClientContext(
             COALESCE(v.state, 'unverified') AS kyc_state,
             COALESCE(a.status, 'unscreened') AS aml_status,
             COALESCE(b.blocked, false) AS blocked, b.reason AS block_reason,
-            COALESCE(f.frozen, false) AS frozen, COALESCE(f.withdraw_banned, false) AS withdraw_banned,
+            COALESCE(f.frozen, false) AS frozen, ${activeWithdrawBanSql('f')} AS withdraw_banned,
             EXISTS (SELECT 1 FROM real_accounts ra WHERE ra.user_id = u.id) AS has_real
        FROM users u
        LEFT JOIN client_verification v ON v.user_id = u.id

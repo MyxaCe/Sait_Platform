@@ -66,6 +66,13 @@ export async function GET(request: Request) {
       headers: { ...NO_STORE, Location: `${lang === 'en' ? '/en/login' : '/login'}?${next.toString()}` },
     });
   }
+  // Временный пароль от менеджера — сначала смена пароля в кабинете.
+  if (user.mustChangePassword) {
+    return new Response(null, {
+      status: 302,
+      headers: { ...NO_STORE, Location: `${lang === 'en' ? '/en' : ''}/change-password` },
+    });
+  }
   if (isRateLimited(`sso:${user.id}`, 30, 60_000)) return deny('rateLimited', 429);
 
   let leverage: number | null;

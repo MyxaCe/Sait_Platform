@@ -16,18 +16,25 @@ export async function PolicyNotice({
   reasons,
   compact = false,
   className,
+  banUntil = null,
 }: {
   op: 'deposit' | 'withdraw';
   reasons: readonly MoneyPolicyReason[];
   /** Без заголовка — под кнопкой на главной. */
   compact?: boolean;
   className?: string;
+  /** Срок «Запрета вывода» (заморозка после смены учётных данных) — «до …». */
+  banUntil?: string | null;
 }) {
   if (reasons.length === 0) return null;
   const t = await getTranslations('money');
   const onlyKyc = reasons.every((r) => r === 'kyc_required');
   const texts = reasons.map((r) =>
-    t.has(`policyText.${op}.${r}`) ? t(`policyText.${op}.${r}`) : t('errors.generic'),
+    r === 'withdraw_banned' && banUntil
+      ? t('policyText.withdrawBannedUntil', { until: new Date(banUntil) })
+      : t.has(`policyText.${op}.${r}`)
+        ? t(`policyText.${op}.${r}`)
+        : t('errors.generic'),
   );
   const action = reasons.includes('kyc_required') ? (
     <Link
