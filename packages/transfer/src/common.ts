@@ -60,9 +60,16 @@ export async function setMoneyFlagsWithinTx(
   },
 ): Promise<{ changed: ('frozen' | 'withdrawBanned')[]; before: { frozen: boolean; withdrawBanned: boolean } }> {
   await tx.query(`INSERT INTO client_money_flags (user_id) VALUES ($1) ON CONFLICT (user_id) DO NOTHING`, [input.userId]);
-  const cur = await tx.query(`SELECT frozen, withdraw_banned FROM client_money_flags WHERE user_id = $1 FOR UPDATE`, [
-    input.userId,
-  ]);
+  // «Запрет вывода» читается как ДЕЙСТВУЮЩИЙ (admin-credentials: срок
+  // withdraw_ban_until). Истёкшая автозаморозка оставляет withdraw_banned=true
+  // со сроком в прошлом — сравнивать с сырым флагом нельзя: перевод счёл бы
+  // запрет уже стоящим и не поставил бы бессрочный.
+  const cur = await tx.query(
+    `SELECT frozen,
+            (withdraw_banned AND (withdraw_ban_until IS NULL OR withdraw_ban_until > now())) AS withdraw_banned
+       FROM client_money_flags WHERE user_id = $1 FOR UPDATE`,
+    [input.userId],
+  );
   const before = { frozen: Boolean(cur.rows[0]?.frozen), withdrawBanned: Boolean(cur.rows[0]?.withdraw_banned) };
   const next = {
     frozen: input.frozen ?? before.frozen,
@@ -70,9 +77,18 @@ export async function setMoneyFlagsWithinTx(
   };
   const changed = (['frozen', 'withdrawBanned'] as const).filter((k) => before[k] !== next[k]);
   if (!changed.length) return { changed: [], before };
+  // Смена запрета вывода — как в форме «Деньги» (apps/admin/lib/crypto/flags.ts):
+  // запрет бессрочный с происхождением money_flags (менеджер его не снимет),
+  // снятие сбрасывает срок/происхождение/причину.
   await tx.query(
-    `UPDATE client_money_flags SET frozen = $2, withdraw_banned = $3, updated_at = now(), updated_by = $4 WHERE user_id = $1`,
-    [input.userId, next.frozen, next.withdrawBanned, input.operatorId],
+    `UPDATE client_money_flags
+        SET frozen = $2, withdraw_banned = $3,
+            withdraw_ban_until = CASE WHEN $5::boolean THEN NULL ELSE withdraw_ban_until END,
+            withdraw_ban_kind = CASE WHEN $5::boolean THEN (CASE WHEN $3::boolean THEN 'money_flags' ELSE NULL END) ELSE withdraw_ban_kind END,
+            withdraw_ban_reason = CASE WHEN $5::boolean THEN (CASE WHEN $3::boolean THEN $6 ELSE NULL END) ELSE withdraw_ban_reason END,
+            updated_at = now(), updated_by = $4
+      WHERE user_id = $1`,
+    [input.userId, next.frozen, next.withdrawBanned, input.operatorId, changed.includes('withdrawBanned'), input.basis],
   );
   let seq = 0;
   for (const key of changed) {

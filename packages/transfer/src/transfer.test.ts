@@ -17,6 +17,7 @@ import {
   publicKeyPemOf,
   revokeTransfer,
   runTransferTick,
+  setMoneyFlagsWithinTx,
   signEnvelope,
   upsertGroupPlatformWithinTx,
   verifyEnvelope,
@@ -544,5 +545,43 @@ describe('возврат перевода admin', () => {
     expect(src.rows[0]!.revoke_target_detail).toMatchObject({ stage: 'after_registration', fundsOnTarget: true, accountFrozen: true });
     const counter = await apex.db.query(`SELECT count(*)::int AS n FROM platform_transfers WHERE initiator_id = $1 AND status = 'revoked'`, [manager]);
     expect(counter.rows[0]!.n).toBe(1);
+  });
+});
+
+describe('флаги денег при переводе и срок запрета вывода (admin-credentials)', () => {
+  it('истёкшая автозаморозка не считается запретом: перевод ставит бессрочный money_flags', async () => {
+    await apex.db.query(
+      `INSERT INTO client_money_flags (user_id, withdraw_banned, withdraw_ban_until, withdraw_ban_kind, withdraw_ban_reason)
+       VALUES ($1, true, now() - interval '1 hour', 'credentials_auto', 'автозаморозка')`,
+      [client],
+    );
+    const r = await setMoneyFlagsWithinTx(apex.db, {
+      userId: client,
+      operatorId: admin,
+      basis: 'перевод',
+      transferId: '00000000-0000-4000-8000-000000000001',
+      withdrawBanned: true,
+    });
+    expect(r.before.withdrawBanned).toBe(false);
+    expect(r.changed).toEqual(['withdrawBanned']);
+    const f = (
+      await apex.db.query(
+        `SELECT withdraw_banned, withdraw_ban_until, withdraw_ban_kind, withdraw_ban_reason FROM client_money_flags WHERE user_id = $1`,
+        [client],
+      )
+    ).rows[0]!;
+    expect(f).toMatchObject({ withdraw_banned: true, withdraw_ban_until: null, withdraw_ban_kind: 'money_flags', withdraw_ban_reason: 'перевод' });
+
+    await setMoneyFlagsWithinTx(apex.db, {
+      userId: client,
+      operatorId: admin,
+      basis: 'возврат',
+      transferId: '00000000-0000-4000-8000-000000000001',
+      withdrawBanned: false,
+    });
+    const g = (
+      await apex.db.query(`SELECT withdraw_banned, withdraw_ban_kind, withdraw_ban_reason FROM client_money_flags WHERE user_id = $1`, [client])
+    ).rows[0]!;
+    expect(g).toMatchObject({ withdraw_banned: false, withdraw_ban_kind: null, withdraw_ban_reason: null });
   });
 });
