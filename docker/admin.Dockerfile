@@ -18,6 +18,7 @@ COPY packages/storage/package.json packages/storage/
 COPY packages/money/package.json packages/money/
 COPY packages/promo/package.json packages/promo/
 COPY packages/support/package.json packages/support/
+COPY packages/transfer/package.json packages/transfer/
 RUN pnpm install --frozen-lockfile
 
 FROM deps AS build
