@@ -72,7 +72,16 @@ jobs:
         run: node scripts/check-bundle-budget.mjs
 
       - name: Install Playwright Chromium
-        run: pnpm --filter @broker/web exec playwright install --with-deps chromium
+        # Браузер — с CDN Playwright (без apt). Системные библиотеки на образе
+        # раннера уже есть (там предустановлен Chrome); apt через install-deps —
+        # только попытка с повтором: зеркала Ubuntu 11.11 роняли шаг до E2E
+        # (4 прогона demo-withdraw-limits, терминал — 2 прогона).
+        run: |
+          pnpm --filter @broker/web exec playwright install chromium
+          for i in 1 2 3; do
+            sudo pnpm --filter @broker/web exec playwright install-deps chromium && break
+            echo "install-deps: попытка $i не удалась"; sleep 20
+          done || true
 
       - name: E2E tests (production build)
         run: pnpm --filter @broker/web test:e2e
