@@ -44,6 +44,10 @@ export default async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  // Исключаем API, служебные пути Next и файлы с расширением (sw.js, иконки и т.п.)
-  matcher: ['/((?!api|_next|_vercel|.*\..*).*)'],
+  // Исключаем API, служебные пути Next и файлы с расширением (sw.js, иконки и т.п.).
+  // `\\.` — двойной слэш обязателен: в строке JS `\.` превращается в `.`, и
+  // `.*..*` исключал ЛЮБОЙ путь длиннее символа — middleware (локали) не
+  // работал, /instruments, /company/contacts, /register отдавали 404
+  // (тест: lib/middleware-matcher.test.ts).
+  matcher: ['/((?!api|_next|_vercel|.*\\..*).*)'],
 };

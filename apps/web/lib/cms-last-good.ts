@@ -1,4 +1,4 @@
-import { createHash } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
@@ -57,7 +57,10 @@ export async function saveLastGood(key: string, data: unknown): Promise<void> {
   if (written.get(key) === json) return;
   const dir = storeDir();
   const file = path.join(dir, `${key}.json`);
-  const tmp = `${file}.${process.pid}.${Date.now()}.tmp`;
+  // Уникальный tmp на КАЖДУЮ запись: параллельные рендеры одного ключа в ту же
+  // миллисекунду писали в один tmp — второй rename падал ENOENT, а одновременная
+  // запись в общий файл могла склеить содержимое до переименования.
+  const tmp = `${file}.${process.pid}.${randomUUID()}.tmp`;
   try {
     await mkdir(dir, { recursive: true });
     await writeFile(tmp, JSON.stringify({ savedAt: new Date().toISOString(), data }), 'utf8');
