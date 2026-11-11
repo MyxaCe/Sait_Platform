@@ -79,7 +79,7 @@ jobs:
         run: |
           pnpm --filter @broker/web exec playwright install chromium
           for i in 1 2 3; do
-            sudo pnpm --filter @broker/web exec playwright install-deps chromium && break
+            pnpm --filter @broker/web exec playwright install-deps chromium && break
             echo "install-deps: попытка $i не удалась"; sleep 20
           done || true
 
