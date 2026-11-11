@@ -135,10 +135,16 @@ export interface ChannelMessageRow {
   event: string | null;
 }
 
+/** Сообщения канала по переводу: исходящие (outbox) и принятые (inbox), по времени. */
 export async function listTransferMessages(db: Queryable, transferId: string): Promise<ChannelMessageRow[]> {
   const r = await db.query(
-    `SELECT id, kind, to_platform, state, attempts, last_error, response_code, next_attempt_at, delivered_at, created_at, data
-       FROM platform_transfer_outbox WHERE transfer_id = $1 ORDER BY created_at`,
+    `SELECT id::text AS id, kind, to_platform, state, attempts, last_error, response_code, next_attempt_at, delivered_at, created_at, data
+       FROM platform_transfer_outbox WHERE transfer_id = $1
+     UNION ALL
+     SELECT dedupe_key, kind, '← ' || from_platform, 'received', 1, NULL, NULL, NULL, received_at, received_at,
+            jsonb_build_object('event', split_part(dedupe_key, ':', 3))
+       FROM platform_transfer_inbox WHERE transfer_id = $1
+     ORDER BY created_at`,
     [transferId],
   );
   return r.rows.map((x) => {

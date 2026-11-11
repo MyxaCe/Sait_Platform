@@ -203,7 +203,7 @@ function noticeMail(locale: 'ru' | 'en', self: GroupPlatform, number: string): {
 
 /**
  * Возврат перевода в цели (сообщение `transfer.revoke` от источника).
- *  - клиент не зарегистрирован → приглашение отзывается (токен стёрт, письмо
+ *  - клиент не зарегистрирован → приглашение отзывается (статус revoked — ссылка недействительна, письмо
  *    в очереди отменено);
  *  - зарегистрирован → счёт замораживается (заморозка + запрет вывода, те же
  *    флаги и коды журнала, что у формы «Деньги»), торговля — через терминал
@@ -239,7 +239,7 @@ export async function receiveRevokeWithinTx(
   const basis = `Перевод ${row.number} отозван группой (источник ${input.from}): ${input.data.basis}`;
   if (!row.registered_user_id) {
     await tx.query(
-      `UPDATE platform_transfers_inbound SET status = 'revoked', invite_token_hash = NULL, revoked_at = $2, revoke_basis = $3, updated_at = $2
+      `UPDATE platform_transfers_inbound SET status = 'revoked', revoked_at = $2, revoke_basis = $3, updated_at = $2
         WHERE transfer_id = $1`,
       [input.transferId, input.now, input.data.basis],
     );

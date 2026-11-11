@@ -434,7 +434,9 @@ describe('возврат перевода admin', () => {
     const rv = await revokeTransfer(apex.db, { operatorId: admin, transferId: r.transferId, basis: 'Нет подтверждения заявления' });
     expect(rv).toMatchObject({ ok: true, stage: 'before_registration', messageQueued: true });
     await tick(apex);
-    expect(await inspectInvite(nordex.db, token)).toEqual({ ok: false, reason: 'invalid' });
+    expect(await inspectInvite(nordex.db, token)).toEqual({ ok: false, reason: 'revoked' });
+    const late = await seedUser(nordex.db, { email: 'late@client.test' });
+    expect(await bindInviteWithinTx(nordex.db, { token, userId: late })).toBe(false);
     const im = await nordex.db.query(`SELECT status FROM outbound_mail WHERE purpose = 'transfer_invite'`);
     expect(im.rows[0]!.status).toBe('cancelled');
     await tick(nordex);
