@@ -23,4 +23,12 @@ describe('переводы между платформами: подписи и 
     expect(transferErrorText('directionForbidden', 'countryForbidden')).toContain('страна клиента запрещена');
     expect(transferErrorText('ticketOpenedByOperator')).toContain('открыт оператором');
   });
+
+  it('закрытие счёта: менеджер видит сумму и требование закрыть позиции', () => {
+    const t = transferErrorText('fundsOrPositions', '482500,482500,2');
+    expect(t).toContain('Сначала клиент выводит средства');
+    expect(t).toMatch(/4\s?825,00 USDT/);
+    expect(t).toContain('закрывает позиции');
+    expect(transferErrorText('balanceUnknown')).toContain('не удалось проверить баланс');
+  });
 });

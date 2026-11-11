@@ -96,6 +96,12 @@ export async function setMoneyFlagsWithinTx(
   return { changed: [...changed], before };
 }
 
+export interface RealAccountState {
+  balanceMinor: number | null;
+  equityMinor: number | null;
+  openPositions: number | null;
+}
+
 /**
  * Порт терминала: заморозка торговли реального счёта и баланс. Реализация —
  * в приложении (админка: `@broker/money` клиент терминала). Пакет не знает
@@ -103,6 +109,10 @@ export async function setMoneyFlagsWithinTx(
  */
 export interface TransferTerminalPort {
   setTradingFrozen(userId: string, frozen: boolean, reason: string): Promise<'ok' | 'unavailable' | 'refused'>;
-  /** Баланс реального счёта, центы; `null` — счёта нет; `'unavailable'` — терминал не ответил. */
-  realBalanceMinor(userId: string): Promise<number | null | 'unavailable'>;
+  /**
+   * Состояние РЕАЛЬНОГО счёта (демо не учитывается): `null` — счёт в терминале
+   * не открыт; `'unavailable'` — терминал не ответил. Поля `null` в ответе
+   * терминала вызывающий трактует как «не удалось проверить» (fail-closed).
+   */
+  realAccountState(userId: string): Promise<RealAccountState | null | 'unavailable'>;
 }

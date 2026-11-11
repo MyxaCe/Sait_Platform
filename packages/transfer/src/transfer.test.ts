@@ -81,7 +81,7 @@ const fetchFor =
 
 const nullTerminal: TransferTerminalPort = {
   setTradingFrozen: async () => 'ok',
-  realBalanceMinor: async () => 0,
+  realAccountState: async () => ({ balanceMinor: 0, equityMinor: 0, openPositions: 0 }),
 };
 
 async function tick(c: Cell) {
@@ -353,6 +353,59 @@ describe('путь перевода между двумя платформами
   it('второй живой перевод того же клиента и лимит менеджера', async () => {
     expect((await sendTransfer()).ok).toBe(true);
     expect(await sendTransfer()).toEqual({ ok: false, reason: 'liveTransferExists' });
+  });
+});
+
+describe('закрытие счёта в источнике: только пустой счёт (fail-closed)', () => {
+  async function registeredTransfer() {
+    const r = await sendTransfer();
+    if (!r.ok) throw new Error();
+    await tick(apex);
+    const mail = await nordex.db.query(`SELECT body_text FROM outbound_mail WHERE purpose = 'transfer_invite'`);
+    const token = /invite=([A-Za-z0-9_-]+)/.exec(String(mail.rows[0]!.body_text))![1]!;
+    const u = await seedUser(nordex.db, { email: 'anna@client.test' });
+    await bindInviteWithinTx(nordex.db, { token, userId: u });
+    await tick(nordex);
+    return r.transferId;
+  }
+  const port = (state: Awaited<ReturnType<TransferTerminalPort['realAccountState']>>): TransferTerminalPort => ({
+    setTradingFrozen: async () => 'ok',
+    realAccountState: async () => state,
+  });
+  const close = (transferId: string, t: TransferTerminalPort) =>
+    closeSourceAccount(apex.db, t, { operatorId: manager, role: 'operator', transferId, basis: 'закрыть' });
+
+  it('деньги, equity, позиции, неизвестный баланс, терминал недоступен — отказ; ноль — можно', async () => {
+    const id = await registeredTransfer();
+    expect(await close(id, port({ balanceMinor: 482_500, equityMinor: 482_500, openPositions: 0 }))).toMatchObject({
+      ok: false,
+      reason: 'fundsOrPositions',
+      balanceMinor: 482_500,
+    });
+    expect(await close(id, port({ balanceMinor: 0, equityMinor: 1200, openPositions: 0 }))).toMatchObject({ reason: 'fundsOrPositions' });
+    expect(await close(id, port({ balanceMinor: 0, equityMinor: 0, openPositions: 2 }))).toMatchObject({ reason: 'fundsOrPositions', openPositions: 2 });
+    expect(await close(id, port({ balanceMinor: null, equityMinor: 0, openPositions: 0 }))).toEqual({ ok: false, reason: 'balanceUnknown' });
+    expect(await close(id, port('unavailable'))).toEqual({ ok: false, reason: 'balanceUnknown' });
+    const flags = await apex.db.query(`SELECT frozen FROM client_money_flags WHERE user_id = $1`, [client]);
+    expect(flags.rows[0]?.frozen ?? false).toBe(false);
+    expect(await close(id, port({ balanceMinor: 0, equityMinor: 0, openPositions: 0 }))).toEqual({ ok: true });
+  });
+
+  it('незавершённый вывод или пополнение на сайте — отказ даже при нулевом счёте', async () => {
+    const id = await registeredTransfer();
+    await apex.db.query(
+      `INSERT INTO crypto_withdrawals (user_id, to_address, amount_minor, status, debit_state) VALUES ($1, 'TRZbTw7NYaaUw9cEdD4dzbSETWVBem4nGC', 1000, 'requested', 'pending')`,
+      [client],
+    );
+    expect(await close(id, nullTerminal)).toEqual({ ok: false, reason: 'pendingMoney', withdrawals: 1, deposits: 0 });
+    await apex.db.query(`UPDATE crypto_withdrawals SET status = 'cancelled' WHERE user_id = $1`, [client]);
+    await apex.db.query(`INSERT INTO crypto_deposits (user_id, tx_hash, status) VALUES ($1, $2, 'claimed')`, [client, 'c'.repeat(64)]);
+    expect(await close(id, nullTerminal)).toEqual({ ok: false, reason: 'pendingMoney', withdrawals: 0, deposits: 1 });
+  });
+
+  it('счёта в терминале нет (не открывался) — закрыть можно', async () => {
+    const id = await registeredTransfer();
+    expect(await close(id, port(null))).toEqual({ ok: true });
   });
 });
 

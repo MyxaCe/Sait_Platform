@@ -90,7 +90,9 @@ const ERRORS: Record<string, string> = {
   notRevocable: 'Перевод уже завершён отказом, истёк или возвращён.',
   notAllowed: 'Закрыть счёт может менеджер клиента или администратор.',
   notReady: 'Закрытие возможно, когда клиент зарегистрировался в цели.',
-  balanceNotZero: 'На реальном счёте есть средства — сначала клиент выводит их обычной заявкой.',
+  fundsOrPositions: 'Нельзя закрыть: на реальном счёте есть средства или позиции. Сначала клиент выводит средства и закрывает позиции.',
+  balanceUnknown: 'Нельзя закрыть: не удалось проверить баланс (терминал недоступен или ответ без чисел).',
+  pendingMoney: 'Нельзя закрыть: у клиента есть незавершённые заявки на вывод или пополнение.',
   terminalUnavailable: 'Терминал недоступен — повторите позже.',
   terminalRefused: 'Терминал отказал в заморозке.',
   notOpen: 'Задача уже закрыта.',
@@ -111,6 +113,16 @@ const PLATFORM_FIELD: Record<string, string> = {
 };
 
 export function transferErrorText(error: string, detail?: string): string {
+  if (error === 'fundsOrPositions' && detail) {
+    // detail = «balanceMinor,equityMinor,openPositions»
+    const [bal, eq, pos] = detail.split(',').map(Number);
+    const usdt = (Math.max(bal ?? 0, eq ?? 0) / 100).toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return `Нельзя закрыть счёт. Сначала клиент выводит средства (${usdt} USDT) и закрывает позиции${pos ? ` (открыто: ${pos})` : ''}.`;
+  }
+  if (error === 'pendingMoney' && detail) {
+    const [w, d] = detail.split(',').map(Number);
+    return `Нельзя закрыть: незавершённых заявок на вывод — ${w}, пополнений, ждущих сети, — ${d}. Дождитесь их завершения.`;
+  }
   if (error === 'directionForbidden' && detail) {
     return `${ERRORS.directionForbidden}: ${detail
       .split(',')

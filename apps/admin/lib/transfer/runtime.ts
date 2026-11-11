@@ -35,12 +35,13 @@ export function transferTerminal(): TransferTerminalPort {
       const out = await terminalMoney().tradingFreeze(userId, { frozen, reason, operator: 'system:platform-transfer' }, 'real');
       return out.state;
     },
-    async realBalanceMinor(userId) {
+    async realAccountState(userId) {
       const r = await terminalReader().accounts(userId);
       if (r.state !== 'ok') return 'unavailable';
+      // Только реальный счёт: демо-счёт закрытию по переводу не мешает.
       const real = r.accounts.find((a) => a.kind === 'real');
       if (!real || !real.opened) return null;
-      return real.balanceMinor ?? 0;
+      return { balanceMinor: real.balanceMinor, equityMinor: real.equityMinor, openPositions: real.openPositions };
     },
   };
 }

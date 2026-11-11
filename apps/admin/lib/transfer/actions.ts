@@ -93,7 +93,11 @@ export async function closeSourceAction(_prev: MoneyActionState, fd: FormData): 
     transferId,
     basis: str(fd, 'reason'),
   });
-  if (!r.ok) return { error: r.reason };
+  if (!r.ok) {
+    if (r.reason === 'fundsOrPositions') return { error: r.reason, detail: `${r.balanceMinor},${r.equityMinor},${r.openPositions}` };
+    if (r.reason === 'pendingMoney') return { error: r.reason, detail: `${r.withdrawals},${r.deposits}` };
+    return { error: r.reason };
+  }
   revalidatePath(`/clients/transfers/${transferId}`);
   return { ok: true };
 }

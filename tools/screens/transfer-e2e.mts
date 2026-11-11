@@ -45,6 +45,7 @@ const A_ADMIN = 'http://127.0.0.1:3611';
 const A_CAB = 'http://localhost:3612';
 const N_ADMIN = 'http://127.0.0.1:3621';
 const N_CAB = 'http://localhost:3622';
+const TERMINAL = 'http://127.0.0.1:3632';
 const SECRET = 'local-design-secret-not-for-prod-0123456789';
 const HERO = '00000000-0000-4000-8000-0000000c0001';
 const SOKOLOV = '00000000-0000-4000-8000-00000000a002';
@@ -224,12 +225,36 @@ try {
   await go(cab, `${A_CAB}/wallet?tab=withdraw`);
   await shot(cab, 't13-cabinet-apex-wallet-transfer-notice', false);
 
-  // ── 5. Закрытие счёта в источнике (менеджер) ──
-  await go(mgr, `${A_ADMIN}/clients/transfers/${transferId}`);
-  await mgr.getByPlaceholder(/клиент подтвердил в тикете/).fill('Клиент в тикете подтвердил: средства выведены, работает в Nordex Markets.');
-  await mgr.getByRole('button', { name: 'Закрыть счёт здесь' }).click();
-  await mgr.getByRole('button', { name: 'Да, закрыть счёт' }).click();
-  await mgr.waitForTimeout(2500);
+  // ── 5. Закрытие счёта в источнике (менеджер): только пустой счёт, fail-closed ──
+  const setBalance = (minor: number, positions = 0) =>
+    fetch(`${TERMINAL}/__stand/balance?minor=${minor}&positions=${positions}`, { method: 'POST' });
+  const tryClose = async () => {
+    await go(mgr, `${A_ADMIN}/clients/transfers/${transferId}`);
+    await mgr.getByPlaceholder(/клиент подтвердил в тикете/).fill('Клиент в тикете подтвердил: средства выведены, работает в Nordex Markets.');
+    await mgr.getByRole('button', { name: 'Закрыть счёт здесь' }).click();
+    await mgr.getByRole('button', { name: 'Да, закрыть счёт' }).click();
+    await mgr.waitForTimeout(2500);
+  };
+  const statusNow = async () => (await q(apex, `SELECT status FROM platform_transfers WHERE id = $1`, [transferId]))[0].status;
+  // незавершённые заявки ввода/вывода (из сида) — отказ
+  await setBalance(0);
+  await tryClose();
+  check('закрытие отказано: незавершённые вывод/пополнение на сайте', (await mgr.getByText(/незавершённых заявок на вывод/).count()) > 0 && (await statusNow()) === 'kyc_passed');
+  await apex.query(`UPDATE crypto_withdrawals SET status = 'cancelled' WHERE user_id = $1 AND status NOT IN ('settled', 'rejected', 'cancelled')`, [HERO]);
+  await apex.query(`UPDATE crypto_deposits SET status = 'rejected', reject_reason = 'стенд' WHERE user_id = $1 AND status = 'claimed'`, [HERO]);
+  // на счёте деньги и позиции — отказ с суммой
+  await setBalance(4_825_013, 1);
+  await tryClose();
+  check('закрытие отказано: на счёте 48 250,13 USDT и позиция', (await mgr.getByText(/Сначала клиент выводит средства \(48\s?250,13 USDT\) и закрывает позиции/).count()) > 0 && (await statusNow()) === 'kyc_passed');
+  await shot(mgr, 't13b-apex-close-refused-funds', false);
+  // терминал недоступен — отказ (fail-closed)
+  await fetch(`${TERMINAL}/__stand/down?on=1`, { method: 'POST' });
+  await tryClose();
+  check('закрытие отказано: терминал недоступен → «не удалось проверить баланс»', (await mgr.getByText(/не удалось проверить баланс/).count()) > 0 && (await statusNow()) === 'kyc_passed');
+  await fetch(`${TERMINAL}/__stand/down?on=0`, { method: 'POST' });
+  // ноль — можно
+  await setBalance(0);
+  await tryClose();
   const closed = (await q(apex, `SELECT t.status, f.frozen FROM platform_transfers t LEFT JOIN client_money_flags f ON f.user_id = t.user_id WHERE t.id = $1`, [transferId]))[0];
   check('счёт в источнике закрыт по переводу (заморожен)', closed.status === 'source_closed' && closed.frozen === true);
 

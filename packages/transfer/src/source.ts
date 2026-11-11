@@ -319,6 +319,8 @@ export async function revokeTransfer(
 
 export type CloseResult =
   | { ok: true }
+  | { ok: false; reason: 'fundsOrPositions'; balanceMinor: number; equityMinor: number; openPositions: number }
+  | { ok: false; reason: 'pendingMoney'; withdrawals: number; deposits: number }
   | {
       ok: false;
       reason:
@@ -326,7 +328,7 @@ export type CloseResult =
         | 'notFound'
         | 'notAllowed'
         | 'notReady'
-        | 'balanceNotZero'
+        | 'balanceUnknown'
         | 'terminalUnavailable'
         | 'terminalRefused';
     };
@@ -354,9 +356,33 @@ export async function closeSourceAccount(
     if (!m.rows.length) return { ok: false, reason: 'notAllowed' };
   }
   if (!['registered', 'kyc_passed'].includes(String(tr.status))) return { ok: false, reason: 'notReady' };
-  const balance = await terminal.realBalanceMinor(userId);
-  if (balance === 'unavailable') return { ok: false, reason: 'terminalUnavailable' };
-  if (balance !== null && balance > 0) return { ok: false, reason: 'balanceNotZero' };
+  // Деньги и позиции — fail-closed: закрыть можно только пустой счёт без
+  // открытых позиций и без незавершённых заявок ввода/вывода на сайте.
+  const pending = await pool.query(
+    `SELECT (SELECT count(*)::int FROM crypto_withdrawals
+              WHERE user_id = $1 AND status NOT IN ('settled', 'rejected', 'cancelled')) AS w,
+            (SELECT count(*)::int FROM crypto_deposits WHERE user_id = $1 AND status = 'claimed') AS d`,
+    [userId],
+  );
+  const pw = Number(pending.rows[0]?.w ?? 0);
+  const pd = Number(pending.rows[0]?.d ?? 0);
+  if (pw > 0 || pd > 0) return { ok: false, reason: 'pendingMoney', withdrawals: pw, deposits: pd };
+  const acc = await terminal.realAccountState(userId);
+  if (acc === 'unavailable') return { ok: false, reason: 'balanceUnknown' };
+  if (acc !== null) {
+    if (acc.balanceMinor === null || acc.equityMinor === null || acc.openPositions === null) {
+      return { ok: false, reason: 'balanceUnknown' };
+    }
+    if (acc.balanceMinor > 0 || acc.equityMinor > 0 || acc.openPositions > 0) {
+      return {
+        ok: false,
+        reason: 'fundsOrPositions',
+        balanceMinor: acc.balanceMinor,
+        equityMinor: acc.equityMinor,
+        openPositions: acc.openPositions,
+      };
+    }
+  }
   const frozen = await terminal.setTradingFrozen(userId, true, `Счёт закрыт по переводу ${tr.number}: ${basis}`);
   if (frozen === 'unavailable') return { ok: false, reason: 'terminalUnavailable' };
   if (frozen === 'refused') return { ok: false, reason: 'terminalRefused' };
