@@ -4,10 +4,10 @@ import { parsePeriod, periodStart, summarizeTrades } from './history';
 describe('сводка истории сделок', () => {
   it('оборот = Σ объём × цена; P&L и винрейт — только по закрывающим', () => {
     const s = summarizeTrades([
-      { volume: 0.1, price: 64000, realizedPnlCents: null }, // открытие: 6 400,00
-      { volume: 0.1, price: 65000, realizedPnlCents: 10_000 }, // +100,00
-      { volume: 10_000, price: 1.08, realizedPnlCents: -2_500 }, // −25,00
-      { volume: 5, price: 200, realizedPnlCents: 0 }, // ноль — не победа
+      { volume: 0.1, price: 64000, realizedPnlCents: null },
+      { volume: 0.1, price: 65000, realizedPnlCents: 10_000 },
+      { volume: 10_000, price: 1.08, realizedPnlCents: -2_500 },
+      { volume: 5, price: 200, realizedPnlCents: 0 },
     ]);
     expect(s.trades).toBe(4);
     expect(s.turnoverMinor).toBe(640_000 + 650_000 + 1_080_000 + 100_000);

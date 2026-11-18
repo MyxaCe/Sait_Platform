@@ -23,7 +23,6 @@ export default async function LoginPage({
           {tm('resetDone')}
         </p>
       ) : null}
-      {/* Продолжение входа в терминал (launch) — только внутренний путь. */}
       <LoginForm next={safeLaunchNext(searchParams?.next)} />
       <p className="mt-3 text-right text-sm">
         <Link href="/forgot-password" className="text-accent hover:underline">

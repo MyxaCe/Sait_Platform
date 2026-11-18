@@ -1,12 +1,5 @@
 import type { ReactNode } from 'react';
 
-/**
- * Каркас страниц входа и настройки 2FA — первое, что видит человек у двери
- * центра управления. Строго: слева марка и три факта о периметре (на узком
- * экране — только марка сверху), справа форма. Без градиентов и иллюстраций —
- * только токены (концепция §1).
- */
-
 function Fact({ icon, title, text }: { icon: string; title: string; text: string }) {
   return (
     <li className="flex gap-3">
@@ -55,7 +48,6 @@ export function AuthShell({
   description,
   children,
 }: {
-  /** «Шаг 1 из 2 · пароль» — над заголовком. */
   step?: ReactNode;
   title: ReactNode;
   description?: ReactNode;

@@ -19,12 +19,6 @@ import { LOGIN_PATH } from '../auth/constants';
 import type { MoneyActionState } from '../crypto/actions';
 import { canReviewTransfers, selfSlug, signingKey, transferPool, transferTerminal } from './runtime';
 
-/**
- * Server actions перевода на другую платформу группы. Автор — из сессии
- * (Р-451), роль/право — проверяется И здесь, И в ядре пакета (закреплённый
- * менеджер — в SQL транзакции перевода; admin для возврата — там же).
- */
-
 const str = (fd: FormData, k: string) => String(fd.get(k) ?? '').trim();
 
 async function session() {
@@ -33,7 +27,6 @@ async function session() {
   return operator;
 }
 
-/** Сразу после факта — попытка доставки (не ждать такта воркера). Сбой — не ошибка действия. */
 async function deliverNow(): Promise<void> {
   const slug = selfSlug();
   if (!slug) return;
@@ -75,7 +68,6 @@ export async function revokeTransferAction(_prev: MoneyActionState, fd: FormData
   const r = await revokeTransfer(transferPool(), { operatorId: operator.operatorId, transferId, basis: str(fd, 'reason') });
   if (!r.ok) return { error: r.reason };
   if (r.restorePending) {
-    // Разморозка торговли в терминале — сразу; не вышло — повторит воркер.
     await applyPendingRestores(transferPool(), transferTerminal()).catch(() => 0);
   }
   await deliverNow();

@@ -1,14 +1,5 @@
 import type { PoolLike, Queryable, TxClient } from '../db';
 
-/**
- * In-memory фейк базы для тестов денежных переходов. Понимает ровно те
- * запросы, которые пишут модули пакета (неизвестный SQL → исключение, чтобы
- * новый запрос не прошёл тест молча). Транзакции — журнал отмены на клиента:
- * ROLLBACK откатывает только свои записи, параллельные транзакции видят
- * записи друг друга сразу (как вставки под READ COMMITTED после COMMIT —
- * достаточно, чтобы уникальность хэша проверялась на уровне оператора).
- */
-
 export interface DepositRow {
   id: string;
   user_id: string | null;
@@ -51,7 +42,6 @@ export interface ClientState {
   withdrawKyc?: string | null;
   frozen?: boolean;
   withdrawBanned?: boolean;
-  /** Доля вывода без KYC у клиента (б.п.); нет — наследовать. */
   unverifiedWithdrawBps?: number | null;
 }
 
@@ -78,7 +68,6 @@ export class FakeDb implements PoolLike {
   withdrawals = new Map<string, WithdrawalRow>();
   journal: JournalRow[] = [];
   private nextId = 1;
-  /** Все выполненные SQL (для проверок «запрос был/не был»). */
   log: string[] = [];
 
   newId(): string {
@@ -133,7 +122,6 @@ export class FakeDb implements PoolLike {
     const one = (row: Record<string, unknown> | undefined | null) =>
       row ? { rows: [row], rowCount: 1 } : { rows: [], rowCount: 0 };
 
-    // ── журнал ──
     if (s.includes('pg_advisory_xact_lock')) return { rows: [{}] };
     if (s.startsWith('SELECT entry_hash FROM admin_action_journal')) {
       const last = this.journal[this.journal.length - 1];
@@ -157,7 +145,6 @@ export class FakeDb implements PoolLike {
       return one(this.journal.find((j) => j.entry_hash === p[0]) as Record<string, unknown> | undefined);
     }
 
-    // ── политика ──
     if (s.includes('FROM users u LEFT JOIN client_blocks cb')) {
       const c = this.clients.get(p[0] as string);
       if (!c) return { rows: [] };
@@ -183,7 +170,6 @@ export class FakeDb implements PoolLike {
     }
     if (s.startsWith('SELECT 1 FROM users WHERE id')) return one(this.clients.has(p[0] as string) ? { x: 1 } : null);
 
-    // ── депозиты ──
     if (s.startsWith('SELECT 1 FROM crypto_withdrawals WHERE payout_tx_hash')) {
       return one([...this.withdrawals.values()].some((w) => w.payout_tx_hash === p[0]) ? { x: 1 } : null);
     }
@@ -279,7 +265,6 @@ export class FakeDb implements PoolLike {
       return { rows: [], rowCount: 1 };
     }
 
-    // ── выводы ──
     if (s.startsWith('INSERT INTO crypto_withdrawals')) {
       const row: WithdrawalRow = {
         id: this.newId(),

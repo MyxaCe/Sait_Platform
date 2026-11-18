@@ -13,12 +13,6 @@ export interface ManagerChoice {
   clients: number;
 }
 
-/**
- * Смена менеджера в карточке клиента (только admin — форма у других ролей не
- * отрисована, action перепроверяет). Форма-с-основанием: без основания и без
- * выбора «Сохранить» неактивна. Запись `client.manager_assigned` /
- * `client.manager_unassigned` — в неизменяемый журнал.
- */
 export function AssignManagerForm({
   userId,
   currentManagerId,

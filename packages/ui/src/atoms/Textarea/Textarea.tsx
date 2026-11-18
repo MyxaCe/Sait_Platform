@@ -5,10 +5,6 @@ export interface TextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElemen
   invalid?: boolean;
 }
 
-/**
- * Многострочное поле — прежде всего «Основание» в формах-с-основанием.
- * Плотное (операторский периметр), утопленный фон `sunken`.
- */
 export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
   ({ className, invalid, rows = 2, ...props }, ref) => (
     <textarea

@@ -3,14 +3,6 @@ import type { ClientJournalEntry } from '@/lib/clients/queries';
 import { actionLabel } from '@/lib/journal/labels';
 import { fmtDateTime } from '@/lib/ui/format';
 
-/**
- * Журнальная лента по субъекту-клиенту (ADM-02, §3.2). Хронология (новые
- * сверху): действие (человекочитаемо, тон — единая семантика), оператор, seq,
- * основание; раскрываемые payload и хэши цепочки (нативный <details>, без JS).
- * Это та же неизменяемая лента `admin_action_journal`, отфильтрованная по
- * `subjectId`. `limit` — для сводки на «Обзоре».
- */
-
 function basisOf(payload: Record<string, unknown>): string | null {
   const basis = payload.basis;
   return typeof basis === 'string' && basis.length > 0 ? basis : null;

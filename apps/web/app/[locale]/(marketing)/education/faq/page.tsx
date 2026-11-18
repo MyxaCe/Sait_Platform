@@ -16,12 +16,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 export default async function FaqPage({ params }: PageProps) {
   setRequestLocale(params.locale);
   const t = await getTranslations('education');
-  // Контент из CMS-слоя (тег cms:faq, вебхук-инвалидация)
   const { sections } = await getCms('faq', {
     locale: params.locale === 'en' ? 'en' : 'ru',
   });
 
-  // Микроразметка FAQPage: вопросы попадают в расширенные сниппеты поиска
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'FAQPage',
@@ -47,7 +45,6 @@ export default async function FaqPage({ params }: PageProps) {
             <h2 className="text-xl font-semibold text-primary">{section.title}</h2>
             <div className="mt-4 space-y-3">
               {section.items.map((item) => (
-                // Нативный details: доступно с клавиатуры, работает без JS
                 <details
                   key={item.question}
                   className="group rounded-2xl border border-border bg-card open:border-accent/40"

@@ -9,7 +9,6 @@ export interface GlossaryTermView {
   definition: string;
 }
 
-/** Термины приходят из CMS-слоя пропом (тег cms:academy) */
 export function GlossaryList({ terms }: { terms: GlossaryTermView[] }) {
   const t = useTranslations('education');
   const locale = useLocale();

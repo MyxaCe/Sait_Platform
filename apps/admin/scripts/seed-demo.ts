@@ -3,22 +3,6 @@ import { computeEntryHash } from '@broker/money';
 import { readEnv } from '@broker/utils';
 import { getPool } from '../lib/db';
 
-/**
- * ДЕМО-НАБОР для локального просмотра центра управления (редизайн, фаза 1).
- * НЕ миграция и НЕ часть схемы: ~15 клиентов в разных состояниях KYC/AML,
- * блокировки, денежные флаги, депозиты/выводы во всех статусах, проекции
- * демо/реального счёта, журнал с ВАЛИДНОЙ хеш-цепочкой (задним числом).
- *
- * Fail-closed: отказывает при NODE_ENV=production и при непустой таблице
- * operators/users (чтобы не смешать с чьими-то данными). Запуск — только на
- * пустую локальную базу с применёнными миграциями:
- *
- *   DATABASE_URL=postgres://… pnpm --filter @broker/admin seed:demo
- *
- * Печатает id операторов и витринного клиента — их берёт скриншотер
- * (`tools/screens`).
- */
-
 const DAY = 86_400_000;
 const NOW = Date.now();
 const ago = (days: number, hours = 0): Date => new Date(NOW - days * DAY - hours * 3_600_000);
@@ -65,7 +49,6 @@ const OPS = {
   },
 } as const;
 
-/** Витринный клиент (самая насыщенная карточка) — первый в списке. */
 const CLIENTS: ClientSpec[] = [
   {
     name: 'Алексей Морозов',
@@ -306,7 +289,6 @@ async function main(): Promise<number> {
         ],
       );
 
-      // KYC + документы
       if (s.kyc !== 'unverified') {
         const kinds = [
           'identity',
@@ -366,7 +348,6 @@ async function main(): Promise<number> {
           to: 'resubmit_requested',
         });
 
-      // AML
       if (s.aml !== 'unscreened') {
         const amlAt = ago(Math.max(s.regDays - 3, 0), 2);
         await c.query(
@@ -395,7 +376,6 @@ async function main(): Promise<number> {
         );
       }
 
-      // Блокировка
       if (s.blocked) {
         const at = ago(Math.max(s.regDays - 5, 1));
         await c.query(
@@ -405,7 +385,6 @@ async function main(): Promise<number> {
         j(at, OPS.admin.id, 'client.block', 'client', id, { basis: s.blocked, sessionsRevoked: 2 });
       }
 
-      // Денежные флаги
       if (s.frozen || s.withdrawBanned) {
         const at = ago(4, i);
         await c.query(
@@ -426,7 +405,6 @@ async function main(): Promise<number> {
         );
       }
 
-      // Демо-счёт
       if (s.demoCents) {
         await c.query(
           `INSERT INTO demo_accounts (user_id, balance_cents, currency, created_at, account_seq) VALUES ($1,$2,'USD',$3,$4)`,
@@ -434,7 +412,6 @@ async function main(): Promise<number> {
         );
       }
 
-      // Реальный счёт + депозиты/выводы
       if (s.realCents) {
         await c.query(
           `INSERT INTO real_accounts (user_id, account_uuid, balance_cents, currency, account_seq, created_at) VALUES ($1,$2,$3,'USDT',$4,$5)`,
@@ -476,7 +453,6 @@ async function main(): Promise<number> {
             );
         }
         if (i === 0) {
-          // Отклонённый депозит (не тот токен).
           await c.query(
             `INSERT INTO crypto_deposits (user_id, tx_hash, status, from_address, to_address, reject_reason, claimed_at, updated_at)
              VALUES ($1,$2,'rejected',$3,'TXyQ8cG6rWwP3b1hT9cTn2mE5sTq4xYb7K','wrong_token',$4,$4)`,
@@ -550,7 +526,6 @@ async function main(): Promise<number> {
         }
       }
 
-      // Позиции и сделки (реальный — у верифицированных с деньгами, демо — у всех с демо-счётом)
       for (const kind of ['real', 'demo'] as const) {
         if (kind === 'real' && !s.realCents) continue;
         if (kind === 'demo' && !s.demoCents) continue;
@@ -596,7 +571,6 @@ async function main(): Promise<number> {
         }
       }
 
-      // Сессии
       for (let k = 0; k < (i === 0 ? 2 : i % 2); k++) {
         await c.query(
           `INSERT INTO sessions (id, user_id, token_hash, created_at, expires_at, ip, user_agent) VALUES ($1,$2,$3,$4,$5,$6,$7)`,
@@ -615,7 +589,6 @@ async function main(): Promise<number> {
       }
     }
 
-    // Неопознанные поступления (без клиента)
     for (const amt of [73_500, 1_000_000]) {
       await c.query(
         `INSERT INTO crypto_deposits (tx_hash, status, from_address, to_address, amount_raw, amount_minor, block_time, claimed_at, updated_at)
@@ -624,7 +597,6 @@ async function main(): Promise<number> {
       );
     }
 
-    // Витринный клиент: плечо, флаги KYC, действия админа
     const hero = ids[0]!;
     await c.query(
       `INSERT INTO client_leverage (user_id, portfolio_key, override_leverage, override_reason, override_by, override_at)
@@ -656,7 +628,6 @@ async function main(): Promise<number> {
       minWithdrawMinor: 1000,
     });
 
-    // Журнал: хронологически, валидная хеш-цепочка.
     journal.sort((a, b) => a.at.getTime() - b.at.getTime());
     let prev: string | null = null;
     for (const e of journal) {
@@ -678,7 +649,6 @@ async function main(): Promise<number> {
       prev = hash;
     }
 
-    // Сессия кабинета витринного клиента — для скриншотов кабинета.
     const cabinetToken = 'demo-cabinet-token-0001';
     await c.query(
       `INSERT INTO sessions (id, user_id, token_hash, created_at, expires_at, ip, user_agent) VALUES ($1,$2,$3,now(),$4,'127.0.0.1','screens')`,

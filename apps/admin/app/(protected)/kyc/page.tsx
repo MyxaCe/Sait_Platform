@@ -13,16 +13,8 @@ import { listPendingClients, type PendingClient } from '@/lib/kyc/queries';
 import { KYC_SLA_HOURS, getKycQueueStats, isKycOverdue, type KycQueueStats } from '@/lib/kyc/queue-view';
 import { fmtAge, fmtDateTime } from '@/lib/ui/format';
 
-/**
- * Очередь KYC `/kyc` (ADM-08, Р-451 п.4; концепция §7.1 «очередь»). Клиенты в
- * состоянии `pending`, старейшие сверху; дольше SLA — подсвечено. Пусто —
- * значит очередь разобрана, а не «что-то сломалось»: это сказано явно.
- *
- * Только чтение. Доступ — operator+admin (гейт layout `(protected)` + middleware).
- */
 export const dynamic = 'force-dynamic';
 
-/** Видов документов по Р-451 п.4 (паспорт, селфи, адрес, источник средств). */
 const DOC_KINDS_TOTAL = 4;
 
 const COLUMNS: DataTableColumn<PendingClient>[] = [

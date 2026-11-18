@@ -3,8 +3,6 @@ import { AWAITING_OPERATOR, supportAccess, type Channel, type ReplyChannel, type
 import type { MailStatus } from './outbound';
 import type { Actor } from './tickets';
 
-/** Чтения поддержки: очередь и тикет для оператора, переписка для клиента. */
-
 const iso = (v: unknown): string => (v instanceof Date ? v.toISOString() : String(v));
 const isoOrNull = (v: unknown): string | null => (v == null ? null : iso(v));
 
@@ -30,12 +28,10 @@ export interface QueueRow {
   lastClientMessageAt: string | null;
   firstResponseDueAt: string | null;
   firstRespondedAt: string | null;
-  /** SLA первого ответа нарушен (ждёт оператора и срок прошёл). */
   overdue: boolean;
   messageCount: number;
 }
 
-/** Ограничение видимости по роли — в SQL, а не после выборки. */
 function scopeSql(actor: Actor, params: unknown[]): string {
   if (supportAccess.seesWholeQueue(actor.role)) return 'TRUE';
   if (actor.role === 'finance_operator') {
@@ -101,7 +97,6 @@ export async function listQueue(db: Queryable, actor: Actor, query: QueueQuery):
   const now = query.now ?? new Date();
   params.push(now);
   const nowP = `$${params.length}`;
-  // Порядок: ждущие оператора — по сроку SLA (что горит — сверху), прочие — свежие сверху.
   const order =
     query.filter === 'awaiting' || query.filter === 'unassigned' || query.filter === 'mine'
       ? `CASE WHEN t.status IN ('new','open') THEN 0 ELSE 1 END, t.first_response_due_at NULLS LAST, t.created_at`
@@ -245,13 +240,10 @@ export interface TicketView {
   csatComment: string | null;
   sourceLeadId: string | null;
   messages: MessageView[];
-  /** Клиенты с тем же email (гостевой тикет — предложить склейку). */
   suggestedClients: { id: string; fullName: string; email: string }[];
-  /** Письмо-подтверждение (автоответ) и его доставка. */
   acks: { status: MailStatus; createdAt: string; lastError: string | null }[];
 }
 
-/** Тикет для оператора по номеру или id; `null` — нет или нет доступа. */
 export async function getTicketForOperator(db: Queryable, actor: Actor, ref: string): Promise<TicketView | null> {
   if (!supportAccess.worksTickets(actor.role)) return null;
   const byNumber = /^\d{1,12}$/.test(ref);
@@ -361,7 +353,6 @@ export async function getTicketForOperator(db: Queryable, actor: Actor, ref: str
   };
 }
 
-/** Тикеты клиента — вкладка «Поддержка» карточки клиента. */
 export async function listClientTickets(db: Queryable, userId: string, email?: string | null): Promise<QueueRow[]> {
   const r = await db.query(
     `SELECT t.id, t.number, t.subject, t.status, t.priority, t.origin_channel, t.reply_channel, t.contact_email,
@@ -397,7 +388,6 @@ export async function listClientTickets(db: Queryable, userId: string, email?: s
   }));
 }
 
-/** Операторы, которым можно назначить тикет. */
 export async function listAssignableOperators(db: Queryable): Promise<{ id: string; name: string; role: SupportRole }[]> {
   const r = await db.query(
     `SELECT id, display_name, role FROM operators
@@ -407,8 +397,6 @@ export async function listAssignableOperators(db: Queryable): Promise<{ id: stri
   );
   return r.rows.map((x) => ({ id: String(x.id), name: String(x.display_name), role: x.role as SupportRole }));
 }
-
-/* ─── Клиентская сторона (кабинет) ──────────────────────────────────── */
 
 export interface ClientMessageView {
   id: string;
@@ -434,10 +422,6 @@ export interface ClientChat {
   history: { id: string; number: number; subject: string; status: TicketStatus; createdAt: string }[];
 }
 
-/**
- * Переписка клиента. ВНУТРЕННИЕ ЗАМЕТКИ НЕ ВЫБИРАЮТСЯ (`visibility = 'public'`
- * в самом запросе); имя оператора — только отображаемое имя (без логина).
- */
 export async function getClientChat(db: Queryable, userId: string, ticketId?: string | null): Promise<ClientChat> {
   const tr = await db.query(
     ticketId
@@ -503,7 +487,6 @@ export async function getClientChat(db: Queryable, userId: string, ticketId?: st
   };
 }
 
-/** Непрочитанные ответы поддержки (бейдж на кнопке чата). */
 export async function countClientUnread(db: Queryable, userId: string): Promise<number> {
   const r = await db.query(
     `SELECT count(*)::int AS n FROM support_messages m JOIN support_tickets t ON t.id = m.ticket_id
@@ -514,7 +497,6 @@ export async function countClientUnread(db: Queryable, userId: string): Promise<
   return Number(r.rows[0]?.n ?? 0);
 }
 
-/** Вложение, доступное клиенту (свой тикет, публичное сообщение). */
 export async function findClientAttachment(db: Queryable, userId: string, attachmentId: string): Promise<{ objectKey: string; filename: string; mime: string } | null> {
   if (!/^[0-9a-f-]{36}$/i.test(attachmentId)) return null;
   const r = await db.query(

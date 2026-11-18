@@ -1,14 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-/**
- * ADM-02 · блокировка действует на ВХОДЕ.
- *
- * До этой задачи кабинет не читал `client_blocks` вовсе: блок в админке был
- * записью в журнале, а клиент продолжал входить. Проверяем связку «строка
- * блокировки → отказ входа», порядок проверок (о блоке — только после верного
- * пароля) и что разблокировка возвращает доступ.
- */
-
 const state = { row: null as Record<string, unknown> | null, sql: '' };
 
 vi.mock('../db', () => ({
@@ -49,7 +40,6 @@ describe('checkLogin · блокировка клиента', () => {
     await expect(checkLogin('a@b.c', 'secret-pass')).resolves.toMatchObject({ ok: true, mustChangePassword: true });
     state.row = { ...ROW, blocked: false, password_must_change: true, temp_expired: true };
     await expect(checkLogin('a@b.c', 'secret-pass')).resolves.toEqual({ ok: false, error: 'tempPasswordExpired' });
-    // Неверный пароль при истёкшем временном — не оракул: invalidCredentials.
     await expect(checkLogin('a@b.c', 'wrong')).resolves.toEqual({ ok: false, error: 'invalidCredentials' });
   });
 

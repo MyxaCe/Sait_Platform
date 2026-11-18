@@ -7,7 +7,6 @@ interface PageProps {
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const t = await getTranslations({ locale: params.locale, namespace: 'analytics' });
-  // Пустую страницу не индексируем: показать в поиске нечего
   return {
     title: t('calendarMetaTitle'),
     description: t('calendarMetaDescription'),
@@ -15,15 +14,6 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   };
 }
 
-/**
- * Экономический календарь без источника — честное «данных нет».
- *
- * Прежде здесь стоял синтетический календарь из кода (`calendar-data.ts`):
- * события с «фактом» и «прогнозом», сгенерированные от текущей даты, то
- * есть выдуманные макроданные под видом реальных. Удалён 10.11 вместе с
- * остальным контентом в коде. Компонент `EconomicCalendar` остаётся и
- * подключится, когда появится провайдер или блок CMS v2.
- */
 export default async function CalendarPage({ params }: PageProps) {
   setRequestLocale(params.locale);
   const t = await getTranslations('analytics.calendar');

@@ -21,15 +21,6 @@ import { fmtAge, fmtDate, fmtDateTime } from '@/lib/ui/format';
 import { FilterBar } from '../clients/_components/FilterBar';
 import { AML_OPTIONS, AML_SHORT, amlKey } from '../clients/_components/compliance-labels';
 
-/**
- * Рабочий список AML-скрининга `/aml` (ADM-14, Р-454 I-5; концепция §7.1).
- * Сверху — требующие внимания: эскалации, затем не сверявшиеся, затем чистые.
- * Скрининг РУЧНОЙ: оператор сверяет во внешних источниках (OFSI/OFAC/EU, PEP)
- * и фиксирует результат в карточке клиента — `/aml/[userId]`.
- *
- * Только чтение (`lib/aml/worklist-view.ts`). Доступ operator+admin — гейт
- * layout `(protected)` + middleware.
- */
 export const dynamic = 'force-dynamic';
 
 const ACTION_LABEL: Record<AmlListRow['status'], string> = {

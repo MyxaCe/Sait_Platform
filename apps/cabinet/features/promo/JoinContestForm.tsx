@@ -20,10 +20,6 @@ const KNOWN = new Set([
   'unavailable',
 ]);
 
-/**
- * Подпись исхода вступления. Отказ терминала «есть открытые позиции»
- * (`account_not_flat`) — отдельный понятный текст: что сделать клиенту.
- */
 export function joinMessageKey(o: JoinContestOutcome): string | null {
   switch (o.state) {
     case 'idle':
@@ -49,11 +45,6 @@ function Confirm({ label }: { label: string }) {
   );
 }
 
-/**
- * «Участвовать» в конкурсе — в два шага: сначала предупреждение «демо-счёт
- * будет сброшен к стартовой сумме», затем подтверждение. Без второго шага
- * клиент теряет демо-позиции одним касанием.
- */
 export function JoinContestForm({ promotionId, startBalance }: { promotionId: string; startBalance: string }) {
   const t = useTranslations('contest');
   const [armed, setArmed] = useState(false);

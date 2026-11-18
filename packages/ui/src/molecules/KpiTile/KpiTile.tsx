@@ -11,7 +11,6 @@ const TONE_VALUE: Record<KpiTone, string> = {
   warning: 'text-warning',
 };
 
-/** Полоска слева: тон виден боковым зрением, не только по цифре. */
 const TONE_BAR: Record<KpiTone, string> = {
   default: 'bg-transparent',
   accent: 'bg-accent',
@@ -21,33 +20,16 @@ const TONE_BAR: Record<KpiTone, string> = {
 };
 
 export interface KpiTileProps {
-  /** Короткая подпись плитки (что это за число). */
   label: string;
-  /**
-   * Значение: число или готовый узел (напр. `<Money>`/индикатор здоровья).
-   * Мгновенное и точное, `tabular-nums`, БЕЗ анимации-разгона (§5.4).
-   */
   value?: ReactNode;
-  /** Вторичная строка под значением (возраст, детализация, «из N»). */
   hint?: ReactNode;
-  /** Узел справа от подписи — обычно ссылка «открыть →» на очередь. */
   action?: ReactNode;
-  /**
-   * `true` — данных для плитки ещё нет. Честное «—» вместо выдуманного числа
-   * (анти-паттерн операторского дашборда).
-   */
   placeholder?: boolean;
-  /** Подпись плейсхолдера (по умолчанию «нет данных»). */
   placeholderHint?: string;
   tone?: KpiTone;
   className?: string;
 }
 
-/**
- * KPI-плитка (концепция §6.2). Подпись — сверху, спокойно; значение — крупно,
- * табличными цифрами; подсказка — снизу. Тон окрашивает значение и боковую
- * полоску. Без анимации.
- */
 export function KpiTile({
   label,
   value,

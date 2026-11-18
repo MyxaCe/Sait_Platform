@@ -2,11 +2,6 @@
 
 import { Button, Callout } from '@broker/ui';
 
-/**
- * Сбой источника на странице раздела (концепция §1 п.8, §6.8): не «белый
- * экран», а Callout — что случилось и что делать. Используется в `error.tsx`
- * разделов «Верификация» и «AML». Кандидат в @broker/ui (вместе с error-границей).
- */
 export function SectionError({ title, reset, digest }: { title: string; reset: () => void; digest?: string }) {
   return (
     <div className="space-y-5">

@@ -4,43 +4,18 @@ import { hashPassword } from '../auth/password';
 import { appendJournalEntry } from '../journal/journal';
 import type { OperatorRole } from '../auth/session';
 
-/**
- * Провижининг операторов (ADM-04, Р-394, Р-049, Р-451).
- *
- * Три действия, и каждое — ОДНА транзакция, несущая два неразделимых факта:
- * изменение строки в `operators` И запись в неизменяемый журнал через
- * `appendJournalEntry` (кто/когда/основание). Либо оба, либо ни одного — по
- * образцу `kyc/decide.ts` и `bootstrap.ts`. Основание (basis) обязательно для
- * всех трёх: провижининг через журнал — требование ADM-04.
- *
- * **Асимметрия Р-394.** Создание — «разрешающее» действие, его можно событием
- * (одна форма, без второго шага). Отключение и смена роли — «отзывающие»,
- * fail-closed: гарды в UPDATE (оптимистичная блокировка состоянием), запрет
- * действовать над самим собой (нельзя отозвать права/отключить себя и
- * запереть вход), а в UI — danger-подтверждение в два шага.
- *
- * **actorId — из сессии вызывающего, НЕ из формы (Р-451):** личность автора не
- * доверяется данным формы, иначе журнал можно подписать чужим именем.
- */
-
-/** Минимальная длина начального пароля оператора. Админ задаёт его при заводе. */
 export const OPERATOR_PASSWORD_MIN_LENGTH = 12;
 
 function isRole(value: unknown): value is OperatorRole {
   return value === 'admin' || value === 'operator' || value === 'finance_operator' || value === 'support_operator';
 }
 
-// ─── Создать оператора ─────────────────────────────────────────────────────
-
 export interface CreateOperatorInput {
-  /** `operators.id` админа-автора — из серверной сессии, НЕ из формы. */
   actorId: string;
   login: string;
   displayName: string;
   role: OperatorRole;
-  /** Начальный пароль (argon2id — тот же механизм, что у входа, Р-451). */
   password: string;
-  /** Основание (basis) — обязательно, уходит в журнал. */
   reason: string;
 }
 
@@ -48,13 +23,6 @@ export type CreateOperatorResult =
   | { ok: true; operatorId: string }
   | { ok: false; reason: 'missingFields' | 'missingReason' | 'weakPassword' | 'invalidRole' | 'loginTaken' };
 
-/**
- * Заводит оператора с ролью и начальным паролем. Пароль хешируется argon2id
- * (переиспользуем `hashPassword` из `lib/auth` — НЕ новый механизм). Второй
- * фактор здесь НЕ трогаем: новый оператор при первом входе будет принудительно
- * проведён на TOTP-enroll существующим флоу (`(protected)/layout.tsx` +
- * `/enroll`), `totp_secret` остаётся NULL = «2FA не настроена».
- */
 export async function createOperator(
   input: CreateOperatorInput,
   pool: { connect(): Promise<PoolClient> } = getPool(),
@@ -68,7 +36,6 @@ export async function createOperator(
   if (reason.length === 0) return { ok: false, reason: 'missingReason' };
   if (input.password.length < OPERATOR_PASSWORD_MIN_LENGTH) return { ok: false, reason: 'weakPassword' };
 
-  // Хешируем ДО транзакции: argon2 долгий, держать на нём транзакцию незачем.
   const passwordHash = await hashPassword(input.password);
 
   const client = await pool.connect();
@@ -85,7 +52,6 @@ export async function createOperator(
       );
       operatorId = inserted.rows[0]!.id as string;
     } catch (error) {
-      // Уникальный логин занят (Postgres 23505) — не падаем, сообщаем причину.
       await client.query('ROLLBACK').catch(() => {});
       if ((error as { code?: string }).code === '23505') {
         return { ok: false, reason: 'loginTaken' };
@@ -93,7 +59,6 @@ export async function createOperator(
       throw error;
     }
 
-    // Запись о заводе — ТОЙ ЖЕ транзакцией (журнал неизменяем базой, Р-049).
     await appendJournalEntry(
       {
         operatorId: input.actorId,
@@ -115,11 +80,8 @@ export async function createOperator(
   }
 }
 
-// ─── Отключить оператора ────────────────────────────────────────────────────
-
 export interface DisableOperatorInput {
   actorId: string;
-  /** `operators.id` отключаемого. */
   operatorId: string;
   reason: string;
 }
@@ -128,14 +90,6 @@ export type DisableOperatorResult =
   | { ok: true }
   | { ok: false; reason: 'missingReason' | 'selfDisable' | 'notActive' };
 
-/**
- * Отключает оператора (ставит `disabled_at`). Отзывающее действие, fail-closed:
- *  - основание обязательно;
- *  - НЕЛЬЗЯ отключить самого себя (иначе админ запрёт собственный вход — Р-394);
- *  - гард `WHERE disabled_at IS NULL`: уже отключённого не трогаем (0 строк →
- *    откат, `notActive`), это же защита от гонки двух админов.
- * Строку не удаляем — на оператора ссылается журнал; отключение есть состояние.
- */
 export async function disableOperator(
   input: DisableOperatorInput,
   pool: { connect(): Promise<PoolClient> } = getPool(),
@@ -181,8 +135,6 @@ export async function disableOperator(
   }
 }
 
-// ─── Сменить роль ───────────────────────────────────────────────────────────
-
 export interface ChangeOperatorRoleInput {
   actorId: string;
   operatorId: string;
@@ -194,15 +146,6 @@ export type ChangeOperatorRoleResult =
   | { ok: true; from: OperatorRole; to: OperatorRole }
   | { ok: false; reason: 'missingReason' | 'invalidRole' | 'selfRoleChange' | 'notFound' | 'noChange' };
 
-/**
- * Меняет роль оператора. Отзывающее действие (роль — это права), fail-closed:
- *  - основание обязательно, роль из закрытого множества;
- *  - НЕЛЬЗЯ менять роль самому себе (админ не разжалует себя и не запрёт доступ
- *    к этому экрану — Р-394);
- *  - `SELECT … FOR UPDATE`: читаем текущую роль под блокировкой строки; нет
- *    строки → `notFound`, та же роль → `noChange` (нечего менять и нечего
- *    журналировать). diff from→to уходит в журнал.
- */
 export async function changeOperatorRole(
   input: ChangeOperatorRoleInput,
   pool: { connect(): Promise<PoolClient> } = getPool(),
@@ -227,7 +170,6 @@ export async function changeOperatorRole(
     }
     const from = row.role as OperatorRole;
     if (!isRole(from)) {
-      // Текущая роль вне множества — строка сломана, не трактуем (fail-closed).
       await client.query('ROLLBACK');
       throw new Error(`operators.role вне допустимого множества: ${String(from)}`);
     }

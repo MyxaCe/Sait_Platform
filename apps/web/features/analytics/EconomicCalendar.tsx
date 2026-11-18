@@ -5,12 +5,6 @@ import { useMemo, useState } from 'react';
 import { cn } from '@broker/ui';
 import { formatTime, formatWeekday } from '@broker/utils';
 
-/**
- * Форма события календаря. Источника событий пока нет: синтетический
- * календарь из кода удалён (10.11) — он выдавал выдуманные «факт» и
- * «прогноз» за реальные макроданные. Компонент ждёт провайдера (или
- * коллекцию CMS v2, блок `economic-calendar`).
- */
 export type EventImportance = 1 | 2 | 3;
 
 export interface EconomicEvent {
@@ -98,7 +92,6 @@ export function EconomicCalendar({ events }: { events: EconomicEvent[] }) {
               {formatWeekday(day, intlLocale)}
             </h2>
 
-            {/* Mobile: карточки */}
             <ul className="mt-3 divide-y divide-border overflow-hidden rounded-2xl border border-border md:hidden">
               {dayEvents.map((e) => (
                 <li key={e.id} className="p-4">
@@ -130,7 +123,6 @@ export function EconomicCalendar({ events }: { events: EconomicEvent[] }) {
               ))}
             </ul>
 
-            {/* Desktop: таблица */}
             <div className="mt-3 hidden overflow-hidden rounded-2xl border border-border md:block">
               <table className="w-full text-sm">
                 <thead className="bg-elevated text-left text-secondary">

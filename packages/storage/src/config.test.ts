@@ -1,11 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { loadStorageConfig, StorageNotConfiguredError, type StorageEnvSource } from './config';
 
-/**
- * ADM-12 · конфигурация хранилища: источник абстрагирован (словарь, по
- * умолчанию env), пустой конфиг — ОТКАЗ (fail-closed), пустая строка —
- * отсутствие (не «заданное пустое»).
- */
 const full: StorageEnvSource = {
   S3_BUCKET: 'kyc-docs',
   S3_ACCESS_KEY_ID: 'AKIAEXAMPLE',

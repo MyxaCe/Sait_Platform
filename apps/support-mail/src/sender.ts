@@ -12,14 +12,7 @@ import {
   type MailPurpose,
 } from '@broker/support';
 
-/**
- * Отправка очереди `outbound_mail` через SMTP хостинга (cPanel). Письмо
- * собирается один раз в сырой MIME: тот же байтовый образ уходит по SMTP и
- * кладётся IMAP APPEND в «Отправленные» — переписка в Webmail полная.
- */
-
 export interface RawTransport {
-  /** Отправить сырое письмо. Ответ сервера — в журнал доставки. */
   send(raw: Buffer, envelope: { from: string; to: string[] }): Promise<{ response: string }>;
 }
 
@@ -34,12 +27,10 @@ export interface SenderDeps {
   from: { address: string; name: string };
   domain: string;
   perHour: number;
-  /** Канал поддержки по почте включён в настройках (auth-письма идут всегда). */
   supportEmailEnabled: boolean;
   log?: (msg: string) => void;
 }
 
-/** RFC 3834: автоответ помечается, чтобы чужой автоответчик не ответил на него. */
 function autoSubmitted(purpose: MailPurpose): string | undefined {
   if (purpose === 'support_ack') return 'auto-replied';
   if (SYSTEM_MAIL_PURPOSES.includes(purpose)) return 'auto-generated';
@@ -65,7 +56,6 @@ export async function composeRaw(m: ClaimedMail, from: { address: string; name: 
   return composer.compile().build();
 }
 
-/** Ошибка, на которую повтор не поможет (адрес отвергнут — 5xx). */
 export function isPermanent(error: unknown): boolean {
   const code = (error as { responseCode?: unknown })?.responseCode;
   return typeof code === 'number' && code >= 500 && code < 600 && code !== 552;
@@ -102,8 +92,6 @@ export async function sendTick(deps: SenderDeps): Promise<{ sent: number; failed
       deps.log?.(`письмо ${m.id} (${m.purpose}) не ушло: ${msg} → ${res}`);
       continue;
     }
-    // Копия в «Отправленные» — после успешной отправки и не влияет на её итог.
-    // Без копии: письма с одноразовой ссылкой (тело стёрто) и служебные письма доступа.
     if (deps.sentCopy && !SECRET_BODY_PURPOSES.includes(m.purpose) && !AUTH_MAIL_PURPOSES.includes(m.purpose)) {
       await deps.sentCopy.append(raw).catch((e: Error) => deps.log?.(`копия в Sent не легла: ${e.message}`));
     }

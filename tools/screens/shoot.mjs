@@ -1,15 +1,3 @@
-// Скриншотер редизайна (dev-инструмент, НЕ продовый код).
-//
-// Снимает экраны админки (1440) и кабинета (390 + 1440) локального стенда.
-// Админ-сессию выпускает сам: подписывает HS256 тем же ADMIN_SESSION_SECRET,
-// что в apps/admin/.env.local (оператор с включённой 2FA засеян seed:demo).
-// Кабинет — по сессии, засеянной seed:demo (cookie cabinet_session).
-//
-//   node tools/screens/shoot.mjs <outDir> [--set admin|cabinet|all] [--palette <name>] [--only key,key]
-//   кабинет: [--cabinet-token <token>] (сессия другого клиента) [--suffix -frozen] [--sizes m390,d1440]
-//
-// Переменные: ADMIN_URL (http://localhost:3305), CABINET_URL (http://localhost:3302),
-// ADMIN_SESSION_SECRET.
 import { createRequire } from 'node:module';
 import { mkdirSync } from 'node:fs';
 import { join, resolve } from 'node:path';
@@ -39,7 +27,6 @@ const HERO = '00000000-0000-4000-8000-0000000c0001';
 const ROLES = {
   admin: { sub: '00000000-0000-4000-8000-00000000a001', login: 'i.kovaleva', name: 'Ирина Ковалёва', role: 'admin' },
   operator: { sub: '00000000-0000-4000-8000-00000000a002', login: 'd.sokolov', name: 'Дмитрий Соколов', role: 'operator' },
-  // Оператор поддержки — засеян seed:support-demo (ветка demo-support).
   support: { sub: '00000000-0000-4000-8000-00000000a005', login: 'o.belova', name: 'Ольга Белова', role: 'support_operator' },
 };
 
@@ -64,9 +51,9 @@ const ADMIN_SHOTS = [
   ['03d-client-compliance', `/clients/${HERO}?tab=compliance`],
   ['03e-client-access', `/clients/${HERO}?tab=access`],
   ['03f-client-journal', `/clients/${HERO}?tab=journal`],
-  ['03g-client-blocked', null], // заблокированный клиент (Marco Bianchi) — подставляется из реестра
+  ['03g-client-blocked', null],
   ['04-kyc', '/kyc'],
-  ['05-kyc-card', null], // подставляется первым pending
+  ['05-kyc-card', null],
   ['06-aml', '/aml'],
   ['07-aml-card', `/aml/${HERO}`],
   ['08-money', '/money'],
@@ -77,7 +64,6 @@ const ADMIN_SHOTS = [
   ['13-risk-portfolios', '/risk/portfolios'],
   ['13b-risk-portfolio-edit', '/risk/portfolios?edit=standard'],
   ['14-login', '/login'],
-  // Акции и партнёры (ДЕМО-акции, 10.11). null-пути подставляются ниже.
   ['20-promo', '/promo'],
   ['21-promo-card', null],
   ['21b-promo-card-edit', null],
@@ -89,7 +75,6 @@ const ADMIN_SHOTS = [
   ['26-promo-partners', null],
 ];
 
-/** Подстановка путей экранов акций: первая подходящая ссылка со страницы-списка. */
 const PROMO_PICK = {
   '21-promo-card': ['/promo', 'a:has-text("Бонус 30%")', ''],
   '21b-promo-card-edit': ['/promo', 'a:has-text("Бонус на повторное")', '?edit=1'],
@@ -105,7 +90,6 @@ const CABINET_SHOTS = [
   ['c03-terminal', '/ru/terminal?account=real'],
   ['c04-wallet-deposit', '/ru/wallet'],
   ['c05-wallet-withdraw', '/ru/wallet?tab=withdraw'],
-  // Вывод: шаг подтверждения (адрес и сумма заполнены, «Продолжить»).
   ['c06-withdraw-confirm', '/ru/wallet?tab=withdraw', { fill: true }],
   ['c07-history', '/ru/history'],
   ['c08-history-demo', '/ru/history?account=demo&period=all'],
@@ -114,9 +98,7 @@ const CABINET_SHOTS = [
   ['c11-profile-verification', '/ru/profile?tab=verification'],
   ['c12-profile-security', '/ru/profile?tab=security'],
   ['c13-profile-documents', '/ru/profile?tab=documents'],
-  // Нижняя навигация телефона: открытая шторка «Ещё» (только m390).
   ['c14-more', '/ru', { mobileOnly: true, click: 'nav[aria-label] button[aria-haspopup="dialog"]' }],
-  // Акции, рефералы, конкурс, условия счетов (кабинет-акции, 10.11). Клиент — `--cabinet-token`.
   ['c20-promotions', '/ru/promotions'],
   ['c21-referrals', '/ru/referrals'],
   ['c22-contest', '/ru/contest'],
@@ -213,8 +195,6 @@ async function shootCabinet(browser) {
       const name = `${key}${suffix}-${tag}`;
       await page.screenshot({ path: join(outDir, `${name}.png`), fullPage: tag !== 'm390' });
       if (tag === 'm390' && !extra.click) {
-        // Во всю длину фиксированная нижняя панель «впечаталась» бы посреди
-        // страницы — в -full её прячем (она видна на кадре вьюпорта).
         const style = await page.addStyleTag({ content: 'nav.fixed.bottom-0{display:none!important}' });
         await page.screenshot({ path: join(outDir, `${name}-full.png`), fullPage: true });
         await style.evaluate((el) => el.remove());
@@ -230,7 +210,6 @@ const browser = await chromium.launch();
 try {
   if (set === 'admin' || set === 'all') await shootAdmin(browser);
   if (set === 'cabinet' || set === 'all') await shootCabinet(browser);
-  // Поддержка (ветка demo-support): отдельный набор — `--set support`.
   if (set === 'support') {
     const { shootSupport } = await import('./support-shots.mjs');
     await shootSupport(browser, { outDir, ADMIN, CABINET, adminToken, CABINET_TOKEN, only });

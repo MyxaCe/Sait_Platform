@@ -1,10 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { buildKycObjectKey, InvalidKeySegmentError, KYC_KEY_PREFIX } from './keys';
 
-/**
- * ADM-12 · схема ключа объекта KYC. Ключ — `kyc/{tenant}/{client}/{doc_type}/
- * {uuid}`; неугадываемость даёт uuid, адресацию защищает валидация сегментов.
- */
 describe('buildKycObjectKey', () => {
   const ok = {
     tenant: 'apex-ru',

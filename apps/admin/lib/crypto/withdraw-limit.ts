@@ -7,17 +7,6 @@ import {
 } from '@broker/money';
 import { moneyPool } from './runtime';
 
-/**
- * Лимит вывода без верификации — переопределение У КЛИЕНТА (ветка
- * demo-withdraw-limits). `bps = null` — наследовать из настроек платформы;
- * 0 — без верификации вывода нет вовсе; иначе доля «баланса до выводов»
- * в б.п. (формула — `@broker/money` `kyc-allowance.ts`).
- *
- * Как соседние денежные флаги: основание обязательно, запись и журнал
- * `client.money.unverified_withdraw_limit_changed` (до/после) — одной
- * транзакцией с запертой строкой флагов. Пустое изменение не пишется.
- */
-
 export type WithdrawLimitResult =
   | { ok: true; journalSeq: number }
   | { ok: false; reason: 'missingReason' | 'noClient' | 'noChange' | 'invalidPercent' };
@@ -61,7 +50,6 @@ export async function setClientUnverifiedWithdrawLimit(
         action: 'client.money.unverified_withdraw_limit_changed',
         subjectKind: 'client',
         subjectId: input.userId,
-        // null — «наследовать из платформы».
         payload: { basis: reason, field: 'unverifiedWithdrawBps', before, after: bps },
       },
       tx,
@@ -71,10 +59,6 @@ export async function setClientUnverifiedWithdrawLimit(
   });
 }
 
-/**
- * Процент из формы → б.п. «5» → 500, «2,5» → 250, «0» → 0; до двух знаков
- * после запятой, 0..100. Мусор → `null` (форма покажет ошибку).
- */
 export function percentToBps(raw: string): number | null {
   const v = raw.trim().replace(',', '.').replace(/\s*%$/, '');
   if (!/^\d{1,3}(?:\.\d{1,2})?$/.test(v)) return null;
@@ -83,7 +67,6 @@ export function percentToBps(raw: string): number | null {
   return bps <= MAX_UNVERIFIED_WITHDRAW_BPS ? bps : null;
 }
 
-/** б.п. → «5 %», «2,5 %». */
 export function formatBpsPercent(bps: number): string {
   const s = (bps / 100).toFixed(2).replace(/\.?0+$/, '').replace('.', ',');
   return `${s} %`;

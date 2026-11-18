@@ -2,10 +2,6 @@ import * as Sentry from '@sentry/nextjs';
 import { scrubSentryEvent } from '@broker/api-client';
 import { sentryEnvironment } from '@broker/utils';
 
-/**
- * Серверный (Node) Sentry/GlitchTip — проект site-bff (DSN /2): ошибки
- * route handlers / RSC / BFF. Только ошибки; PII-скраббинг ДО отправки.
- */
 const dsn = process.env.SENTRY_DSN;
 
 Sentry.init({

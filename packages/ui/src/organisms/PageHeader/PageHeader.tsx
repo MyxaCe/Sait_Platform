@@ -2,19 +2,12 @@ import type { ElementType, ReactNode } from 'react';
 import { cn } from '../../lib/cn';
 import { Breadcrumbs, type Crumb } from '../../molecules/Breadcrumbs/Breadcrumbs';
 
-/**
- * Шапка страницы (концепция §7.1): крошки → заголовок + описание слева,
- * основные действия справа, ниже — опциональная строка `meta` (счётчики,
- * время среза). Одна на страницу; заголовок — единственный h1.
- */
 export interface PageHeaderProps {
   title: ReactNode;
   description?: ReactNode;
   breadcrumbs?: Crumb[];
   linkComponent?: ElementType;
-  /** Действия страницы (экспорт, «создать») — справа. */
   actions?: ReactNode;
-  /** Строка под заголовком: «Найдено: 15 · срез 22:40». */
   meta?: ReactNode;
   className?: string;
 }

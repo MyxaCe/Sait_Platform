@@ -1,15 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { bootstrapFirstOperator } from './bootstrap';
 
-/**
- * ADM-01 · сид первого суперадмина одноразовый (Р-451).
- *
- * База замокана клиентом-эмулятором; argon2id настоящий (дешёвые параметры).
- * Главное утверждение: ПОВТОРНЫЙ запуск при непустой таблице операторов
- * отказывает и НИЧЕГО не вставляет — сид не бэкдор. И: первый запуск создаёт
- * оператора role=admin и пишет в журнал `operator.bootstrap`.
- */
-
 interface FakeState {
   operatorsEmpty: boolean;
   calls: { sql: string; params: unknown[] }[];
@@ -65,7 +56,6 @@ describe('сид · первый запуск', () => {
     const insertOp = state.calls.find((c) => /INSERT INTO operators/i.test(c.sql));
     expect(insertOp, 'вставка оператора').toBeTruthy();
     expect(insertOp!.sql).toMatch(/'admin'/);
-    // Пароль ушёл хешем, не в открытую.
     expect(String(insertOp!.params[2])).toMatch(/^\$argon2id\$/);
 
     const insertJournal = state.calls.find((c) => /INSERT INTO admin_action_journal/i.test(c.sql));
@@ -73,9 +63,7 @@ describe('сид · первый запуск', () => {
     expect(insertJournal!.params[2]).toBe('operator.bootstrap');
     expect(String(insertJournal!.params[5])).toContain('bootstrap');
 
-    // Операция завершилась COMMIT, а не ROLLBACK.
     expect(state.calls.some((c) => /COMMIT/i.test(c.sql))).toBe(true);
-    // Под блокировкой таблицы — чтобы два сида не проскочили гонкой.
     expect(state.calls.some((c) => /LOCK TABLE operators/i.test(c.sql))).toBe(true);
   });
 });
@@ -89,7 +77,6 @@ describe('сид · повторный запуск', () => {
 
     expect(state.calls.some((c) => /INSERT INTO operators/i.test(c.sql))).toBe(false);
     expect(state.calls.some((c) => /INSERT INTO admin_action_journal/i.test(c.sql))).toBe(false);
-    // И откат, а не коммит.
     expect(state.calls.some((c) => /ROLLBACK/i.test(c.sql))).toBe(true);
     expect(state.calls.some((c) => /COMMIT/i.test(c.sql))).toBe(false);
   });

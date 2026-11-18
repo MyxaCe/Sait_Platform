@@ -3,7 +3,6 @@ import { requireSessionUser } from '@/lib/auth/require';
 import { loadAccountTerms } from '@/lib/promo';
 import { AccountsScreen } from '@/features/promo/AccountsScreen';
 
-/** «Условия счетов»: типы счетов из админки (`readAccountTypeTerms`) и отметка «ваш тип». */
 export const dynamic = 'force-dynamic';
 
 export default async function AccountsPage({ params }: { params: { locale: string } }) {

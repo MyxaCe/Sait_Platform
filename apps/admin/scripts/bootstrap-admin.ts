@@ -2,22 +2,6 @@ import { readEnv } from '@broker/utils';
 import { bootstrapFirstOperator } from '../lib/bootstrap';
 import { getPool } from '../lib/db';
 
-/**
- * CLI-обёртка одноразового сида первого суперадмина (ADM-01, Р-451).
- *
- * Запуск (из `apps/admin`, DATABASE_URL уже указывает на схему с
- * применённой миграцией `1793535840000_operator_password_hash`):
- *
- *   DATABASE_URL=postgres://… \
- *   ADMIN_BOOTSTRAP_LOGIN=super \
- *   ADMIN_BOOTSTRAP_PASSWORD='…длинный пароль…' \
- *   ADMIN_BOOTSTRAP_NAME='Главный оператор' \
- *   pnpm --filter @broker/admin seed:admin
- *
- * Параметры argon2id берутся из тех же ADMIN_ARGON_* , что и вход (конфиг, не
- * хардкод). Повторный запуск при непустой таблице операторов ОТКАЗЫВАЕТ
- * (ненулевой код выхода) — сид одноразовый, не бэкдор.
- */
 async function main(): Promise<number> {
   const login = readEnv(process.env.ADMIN_BOOTSTRAP_LOGIN);
   const password = readEnv(process.env.ADMIN_BOOTSTRAP_PASSWORD);

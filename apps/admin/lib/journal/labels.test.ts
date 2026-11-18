@@ -3,11 +3,6 @@ import { join, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { ACTION_GROUPS, ACTION_LABELS, actionGroup, actionLabel, basisOf } from './labels';
 
-/**
- * Словарь подписей журнала полон: каждый код действия, который пишет код
- * приложения (admin + @broker/money), имеет человекочитаемую подпись. Иначе
- * в разделе «Журнал» всплывёт машинный код — для комплаенса это брак.
- */
 const ROOTS = [resolve(__dirname, '..'), resolve(__dirname, '../../app'), resolve(__dirname, '../../../../packages/money/src'), resolve(__dirname, '../../../../packages/promo/src')];
 const CODE =
   /'((?:client|crypto|leverage|operator|journal|promo|referral|contest|cashback|ib)\.[a-z_.]+|money\.command\.[a-z_]+|platform\.(?:money|promo)_settings\.[a-z_]+)'/g;
@@ -28,7 +23,6 @@ describe('journal labels', () => {
     for (const root of ROOTS) {
       for (const file of walk(root)) {
         if (file.endsWith('labels.ts')) continue;
-        // Префикс вида 'client.verification.' (фильтр startsWith) — не код действия.
         for (const m of readFileSync(file, 'utf8').matchAll(CODE)) if (!m[1]!.endsWith('.')) found.add(m[1]!);
       }
     }

@@ -4,7 +4,6 @@ import { getSessionUser } from '@/lib/auth/session';
 import { getPool } from '@/lib/db';
 import { loadWidgetState, sameOrigin } from '@/lib/support/state';
 
-/** Оценка 1–5 после «решено» — один раз, только своего обращения. */
 export async function POST(req: Request) {
   if (!sameOrigin(req)) return NextResponse.json({ error: 'forbidden' }, { status: 403 });
   const user = await getSessionUser();

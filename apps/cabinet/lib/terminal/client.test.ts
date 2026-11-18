@@ -1,17 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-/**
- * CAB-09 · ось отказа канала при чтении истории у терминала.
- *
- * «Не дозвонились», «ответил не-2xx» и «ответил непонятным телом» — три
- * разные неполадки у трёх разных людей (Р-070). Схлопнутые, они
- * отправляют чинить наугад.
- *
- * Отдельно проверяется, что **пустой список — это не отказ**: «сделок
- * нет» человек читает как факт о себе, «историю не получили» — как нашу
- * неполадку, и путать их нельзя.
- */
-
 const issueHandoffToken = vi.hoisted(() =>
   vi.fn(async () => ({ token: 'handoff.jwt', expiresIn: 60 })),
 );
@@ -63,7 +51,6 @@ describe('getClosedDeals · ось канала', () => {
       reason: 'not-configured',
     });
     expect(fetchMock).not.toHaveBeenCalled();
-    // И токен не выпускается зря: одноразовый `jti` сжигать незачем.
     expect(issueHandoffToken).not.toHaveBeenCalled();
   });
 
@@ -82,8 +69,6 @@ describe('getClosedDeals · ось канала', () => {
   });
 
   it('сессия пришла телом не того вида → malformed, а не network', async () => {
-    // Дозвонились и ответ получили: назвать это «не дозвонились» значит
-    // отправить чинить сеть вместо контракта.
     vi.stubGlobal('fetch', vi.fn(async () => json({ nothing: true })));
     const { getClosedDeals } = await import('./client');
 
@@ -124,8 +109,6 @@ describe('getClosedDeals · успех', () => {
   });
 
   it('пустой список — это `available`, а не отказ', async () => {
-    // «Сделок нет» — факт о человеке. «Историю не получили» — наша
-    // неполадка. Показать второе вместо первого значит соврать про себя.
     const fetchMock = vi
       .fn()
       .mockResolvedValueOnce(json({ token: 'sess', expires_in: 900 }))
@@ -137,8 +120,6 @@ describe('getClosedDeals · успех', () => {
   });
 
   it('история запрашивается с bearer, полученным от терминала', async () => {
-    // Растяжка: без заголовка ручка ответит 401, и мы покажем отказ
-    // вместо истории, не поняв почему.
     const fetchMock = vi
       .fn()
       .mockResolvedValueOnce(json({ token: 'sess-42', expires_in: 900 }))

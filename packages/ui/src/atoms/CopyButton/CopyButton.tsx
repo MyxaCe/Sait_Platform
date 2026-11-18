@@ -3,14 +3,8 @@
 import { useState } from 'react';
 import { cn } from '../../lib/cn';
 
-/**
- * Кнопка «скопировать» для id/хэша/адреса. Только буфер обмена — ничего не
- * отправляет и не журналирует (копирование не изменяет состояние). Подтверждение
- * — смена иконки на 1,5 с, без анимаций.
- */
 export interface CopyButtonProps {
   value: string;
-  /** Что копируем — для aria-label («Скопировать id клиента»). */
   label?: string;
   className?: string;
 }

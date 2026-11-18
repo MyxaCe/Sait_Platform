@@ -7,13 +7,6 @@ import {
   type ManagerFilter,
 } from '../managers/policy';
 
-/**
- * Параметры реестра клиентов из URL (client-safe: без `pg`). Всё, что пришло
- * из адресной строки, приводится к закрытому множеству; неизвестное — к
- * значению по умолчанию (не к ошибке: ссылка со старым параметром не ломает
- * страницу).
- */
-
 export const REGISTRY_PAGE_SIZE = 50;
 
 export type RegistrySortKey = 'name' | 'registered' | 'activity' | 'balance';
@@ -29,23 +22,16 @@ export interface RegistryQuery {
   sort: RegistrySortKey;
   dir: 'asc' | 'desc';
   page: number;
-  /** Фильтр по менеджеру (`?mgr=`): all | mine | none | id менеджера. */
   mgr: ManagerFilter;
-  /**
-   * Умолчание фильтра менеджера ДЛЯ ЭТОГО ЗРИТЕЛЯ: менеджеру — «мои», прочим —
-   * «все». В URL пишется только отличие от умолчания.
-   */
   mgrDefault: 'all' | 'mine';
 }
 
 export interface RegistryParseOptions {
-  /** Зритель — менеджер клиентов: реестр по умолчанию открывается на «Мои клиенты». */
   defaultMine?: boolean;
 }
 
 const SORT_KEYS: readonly RegistrySortKey[] = ['name', 'registered', 'activity', 'balance'];
 
-/** Старые значения `?sort=` (до фазы 2) — ссылки из закладок продолжают работать. */
 const LEGACY_SORT: Record<string, [RegistrySortKey, 'asc' | 'desc']> = {
   registered_desc: ['registered', 'desc'],
   registered_asc: ['registered', 'asc'],
@@ -73,7 +59,6 @@ export function parseRegistryQuery(sp: Raw, opts: RegistryParseOptions = {}): Re
     [sort, dir] = LEGACY_SORT[rawSort];
   } else if ((SORT_KEYS as readonly string[]).includes(rawSort)) {
     sort = rawSort as RegistrySortKey;
-    // Имя по умолчанию — по алфавиту, остальное — новые/большие сверху.
     dir = rawDir === 'asc' || rawDir === 'desc' ? rawDir : sort === 'name' ? 'asc' : 'desc';
   }
 
@@ -92,7 +77,6 @@ export function parseRegistryQuery(sp: Raw, opts: RegistryParseOptions = {}): Re
   };
 }
 
-/** Есть ли активный фильтр (для пустого состояния «ничего не найдено» и «Сбросить»). */
 export function hasRegistryFilter(q: RegistryQuery): boolean {
   return (
     q.q !== '' ||
@@ -103,7 +87,6 @@ export function hasRegistryFilter(q: RegistryQuery): boolean {
   );
 }
 
-/** URL реестра с подменой части параметров; значения по умолчанию в URL не пишем. */
 export function registryHref(q: RegistryQuery, patch: Partial<RegistryQuery> = {}): string {
   const n = { ...q, ...patch };
   const p = new URLSearchParams();

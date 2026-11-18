@@ -1,6 +1,5 @@
 import { DataTable, KpiTile, PageHeader, Panel } from '@broker/ui';
 
-/** Загрузка очереди KYC: тот же каркас, плитки-заглушки и строки-скелеты. */
 const COLS = ['Клиент', 'Документы', 'В очереди', 'Статус', ''].map((h, i) => ({
   key: String(i),
   header: h,

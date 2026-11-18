@@ -1,10 +1,3 @@
-// Проверка контраста WCAG 2.x для палитр центра управления и сайта/кабинета.
-// Читает packages/ui/src/tokens/tokens.css, для каждой палитры админки считает
-// контраст текста и статусных цветов на фонах, на которых они реально живут
-// (в т.ч. текст бейджа на подложке «цвет/12%» поверх card).
-//
-//   node tools/screens/contrast.mjs            → markdown-таблица
-//   node tools/screens/contrast.mjs --strict   → exit 1, если что-то < порога
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
@@ -25,7 +18,6 @@ const PALETTES = {
   paper: block("\\[data-surface='admin'\\]\\[data-palette='paper'\\]"),
 };
 
-// Сайт и кабинет (фирменное «золото на тёмном» + светлая тема сайта).
 const SITE = {
   'site-dark': block(":root,\\s*\\[data-theme='dark'\\]"),
   'site-light': block("\\[data-theme='light'\\]"),
@@ -71,8 +63,6 @@ for (const [name, p] of Object.entries(PALETTES)) {
   out.push(`### ${name}\n\n| пара | контраст | порог | AA |\n|---|---|---|---|\n${rows.join('\n')}\n`);
 }
 
-// Сайт/кабинет: строго — то, что исправлено в фазе 2 и обязано держать AA
-// (текст на primary-кнопке, в т.ч. на ховере); остальное — справочно.
 for (const [name, p] of Object.entries(SITE)) {
   const c = (k) => rgb(p[k]);
   const rows = [];

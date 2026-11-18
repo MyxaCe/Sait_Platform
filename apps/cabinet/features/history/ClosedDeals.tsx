@@ -3,13 +3,6 @@ import { Money } from '@broker/ui';
 import { describeSlippage } from '@/lib/slippage';
 import type { ClosedDealsOutcome } from '@/lib/terminal/client';
 
-/**
- * Закрытые сделки из ручки терминала с **названным проскальзыванием**
- * (CAB-09, WEB-20, Р-178): стоп исполняется по первой наблюдённой цене, а не
- * по уровню, и без объяснения разница читается как наша ошибка. В r2 это
- * раздел «Истории» (под лентой); показывается, только когда терминал ответил
- * и сделки есть — лента выше уже честно показывает всё из проекции.
- */
 export async function ClosedDeals({ outcome }: { outcome: ClosedDealsOutcome }) {
   if (outcome.state !== 'available' || outcome.deals.length === 0) return null;
   const t = await getTranslations('history');
@@ -42,7 +35,6 @@ export async function ClosedDeals({ outcome }: { outcome: ClosedDealsOutcome }) 
               <p className="mt-0.5 text-xs tabular-nums text-secondary">
                 {t('prices', { entry: price(deal.entry), exit: price(deal.exit) })}
               </p>
-              {/* Про уровень — только когда он известен; `unknown` — молчим. */}
               {deal.level !== null && slippage.kind !== 'unknown' ? (
                 <p className="mt-1.5 text-xs">
                   {slippage.kind === 'against'
@@ -52,7 +44,6 @@ export async function ClosedDeals({ outcome }: { outcome: ClosedDealsOutcome }) 
                       : t('slippageNone', { level: price(deal.level) })}
                 </p>
               ) : null}
-              {/* Разрыв — только когда источник сказал «был». */}
               {deal.acrossGap === true ? <p className="mt-1 text-xs text-secondary">{t('gap')}</p> : null}
             </li>
           );

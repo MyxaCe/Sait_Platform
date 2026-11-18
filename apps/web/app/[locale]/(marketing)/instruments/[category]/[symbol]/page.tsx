@@ -12,20 +12,6 @@ import { getMdsIcons } from '@/lib/mds';
 import { SITE_URL } from '@/lib/site';
 import { accessNotice, getTenantAccess, isSymbolAllowed } from '@/lib/tenant';
 
-/**
- * Страница ДИНАМИЧЕСКАЯ, и это требование, а не настройка (WEB-07).
- *
- * Её содержимое режет граница доступа тенанта — регуляторный фильтр,
- * который читается из окружения В РАНТАЙМЕ. На сборке окружения нет:
- * `getTenantAccess()` возвращает `not-configured`, список становится
- * пустым, а объяснение «список недоступен» ЗАПЕКАЕТСЯ в разметку. На
- * живом домене это вечная ложная авария — та же природа, что у адресов
- * в WEB-22: состояние среды, замороженное на сборке.
- *
- * Отдать список статически и отфильтровать его в браузере нельзя:
- * неразрешённые инструменты оказались бы в HTML, а fail-closed значит
- * «не публиковать то, что может быть запрещено», а не «спрятать потом».
- */
 export const dynamic = 'force-dynamic';
 
 interface PageParams {
@@ -52,17 +38,12 @@ export async function generateMetadata({ params }: PageParams): Promise<Metadata
 }
 
 export default async function InstrumentPage({ params }: PageParams) {
-  // setRequestLocale строго до notFound(): иначе рендер 404-границы
-  // уходит в динамический режим (DYNAMIC_SERVER_USAGE)
   setRequestLocale(params.locale);
   const locale = params.locale === 'en' ? 'en' : 'ru';
 
   const def = findSymbol(params.symbol);
   if (!def || def.category !== params.category) notFound();
 
-  // Контент из CMS + ДОСТУП сайта (allow-list карточки сайта, ADR-028):
-  // инструмент вне контента ИЛИ вне доступа недоступен,
-  // даже если есть в realtime-справочнике
   const [{ items }, access] = await Promise.all([
     getCms('instruments', { locale }),
     getTenantAccess(),
@@ -73,15 +54,6 @@ export default async function InstrumentPage({ params }: PageParams) {
   const t = await getTranslations('instruments');
   const notice = accessNotice(access);
 
-  // Два РАЗНЫХ отказа, и 404 годится только для одного из них
-  // (КОНТРАКТЫ.md §4б: «403 — список говорит нет; 503 — списка нет вовсе»):
-  //
-  //  - список получен, символа в нём нет → `404`. Список высказался,
-  //    инструмент этим сайтом не предлагается, и это окончательно;
-  //  - списка нет или он пуст → страница с объяснением. `404` здесь
-  //    соврал бы: «такой страницы нет» вместо «мы не смогли узнать, что
-  //    можно показать». Отказ, выглядящий как отсутствие функции, —
-  //    ровно тот класс, который закрывает Р-025.
   if (!notice && !isSymbolAllowed(access, def.symbol)) notFound();
 
   if (notice) {
@@ -105,12 +77,10 @@ export default async function InstrumentPage({ params }: PageParams) {
     );
   }
 
-  // Иконка: загруженная в CMS приоритетнее, иначе — монета из MDS
   const iconUrl = meta.icon?.url ?? (await getMdsIcons())[def.symbol];
 
   const categoryLabel = CATEGORY_LABELS_STATIC[locale]![def.category];
 
-  // Микроразметка хлебных крошек — дублирует видимую навигацию для поисковиков
   const breadcrumbJsonLd = {
     '@context': 'https://schema.org',
     '@type': 'BreadcrumbList',

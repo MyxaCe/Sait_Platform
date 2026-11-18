@@ -19,60 +19,22 @@ import {
   type MoneyInitiatorRole,
 } from './types';
 
-/**
- * Оркестрация денежных команд dual control (Р-452, ратификация Р-455) —
- * персистентная надстройка над чистой стейт-машиной. Образец — `kyc/decide.ts`:
- * одно действие = одна транзакция, и в ней НЕРАЗДЕЛИМО смена `state` + запись в
- * неизменяемый журнал (`appendJournalEntry`, Р-049) + привязка
- * `last_journal_seq`. Либо всё, либо ничего.
- *
- * ЭТО СКЕЛЕТ: деньги НЕ двигаются (Р-396), терминального (Rust) пути нет,
- * `dispatch`/`execute`/`reject` не ходят в живой терминал. `initiatorId`/роль
- * берутся из СЕССИИ вызывающим server action-ом, НЕ из формы (Р-451/Р-452).
- *
- * Ратификация Р-455 / Р-456:
- *  - R-1: одна подпись ЦУ; в подписываемый payload кладём id ОБОИХ аппрувов.
- *  - R-2 + поправка (Р-456 C): освобождение admin от второго аппрува —
- *    ВРЕМЕННОЕ, только при `bootstrap_mode=true` (пока нет реальных
- *    finance_operator). Каждый admin-self-approval в bootstrap → алерт + запись
- *    в журнал (`money.command.bootstrap_self_approval`). bootstrap_mode=false →
- *    admin подчиняется dual control, self-approval блокируется стейт-машиной.
- *  - R-3: инициируют admin и finance_operator; self-approval запрещён (вне bootstrap).
- *  - R-4: reversal обязан ссылаться на исходную команду.
- *  - R-5: break-glass — только admin, инцидент, алерт всем админам, ревью ≤24ч.
- *
- * Гарды состоянием в UPDATE (`WHERE ... AND state = $ожидаемое`) — оптимистичная
- * блокировка состоянием, что в `decide.ts`: гонка двух операторов → 0 строк →
- * откат → fail-closed.
- */
-
 export interface CommandDeps {
   pool?: { connect(): Promise<PoolClient> };
-  /** Провайдер ключа ЦУ. По умолчанию из env; в тестах/Vault — свой. */
   keyProvider?: Ed25519KeyProvider;
-  /**
-   * Порт алерта всех админов: break-glass (Р-455 R-5) и bootstrap-self-approval
-   * (Р-456 C). По умолчанию no-op.
-   */
   adminAlert?: AdminAlertPort;
 }
 
 export interface InitiateInput {
-  /** `operators.id` инициатора — из сессии, НЕ из формы. */
   initiatorId: string;
-  /** Роль инициатора — из сессии (Р-455 R-2/R-3): admin | finance_operator. */
   initiatorRole: MoneyInitiatorRole;
   type: MoneyCommandType;
   accountId: string;
   amount: MoneyAmount;
-  /** Основание: id заявки/тикета/инцидента. Непустое. */
   basisRef: string;
-  /** Р-455 R-4: для `reversal` — id исходной команды (обязателен для reversal). */
   originalCommandId?: string;
-  /** Аварийный обход (Р-455 R-5). Только admin; требует причину и инцидент. */
   breakGlass?: boolean;
   breakGlassReason?: string;
-  /** Р-455 R-5: инцидент, к которому привязана break-glass команда. */
   incidentRef?: string;
 }
 
@@ -90,7 +52,6 @@ export type InitiateResult =
     };
 
 const SUBJECT = 'money_command';
-/** Пост-фактум ревью break-glass ≤24ч (Р-452/Р-455 R-5). */
 const BREAK_GLASS_REVIEW_MS = 24 * 60 * 60 * 1000;
 
 async function journal(
@@ -112,23 +73,15 @@ async function journal(
   return seq;
 }
 
-/**
- * Инициация команды (Р-452, Р-455). Создаёт команду в стартовом состоянии
- * (`initialStateFor` по РОЛИ: admin → `draft` всегда; finance_operator →
- * `awaiting_second_approval`, если сумма выше порога), пишет аппрув-инициацию и
- * журналирует. Деньги НЕ двигаются — это намерение и его аудит.
- */
 export async function initiateCommand(
   input: InitiateInput,
   deps: CommandDeps = {},
 ): Promise<InitiateResult> {
-  // Р-455 R-3: деньги инициируют только admin/finance_operator (не plain operator).
   if (!isMoneyInitiatorRole(input.initiatorRole)) return { ok: false, reason: 'forbiddenRole' };
 
   const basisRef = input.basisRef?.trim() ?? '';
   if (basisRef.length === 0) return { ok: false, reason: 'missingBasis' };
 
-  // Р-455 R-4: reversal без ссылки на исходную команду — это не reversal.
   const originalCommandId = input.originalCommandId?.trim() ?? '';
   if (input.type === 'reversal' && originalCommandId.length === 0) {
     return { ok: false, reason: 'missingOriginalCommand' };
@@ -138,7 +91,6 @@ export async function initiateCommand(
   const reason = input.breakGlassReason?.trim() ?? '';
   const incidentRef = input.incidentRef?.trim() ?? '';
   if (breakGlass) {
-    // Р-455 R-5: break-glass — ТОЛЬКО admin.
     if (input.initiatorRole !== 'admin') return { ok: false, reason: 'breakGlassAdminOnly' };
     if (reason.length === 0) return { ok: false, reason: 'missingBreakGlassReason' };
     if (incidentRef.length === 0) return { ok: false, reason: 'missingIncident' };
@@ -146,9 +98,6 @@ export async function initiateCommand(
 
   const pool = deps.pool ?? getPool();
   const alertPort = deps.adminAlert ?? noopAdminAlert;
-  // Р-456 C: режим фиксируем на команде в момент инициации (не читаем конфиг
-  // позже) — так аудит видит, под каким режимом она прошла, и подпись решается
-  // по режиму рождения, а не по случайному состоянию env во время sign.
   const bootstrap = bootstrapMode();
   const commandId = randomUUID();
   const nonce = randomUUID();
@@ -217,9 +166,6 @@ export async function initiateCommand(
     ]);
     await client.query('COMMIT');
 
-    // Р-455 R-5: немедленный алерт ВСЕМ админам — ПОСЛЕ коммита (не алертим о
-    // команде, которая откатилась). Порт по умолчанию no-op; сбой канала не
-    // роняет уже совершённую инициацию.
     if (breakGlass) {
       const alert = buildMoneyAlert({
         kind: 'break_glass',
@@ -246,7 +192,6 @@ export async function initiateCommand(
   }
 }
 
-/** Общий результат переходов, двигающих уже созданную команду. */
 export type StepResult =
   | { ok: true; state: MoneyCommandState }
   | { ok: false; reason: 'notFound' | 'illegalState' | 'selfApprovalForbidden' | 'secondApprovalRequired' };
@@ -278,10 +223,6 @@ async function load(client: PoolClient, commandId: string): Promise<LoadedComman
   return (r.rows[0] as LoadedCommand | undefined) ?? null;
 }
 
-/**
- * Читает id аппрувов команды (Р-455 R-1): инициация обязательна, второй аппрув
- * — по наличию (null для admin-пути). Нужны, чтобы вложить оба id в подпись.
- */
 async function approvalIds(
   client: PoolClient,
   commandId: string,
@@ -297,7 +238,6 @@ async function approvalIds(
   return { initiateApprovalId: initiate, secondApprovalId: second };
 }
 
-/** Строит каноническую нагрузку из строки команды + свежей метки + id аппрувов. */
 function payloadOf(
   cmd: LoadedCommand,
   issuedAt: string,
@@ -318,11 +258,6 @@ function payloadOf(
   };
 }
 
-/**
- * Применяет подпись ЦУ к команде на переходе `→ signed`. Метка времени (Р-455
- * R-6) генерится ЗДЕСЬ, ПОСЛЕ сбора аппрувов, и входит в подписанную нагрузку
- * вместе с id обоих аппрувов (Р-455 R-1) — одна точка истины.
- */
 async function applySignature(
   client: PoolClient,
   cmd: LoadedCommand,
@@ -339,15 +274,6 @@ async function applySignature(
   );
 }
 
-/**
- * Подпись команды, стоящей в `draft`: `draft → signed`.
- *  - admin ПРИ `bootstrap_mode=true` (Р-456 C) — подписывает собственную команду
- *    сам (self-approval). Это ВРЕМЕННОЕ исключение «со следом»: пишем отдельную
- *    запись `money.command.bootstrap_self_approval` + алертим всех админов.
- *  - admin без bootstrap и finance_operator — только если второй аппрув не
- *    требуется (иначе `secondApprovalRequired`; при пороге 0 в draft не попадут).
- *  - break-glass (admin-only) — аварийный обход, со своим следом (алерт/ревью).
- */
 export async function signCommand(commandId: string, deps: CommandDeps = {}): Promise<StepResult> {
   const pool = deps.pool ?? getPool();
   const keyProvider = deps.keyProvider ?? new EnvEd25519KeyProvider();
@@ -371,8 +297,6 @@ export async function signCommand(commandId: string, deps: CommandDeps = {}): Pr
       await client.query('ROLLBACK');
       return { ok: false, reason: t.error === 'secondApprovalRequired' ? 'secondApprovalRequired' : 'illegalState' };
     }
-    // Р-456 C: подпись admin'ом собственной команды в bootstrap-режиме — это
-    // self-approval. Не break-glass (у того свой след). Легализуем со следом.
     const bootstrapSelfApproval =
       cmd.initiator_role === 'admin' && cmd.bootstrap_mode && !cmd.break_glass;
     const updated = await client.query(
@@ -393,8 +317,6 @@ export async function signCommand(commandId: string, deps: CommandDeps = {}): Pr
     });
     let lastSeq = seq;
     if (bootstrapSelfApproval) {
-      // Отдельная запись: admin подтвердил сам в bootstrap — временное исключение
-      // с зафиксированным условием истечения (Р-456 C).
       lastSeq = await journal(
         client,
         cmd.initiator_id,
@@ -406,8 +328,6 @@ export async function signCommand(commandId: string, deps: CommandDeps = {}): Pr
     await client.query(`UPDATE money_commands SET last_journal_seq = $2 WHERE id = $1`, [commandId, lastSeq]);
     await client.query('COMMIT');
 
-    // Алерт о self-approval — ПОСЛЕ коммита (не алертим об откате). Р-456 C:
-    // каждый bootstrap-self-approval виден админам, а не проходит молча.
     if (bootstrapSelfApproval) {
       const alert = buildMoneyAlert({
         kind: 'bootstrap_self_approval',
@@ -431,12 +351,6 @@ export async function signCommand(commandId: string, deps: CommandDeps = {}): Pr
   }
 }
 
-/**
- * Второй аппрув (Р-452/Р-455 R-3): `awaiting_second_approval → signed`. Гард
- * self-approval — подтверждающий ≠ инициатор (разные учётки). При успехе сразу
- * подписывает ключом ЦУ. Партиальный UNIQUE в схеме не даёт одному оператору
- * занять обе роли — подпора к логическому гарду.
- */
 export async function secondApprove(
   commandId: string,
   approverId: string,
@@ -494,12 +408,6 @@ export type ReviewResult =
   | { ok: true }
   | { ok: false; reason: 'notFound' | 'notBreakGlass' | 'alreadyReviewed' | 'missingResult' };
 
-/**
- * Пост-фактум ревью break-glass команды (Р-455 R-5): фиксирует результат и
- * ревьюера, пишет в журнал той же транзакцией. Гард `reviewed_at IS NULL` не
- * даёт ревьюировать дважды. Скелет: срок ≤24ч задан `review_due_at`; живого
- * алерта о просрочке тут нет (порт).
- */
 export async function reviewBreakGlass(
   commandId: string,
   reviewerId: string,

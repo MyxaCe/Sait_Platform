@@ -8,18 +8,6 @@ import {
   type RegistrySortKey,
 } from './registry-params';
 
-/**
- * Реестр клиентов `/clients` — ЧТЕНИЕ для представления (редизайн, фаза 2).
- *
- * Отличие от `listClients` (`queries.ts`, оставлен без изменений): реестру нужны
- * AML-статус, денежные ограничения (заморозка / запрет вывода), серверная
- * пагинация с общим счётчиком и сортировка по заголовку колонки в обе стороны.
- * Только SELECT, ничего не пишет; чтение не журналируется (§3.1 дизайна).
- *
- * Безопасность SQL: пользовательский текст идёт только параметрами (`$n`);
- * сортировка — из закрытого whitelist (`SORT_SQL`), направление — из `asc|desc`.
- */
-
 export interface RegistryRow {
   userId: string;
   fullName: string;
@@ -31,10 +19,8 @@ export interface RegistryRow {
   blocked: boolean;
   frozen: boolean;
   withdrawBanned: boolean;
-  /** Баланс реального счёта (проекция `real_accounts`), минорные единицы; `null` — счёта нет. */
   balanceMinor: number | null;
   currency: string | null;
-  /** Закреплённый менеджер (`client_managers`); `null` — не закреплён. */
   managerId: string | null;
   managerName: string | null;
 }
@@ -54,14 +40,11 @@ const SORT_SQL: Record<RegistrySortKey, string> = {
 export async function listClientRegistry(
   query: RegistryQuery,
   db: Queryable = getPool(),
-  /** `operators.id` зрителя — для фильтра «Мои клиенты» (из сессии, не из URL). */
   viewerId: string | null = null,
 ): Promise<RegistryPage> {
   const where: string[] = [];
   const params: unknown[] = [];
 
-  // Менеджер. «Мои» без известного зрителя — пустой результат (fail-closed),
-  // а не «все»: иначе сбой сессии показал бы менеджеру чужой портфель как свой.
   if (query.mgr === 'mine') {
     if (viewerId) {
       params.push(viewerId);
@@ -97,7 +80,6 @@ export async function listClientRegistry(
 
   const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
   const dir = query.dir === 'asc' ? 'ASC' : 'DESC';
-  // NULL (нет счёта / не входил) — всегда в конце, в обе стороны.
   const orderSql = `${SORT_SQL[query.sort]} ${dir} NULLS LAST, u.created_at DESC, u.id`;
 
   const from = `FROM users u

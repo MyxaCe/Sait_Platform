@@ -3,13 +3,6 @@ import { DataTable, EmptyState, KpiTile, Money, Panel, StatusBadge, type DataTab
 import type { MyClientRow, MyClientsSummary } from '@/lib/managers/queries';
 import { fmtDateTime, fmtRelativeDay } from '@/lib/ui/format';
 
-/**
- * Дашборд менеджера: «Мои клиенты» (ветка admin-managers). Показывается только
- * оператору с флагом «менеджер клиентов». Те же правила, что у остального
- * дашборда: только чтение, числа точные, чего не знаем — не показываем.
- * Ссылки ведут в реестр с фильтром «Мои клиенты» (+ KYC при необходимости).
- */
-
 const COLUMNS: DataTableColumn<MyClientRow>[] = [
   {
     key: 'name',

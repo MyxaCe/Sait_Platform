@@ -5,7 +5,6 @@ import { cn } from '../../lib/cn';
 
 export interface SelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
   invalid?: boolean;
-  /** `compact` — плотный контрол операторского периметра (36px, rounded-md, bg-sunken). */
   controlSize?: 'md' | 'compact';
 }
 

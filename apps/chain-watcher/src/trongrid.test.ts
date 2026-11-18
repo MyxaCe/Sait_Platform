@@ -5,8 +5,6 @@ import { USDT_TRC20_CONTRACT } from '@broker/money';
 import { ChainUnavailableError, createTronGridReader, parseIncomingUsdt, parseSolidTxInfo } from './trongrid';
 import { verifyDeposit, verifyPayout } from './verify';
 
-/** Адаптер и сверка — на фикстурах ответов TronGrid; сети нет. */
-
 const fx = (name: string): unknown =>
   JSON.parse(readFileSync(path.join(__dirname, 'fixtures', name), 'utf8'));
 const ADDR = fx('addresses.json') as { exchange: string; from: string; other: string };

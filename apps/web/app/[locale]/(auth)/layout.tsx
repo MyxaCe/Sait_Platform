@@ -8,10 +8,6 @@ interface LayoutProps {
   params: { locale: string };
 }
 
-/**
- * Облегчённый layout для входа/регистрации: без полного меню и тикера,
- * ничто не отвлекает от конверсионного действия.
- */
 export default async function AuthLayout({ children, params }: LayoutProps) {
   setRequestLocale(params.locale);
   const brand = await getCms('brand', { locale: params.locale === 'en' ? 'en' : 'ru' });

@@ -1,13 +1,6 @@
 import { createHmac, randomUUID } from 'node:crypto';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-/**
- * Прогрев после деплоя: `POST /api/revalidate/all` (секрет вебхука CMS).
- *
- * Главное свойство: при лежащей CMS ничего не сбрасывается — сброс не
- * дал бы новых данных, а только увёл бы страницы на последнюю версию.
- */
-
 const revalidateTag = vi.fn();
 const revalidatePath = vi.fn();
 vi.mock('next/cache', () => ({ revalidateTag, revalidatePath }));

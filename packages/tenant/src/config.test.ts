@@ -1,26 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fetchTenantConfig } from './config';
 
-/**
- * Чтение конфига тенанта — проверка СВЯЗКИ, а не единицы.
- *
- * Разница измерена у соседей и у нас: мутация «правило не вызывается»
- * красит ноль модульных тестов, потому что функция-то исправна. Здесь
- * проверяется путь целиком — ответ источника → разбор → решение границы,
- * — и мутация «срок годности не применяется» красит именно этот файл.
- *
- * Мутации, от которых набор обязан покраснеть (прогнаны, см. ADR-030):
- *   M1 `readAccess`: пустой список → fail-open;
- *   M2 `isSymbolAllowed` разрешает при `state !== 'allowed'`;
- *   M3 отсутствующее `instruments` считается пустым списком;
- *   M4 `readStartBalance`: `null` → умолчание legacy;
- *   M5 `readStartBalance` через `Number()` вместо строгого разбора;
- *   M6 `applyListExpiry` продолжает по последнему известному;
- *   M7 `readListExpiry` отсчитывает окно от «сейчас»;
- *   M8 `fetchTenantConfig` не вызывает `applyListExpiry` вовсе;
- *   M9 недоступность перестаёт кричать в лог.
- */
-
 const ORIGIN = Date.parse('2026-10-06T12:00:00Z');
 const BASE = { baseUrl: 'http://cms.test', slug: 'apex-ru' };
 
@@ -30,7 +10,6 @@ function stubFetch(impl: (url: string, init: RequestInit) => Promise<Response>) 
   return mock;
 }
 
-/** Ответ источника, который о сроке годности молчит, — как сегодня. */
 function silent(body: unknown, init: ResponseInit = {}) {
   return Promise.resolve(Response.json(body, init));
 }
@@ -78,7 +57,6 @@ describe('источник ответил', () => {
     const config = await fetchTenantConfig(BASE);
 
     expect(config.access).toEqual({ state: 'empty' });
-    // Иначе дежурный пойдёт чинить исправное.
     expect(console.error).not.toHaveBeenCalled();
   });
 });
@@ -92,7 +70,6 @@ describe('источник недоступен', () => {
     expect(config.access).toEqual({ state: 'unavailable', reason: 'not-configured' });
     expect(config.startBalance).toEqual({ state: 'unavailable', reason: 'not-configured' });
     expect(mock).not.toHaveBeenCalled();
-    // Ненастроенная CMS — конфигурация контура, а не происшествие.
     expect(console.error).not.toHaveBeenCalled();
   });
 
@@ -111,7 +88,6 @@ describe('источник недоступен', () => {
     const config = await fetchTenantConfig(BASE);
 
     expect(config.access).toEqual({ state: 'unavailable', reason: 'network' });
-    // Фолбэк без алерта — скрытая авария (R-15).
     expect(console.error).toHaveBeenCalled();
   });
 
@@ -138,9 +114,6 @@ describe('срок годности списка применяется на э�
 
     const config = await fetchTenantConfig({ ...BASE, now: () => ORIGIN + 61_000 });
 
-    // Мутация M8 («`applyListExpiry` не вызывается») красит этот тест и не
-    // красит ни одного модульного: функция-то исправна, её просто никто
-    // не зовёт. Ради этой разницы проверка и написана на уровне связки.
     expect(config.access).toEqual({ state: 'unavailable', reason: 'expired' });
     expect(config.expiry).toEqual({
       state: 'named',
@@ -169,9 +142,6 @@ describe('срок годности списка применяется на э�
   });
 
   it('СВЯЗКА: сегодняшний источник срока не называет — окно остаётся нашим', async () => {
-    // Так отвечает legacy на `/v1/cms/sites/{slug}`: `no-store` и ничего
-    // про срок действия разрешений. Ветка `named` на этом источнике не
-    // исполняется — пункт Р-030 закрыт наполовину, и это записано.
     stubFetch(() =>
       silent({ instruments: ['BTCUSD'] }, { headers: { 'cache-control': 'no-store' } }),
     );
@@ -202,8 +172,6 @@ describe('параметры потребителя доходят до запр
       fetchInit: { next: { revalidate: 300, tags: ['cms:brand'] } } as RequestInit,
     });
 
-    // Без этого вынос в пакет тихо отменил бы инвалидацию вебхуком у
-    // витрины — правка, которая выглядит рефакторингом и меняет поведение.
     const init = mock.mock.calls[0]![1] as RequestInit & {
       next?: { revalidate?: number; tags?: string[] };
     };

@@ -1,20 +1,5 @@
 import { getPool, type Queryable } from '../db';
 
-/**
- * Чтения операторской поверхности KYC (ADM-08, Р-451 п.4).
- *
- * Операторский периметр читает из клиентской `users` РОВНО то, что нужно
- * опознать человека в очереди и карточке (id, имя, email, когда
- * зарегистрирован) — не больше (Р-395: оператор ≠ клиент, доступ к `users`
- * только на чтение нужных полей). Пароль, сессии и прочее клиентское сюда не
- * попадают.
- */
-
-/**
- * Состояния проверки. Четыре из фундамента (1793449440000) плюс пятое
- * `resubmit_requested` из 1793708640000 (ADM-10, Р-454 I-1) — мягкий возврат:
- * оператор просит дослать документ, не отклоняя заявку целиком.
- */
 export type VerificationState =
   | 'unverified'
   | 'pending'
@@ -30,17 +15,10 @@ export const VERIFICATION_STATES: readonly VerificationState[] = [
   'resubmit_requested',
 ];
 
-/** Виды KYC-документа по Р-451 п.4 (закрытый перечень = CHECK в схеме). */
 export type KycDocKind = 'identity' | 'selfie_liveness' | 'address_proof' | 'source_of_funds';
 
-/**
- * I-3 (Р-454 I-3): подтверждение адреса действительно ≤ 3 мес (Р-451 п.4).
- * Старше 90 дней — визуальный флаг в карточке, НЕ блок решения: оператор видит
- * несвежесть и сам решает, просить ли переподачу.
- */
 export const ADDRESS_PROOF_MAX_AGE_DAYS = 90;
 
-/** Документ старше `days` дней на момент `now`. Чистая функция — тестируема. */
 export function isDocumentOlderThan(
   submittedAt: string,
   days: number,
@@ -50,7 +28,6 @@ export function isDocumentOlderThan(
   return ageMs > days * 24 * 60 * 60 * 1000;
 }
 
-/** Человекочитаемые подписи видов — для карточки оператора. */
 export const DOC_KIND_LABELS: Record<KycDocKind, string> = {
   identity: 'Паспорт / ID',
   selfie_liveness: 'Селфи с liveness',
@@ -84,7 +61,6 @@ export interface ClientVerificationCard {
   documents: KycDocument[];
 }
 
-/** Приводим строку БД к известному состоянию или бросаем (fail-closed). */
 function asState(value: unknown): VerificationState {
   if (
     value === 'unverified' ||
@@ -95,7 +71,6 @@ function asState(value: unknown): VerificationState {
   ) {
     return value;
   }
-  // Неизвестное состояние — не «наверное ок»: строка сломана, не трактуем.
   throw new Error(`client_verification.state вне допустимого множества: ${String(value)}`);
 }
 
@@ -111,11 +86,6 @@ function asDocKind(value: unknown): KycDocKind {
   throw new Error(`kyc_documents.doc_kind вне допустимого множества: ${String(value)}`);
 }
 
-/**
- * Очередь клиентов, ждущих решения: ровно те, у кого `state = 'pending'`.
- * Только pending — не `unverified` (ещё не подал) и не терминальные
- * `verified`/`rejected`. Старые сверху — кто дольше ждёт.
- */
 export async function listPendingClients(db: Queryable = getPool()): Promise<PendingClient[]> {
   const result = await db.query(
     `SELECT cv.user_id,
@@ -139,12 +109,6 @@ export async function listPendingClients(db: Queryable = getPool()): Promise<Pen
   }));
 }
 
-/**
- * Карточка клиента для решения: его состояние проверки и поданные документы
- * (метаданные + ссылка на хранилище). `null`, если по этому id нет строки
- * `client_verification` (оператор решает только о тех, у кого проверка
- * заведена; просто существующий `users` без проверки сюда не относится).
- */
 export async function getClientVerificationCard(
   userId: string,
   db: Queryable = getPool(),

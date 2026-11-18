@@ -1,14 +1,6 @@
 import { appendJournalSeqWithinTx, inTransaction, rollback, type PoolLike, type Queryable } from '@broker/money';
 import { isValidEd25519PublicKeyPem, keyFingerprint } from './envelope';
 
-/**
- * Реестр платформ группы — НАСТРОЙКА ячейки (таблица `group_platforms`), не
- * хардкод. В каждой ячейке свой экземпляр реестра: своя строка (slug =
- * SITE_SLUG процесса) и соседи. Меняет admin в «Настройках платформы» с
- * основанием (журнал `platform.group_registry.upserted`, до/после). Ячейки при
- * развёртывании прописывают реестр скриптом `seed:group-registry` (JSON).
- */
-
 export interface GroupPlatform {
   slug: string;
   name: string;
@@ -69,7 +61,6 @@ const ISO2 = /^[A-Z]{2}$/;
 const SLUG = /^[a-z0-9][a-z0-9-]{1,31}$/;
 const URL_RE = /^https?:\/\/[^\s/]+(?::\d+)?(?:\/[^\s]*)?$/;
 
-/** Страны из строки «DE, FR fr» → ['DE','FR'] (ISO-2, без дублей). Мусор — ошибка, не тишина. */
 export function parseCountryList(raw: string): { ok: true; value: string[] } | { ok: false; bad: string[] } {
   const items = raw
     .split(/[\s,;]+/)
@@ -103,7 +94,6 @@ export function validatePlatformInput(p: GroupPlatformInput): PlatformValidation
   return errors;
 }
 
-/** Вид записи для журнала: ключ — отпечатком, не PEM целиком. */
 function journalView(p: GroupPlatformInput | GroupPlatform | null) {
   if (!p) return null;
   return {
@@ -127,7 +117,6 @@ export type UpsertPlatformResult =
   | { ok: false; reason: 'missingReason' | 'noChange' }
   | { ok: false; reason: 'invalid'; errors: PlatformValidationError[] };
 
-/** Запись реестра внутри открытой транзакции (форма admin и скрипт ячейки). */
 export async function upsertGroupPlatformWithinTx(
   tx: Queryable,
   input: { operatorId: string; basis: string; platform: GroupPlatformInput },
@@ -205,11 +194,6 @@ export async function upsertGroupPlatform(
   });
 }
 
-/**
- * Разбор JSON-описания реестра (скрипт ячейки, `platform-new.sh`). Формат —
- * массив объектов с полями `GroupPlatformInput` (camelCase); страны — массивы
- * ISO-2. Строго: неизвестная форма — ошибка с номером записи.
- */
 export function parseRegistryJson(text: string): { ok: true; value: GroupPlatformInput[] } | { ok: false; error: string } {
   let raw: unknown;
   try {

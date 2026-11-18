@@ -26,12 +26,6 @@ import { inboundStatus, transferStatus } from '@/lib/transfer/labels';
 import { canReviewTransfers } from '@/lib/transfer/runtime';
 import { MarkSeenForm, RefundTaskForm } from '../_components/transfer/TransferActions';
 
-/**
- * «Переводы клиентов» (раздел «Клиенты»). Admin видит ВСЕ переводы
- * постфактум — кто провёл, тикет-основание, статус в цели — и уведомление о
- * непросмотренных; отчёт по менеджерам с алертом. Менеджер видит свои.
- * Вкладка «Входящие» — переводы на эту платформу из других платформ группы.
- */
 export const dynamic = 'force-dynamic';
 
 type Tab = 'out' | 'in' | 'report';

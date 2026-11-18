@@ -11,26 +11,6 @@ import {
   type TerminalSyncFailure,
 } from './terminal-sync';
 
-/**
- * Плечо КЛИЕНТА (Р-446, Р-049): портфель как атрибут клиента (WEB-44) и
- * override клиента по заявке (WEB-46, приоритет над портфелем и классом).
- *
- * Образец — `lib/clients/block.ts`. Одно решение = одна транзакция: смена
- * `client_leverage` И запись в неизменяемый журнал (кто/когда/основание/№
- * заявки), привязка `last_journal_seq`. Либо оба, либо ни одного.
- *
- * `operatorId` — из СЕССИИ (Р-451), роль-гейт — на стороне action-а.
- * Строка `client_leverage` заводится первым решением; портфель обязателен
- * (NOT NULL), поэтому без явного портфеля клиент садится в портфель по
- * умолчанию (его ключ ищем в той же транзакции).
- *
- * **Плечо доезжает до терминала** (`terminal-sync.ts`): если решение меняет
- * ДЕЙСТВУЮЩЕЕ плечо клиента, в той же транзакции зовётся терминал; отказ →
- * откат всего (fail-closed), оператор видит `terminalUnavailable` /
- * `terminalRefused`.
- */
-
-/** Плечо — целое 1..1000: верхняя граница терминала (`broker::MAX_LEVERAGE`). */
 function badLeverage(value: number): boolean {
   return !Number.isInteger(value) || value < 1 || value > MAX_TERMINAL_LEVERAGE;
 }
@@ -59,7 +39,6 @@ export interface SetClientPortfolioInput {
   userId: string;
   portfolioKey: string;
   reason: string;
-  /** Логин оператора — в журнал терминала (`operator`). Нет — `operatorId`. */
   operatorLogin?: string;
 }
 
@@ -73,12 +52,6 @@ export type ClientLeverageResult =
   | { ok: false; reason: 'alreadyInState' }
   | TerminalSyncFailure;
 
-/**
- * Назначить клиенту портфель (WEB-44 — портфель как атрибут клиента). Это
- * смена ГЛОБАЛЬНОЙ для клиента планки (его базового плеча); override клиента,
- * если выдан, остаётся в приоритете и не трогается. Журналируется
- * `leverage.client_portfolio_set` с diff.
- */
 export async function setClientPortfolio(
   input: SetClientPortfolioInput,
   pool: { connect(): Promise<PoolClient> } = getPool(),
@@ -148,7 +121,6 @@ export async function setClientPortfolio(
       journalSeq,
     });
     if (failed) {
-      // Терминал не принял — не меняется ничего: ни портфель, ни журнал.
       await client.query('ROLLBACK');
       return failed;
     }
@@ -171,23 +143,12 @@ export async function setClientPortfolio(
 export interface SetClientOverrideInput {
   operatorId: string;
   userId: string;
-  /** Знаменатель 1:N, выдаваемый клиенту по заявке. */
   leverage: number;
-  /** Основание (обязательно). */
   reason: string;
-  /** № заявки (обязательно) — override выдаётся ТОЛЬКО по заявке (Р-446). */
   ticket: string;
   operatorLogin?: string;
 }
 
-/**
- * Выдать клиенту override плеча ПО ЗАЯВКЕ (WEB-46). Приоритет над портфелем и
- * планкой класса (Р-446). Запись в журнал — прямое требование: кто/когда/
- * основание/№ заявки (`leverage.override_set`), «не тихо в базе».
- *
- * Если у клиента ещё нет строки `client_leverage`, он садится в портфель по
- * умолчанию (портфель обязателен), а сверху получает override.
- */
 export async function setClientOverride(
   input: SetClientOverrideInput,
   pool: { connect(): Promise<PoolClient> } = getPool(),
@@ -195,7 +156,6 @@ export async function setClientOverride(
 ): Promise<ClientLeverageResult> {
   const reason = input.reason?.trim() ?? '';
   const ticket = input.ticket?.trim() ?? '';
-  // Основание И заявка обязательны: override «не тихо в базе» (Р-446).
   if (reason.length === 0 || ticket.length === 0) return { ok: false, reason: 'missingReason' };
   if (badLeverage(input.leverage)) return { ok: false, reason: 'invalidLeverage' };
 
@@ -219,7 +179,6 @@ export async function setClientOverride(
     if (!portfolioKey) {
       portfolioKey = await defaultPortfolioKey(client);
       if (!portfolioKey) {
-        // Нет портфеля по умолчанию — посадить клиента некуда, fail-closed.
         await client.query('ROLLBACK');
         return { ok: false, reason: 'noPortfolio' };
       }
@@ -267,7 +226,6 @@ export async function setClientOverride(
       journalSeq,
     });
     if (failed) {
-      // Терминал не принял — не меняется ничего: ни override, ни журнал.
       await client.query('ROLLBACK');
       return failed;
     }
@@ -294,11 +252,6 @@ export interface ClearClientOverrideInput {
   operatorLogin?: string;
 }
 
-/**
- * Снять override клиента — вернуть к портфелю (WEB-46, §3.8). Journaled
- * `leverage.override_cleared`. Нечего снимать (override не выдан) → `noOverride`,
- * ничего не пишем.
- */
 export async function clearClientOverride(
   input: ClearClientOverrideInput,
   pool: { connect(): Promise<PoolClient> } = getPool(),
@@ -317,7 +270,6 @@ export async function clearClientOverride(
     );
     const existing = cur.rows[0] as { override_leverage: number | null } | undefined;
     if (!existing || existing.override_leverage === null) {
-      // Снимать нечего — override не выдан. Не шумим в журнал.
       await client.query('ROLLBACK');
       return { ok: false, reason: 'noOverride' };
     }
@@ -351,7 +303,6 @@ export async function clearClientOverride(
       journalSeq,
     });
     if (failed) {
-      // Терминал не принял — не меняется ничего: ни override, ни журнал.
       await client.query('ROLLBACK');
       return failed;
     }

@@ -15,27 +15,6 @@ import { Button, Callout, Textarea, cn } from '@broker/ui';
 import type { MoneyActionState } from '@/lib/crypto/actions';
 import { moneyErrorText } from '@/lib/crypto/labels';
 
-/**
- * Форма-с-основанием денежной зоны (концепция §6.6–6.7): обязательное
- * «Основание» (пишется в журнал), submit заблокирован без него. Опасное и
- * денежное — в два шага: первый клик «взводит», под формой появляется сводка
- * (сумма, адрес, клиент — крупно) и последствия, второй — подтверждает.
- * Правка основания или полей действия снимает взвод. Личность оператора
- * форма не несёт (из сессии, Р-451). Поля действия — `children`.
- *
- * Фаза 2 поменяла ТОЛЬКО вид и шаг подтверждения: server action, имена полей
- * (`reason` + поля из `children`) и порядок отправки — прежние.
- */
-
-/* ─── Итог действия над формами (панель решения) ────────────────────── */
-
-/**
- * После успешного решения по заявке её статус меняется, и форма, принявшая
- * решение, исчезает из панели вместе со своим Callout. Чтобы оператор всё же
- * увидел, что записано, панель решения оборачивает формы в `DecisionArea` —
- * итог показывается над ними и живёт, пока открыта та же заявка (панель
- * перемонтируется по ключу заявки).
- */
 const DecisionReport = createContext<((text: string) => void) | null>(null);
 
 export function DecisionArea({ children }: { children: ReactNode }) {
@@ -50,18 +29,11 @@ export function DecisionArea({ children }: { children: ReactNode }) {
   );
 }
 
-/* ─── Подтверждение ─────────────────────────────────────────────────── */
-
 export interface ConfirmSpec {
-  /** Вопрос подтверждения: «Одобрить вывод?» */
   title: ReactNode;
-  /** Сводка «что именно» — сумма, адрес, клиент крупно (`ConfirmFacts`). */
   summary?: ReactNode;
-  /** Что произойдёт после подтверждения. */
   consequence: ReactNode;
-  /** Подпись кнопки подтверждения («Да, одобрить вывод»). */
   confirmLabel?: string;
-  /** `danger` — отказ/возврат/отмена; `primary` — денежное, но не отказ. */
   tone: 'danger' | 'primary';
 }
 
@@ -109,18 +81,13 @@ export function ActionForm({
   okText: string;
   children?: ReactNode;
   variant?: 'primary' | 'secondary' | 'danger';
-  /** Опасное действие: двухшаговое, красное подтверждение. */
   danger?: boolean;
-  /** Сводка и последствия на шаге подтверждения (делает форму двухшаговой). */
   confirm?: ConfirmSpec;
-  /** Изменилось значение (напр. хэш, клиент) — взвод снимается. */
   disarmOn?: unknown;
   reasonLabel?: string;
   reasonHint?: string;
   reasonPlaceholder?: string;
-  /** Доп. условие активности submit (напр. заполнен хэш). */
   extraValid?: boolean;
-  /** Словарь ошибок зоны (по умолчанию — денежный). */
   errorText?: (error: string, detail?: string) => string;
   className?: string;
 }) {
@@ -147,10 +114,7 @@ export function ActionForm({
   const twoStep = danger || confirm !== undefined;
   const tone: 'danger' | 'primary' = confirm?.tone ?? (danger ? 'danger' : 'primary');
 
-  // Поля действия изменились — подтверждённая сводка устарела.
   useEffect(() => setArmed(false), [disarmOn]);
-  // Успех — форма в исходное состояние (защита от повторной отправки);
-  // ошибка — взвод снимается, повтор снова идёт через сводку.
   useEffect(() => {
     if (state.ok) {
       setArmed(false);
@@ -250,13 +214,6 @@ export function ActionForm({
   );
 }
 
-/* ─── Сводка для подтверждения ──────────────────────────────────────── */
-
-/**
- * «Что именно» — крупно, чтобы оператор сверил глазами перед вторым кликом:
- * сумма, адрес, клиент. Строки — `[подпись, значение]`; `false`/`null`
- * пропускаются.
- */
 export function ConfirmFacts({ rows }: { rows: Array<[string, ReactNode] | null | false> }) {
   const items = rows.filter((r): r is [string, ReactNode] => Boolean(r));
   return (

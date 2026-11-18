@@ -2,10 +2,6 @@ import { Mono } from '@broker/ui';
 import { CopyIcon } from './CopyText';
 import { tronscanTxUrl } from './tronscan';
 
-/**
- * Машинная строка истории (хэш/адрес): моноширинно, укорочено посередине
- * (полное — в `title`), копирование и — для хэша — ссылка на Tronscan.
- */
 export function MachineValue({
   value,
   label,
@@ -18,7 +14,6 @@ export function MachineValue({
   label: string;
   copyLabel: string;
   copiedLabel: string;
-  /** Подпись ссылки на Tronscan; задаётся только для хэша транзакции. */
   tronscanLabel?: string;
   tx?: boolean;
 }) {

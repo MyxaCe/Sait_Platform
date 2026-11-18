@@ -3,22 +3,11 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { useLocale } from 'next-intl';
 
-/**
- * Iframe терминала + postMessage-протокол SSO (финализация, решение B):
- *  parent → iframe: { type: 'sso.token', token }       — при загрузке и по запросу
- *  iframe → parent: { type: 'token.refresh.request' }  — тихий ре-handoff
- *  parent → iframe: { type: 'sso.logout' }             — сессия платформы погашена
- * Терминал держит свою сессию ≤15 мин; погашенная сессия кабинета
- * не может переотдать токен — терминал разлогинивается сам.
- */
-
 interface TerminalFrameProps {
   terminalUrl: string;
   site: string;
   title: string;
-  /** Счёт входа: демо или реальный (claim `account_kind` в SSO). */
   accountKind?: 'demo' | 'real';
-  /** Высота/вид — задаёт страница (полноэкранный режим r2). */
   className?: string;
 }
 
@@ -37,11 +26,9 @@ export function TerminalFrame({ terminalUrl, site, title, accountKind = 'demo', 
         const { token } = (await res.json()) as { token: string };
         target.postMessage({ type: 'sso.token', token }, terminalOrigin);
       } else {
-        // Сессия кабинета мертва — терминал должен разлогиниться
         target.postMessage({ type: 'sso.logout' }, terminalOrigin);
       }
     } catch {
-      // Сеть моргнула: терминал переспросит сам (token.refresh.request)
     }
   }, [terminalOrigin, accountKind]);
 
@@ -64,8 +51,6 @@ export function TerminalFrame({ terminalUrl, site, title, accountKind = 'demo', 
       title={title}
       onLoad={() => void sendToken()}
       className={className ?? 'block h-svh w-full border-0 bg-elevated'}
-      // fullscreen: терминал — другой origin, без делегирования Fullscreen API
-      // внутри iframe заблокирован (кнопка «во весь экран» терминала не работает).
       allow="clipboard-write; fullscreen"
       allowFullScreen
     />

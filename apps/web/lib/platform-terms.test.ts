@@ -3,12 +3,6 @@ import path from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { bpsPercent, fetchAccountTypes, parseAccountType, parseAccountTypes } from './platform-terms';
 
-/**
- * `/accounts` — условия типов счетов только из админки (решение владельца
- * №9) через ручку кабинета. Потребитель парсит мягко; нет данных — `null`
- * (страница говорит «временно недоступны»), а не выдуманные цифры.
- */
-
 const GOOD = {
   key: 'pro',
   title: 'Pro',

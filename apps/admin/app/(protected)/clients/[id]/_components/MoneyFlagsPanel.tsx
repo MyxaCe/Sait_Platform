@@ -4,15 +4,6 @@ import { Select } from '@broker/ui';
 import { setClientMoneyFlagsAction } from '@/lib/crypto/actions';
 import { ActionForm } from '../../../_money/ActionForm';
 
-/**
- * Денежные флаги клиента (дизайн §3) — форма-с-основанием, admin и
- * finance_operator. Заморозка вызывает терминал `trading-freeze` реального
- * счёта ДО записи флага: терминал не ответил/отказал — флаг не ставится.
- *
- * Редизайн фазы 1: только вид (сетка полей, плотные контролы, описания под
- * чекбоксами). Имена полей и action — прежние.
- */
-
 const KYC_OPTIONS = [
   { value: 'inherit', label: 'Наследовать из платформы' },
   { value: 'required', label: 'Да — только после KYC' },

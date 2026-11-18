@@ -1,16 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-/**
- * WEB-39 · СТРАНИЦА спрашивает состояние и доводит причину до списка.
- *
- * **Зачем отдельно от проверок списка.** Те передают причину пропом
- * сами и остаются зелёными, даже если страница её не передаёт. Ровно
- * так случилось в WEB-38: мутация «шлюз выбрасывает причину» не
- * покрасила ни одной из 54 проверок. Это мой постоянный разрыв, и
- * теперь проверка пути пишется вместе с правилом, а не после.
- */
-
 vi.mock('next-intl', () => ({
   useTranslations: () => (key: string) => key,
 }));
@@ -26,9 +16,6 @@ vi.mock('@/lib/cms', () => ({
   getCms: async () => ({ items: [{ symbol: 'BTCUSD' }] }),
 }));
 vi.mock('@/lib/tenant', () => ({
-  // Модуль именно `@/lib/tenant`: первая попытка подменила
-  // `tenant-runtime`, настоящая граница закрылась, и страница показала
-  // объяснение про доступ вместо списка. Проверка это и показала.
   getTenantAccess: async () => ({ state: 'allowed', symbols: ['BTCUSD'] }),
   isSymbolAllowed: () => true,
   accessNotice: () => null,
@@ -72,7 +59,6 @@ describe('WEB-39 · путь от ручки до списка', () => {
 
     render(await InstrumentsPage({ params: { locale: 'ru' } }));
 
-    // Весь путь: ответ MDS → раскладка причин → проп страницы → строка.
     expect(screen.getAllByText('shortLimited').length).toBeGreaterThan(0);
   });
 });

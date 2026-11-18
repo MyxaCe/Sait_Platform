@@ -2,7 +2,6 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { completeForcedPasswordChange } from './auth-mail';
 import { createTestDb, seedUser, type TestDb } from './testing/pg';
 
-/** Временный пароль от менеджера → клиент обязан задать свой (функция 3, 10.11). */
 let db: TestDb;
 let userId: string;
 

@@ -3,25 +3,6 @@ import { loadSupportSettings, saveSupportSettings, type Actor } from '@broker/su
 import { readEnv } from '@broker/utils';
 import { getPool } from '../lib/db';
 
-/**
- * Поддержка «круглосуточно» (24/7) — включение на стенде при выкате.
- *
- * Владелец работает 24/7: при `hours.alwaysOpen = true` SLA первого ответа
- * считается без пауз (ночь/выходные/праздники не останавливают таймер),
- * виджет кабинета не показывает «вне рабочих часов», автоответ «вне часов» в
- * чате не отправляется (всё — через isWithinHours / addBusinessMinutes).
- * Значение по умолчанию в коде НЕ меняется (пн–пт 09–21 МСК).
- *
- * Идёт через saveSupportSettings: валидация + запись в журнал от имени
- * указанного admin-оператора с основанием (как кнопка «Сохранить» в
- * «Поддержка → Настройки»). Остальные настройки не трогаются.
- *
- *   DATABASE_URL=… pnpm --filter @broker/admin support:always-open -- --operator <login админа> [--off]
- *
- * Уже открытые обращения сохраняют прежний срок SLA (он фиксируется при
- * создании); новые считаются круглосуточно.
- */
-
 function arg(name: string): string | null {
   const i = process.argv.indexOf(name);
   return i >= 0 ? (process.argv[i + 1] ?? null) : null;

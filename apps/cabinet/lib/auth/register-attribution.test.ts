@@ -1,13 +1,6 @@
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { encodeClick } from '@broker/promo/attribution';
 
-/**
- * Регистрация пишет атрибуцию (first-click, срок из настроек), страну и IP —
- * ТОЙ ЖЕ транзакцией, что пользователя. Самореферал (IP реферера) отсекается:
- * строка `rejected`, наград по ней не будет. Без cookie/параметров —
- * регистрация как раньше.
- */
-
 const NOW = new Date();
 const REFERRER = '00000000-0000-4000-8000-0000000c0001';
 
@@ -105,11 +98,10 @@ describe('регистрация: страна, IP, атрибуция', () => {
     expect(r.ok).toBe(true);
     const attr = find('INSERT INTO referral_attributions')!;
     expect(attr.params[1]).toBe(REFERRER);
-    expect(attr.params[3]).toBe('REFCODE8'); // cookie, а не параметр
+    expect(attr.params[3]).toBe('REFCODE8');
     expect(attr.params[6]).toBe('active');
     const lead = find('INSERT INTO leads')!;
     expect(JSON.parse(lead.params[4] as string).source).toEqual({ promo: 'welcome-first-deposit' });
-    // Атрибуция — между BEGIN и COMMIT.
     const i = queries.indexOf(attr);
     expect(queries.findIndex((q) => q.sql === 'BEGIN')).toBeLessThan(i);
     expect(queries.findIndex((q) => q.sql === 'COMMIT')).toBeGreaterThan(i);

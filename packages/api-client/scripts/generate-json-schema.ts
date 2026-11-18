@@ -1,8 +1,3 @@
-/**
- * Генерация JSON Schema из Zod-контракта — артефакт для команды CRM
- * (их CI валидирует ответы ручек этими схемами; см. спецификацию §9).
- * Запуск: pnpm --filter @broker/api-client gen:json-schema
- */
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { zodToJsonSchema } from 'zod-to-json-schema';

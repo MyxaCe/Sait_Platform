@@ -4,7 +4,6 @@ import { findClientAttachment } from '@broker/support';
 import { getSessionUser } from '@/lib/auth/session';
 import { getPool } from '@/lib/db';
 
-/** Вложение своего обращения — короткоживущая подписанная ссылка (не прокси байтов). */
 export const dynamic = 'force-dynamic';
 
 export async function GET(_req: Request, { params }: { params: { id: string } }) {

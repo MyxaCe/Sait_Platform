@@ -9,12 +9,6 @@ vi.mock('../db', () => ({
 import { listClientRegistry } from './registry';
 import { hasRegistryFilter, parseRegistryQuery, registryHref } from './registry-params';
 
-/**
- * Реестр клиентов (фаза 2): параметры из URL приводятся к закрытому множеству,
- * пользовательский текст попадает в SQL только параметром, сортировка — из
- * whitelist, пагинация — LIMIT/OFFSET по 50.
- */
-
 describe('реестр клиентов · параметры URL', () => {
   it('по умолчанию: без фильтров, регистрация по убыванию, стр. 1', () => {
     const q = parseRegistryQuery({});
@@ -97,7 +91,6 @@ describe('реестр клиентов · менеджер (ветка admin-ma
     expect(q.mgr).toBe('mine');
     expect(hasRegistryFilter(q)).toBe(false);
     expect(registryHref(q)).toBe('/clients');
-    // Явное «все» у менеджера — уже отличие от умолчания, пишется в URL.
     const all = parseRegistryQuery({ mgr: 'all' }, { defaultMine: true });
     expect(hasRegistryFilter(all)).toBe(true);
     expect(registryHref(all)).toBe('/clients?mgr=all');

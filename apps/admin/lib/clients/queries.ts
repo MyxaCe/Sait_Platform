@@ -8,35 +8,19 @@ import {
   type VerificationState,
 } from './verification-state';
 
-/**
- * Чтения операторской поверхности «Клиенты» (ADM-02, Р-395).
- *
- * Реестр и карточка читают из клиентской `users` только то, что нужно опознать
- * человека и оценить его состояние управления (проверка + блокировка) — не
- * больше (Р-395: оператор ≠ клиент). Пароль/токены сессий сюда не попадают
- * (у сессии показываем только метаданные: когда, откуда, до когда).
- *
- * Чтение НЕ журналируется (§3.1 дизайна): объём шума. Журналируются только
- * действия, меняющие состояние (блок/разблок — см. `block.ts`).
- */
-
 export type { KycDocKind, VerificationState };
-// Переэкспорт для вызывающих, которым хватает серверного модуля (напр. page.tsx).
 export { asSort, CLIENT_SORTS, type ClientSort };
 
 const SORT_SQL: Record<ClientSort, string> = {
   registered_desc: 'u.created_at DESC',
   registered_asc: 'u.created_at ASC',
   name_asc: 'u.full_name ASC',
-  // Активность = последний вход; кто никогда не входил — в конце.
   activity_desc: 'u.last_login_at DESC NULLS LAST',
 };
 
-/** Фильтр по состоянию верификации: любое из состояний либо «все». */
 export type StateFilter = VerificationState | 'all';
 
 export interface ClientsQuery {
-  /** Поиск по имени/email/id (подстрока, регистронезависимо). */
   search?: string;
   state?: StateFilter;
   sort?: ClientSort;
@@ -50,21 +34,10 @@ export interface ClientRow {
   lastLoginAt: string | null;
   state: VerificationState;
   blocked: boolean;
-  /**
-   * Баланс РЕАЛЬНОГО счёта из проекции (`real_accounts`, минорные единицы;
-   * демо и реальный счёт разделены 09.11). `null` — реального счёта ещё нет.
-   */
   balanceCents: number | null;
   currency: string | null;
 }
 
-/**
- * Реестр клиентов (§3.1). Все клиенты из `users`; состояние проверки и флаг
- * блокировки подтягиваются LEFT JOIN-ом (нет строки проверки → `unverified`,
- * нет строки блокировки → не заблокирован). Поиск/фильтр/сортировка — в SQL;
- * сортировка выбирается из whitelist, а не склеивается из пользовательского
- * текста.
- */
 export async function listClients(
   query: ClientsQuery = {},
   db: Queryable = getPool(),
@@ -76,13 +49,11 @@ export async function listClients(
   if (search) {
     params.push(`%${search}%`);
     const like = `$${params.length}`;
-    // id сравниваем как текст — оператор может искать по фрагменту UUID.
     where.push(`(u.full_name ILIKE ${like} OR u.email ILIKE ${like} OR u.id::text ILIKE ${like})`);
   }
 
   if (query.state && query.state !== 'all') {
     params.push(query.state);
-    // COALESCE: отсутствие строки проверки читается как 'unverified'.
     where.push(`COALESCE(cv.state, 'unverified') = $${params.length}`);
   }
 
@@ -185,12 +156,6 @@ function asDocKind(value: unknown): KycDocKind {
   throw new Error(`kyc_documents.doc_kind вне допустимого множества: ${String(value)}`);
 }
 
-/**
- * Досье клиента (§3.2): профиль, состояние проверки, состояние блокировки,
- * документы (метаданные + ключ хранилища для превью), активные сессии и
- * журнальная лента ровно по этому субъекту (`subject_kind='client'`).
- * `null`, если такого `users` нет.
- */
 export async function getClientCard(
   userId: string,
   db: Queryable = getPool(),
@@ -257,7 +222,6 @@ export async function getClientCard(
     emailVerifiedAt: row.email_verified_at
       ? new Date(row.email_verified_at as string | Date).toISOString()
       : null,
-    // Нет строки проверки — клиент ещё не заводил верификацию: 'unverified'.
     state: asState(row.state ?? 'unverified'),
     verificationUpdatedAt: row.verification_updated_at
       ? new Date(row.verification_updated_at as string | Date).toISOString()

@@ -6,10 +6,6 @@ import { getOperatorSession } from '../auth/current';
 import { LOGIN_PATH } from '../auth/constants';
 import { changePortfolioFees } from './portfolio-fees';
 
-/**
- * Тариф портфеля (наценка/комиссия, условия типа счёта) — только admin
- * (как плечо портфеля, §3.9). Автор — из сессии (Р-451).
- */
 export interface FeesActionState {
   ok?: boolean;
   error?: string;

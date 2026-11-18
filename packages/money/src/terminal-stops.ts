@@ -1,25 +1,6 @@
 import { AUTH_ERROR_CODES, INTERNAL_AUTH_HEADER, internalAuthValue } from './terminal-contract';
 import type { TerminalUnavailable } from './terminal-money';
 
-/**
- * КОНТРАКТ настройки площадки «минимальная дистанция SL/TP» — ВЕСЬ в этом файле
- * (терминал делает параллельно другой агент, 11.11; правка контракта — только здесь).
- *
- *   PUT /internal/sites/{tenant}/settings/stops
- *       заголовок X-Internal-Token: {INTERNAL_MONEY_TOKEN}
- *       тело  { "min_stop_bps": N }   — целое 0..10000 (10 б.п. = 0,1 % от цены)
- *       200   { "min_stop_bps": N }
- *   GET  того же пути → 200 { "min_stop_bps": N } — текущее значение.
- *
- * Ответы терминала: 401 — нет заголовка, 403 — неверный токен, 404 — токен
- * на терминале не задан (всё → «недоступно», не сохранено); 400 — значение
- * невалидно (→ отказ).
- *
- * tenant = SITE_SLUG. Исходы как у остальных внутренних маршрутов: `ok`,
- * `refused` (4xx с кодом ошибки по существу) и `unavailable` (сеть, 5xx,
- * ответ не по контракту, ошибка доступа) — «не знаем, применено ли».
- */
-
 export const MAX_MIN_STOP_BPS = 10_000;
 
 export const stopsRoute = (tenant: string) => `/internal/sites/${encodeURIComponent(tenant)}/settings/stops`;
@@ -27,7 +8,6 @@ export const stopsRoute = (tenant: string) => `/internal/sites/${encodeURICompon
 export const isMinStopBps = (v: unknown): v is number =>
   Number.isInteger(v) && (v as number) >= 0 && (v as number) <= MAX_MIN_STOP_BPS;
 
-/** Разбор ответа маршрута. `null` — тело не по контракту. */
 export function parseStopsResponse(body: unknown): number | null {
   const v = (body as { min_stop_bps?: unknown } | null)?.min_stop_bps;
   return isMinStopBps(v) ? v : null;
@@ -80,8 +60,6 @@ export function createTerminalStopsClient(config: {
       const v = parseStopsResponse(json);
       return v === null ? { state: 'unavailable', reason: 'malformed' } : { state: 'ok', minStopBps: v };
     }
-    // Терминал (11.11): без заголовка — 401, неверный токен — 403, токен на
-    // терминале не задан — 404. Всё это — «не сохранено», ошибка доступа.
     if (res.status === 401 || res.status === 403 || res.status === 404) return { state: 'unavailable', reason: 'auth' };
     if (res.status === 400) {
       const code = (json as { error?: unknown } | null)?.error;
@@ -89,7 +67,6 @@ export function createTerminalStopsClient(config: {
     }
     if (res.status >= 400 && res.status < 500) {
       const code = (json as { error?: unknown } | null)?.error;
-      // 4xx без кода (маршрута нет / секрет не задан) — «недоступно», не отказ.
       if (typeof code !== 'string' || !code) return { state: 'unavailable', reason: 'http-error' };
       if (AUTH_ERROR_CODES.includes(code)) return { state: 'unavailable', reason: 'auth' };
       return { state: 'refused', code, status: res.status };
@@ -100,14 +77,12 @@ export function createTerminalStopsClient(config: {
   return {
     getMinStop: () => call('GET'),
     async setMinStop(minStopBps) {
-      // Значение вне контракта терминалу не отправляем вовсе.
       if (!isMinStopBps(minStopBps)) return { state: 'refused', code: 'invalid_min_stop_bps', status: 400 };
       return call('PUT', { min_stop_bps: minStopBps });
     },
   };
 }
 
-/** Клиент из окружения: `TERMINAL_INTERNAL_URL` + `INTERNAL_MONEY_TOKEN` + `SITE_SLUG`. */
 export function terminalStopsClientFromEnv(
   env: NodeJS.ProcessEnv = process.env,
   timeoutMs?: number,

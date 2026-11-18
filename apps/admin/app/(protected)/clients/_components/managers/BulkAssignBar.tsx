@@ -16,10 +16,6 @@ function checkedBoxes(): HTMLInputElement[] {
   ).filter((i) => i.checked);
 }
 
-/**
- * Чекбокс строки реестра. Принадлежит форме массового назначения через атрибут
- * `form` — таблица остаётся серверной, форма живёт отдельно над ней.
- */
 export function RowCheckbox({ userId, label }: { userId: string; label: string }) {
   return (
     <input
@@ -34,7 +30,6 @@ export function RowCheckbox({ userId, label }: { userId: string; label: string }
   );
 }
 
-/** «Выбрать всех на странице» — в заголовке колонки. */
 export function SelectAllOnPage() {
   return (
     <input
@@ -54,11 +49,6 @@ export function SelectAllOnPage() {
   );
 }
 
-/**
- * Массовое назначение менеджера из реестра (только admin). Отмеченные строки +
- * менеджер + основание → одна транзакция, по записи журнала на клиента
- * (`bulk: true`). Без отметок, менеджера или основания — «Назначить» неактивна.
- */
 export function BulkAssignBar({ managers }: { managers: ManagerChoice[] }) {
   const [state, action] = useFormState<ManagerActionState, FormData>(bulkAssignManagerAction, {});
   const [count, setCount] = useState(0);

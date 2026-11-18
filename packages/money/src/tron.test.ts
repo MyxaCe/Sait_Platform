@@ -24,10 +24,10 @@ describe('адрес TRON (base58check)', () => {
     '',
     'T',
     '0xa614f803b6fd780986a42c78ec9c7f77e6ded13c',
-    'R7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6tT', // не с T
-    'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6', // 33 символа
-    'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj60', // 0 не из алфавита
-    '1BoatSLRHtKNngkdXEeobR76b53LETtpyT', // bitcoin
+    'R7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6tT',
+    'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6',
+    'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj60',
+    '1BoatSLRHtKNngkdXEeobR76b53LETtpyT',
   ])('%s — невалиден', (addr) => {
     expect(isValidTronAddress(addr)).toBe(false);
   });

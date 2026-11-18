@@ -3,12 +3,6 @@ import { loadSigningKey, publicKeyPemOf, type TransferTerminalPort } from '@brok
 import type { OperatorRole } from '../auth/session';
 import { moneyPool, terminalMoney, terminalReader } from '../crypto/runtime';
 
-/**
- * Связка админки с `@broker/transfer`: своя платформа (SITE_SLUG), ключ
- * подписи из env ячейки (`PLATFORM_TRANSFER_SIGNING_KEY_PEM_B64`) и порт
- * терминала (заморозка торговли, баланс реального счёта).
- */
-
 export { moneyPool as transferPool };
 
 export function selfSlug(): string | null {
@@ -23,7 +17,6 @@ export function signingKey(): KeyObject | null {
   return store.__transferKey;
 }
 
-/** Публичный ключ своей платформы (PEM) — для реестров соседей. `null` — ключ не задан. */
 export function selfPublicKeyPem(): string | null {
   const k = signingKey();
   return k ? publicKeyPemOf(k) : null;
@@ -38,7 +31,6 @@ export function transferTerminal(): TransferTerminalPort {
     async realAccountState(userId) {
       const r = await terminalReader().accounts(userId);
       if (r.state !== 'ok') return 'unavailable';
-      // Только реальный счёт: демо-счёт закрытию по переводу не мешает.
       const real = r.accounts.find((a) => a.kind === 'real');
       if (!real || !real.opened) return null;
       return { balanceMinor: real.balanceMinor, equityMinor: real.equityMinor, openPositions: real.openPositions };
@@ -46,7 +38,6 @@ export function transferTerminal(): TransferTerminalPort {
   };
 }
 
-/** Видит «Переводы клиентов» целиком и делает «Вернуть перевод» — только admin. */
 export function canReviewTransfers(role: OperatorRole | null | undefined): boolean {
   return role === 'admin';
 }

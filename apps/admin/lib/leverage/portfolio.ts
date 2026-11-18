@@ -11,35 +11,9 @@ import {
   type TerminalSyncFailure,
 } from './terminal-sync';
 
-/**
- * Изменения ПОРТФЕЛЯ плеча — глобально для всех его клиентов (WEB-47, §3.9) и
- * планка класса внутри портфеля (WEB-45, §3.9). Р-446, Р-049.
- *
- * Образец — `lib/clients/block.ts`: одно решение = одна транзакция, и в ней ДВА
- * неразделимых факта: смена строки портфеля И запись в неизменяемый журнал
- * (кто/когда/основание/что изменилось). Либо оба, либо ни одного (BEGIN/COMMIT).
- *
- * Основание ОБЯЗАТЕЛЬНО: смена плеча портфеля — массовое действие (Р-394
- * требует основание у любого значимого; §3.9 — danger-подтверждение). Пустой
- * переход (новое плечо равно текущему) — `alreadyInState`, ничего не пишем.
- *
- * `operatorId` — из СЕССИИ вызывающим server action-ом, НЕ из формы (Р-451).
- * Роль-гейт (admin only для §3.9) — на стороне action-а; этот модуль —
- * транзакционное ядро, личность и право проверены до входа.
- *
- * **Плечо доезжает до терминала** (`terminal-sync.ts`) — по ВСЕМ клиентам
- * портфеля (для портфеля по умолчанию — и по тем, у кого строки нет), но
- * только тем, у кого действующее плечо реально сдвинулось. Пример: у
- * Standard крипто-планка 1:10, а терминал торгует только криптой — смена
- * базы Standard в терминал не едет вовсе (действующее плечо то же).
- * Отказ терминала → откат всего, оператор видит ошибку.
- */
-
 export interface ChangePortfolioInput {
-  /** `operators.id` автора — из серверной сессии, НЕ из формы. */
   operatorId: string;
   portfolioKey: string;
-  /** Новый знаменатель 1:N базового плеча портфеля. */
   baseLeverage: number;
   reason: string;
   operatorLogin?: string;
@@ -53,7 +27,6 @@ export type PortfolioMutationResult =
   | { ok: false; reason: 'alreadyInState' }
   | TerminalSyncFailure;
 
-/** Плечо — целое 1..1000: верхняя граница терминала (`broker::MAX_LEVERAGE`). */
 function badLeverage(value: number): boolean {
   return !Number.isInteger(value) || value < 1 || value > MAX_TERMINAL_LEVERAGE;
 }
@@ -70,12 +43,6 @@ async function seqOfEntry(client: PoolClient, entryHash: string, what: string): 
   return seq;
 }
 
-/**
- * Сменить базовое плечо портфеля ГЛОБАЛЬНО (WEB-47). Действует на всех клиентов
- * портфеля, у кого нет override клиента или планки класса по инструменту.
- * Открытые позиции НЕ трогаются: они держат снимок плеча на момент открытия
- * (Р-446, сторона терминала) — смена портфеля задним числом защиту не снимает.
- */
 export async function changePortfolioLeverage(
   input: ChangePortfolioInput,
   pool: { connect(): Promise<PoolClient> } = getPool(),
@@ -135,7 +102,6 @@ export async function changePortfolioLeverage(
       journalSeq,
     });
     if (failed) {
-      // Терминал не принял — не меняется ничего: ни портфель, ни журнал.
       await client.query('ROLLBACK');
       return failed;
     }
@@ -154,18 +120,11 @@ export interface ClassOverrideInput {
   operatorId: string;
   portfolioKey: string;
   instrumentClass: string;
-  /** Новая планка класса (знаменатель 1:N) или `null` — снять планку. */
   leverage: number | null;
   reason: string;
   operatorLogin?: string;
 }
 
-/**
- * Задать/снять планку класса ВНУТРИ портфеля (WEB-45) — единственное место, где
- * класс ещё нужен (Р-446). `leverage: null` снимает планку (класс возвращается
- * к базе портфеля). Журналируется `leverage.class_override_set` /
- * `leverage.class_override_cleared` с diff.
- */
 export async function setClassOverride(
   input: ClassOverrideInput,
   pool: { connect(): Promise<PoolClient> } = getPool(),
@@ -199,15 +158,11 @@ export async function setClassOverride(
     const previous =
       cur.rows.length > 0 ? Number((cur.rows[0] as { leverage: number | string }).leverage) : null;
 
-    // Содержательный переход обязателен: задать ту же планку / снять
-    // несуществующую — пустой переход, не шумим в журнал.
     if (previous === input.leverage) {
       await client.query('ROLLBACK');
       return { ok: false, reason: 'alreadyInState' };
     }
 
-    // Терминал торгует одним классом (`TERMINAL_INSTRUMENT_CLASS`): планка
-    // другого класса действующего плеча не меняет, и `changes` выйдет пустым.
     const q = client as unknown as Queryable;
     const users = await sync.usersOfPortfolio(q, input.portfolioKey);
     const before = await sync.read(q, users);
@@ -252,7 +207,6 @@ export async function setClassOverride(
       journalSeq,
     });
     if (failed) {
-      // Терминал не принял — не меняется ничего: ни планка класса, ни журнал.
       await client.query('ROLLBACK');
       return failed;
     }

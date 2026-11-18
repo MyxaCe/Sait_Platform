@@ -9,10 +9,6 @@ import {
 } from '@broker/promo';
 import { getPool, type Queryable } from '../db';
 
-/**
- * Чтения зоны «Акции и партнёры» для админки. Чтения не журналируются.
- */
-
 const iso = (v: unknown): string => (v instanceof Date ? v.toISOString() : new Date(String(v)).toISOString());
 const isoOrNull = (v: unknown): string | null => (v === null || v === undefined ? null : iso(v));
 const strOrNull = (v: unknown): string | null => (v === null || v === undefined ? null : String(v));
@@ -173,7 +169,6 @@ function mapReward(row: Record<string, unknown>): RewardRow {
   };
 }
 
-/** Очередь: открытые (ждут решения / зачисляются / отказ терминала) — старейшие сверху; закрытые — новые сверху. */
 export async function listRewards(
   filter: { status?: 'open' | 'closed' | 'all'; promotionId?: string } = {},
   db: Queryable = getPool(),
@@ -203,7 +198,6 @@ export async function getReward(id: string, db: Queryable = getPool()): Promise<
   return r.rows[0] ? mapReward(r.rows[0]) : null;
 }
 
-/** Имена клиентов из сигналов (для ссылок на связанных). */
 export async function namesOf(ids: string[], db: Queryable = getPool()): Promise<Map<string, { name: string; email: string }>> {
   const out = new Map<string, { name: string; email: string }>();
   if (ids.length === 0) return out;
@@ -281,7 +275,6 @@ export async function listAttributions(db: Queryable = getPool()): Promise<Attri
   }));
 }
 
-/** Топ рефереров: кто сколько привёл. */
 export async function referrerTotals(db: Queryable = getPool()): Promise<{ userId: string; name: string; email: string; invited: number; code: string | null }[]> {
   const r = await db.query(
     `SELECT f.id::text AS id, f.full_name, f.email, count(*)::int AS n, rc.code

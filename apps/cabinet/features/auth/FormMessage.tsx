@@ -2,7 +2,6 @@
 
 import { useTranslations } from 'next-intl';
 
-/** Общая ошибка формы: ключ из ActionState.error → перевод (ADR-011). */
 export function FormMessage({ error }: { error?: string }) {
   const t = useTranslations('validation');
   if (!error) return null;
@@ -13,7 +12,6 @@ export function FormMessage({ error }: { error?: string }) {
   );
 }
 
-/** Перевод ошибки поля (ключ или как есть). */
 export function useFieldError() {
   const t = useTranslations('validation');
   return (key?: string) => (key ? (t.has(key) ? t(key) : key) : undefined);

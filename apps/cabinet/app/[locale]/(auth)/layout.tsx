@@ -2,7 +2,6 @@ import { getLocale, getTranslations } from 'next-intl/server';
 import { getChromeBrand, resolveBrandName } from '@/lib/chrome';
 import { envOr } from '@broker/utils';
 
-/** Публичная зона: центрированная карточка; бренд — из CMS (ADR-025). */
 export default async function AuthLayout({ children }: { children: React.ReactNode }) {
   const locale = await getLocale();
   const t = await getTranslations('common');

@@ -8,14 +8,6 @@ import { TerminalLink } from '@/features/trade/TerminalLink';
 import { realMoneyCurrency } from '@broker/money/display-currency';
 import { getMoneyPolicy, getRealAccount } from '@/lib/money';
 
-/**
- * «Торговля» (r2): выбор счёта → терминал открывается НА ВЕСЬ ЭКРАН
- * (`/terminal?account=…`), без оболочки кабинета. Встроенный в кабинет
- * iframe убран (замечание владельца).
- *
- * Старые ссылки `/trade?account=demo|real` ведут прямо в терминал — выбор уже
- * сделан, лишний экран не нужен.
- */
 export const dynamic = 'force-dynamic';
 
 export default async function TradePage({

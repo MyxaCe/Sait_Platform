@@ -4,10 +4,6 @@ import { LogoutForm } from '@/features/shell/LogoutForm';
 import type { SessionUser } from '@/lib/auth/session';
 import { resolveBrandName, type ChromeBrand } from '@/lib/chrome';
 
-/**
- * Шапка ЛК (ADR-026, п.1 задания): бренд-зона как у сайта (логотип+имя
- * из CMS) слева, пользователь и выход справа. Навигация остаётся сайдбаром.
- */
 export async function CabinetHeader({
   brand,
   user,
@@ -40,7 +36,6 @@ export async function CabinetHeader({
       <div className="flex items-center gap-3">
         <div className="hidden text-right sm:block">
           <p className="max-w-48 truncate text-sm text-primary">{user.fullName}</p>
-          {/* Прочерк, а не ноль: «UID 0» выглядит как настоящий номер. */}
           <p className="text-xs text-secondary">UID {user.uid ?? '—'}</p>
         </div>
         <span className="grid size-9 shrink-0 place-items-center rounded-full bg-accent/20 text-sm font-semibold text-accent">

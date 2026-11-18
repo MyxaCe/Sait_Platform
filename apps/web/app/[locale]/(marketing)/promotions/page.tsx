@@ -21,8 +21,6 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 export default async function PromotionsPage({ params }: PageProps) {
   setRequestLocale(params.locale);
   const t = await getTranslations('promotions');
-  // Акции из CMS (тег cms:promotions, страховочный revalidate 60 c —
-  // условно-динамические данные из классификации §1 задания)
   const { items: promos } = await getCms('promotions', {
     locale: params.locale === 'en' ? 'en' : 'ru',
     revalidate: 60,
@@ -56,7 +54,6 @@ export default async function PromotionsPage({ params }: PageProps) {
               <p className="mt-4 rounded-xl bg-elevated px-4 py-3 text-xs leading-relaxed text-secondary">
                 {promo.terms}
               </p>
-              {/* CTA акции → регистрация КАБИНЕТА с ?promo= (атрибуция), не форма лида. */}
               <Link href={cabinetRegisterHref(promo.ctaHref, params.locale)} className="mt-5 block">
                 <Button
                   variant={promo.featured ? 'primary' : 'secondary'}

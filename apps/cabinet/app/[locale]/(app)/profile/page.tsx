@@ -12,17 +12,9 @@ import {
   SecuritySection,
   VerificationSection,
 } from '@/features/profile/ProfileSections';
-// ── Поддержка: подтверждение email (ветка demo-support) ──
 import { EmailVerifyNotice } from '@/features/auth/EmailVerifyNotice';
-// ── Перевод на другую платформу группы (ветка client-transfer): только статус и инструкция ──
 import { TransferNotice } from '@/features/transfer/TransferNotice';
 
-/**
- * «Профиль» (r2, замечание владельца): личные данные, верификация,
- * безопасность и документы — одна страница с вкладками (`?tab=`, без JS).
- * Старые `/verification`, `/security`, `/documents` ведут сюда.
-
- */
 export const dynamic = 'force-dynamic';
 
 const TABS = ['personal', 'verification', 'security', 'documents'] as const;
@@ -53,12 +45,6 @@ export default async function ProfilePage({
     <NavIcon name={name} className="hidden size-[18px] shrink-0 xl:block" />
   );
 
-  /*
-   * Раскладка (десктоп, 10.11). < xl — прежняя колонка: шапка → 2×2
-   * переключатель → раздел. ≥ xl: слева колонка (карточка клиента + меню
-   * разделов вертикально, липкая), справа содержимое раздела в две колонки
-   * (сами разделы раскладываются сеткой на xl).
-   */
   return (
     <div className={cn(PAGE_NARROW, 'space-y-5 xl:grid xl:grid-cols-12 xl:items-start xl:gap-5 xl:space-y-0')}>
       <div className="space-y-5 xl:sticky xl:top-6 xl:col-span-3 xl:space-y-4">
@@ -88,8 +74,6 @@ export default async function ProfilePage({
           </div>
         </div>
 
-        {/* 4 раздела: на телефоне — сетка 2×2, на ≥ sm — строка, на ≥ xl —
-            вертикальное меню слева. */}
         <Segmented
           vertical
           label={t('tabsLabel')}
@@ -105,7 +89,6 @@ export default async function ProfilePage({
       </div>
 
       <div className="space-y-5 xl:col-span-9">
-        {/* Поддержка (demo-support): напоминание подтвердить email — над личными данными. */}
         {tab === 'personal' ? <TransferNotice userId={user.id} /> : null}
         {tab === 'personal' ? <EmailVerifyNotice userId={user.id} /> : null}
         {tab === 'personal' ? (

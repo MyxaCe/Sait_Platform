@@ -4,14 +4,6 @@ import { FakeTerminal } from '@broker/money/testing';
 import { setClientPortfolio, setClientOverride, clearClientOverride } from './client';
 import type { LeverageTerminalSync } from './terminal-sync';
 
-/**
- * WEB-44/46 · портфель клиента и override клиента по заявке (Р-446, Р-049).
- *
- * In-memory фейк ведёт себя как `client_leverage` + `admin_action_journal` в
- * одной транзакции. Проверяем: journaled кто/когда/основание/№ заявки,
- * приоритет override (пишется с ticket), снятие, fail-closed.
- */
-
 const OP = '11111111-1111-1111-1111-111111111111';
 const USER = '22222222-2222-2222-2222-222222222222';
 const CRYPTO_LEVERAGE: Record<string, number> = { standard: 10, pro: 50 };
@@ -74,7 +66,6 @@ function fakePool(opts: {
         return { rows: [] };
       }
       if (/INSERT INTO client_leverage/i.test(sql)) {
-        // override insert/upsert
         row = { portfolio_key: params[1] as string, override_leverage: params[2] as number,
           override_reason: params[3] as string, override_ticket: params[4] as string, last_journal_seq: null };
         return { rows: [] };
@@ -106,8 +97,6 @@ function fakePool(opts: {
     release() {},
   };
   const pool = { async connect() { return client as unknown as PoolClient; } };
-  // Действующее плечо по закону Р-446 для терминала (класс crypto):
-  // override клиента › крипто-планка портфеля (Standard 1:10) › база (Pro 1:50).
   const terminal = new FakeTerminal();
   const sync: LeverageTerminalSync = {
     terminal,
@@ -300,7 +289,7 @@ describe('Р-446 · плечо клиента доезжает до термин
       f.sync,
     );
     expect(res).toEqual({ ok: false, reason: 'terminalUnavailable' });
-    expect(f.terminal.leverage.get(`${USER}:demo`)).toBe(20); // плечо «до» терминала
+    expect(f.terminal.leverage.get(`${USER}:demo`)).toBe(20);
     expect(f.flags.committed).toBe(false);
   });
 });

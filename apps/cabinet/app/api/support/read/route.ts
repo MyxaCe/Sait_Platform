@@ -4,7 +4,6 @@ import { getSessionUser } from '@/lib/auth/session';
 import { getPool } from '@/lib/db';
 import { sameOrigin } from '@/lib/support/state';
 
-/** Клиент открыл переписку — ответы поддержки прочитаны (бейдж гаснет). */
 export async function POST(req: Request) {
   if (!sameOrigin(req)) return NextResponse.json({ error: 'forbidden' }, { status: 403 });
   const user = await getSessionUser();

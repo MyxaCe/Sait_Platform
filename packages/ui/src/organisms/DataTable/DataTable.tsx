@@ -1,34 +1,22 @@
 import type { ElementType, ReactNode } from 'react';
 import { cn } from '../../lib/cn';
 
-/**
- * Одна колонка таблицы. `cell` рисует ячейку из строки — ссылку, бейдж,
- * `<Money>` и т.п. кладёт сюда родитель (DataTable не знает про навигацию,
- * остаётся server-safe и без next-зависимостей).
- */
 export interface DataTableColumn<Row> {
   key: string;
   header: ReactNode;
   cell: (row: Row) => ReactNode;
   align?: 'left' | 'right' | 'center';
-  /** `true` — числовая колонка: `tabular-nums` + выравнивание вправо. */
   numeric?: boolean;
-  /** `true` — машинная строка (хэш/адрес/id): моноширинный шрифт. */
   mono?: boolean;
-  /** Колонка сортируется (заголовок становится ссылкой, см. `sort`). */
   sortable?: boolean;
-  /** CSS-ширина ячейки (напр. '8rem', '20%'). */
   width?: string;
   className?: string;
 }
 
 export interface DataTableSort {
-  /** Ключ текущей колонки сортировки. */
   key: string;
   dir: 'asc' | 'desc';
-  /** Ссылка для клика по заголовку (серверная сортировка через URL). */
   hrefFor: (key: string, dir: 'asc' | 'desc') => string;
-  /** Компонент ссылки (next/link); по умолчанию `<a>`. */
   linkComponent?: ElementType;
 }
 
@@ -36,23 +24,14 @@ export interface DataTableProps<Row> {
   columns: DataTableColumn<Row>[];
   rows: Row[];
   rowKey: (row: Row) => string;
-  /** Подсвеченная строка (выбранная). */
   selectedKey?: string;
-  /** Тон строки (напр. заблокированный клиент) — тонкая полоса слева. */
   rowTone?: (row: Row) => 'negative' | 'warning' | undefined;
-  /** Слот фильтр-бара над таблицей. */
   toolbar?: ReactNode;
-  /** Слот под таблицей (пагинация/итоги). */
   footer?: ReactNode;
-  /** Пустое состояние — явное, не «сломалось». Строка или `<EmptyState>`. */
   empty?: ReactNode;
-  /** Серверная сортировка через URL. */
   sort?: DataTableSort;
-  /** `compact` — 32px строки (вложенные таблицы); `default` — 40px. */
   density?: 'default' | 'compact';
-  /** Число строк-скелетов: показывается вместо данных (loading.tsx). */
   loadingRows?: number;
-  /** Без собственной рамки — когда таблица лежит внутри `Panel`. */
   bare?: boolean;
   className?: string;
   'aria-label'?: string;
@@ -89,13 +68,6 @@ function SortGlyph({ dir }: { dir: 'asc' | 'desc' | null }) {
   );
 }
 
-/**
- * `DataTable` — плотная операторская таблица (концепция §6.1). Шапка — мелкий
- * спокойный текст на `elevated`, строки 40px с тонкими разделителями, ховер,
- * числа справа табличными цифрами, машинные строки моноширинным. Сортировка —
- * серверная, через ссылки в заголовках (`sort`), пагинация — в `footer`
- * (`<Pagination>`). Презентационный и server-safe.
- */
 export function DataTable<Row>({
   columns,
   rows,

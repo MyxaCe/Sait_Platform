@@ -9,12 +9,6 @@ import { resolveLeverage, TERMINAL_INSTRUMENT_CLASS, type PortfolioLeverage } fr
 import { AUTH_ERROR_CODES, INTERNAL_AUTH_HEADER, internalAuthValue, type AccountKind } from './terminal-contract';
 import type { TerminalUnavailable } from './terminal-money';
 
-/**
- * ТАРИФЫ ПОРТФЕЛЯ (наценка + комиссия) — чтение и доставка в терминал по
- * образцу плеча (`leverage.ts`): изменение тарифа портфеля уходит ВСЕМ
- * клиентам портфеля, fail-closed с откатом применённого.
- */
-
 export type FeesOutcome =
   | { state: 'ok'; fees: Fees; previous: Fees | null; changed: boolean; seq: number | null }
   | { state: 'not-opened' }
@@ -25,7 +19,6 @@ export interface TerminalFeesClient {
   setFees(userId: string, body: FeesBody, kind: AccountKind): Promise<FeesOutcome>;
 }
 
-/** Клиент маршрута `…/fees` (контракт — `fees-contract.ts`). */
 export function createTerminalFeesClient(config: {
   baseUrl: string | undefined;
   token: string | undefined;
@@ -96,11 +89,6 @@ export type FeesSyncResult =
 
 const KINDS: readonly AccountKind[] = ['demo', 'real'];
 
-/**
- * Довезти тариф до терминала — оба счёта каждого клиента. Первый отказ или
- * «не знаем» → откат применённого этим вызовом (на тариф, который терминал
- * назвал «до») и `ok: false`; вызывающий откатывает свою транзакцию.
- */
 export async function pushFeesToTerminal(
   terminal: TerminalFeesClient,
   changes: readonly FeesSyncChange[],
@@ -150,7 +138,6 @@ export async function pushFeesToTerminal(
   return { ok: true, applied: applied.length, notOpened };
 }
 
-/** Тарифы портфеля, в котором сидит каждый из клиентов (нет строки — портфель по умолчанию). */
 export async function readClientFees(db: Queryable, userIds: readonly string[]): Promise<Map<string, Fees>> {
   const out = new Map<string, Fees>();
   if (userIds.length === 0) return out;
@@ -169,29 +156,20 @@ export async function readClientFees(db: Queryable, userIds: readonly string[]):
   return out;
 }
 
-/* ── Условия типов счетов (для /accounts) ─────────────────────────────── */
-
 export interface AccountTypeTerms {
   key: string;
   title: string;
   isDefault: boolean;
   sortOrder: number;
-  /** Действующее плечо в терминале (итог закона для класса инструментов терминала). */
   leverage: number;
   baseLeverage: number;
   classOverrides: Record<string, number>;
   markupBps: number;
   commissionBps: number;
-  /** Инструменты — текст из админки; `null` — не задан (не выдумываем). */
   instruments: string | null;
   description: string | null;
 }
 
-/**
- * Условия типов счетов — ТОЛЬКО из админки (решение владельца №9): плечо,
- * наценка, комиссия, инструменты. Портфели с `is_public = false` не
- * показываются. Для публичной страницы `/accounts` и кабинета.
- */
 export async function readAccountTypeTerms(db: Queryable): Promise<AccountTypeTerms[]> {
   const ps = await db.query(
     `SELECT key, title, base_leverage, is_default, sort_order, markup_bps, commission_bps, instruments, description

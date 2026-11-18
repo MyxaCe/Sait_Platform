@@ -1,12 +1,4 @@
 -- Up Migration
---
--- Перенесено из `db/init` (WEB-31). Содержимое не менялось: перенос
--- отделён от правок нарочно, чтобы в разборе было видно, что механизм
--- ничего не переписал.
-
--- Главная кабинета v2 (ADR-026): публичный номер пользователя и VIP-уровень.
--- uid — то, что пользователь видит и называет поддержке (не UUID);
--- vip_level — уровень программы лояльности (логика уровней — Ф3).
 
 ALTER TABLE users ADD COLUMN IF NOT EXISTS uid BIGINT;
 CREATE SEQUENCE IF NOT EXISTS users_uid_seq START 100001 OWNED BY users.uid;

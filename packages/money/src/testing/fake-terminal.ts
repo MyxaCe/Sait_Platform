@@ -7,24 +7,15 @@ import type {
   TerminalMoneyClient,
 } from '../terminal-money';
 
-/**
- * Фейк терминала с ИДЕМПОТЕНТНОСТЬЮ по external_ref (как обязан вести себя
- * настоящий — предположение 1 контракта): повтор того же ref не двигает
- * баланс. Сценарий исхода задаётся очередью `next`.
- */
 export class FakeTerminal implements TerminalMoneyClient {
   balances = new Map<string, number>();
   applied = new Map<string, { userId: string; delta: number; seq: number }>();
   calls: { op: string; userId: string; ref?: string; amount?: number }[] = [];
   frozen = new Map<string, boolean>();
-  /** Плечо счёта по ключу `userId:kind`. Нет ключа — счёта нет (`not-opened`). */
   leverage = new Map<string, number>();
-  /** Плечо площадки — то, что терминал называет «до» у счёта без назначения. */
   platformLeverage = 20;
-  /** Ключи `userId:kind` открытых счетов (по умолчанию открыты оба). */
   opened: Set<string> | null = null;
   leverageCalls: { userId: string; kind: AccountKind; leverage: number; reason: string }[] = [];
-  /** Следующие исходы: 'ok' | refused-код | 'unavailable' | 'apply-then-unavailable'. */
   next: string[] = [];
   private seq = 0;
 
@@ -72,7 +63,6 @@ export class FakeTerminal implements TerminalMoneyClient {
     return { state: 'ok', leverage: body.leverage, previousLeverage: previous, changed: previous !== body.leverage, seq: ++this.seq };
   }
 
-  /** Чтение счетов (баланс реального счёта). `accountsUnavailable` — терминал молчит. */
   accountsUnavailable = false;
   async accounts(userId: string): Promise<AccountsOutcome> {
     this.calls.push({ op: 'accounts', userId });

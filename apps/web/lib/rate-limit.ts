@@ -1,9 +1,3 @@
-/**
- * Простой in-memory rate-limit для BFF-роутов.
- * Достаточен для одного инстанса; при горизонтальном масштабировании
- * заменяется на Redis (@upstash/ratelimit) без изменения вызовов.
- */
-
 const buckets = new Map<string, number[]>();
 
 export interface RateLimitOptions {
@@ -20,7 +14,6 @@ export function isRateLimited(
   recent.push(now);
   buckets.set(key, recent);
 
-  // Периодическая уборка, чтобы Map не рос бесконечно
   if (buckets.size > 10_000) {
     for (const [k, times] of buckets) {
       if (times.every((t) => now - t >= windowMs)) buckets.delete(k);

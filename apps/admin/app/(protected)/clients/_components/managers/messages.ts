@@ -1,4 +1,3 @@
-/** Отказы действий «менеджеров клиентов» — по-человечески (машинные коды из lib/managers). */
 export const MANAGER_ERRORS: Record<string, string> = {
   forbidden: 'Недостаточно прав: назначать менеджеров может только администратор.',
   missingManager: 'Выберите менеджера (или «Снять менеджера»).',
@@ -10,7 +9,6 @@ export const MANAGER_ERRORS: Record<string, string> = {
   invalidManager: 'Менеджер указан неверно.',
   managerNotEligible: 'Этот оператор не может быть менеджером: флаг снят, он отключён или его роль не видит клиентов.',
   journalUnavailable: 'Журнал недоступен — изменение не применено.',
-  // Флаг у оператора
   invalidSubject: 'Оператор не указан.',
   notFound: 'Оператор не найден.',
   notActive: 'Оператор отключён.',

@@ -1,18 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { AmqpPublisher, LogPublisher, createPublisher } from './publisher.js';
 
-/**
- * WEB-24 · пустой `BUS_EXCHANGE` даёт `platform.events`, а не пустое имя.
- *
- * Зеркало проверки консюмера. Пустое имя обменника в AMQP — не ошибка,
- * а обменник по умолчанию: сообщение уходит в очередь, чьё имя совпало
- * с ключом маршрутизации. Для `terminal.balance.changed` такой очереди
- * нет, и релей отчитывается об успешной публикации в никуда.
- *
- * Сторож по тексту видит, что `??` ушёл. Он не видит, что `envOr` зовут
- * именно на пути создания издателя, — это проверяется здесь.
- */
-
 function exchangeOf(p: AmqpPublisher): string {
   return (p as unknown as { exchange: string }).exchange;
 }

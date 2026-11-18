@@ -3,17 +3,6 @@ import { readAccountTypeTerms, type Queryable } from '@broker/money';
 import { readPromoSettings } from '@broker/promo';
 import { getPool } from '@/lib/db';
 
-/**
- * Публичные условия платформы — для витрины (у неё нет базы):
- *  - срок first-click атрибуции (max-age cookie `bp_ref`/`bp_promo`);
- *  - флаг «акции выключены»;
- *  - условия типов счетов для /accounts (плечо, наценка, комиссия,
- *    инструменты) — только из админки (решение владельца №9).
- *
- * Только чтение, без персональных данных. Сбой базы — 503, витрина живёт
- * без этих данных (свой failure domain: cookie станет сессионной, срок
- * проверит регистрация).
- */
 export const dynamic = 'force-dynamic';
 
 export async function GET() {

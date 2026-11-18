@@ -1,6 +1,5 @@
 import { draftMode } from 'next/headers';
 
-/** Плашка активного preview-режима с кнопкой выхода. */
 export function PreviewBanner({ locale }: { locale: string }) {
   if (!draftMode().isEnabled) return null;
   const en = locale === 'en';

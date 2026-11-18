@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
 import policy from '../scrubbing-policy.v1.json';
 
-/** Политика скраббинга — контрактный артефакт: проверяем её структуру. */
 const policySchema = z.object({
   version: z.number().int().positive(),
   sendDefaultPii: z.literal(false),

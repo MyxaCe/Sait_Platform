@@ -4,10 +4,6 @@ import type { PlatformPromoSettings } from './eligibility';
 import type { ClientFacts, DepositFact, TradeFact, WithdrawalFact } from './facts';
 import { parseRules, parseTexts, type ParsedRules, type PromoTexts, type PromotionType } from './rules';
 
-/**
- * ЧИТАТЕЛИ — один SQL на один род фактов. Движок над ними — чистый.
- */
-
 const iso = (v: unknown): string => (v instanceof Date ? v.toISOString() : new Date(String(v)).toISOString());
 const isoOrNull = (v: unknown): string | null => (v === null || v === undefined ? null : iso(v));
 const num = (v: unknown): number => Number(v);
@@ -18,13 +14,6 @@ const numOrNull = (v: unknown): number | null => {
 };
 const strArr = (v: unknown): string[] => (Array.isArray(v) ? v.map(String) : []);
 
-/* ── Настройки ────────────────────────────────────────────────────────── */
-
-/**
- * Настройки акций платформы. Строки нет (миграция ещё не накатана на эту
- * базу) — акции ВЫКЛЮЧЕНЫ: fail-closed для комплаенса, а срок атрибуции —
- * `null` (не выдумываем число).
- */
 export async function readPromoSettings(db: Queryable): Promise<PlatformPromoSettings | null> {
   const r = await db.query(
     `SELECT promotions_enabled, attribution_window_days, blocked_countries
@@ -45,8 +34,6 @@ export const PROMOS_OFF: PlatformPromoSettings = {
   blockedCountries: [],
 };
 
-/* ── Акции ────────────────────────────────────────────────────────────── */
-
 export interface PromotionRow {
   id: string;
   slug: string;
@@ -55,7 +42,6 @@ export interface PromotionRow {
   cmsPromoId: string | null;
   status: string;
   rulesRaw: unknown;
-  /** Разобранные правила; `null` — правила испорчены (показать оператору). */
   parsed: ParsedRules | null;
   ruleIssues: string[];
   texts: PromoTexts;
@@ -110,8 +96,6 @@ export async function listPromotions(db: Queryable, filter: { type?: PromotionTy
     : await db.query(`SELECT ${PROMOTION_COLUMNS} FROM promotions ORDER BY created_at DESC`);
   return r.rows.map(mapPromotion);
 }
-
-/* ── Факты клиента ───────────────────────────────────────────────────── */
 
 export async function readClientFacts(
   db: Queryable,
@@ -177,8 +161,6 @@ export function mapTrade(t: Record<string, unknown>): TradeFact {
   };
 }
 
-/* ── Сигналы связанности ─────────────────────────────────────────────── */
-
 async function fingerprint(db: Queryable, userId: string): Promise<Fingerprint | null> {
   const u = await db.query(
     `SELECT email, country, registration_ip, registration_ip_country FROM users WHERE id::text = $1`,
@@ -208,10 +190,6 @@ async function fingerprint(db: Queryable, userId: string): Promise<Fingerprint |
   };
 }
 
-/**
- * Сигналы для получателя начисления: клиенты с общим кошельком-отправителем,
- * адресом вывода или IP + связь со вторым участником пары (самореферал).
- */
 export async function readLinkSignals(
   db: Queryable,
   userId: string,
@@ -259,7 +237,6 @@ export async function readLinkSignals(
     const cp = await fingerprint(db, counterpartUserId);
     if (cp) {
       const shared = list.find((f) => f.userId === counterpartUserId);
-      // Email и прочее берём из полного отпечатка, общие значения — из поиска.
       if (shared) Object.assign(shared, { email: cp.email });
       else list.push({ userId: counterpartUserId, email: cp.email, depositWallets: [], withdrawAddresses: [], ips: [] });
     }

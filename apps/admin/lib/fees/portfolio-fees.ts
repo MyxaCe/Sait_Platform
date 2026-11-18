@@ -10,20 +10,6 @@ import {
 import { getPool } from '../db';
 import { appendJournalEntry } from '../journal/journal';
 
-/**
- * ТАРИФ ПОРТФЕЛЯ — наценка на спред и комиссия (решение владельца №6) плюс
- * публичные условия типа счёта (инструменты, описание — для /accounts).
- *
- * Образец — `lib/leverage/portfolio.ts`: одно решение = одна транзакция,
- * правка портфеля И запись журнала `leverage.portfolio_fees_changed`; затем
- * — доставка ставок в терминал (`POST …/{demo|real}/fees`, контракт —
- * `@broker/money` fees-contract.ts) ВСЕМ клиентам портфеля (для портфеля по
- * умолчанию — и тем, у кого строки нет). Fail-closed: терминал отказал / не
- * ответил → ROLLBACK (ни портфель, ни журнал не меняются), применённое в
- * терминале откатывается к «до». Если ставки не менялись (правили только
- * тексты) — терминал не зовём.
- */
-
 export interface PortfolioFeesInput {
   operatorId: string;
   operatorLogin?: string;

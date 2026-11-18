@@ -3,15 +3,6 @@ import { SYMBOL_UNIVERSE } from '@broker/realtime';
 import { getCms } from '@/lib/cms';
 import { SITE_URL } from '@/lib/site';
 
-/**
- * Sitemap: статические разделы + страницы, чьи списки живут в CMS
- * (новости, статьи обучения, юр-документы). Прежде слаги брались из
- * data-файлов кода и расходились с CMS на первой же новой статье.
- *
- * Динамический: на сборке CMS нет (CI), а пререндер запёк бы sitemap без
- * CMS-страниц. CMS недоступна → последняя сохранённая версия её ответа
- * (`getCms`); нет и её — ошибка, а не sitemap «из ничего».
- */
 export const dynamic = 'force-dynamic';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {

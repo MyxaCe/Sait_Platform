@@ -1,15 +1,3 @@
-/**
- * Правка учётных данных клиента (функция 3, решения владельца 10.11) — общие
- * правила и форматы. Client-safe: без `pg` и `node:*` (используется формами).
- *
- * Модель владельца: правку проводит сам менеджер клиента (или admin), без
- * второго утверждающего. Обязательны основание и чек-лист проверки личности;
- * номер тикета поддержки — поле, не блокирующее действие. Журнал хранит
- * значения до/после ТОЛЬКО маскированно: он неизменяем, стереть из него
- * персональные данные нельзя.
- */
-
-/** Коды журнала правки учётных данных (подписи — блок в `lib/journal/labels.ts`). */
 export const CREDENTIAL_ACTIONS = {
   emailChanged: 'client.credentials.email_changed',
   resetLinkSent: 'client.credentials.password_reset_link_sent',
@@ -18,18 +6,12 @@ export const CREDENTIAL_ACTIONS = {
   holdSet: 'client.credentials.withdraw_hold_set',
   holdAutoSet: 'client.credentials.withdraw_hold_auto_set',
   holdLifted: 'client.credentials.withdraw_hold_lifted',
-  /** Клиент сменил временный пароль при входе (пишет кабинет от system:cabinet). */
   tempPasswordReplaced: 'client.credentials.temp_password_replaced',
   settingsUpdated: 'platform.credential_settings.updated',
 } as const;
 
-/** Префикс всех правок — фильтр журнала «правки учётных данных». */
 export const CREDENTIAL_ACTION_PREFIX = 'client.credentials.';
 
-/**
- * Что считается «правкой» для счётчика необычной активности: действия,
- * повышающие риск захвата счёта. Заморозка вывода риск снижает — не считается.
- */
 export const RISKY_CREDENTIAL_ACTIONS: readonly string[] = [
   CREDENTIAL_ACTIONS.emailChanged,
   CREDENTIAL_ACTIONS.resetLinkSent,
@@ -38,16 +20,12 @@ export const RISKY_CREDENTIAL_ACTIONS: readonly string[] = [
   CREDENTIAL_ACTIONS.holdLifted,
 ];
 
-/** Заявки на вывод, в которых можно исправить адрес: ещё не отправлены в сеть. */
 export const EDITABLE_WITHDRAWAL_STATUSES = ['requested', 'approved'] as const;
 
 export function isEditableWithdrawal(w: { status: string; payoutTxHash: string | null }): boolean {
   return (EDITABLE_WITHDRAWAL_STATUSES as readonly string[]).includes(w.status) && !w.payoutTxHash;
 }
 
-/* ─── Маскирование ───────────────────────────────────────────────────── */
-
-/** `anna.k@gmail.com` → `a***@g***.com`. Пустое/кривое — `***`. */
 export function maskEmail(email: string | null | undefined): string {
   const v = String(email ?? '').trim();
   const at = v.lastIndexOf('@');
@@ -59,29 +37,23 @@ export function maskEmail(email: string | null | undefined): string {
   return `${local[0]}***@${domain[0]}***${tld ? `.${tld}` : ''}`;
 }
 
-/** Адрес TRON → `TXXXX…XXXX` (первые 5 и последние 4 символа). */
 export function maskAddress(address: string | null | undefined): string {
   const v = String(address ?? '').trim();
   if (v.length <= 9) return v ? `${v[0]}…` : '***';
   return `${v.slice(0, 5)}…${v.slice(-4)}`;
 }
 
-/* ─── Настройки и чек-лист ───────────────────────────────────────────── */
-
 export interface ChecklistItem {
   id: string;
   label: string;
-  /** Обязательный пункт: без его отметки правка не проводится. */
   required: boolean;
 }
 
 export interface CredentialSettings {
   checklist: ChecklistItem[];
-  /** Минимум отмеченных пунктов (обязательные входят в счёт). */
   minChecked: number;
   autoHoldEnabled: boolean;
   autoHoldHours: number;
-  /** Алерт: больше N правок одним оператором за сутки. */
   alertPerOperatorDay: number;
   tempPasswordHours: number;
 }
@@ -103,7 +75,6 @@ export const DEFAULT_CREDENTIAL_SETTINGS: CredentialSettings = {
 export const CHECKLIST_MAX_ITEMS = 12;
 export const CHECKLIST_LABEL_MAX = 200;
 
-/** Чек-лист из JSONB: мусор отбрасывается, id уникальны. */
 export function parseChecklist(raw: unknown): ChecklistItem[] {
   if (!Array.isArray(raw)) return [];
   const seen = new Set<string>();
@@ -121,11 +92,6 @@ export function parseChecklist(raw: unknown): ChecklistItem[] {
   return out;
 }
 
-/**
- * Чек-лист из текста формы настроек: пункт на строку, `*` в начале —
- * обязательный. id стабилен для уже существующих формулировок (отметки в
- * журнале остаются сопоставимыми), новым пунктам — `item_N`.
- */
 export function checklistFromText(text: string, previous: ChecklistItem[]): ChecklistItem[] {
   const byLabel = new Map(previous.map((i) => [i.label, i.id]));
   const used = new Set<string>();
@@ -158,10 +124,6 @@ export type ChecklistVerdict =
   | { ok: true; marks: { id: string; label: string; checked: boolean }[] }
   | { ok: false; reason: 'checklistRequired' | 'checklistIncomplete' };
 
-/**
- * Отметки менеджера против настроек. В журнал уходит снимок ВСЕХ пунктов с
- * формулировкой на момент правки (настройки потом могут измениться).
- */
 export function evaluateChecklist(settings: CredentialSettings, checkedIds: readonly string[]): ChecklistVerdict {
   const checked = new Set(checkedIds);
   const marks = settings.checklist.map((i) => ({ id: i.id, label: i.label, checked: checked.has(i.id) }));
@@ -171,13 +133,11 @@ export function evaluateChecklist(settings: CredentialSettings, checkedIds: read
   return { ok: true, marks };
 }
 
-/** Номер тикета поддержки: необязателен; `#1234` → `1234`; длина ограничена. */
 export function normalizeTicket(raw: string | null | undefined): string | null {
   const v = String(raw ?? '').trim().replace(/^#/, '').slice(0, 64);
   return v ? v : null;
 }
 
-/** Сообщения форм (ошибки действий) — один словарь на все формы вкладки. */
 export const CREDENTIAL_ERRORS: Record<string, string> = {
   forbidden: 'Недостаточно прав: править учётные данные может менеджер этого клиента или администратор.',
   noClient: 'Клиент не найден.',

@@ -1,12 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-/**
- * Вход в терминал верхним уровнем (sso-pack v1.1) — барьеры `/api/sso/launch`.
- *
- * Главное здесь — **наблюдаемое «токен не выпущен»** (`issueHandoffToken` не
- * вызывался), а не только код ответа: открытый редирект с подписанным
- * токеном во фрагменте — это раздача входа в чужие руки.
- */
 vi.setConfig({ testTimeout: 20_000 });
 
 const issueHandoffToken = vi.hoisted(() => vi.fn(async () => ({ token: 'signed.jwt.token', expiresIn: 60 })));
@@ -94,7 +87,6 @@ describe('GET /api/sso/launch · сессия', () => {
   });
 
   it('заблокированный клиент (сессии для него нет — ADM-02) → токен не выпущен', async () => {
-    // `getSessionUser` возвращает null для блока (см. app/api/sso/token/blocked.test.ts).
     getSessionUser.mockResolvedValue(null);
     const res = await launch({ account: 'demo', return: RETURN });
     expect(res.headers.get('location') ?? '').not.toContain('handoff');
@@ -136,7 +128,7 @@ describe('GET /api/sso/launch · выпуск', () => {
     expect(f.get('handoff')).toBe('signed.jwt.token');
     expect(f.get('account')).toBe('real');
     expect(f.get('lang')).toBe('en');
-    expect(base).not.toContain('signed.jwt.token'); // токен только во фрагменте
+    expect(base).not.toContain('signed.jwt.token');
     expect(issueHandoffToken).toHaveBeenCalledWith('user-1', 'real', 10, { markupBps: 15, commissionBps: 0 });
   });
 

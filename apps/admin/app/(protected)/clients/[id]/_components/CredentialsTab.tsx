@@ -8,16 +8,6 @@ import { actionLabel } from '@/lib/journal/labels';
 import { fmtDateTime } from '@/lib/ui/format';
 import { CredentialsForms } from './CredentialsForms';
 
-/**
- * Вкладка «Учётные данные» карточки клиента (функция 3). Видят все роли
- * карточки (в истории только маски); формы — только admin и менеджеру этого
- * клиента (fail-closed: у остальных их нет, не «серые»).
- *
- * История — из неизменяемого журнала: правки `client.credentials.*` и
- * самостоятельные действия клиента со входом (`auth.*`: сброс пароля,
- * подтверждение email) — чтобы видеть картину целиком.
- */
-
 const HOLD_KIND: Record<string, string> = {
   money_flags: 'денежные флаги (финансы)',
   credentials_manual: 'распоряжение менеджера',

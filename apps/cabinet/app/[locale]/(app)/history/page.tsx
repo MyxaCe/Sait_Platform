@@ -15,21 +15,6 @@ import { linkButton } from '@/features/ui/link-button';
 import { MachineValue } from '@/features/money/TxLink';
 import { PAGE } from '@/features/ui/page';
 
-/**
- * «История» (r2, замечание владельца: «пустая и неинформативная»).
- *
- *   счёт    — Реальный | Демо (`?account=`);
- *   фильтры — период 7/30/90 дней / всё (`?period=`), тип: всё / сделки /
- *             пополнения и выводы (`?type=`, у демо денег нет — фильтра нет);
- *   сводка  — оборот, зафиксированный P&L, число сделок, винрейт за период;
- *   открытые позиции — что сейчас в рынке;
- *   лента   — сделки и денежные операции одной лентой по дням (статусы,
- *             хэши → Tronscan);
- *   пусто   — объясняет почему и ведёт к действию (терминал / пополнение).
- *
- * Источник сделок — проекция терминала (`*_trades`, `*_positions`); денег —
- * заявки ввода/вывода. Всё по userId из сессии, всё только чтение.
- */
 export const dynamic = 'force-dynamic';
 
 type Kind = 'real' | 'demo';
@@ -53,7 +38,6 @@ export default async function HistoryPage({
   const format = await getFormatter();
 
   const realAccount = await getRealAccount(user.id);
-  // По умолчанию — реальный счёт, если он есть; иначе демо (новый клиент).
   const account: Kind =
     searchParams.account === 'demo' || searchParams.account === 'real'
       ? searchParams.account
@@ -88,7 +72,6 @@ export default async function HistoryPage({
   };
 
   const num = (v: number, max = 5) => format.number(v, { maximumFractionDigits: max });
-  // День — в том же часовом поясе, что и подписи времени (форматтер next-intl).
   const dayKey = (d: Date) => format.dateTime(d, { year: 'numeric', month: '2-digit', day: '2-digit' });
   const today = dayKey(new Date());
   const yesterday = dayKey(new Date(Date.now() - 86_400_000));
@@ -233,14 +216,6 @@ export default async function HistoryPage({
     );
   };
 
-  /*
-   * Раскладка (десктоп, 10.11). < xl — прежняя колонка (телефон не меняется).
-   * ≥ xl: шапка со счётом справа → ряд KPI во всю ширину → панель фильтров
-   * строкой → лента таблицей; ≥ 2xl: фильтры и открытые позиции — колонкой
-   * слева (3), таблица справа (9). KPI на
-   * десктопе — отдельная копия (только чтение), чтобы порядок на телефоне
-   * («фильтры → сводка») остался прежним.
-   */
   return (
     <div className={cn(PAGE, 'space-y-4 sm:space-y-5')}>
       <div className="space-y-4 sm:space-y-5 xl:flex xl:items-end xl:justify-between xl:gap-6 xl:space-y-0">
@@ -260,7 +235,6 @@ export default async function HistoryPage({
         </div>
       </div>
 
-      {/* Сводка из нулей — шум: при пустом периоде говорит пустое состояние ниже. */}
       {type !== 'money' && summary.trades > 0 ? (
         <dl className="hidden gap-px overflow-hidden rounded-2xl border border-border bg-border xl:grid xl:grid-cols-4">
           {tiles.map((tile) => (
@@ -292,7 +266,6 @@ export default async function HistoryPage({
             ) : null}
           </div>
 
-          {/* Сводка из нулей — шум: при пустом периоде говорит пустое состояние ниже. */}
           {type !== 'money' && summary.trades > 0 ? (
             <dl className="grid grid-cols-2 xl:hidden gap-px overflow-hidden rounded-2xl border border-border bg-border sm:grid-cols-4">
               {tiles.map((tile) => (
@@ -361,7 +334,6 @@ export default async function HistoryPage({
                   </ul>
                 </div>
               ))}
-              {/* ≥ xl — таблица: колонки сравниваются взглядом, дни — строками-разделителями. */}
               <div className="hidden overflow-hidden rounded-2xl border border-border bg-elevated xl:block">
                 <table className="w-full text-[13px]">
                   <thead className="bg-primary/[0.03] text-left text-xs text-secondary">

@@ -12,13 +12,6 @@ import {
   type PromotionType,
 } from './rules';
 
-/**
- * ОПЕРАЦИИ АДМИНКИ зоны «Акции и партнёры». Образец — `lib/crypto/settings.ts`:
- * одно решение = одна транзакция, в ней правка И запись журнала (Р-049),
- * основание обязательно, пустой переход не пишется. Роль-гейт — у вызывающего
- * server action (автор — из сессии, Р-451).
- */
-
 const SLUG_RE = /^[a-z0-9][a-z0-9-]{1,62}$/;
 
 export interface PromotionInput {
@@ -96,7 +89,6 @@ function validate(input: PromotionInput): { ok: true; value: Normalized } | Extr
   };
 }
 
-/** Создать акцию (черновик). Только admin. */
 export async function createPromotion(
   pool: PoolLike,
   input: { operatorId: string; reason: string; promotion: PromotionInput },
@@ -148,11 +140,6 @@ export async function createPromotion(
   }
 }
 
-/**
- * Изменить акцию: правила, тексты, период, бюджет, страны. Только в
- * `draft` / `paused` — у идущей акции правила под ногами участников не меняем
- * («поставьте на паузу»). Тип не меняется. Бюджет не ниже уже одобренного.
- */
 export async function updatePromotion(
   pool: PoolLike,
   input: { operatorId: string; reason: string; id: string; promotion: Omit<PromotionInput, 'type'> },
@@ -226,7 +213,6 @@ const STATUS_ACTION: Record<string, string> = {
   ended: PROMO_ACTIONS.ended,
 };
 
-/** Включить / поставить на паузу / завершить. Активная реферальная — одна на платформу. */
 export async function setPromotionStatus(
   pool: PoolLike,
   input: { operatorId: string; reason: string; id: string; to: 'active' | 'paused' | 'ended' },
@@ -264,8 +250,6 @@ export async function setPromotionStatus(
     return { ok: true, id: cur.id, journalSeq: seq };
   });
 }
-
-/* ── Настройки платформы ──────────────────────────────────────────────── */
 
 export type PromoSettingsResult =
   | { ok: true; journalSeq: number }
@@ -312,8 +296,6 @@ export async function updatePromoSettings(
   });
 }
 
-/* ── Клиент по точному идентификатору (как привязка депозита) ─────────── */
-
 export async function findClientExact(db: Queryable, q: string): Promise<{ id: string; email: string; fullName: string } | null> {
   const v = q.trim();
   if (!v) return null;
@@ -328,18 +310,10 @@ export async function findClientExact(db: Queryable, q: string): Promise<{ id: s
   return { id: String(row.id), email: String(row.email), fullName: String(row.full_name) };
 }
 
-/* ── Рефералы: переназначение (admin, с основанием) ───────────────────── */
-
 export type ReassignResult =
   | { ok: true; journalSeq: number }
   | { ok: false; reason: 'missingReason' | 'refereeNotFound' | 'referrerNotFound' | 'selfReferral' | 'noChange' };
 
-/**
- * Переназначить реферера клиента (или снять атрибуцию: `referrer = null`).
- * Единственный путь перезаписи first-click — человек с основанием (решение
- * владельца №8). Уже выплаченные награды не отзываются — это делает сторно
- * (дорожная карта).
- */
 export async function reassignReferral(
   pool: PoolLike,
   input: { operatorId: string; reason: string; refereeUserId: string; referrer: string | null },
@@ -404,8 +378,6 @@ export async function reassignReferral(
     return { ok: true, journalSeq: seq };
   });
 }
-
-/* ── IB-партнёры ──────────────────────────────────────────────────────── */
 
 export interface IbPartnerInput {
   client: string;

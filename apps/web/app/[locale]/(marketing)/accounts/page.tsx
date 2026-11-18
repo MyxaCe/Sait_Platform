@@ -9,13 +9,6 @@ interface PageProps {
   params: { locale: string };
 }
 
-/**
- * Типы счетов — ТОЛЬКО из админки (решение владельца №9) через публичную
- * ручку кабинета `/api/public/platform-terms`. Прежние тарифы-«рыба»
- * (спред в пунктах, комиссия за лот, плечо 1:500, калькулятор по EURUSD)
- * удалены: терминал торгует криптой, а цифры не совпадали с ним.
- * Нет данных — «условия временно недоступны», без выдуманных цифр.
- */
 export const revalidate = 60;
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {

@@ -11,11 +11,6 @@ vi.mock('../db', () => ({
 import { setClientMoneyFlags } from './flags';
 import { updatePlatformMoneySettings } from './settings';
 
-/**
- * Денежные флаги клиента и настройки платформы: основание обязательно,
- * журнал той же транзакцией, заморозка — сначала терминал (fail-closed).
- */
-
 const U = 'user-1';
 const OP = 'op-1';
 

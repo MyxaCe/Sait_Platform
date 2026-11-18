@@ -11,23 +11,6 @@ import {
 import { readEnv } from '@broker/utils';
 import { getPool } from '../lib/db';
 
-/**
- * Реестр платформ группы для ячейки (ветка client-transfer) — вызывается
- * скриптом развёртывания ячейки (`platform-new.sh`, шаг «реестр группы») и
- * вручную. Идемпотентно: неизменённые записи не трогает, изменённые пишет с
- * журналом от `system:platform-transfer`.
- *
- *   DATABASE_URL=… SITE_SLUG=nordex-eu PLATFORM_TRANSFER_SIGNING_KEY_PEM_B64=… \
- *     pnpm --filter @broker/admin seed:group-registry ./group-registry.json
- *
- * Формат файла — массив платформ (`slug, name, cabinetUrl, apiUrl,
- * publicKeyPem, euLicense, servedCountries, forbiddenCountries,
- * maxRetailLeverage, bonusesAllowed, acceptsTransfers, legalEntity,
- * regulator`). Для СВОЕЙ платформы (slug = SITE_SLUG) `publicKeyPem` можно
- * не писать: он выводится из приватного ключа ячейки в env.
- *
- *   --print-public-key  — только напечатать публичный ключ ячейки (PEM).
- */
 async function main(): Promise<number> {
   const args = process.argv.slice(2);
   const key = loadSigningKey();

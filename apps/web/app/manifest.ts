@@ -2,14 +2,6 @@ import type { MetadataRoute } from 'next';
 import { getTranslations } from 'next-intl/server';
 import { getCms } from '@/lib/cms';
 
-/**
- * PWA-манифест. Имя — из CMS (`cms:brand`), в коде бренда нет (10.11);
- * подзаголовок и описание — SEO-тексты `messages.meta` (до CMS v2, где
- * манифест — `design/seo/manifest.ts`). Цвета — дизайн (токены фона).
- *
- * Динамический: на сборке CMS нет, а пререндер из ничего запёк бы
- * манифест без имени. Ответ CMS кешируется на её стороне запроса.
- */
 export const dynamic = 'force-dynamic';
 
 export default async function manifest(): Promise<MetadataRoute.Manifest> {

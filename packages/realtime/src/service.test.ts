@@ -21,12 +21,11 @@ describe('RealtimeService: подписки по счётчику ссылок',
     service.connect(driver);
 
     const unsub1 = service.subscribe(['EURUSD', 'BTCUSD']);
-    const unsub2 = service.subscribe(['EURUSD']); // второй виджет на тот же символ
+    const unsub2 = service.subscribe(['EURUSD']);
 
-    expect(calls.subscribe).toEqual([['EURUSD', 'BTCUSD']]); // EURUSD не дублируется
+    expect(calls.subscribe).toEqual([['EURUSD', 'BTCUSD']]);
 
     unsub1();
-    // EURUSD ещё держит второй подписчик — отписался только BTCUSD
     expect(calls.unsubscribe).toEqual([['BTCUSD']]);
 
     unsub2();
@@ -37,7 +36,7 @@ describe('RealtimeService: подписки по счётчику ссылок',
     const service = new RealtimeService();
     const { driver, calls } = createFakeDriver();
 
-    service.subscribe(['XAUUSD']); // подписка до connect
+    service.subscribe(['XAUUSD']);
     service.connect(driver);
 
     expect(calls.subscribe).toEqual([['XAUUSD']]);
@@ -56,11 +55,6 @@ afterEach(() => {
   vi.unstubAllEnvs();
 });
 
-/**
- * B-018: подлинность данных решает сервис по наличию адреса источника, и
- * подделать её драйвер не может. Тесты держат ровно это: драйвер сколько
- * угодно рапортует connected — без адреса источника наружу уходит simulated.
- */
 describe('RealtimeService: подлинность данных', () => {
   function driverClaiming(status: 'connected' | 'reconnecting') {
     let emit: ((s: 'connected' | 'reconnecting') => void) | null = null;
@@ -92,7 +86,6 @@ describe('RealtimeService: подлинность данных', () => {
     new RealtimeService().connect(driver);
     claim();
 
-    // Промежуточные состояния боевого фида тоже не должны намекать на живость
     expect(useQuotesStore.getState().status).toBe('simulated');
   });
 

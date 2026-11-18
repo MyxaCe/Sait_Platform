@@ -1,8 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { checkReturnUrl, safeLaunchNext, terminalLaunchHref, terminalOrigins } from './launch';
 
-/** Правила входа верхним уровнем: белый список, продолжение после логина, кнопки. */
-
 describe('белый список origin терминала', () => {
   it('через пробел/запятую, нормализуется до origin, мусор отброшен', () => {
     expect(

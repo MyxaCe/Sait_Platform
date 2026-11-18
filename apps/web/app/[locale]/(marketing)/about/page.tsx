@@ -28,14 +28,6 @@ interface FactItem {
   value: string;
   label: string;
 }
-/**
- * Раньше здесь был блок «Лицензии и регуляция» с CySEC/FSCA/FSA и
- * номерами-заглушками, а выше — «17 лет на рынке · 1.2 млн трейдеров ·
- * 87 млрд $». Лицензий и такой истории у площадки нет; на показе
- * комплаенсу это прямое ложное заявление. Теперь блок говорит о мерах
- * защиты, которые реально работают в продукте, а таймлайн — о том, как
- * устроена платформа, а не о выдуманной истории компании.
- */
 interface SafeguardItem {
   title: string;
   text: string;
@@ -84,7 +76,6 @@ export default async function AboutPage({ params }: PageProps) {
           <ol className="mt-10 space-y-0">
             {timeline.map((item, i) => (
               <li key={item.year} className="relative flex gap-6 pb-10 last:pb-0">
-                {/* Вертикальная линия таймлайна */}
                 {i < timeline.length - 1 && (
                   <span
                     aria-hidden

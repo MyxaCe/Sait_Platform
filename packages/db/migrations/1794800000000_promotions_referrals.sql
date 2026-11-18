@@ -1,43 +1,14 @@
 -- Up Migration
---
--- Акции, рефералы, конкурсы, IB-партнёры и тарифы портфелей (дизайн
--- «ДЕМО-акции-и-рефералы», решения владельца 10.11).
---
--- Сквозной принцип владельца: НИЧЕГО не хардкодим. Числа акций (проценты,
--- лимиты, бюджеты, сроки), тексты условий для клиента, вкл/выкл, ставки
--- партнёров и тарифы портфелей живут ЗДЕСЬ и меняются админкой (форма с
--- основанием → журнал той же транзакцией, Р-049). Значения в INSERT ниже —
--- стартовая конфигурация, а не бетон.
---
--- Деньги здесь НЕ хранятся (Р-396). Вознаграждение — это ЗАЯВКА на
--- начисление (`promo_rewards`): оператор одобряет с основанием → терминал
--- `deposit` на реальный счёт с `external_ref` (идемпотентно). Бюджет акции —
--- величина распоряжения, не баланс: `spent_minor` ≤ `budget_minor` держит и
--- код (в транзакции одобрения), и CHECK базы.
---
--- Down намеренно нет — выкат вперёд (WEB-31).
 
--- Системный автор журнала для переходов, которые делает движок акций
--- (постановка в очередь по выполненным условиям). Войти им нельзя.
 INSERT INTO operators (id, login, display_name, role, disabled_at) VALUES
   ('00000000-0000-4000-8000-00000000c0b3', 'system:promo-engine', 'Система · движок акций', 'operator', now())
 ON CONFLICT (login) DO NOTHING;
 
--- ── Клиент: страна и IP регистрации (комплаенс, антифрод) ──────────────────
--- `country` — из формы регистрации (ISO-3166 alpha-2), `registration_ip` — IP
--- запроса регистрации, `registration_ip_country` — страна по гео-заголовку
--- прокси (если он есть). Расхождение двух стран — сигнал, а не отказ.
 ALTER TABLE users ADD COLUMN IF NOT EXISTS country TEXT;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS registration_ip TEXT;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS registration_ip_country TEXT;
 CREATE INDEX IF NOT EXISTS users_registration_ip_idx ON users (registration_ip);
 
--- ── Настройки акций платформы (синглтон, как platform_money_settings) ──────
--- `promotions_enabled = false` — «акции выключены» (профиль юрисдикции ЕС/UK/AU):
--- новые участия и постановка в очередь закрыты, кабинет акций не показывает.
--- `blocked_countries` — страны клиентов, которым акции не показываются вовсе.
--- `attribution_window_days` — срок жизни first-click атрибуции (cookie и
--- проверка при регистрации).
 CREATE TABLE IF NOT EXISTS platform_promo_settings (
   id SMALLINT PRIMARY KEY DEFAULT 1 CHECK (id = 1),
   promotions_enabled BOOLEAN NOT NULL DEFAULT true,
@@ -50,12 +21,6 @@ CREATE TABLE IF NOT EXISTS platform_promo_settings (
 );
 INSERT INTO platform_promo_settings (id) VALUES (1) ON CONFLICT (id) DO NOTHING;
 
--- ── Тарифы портфеля (доход платформы, решение владельца №6) ────────────────
--- Наценка на спред и комиссия — ставки в базисных пунктах (1 б.п. = 0,01 %;
--- предел 0..500 — граница маршрута терминала `fees`),
--- задаются на портфель админкой и уезжают в терминал маршрутом `fees` (как
--- плечо). `instruments` / `description` / `is_public` — условия типа счёта для
--- публичной страницы /accounts: витрина берёт их отсюда, не из кода.
 ALTER TABLE leverage_portfolios ADD COLUMN IF NOT EXISTS markup_bps INT NOT NULL DEFAULT 0
   CHECK (markup_bps BETWEEN 0 AND 500);
 ALTER TABLE leverage_portfolios ADD COLUMN IF NOT EXISTS commission_bps INT NOT NULL DEFAULT 0
@@ -64,14 +29,6 @@ ALTER TABLE leverage_portfolios ADD COLUMN IF NOT EXISTS instruments TEXT;
 ALTER TABLE leverage_portfolios ADD COLUMN IF NOT EXISTS description TEXT;
 ALTER TABLE leverage_portfolios ADD COLUMN IF NOT EXISTS is_public BOOLEAN NOT NULL DEFAULT true;
 
--- ── Акции ──────────────────────────────────────────────────────────────────
--- Одна строка — правила одной акции. `rules` — типизированный jsonb, схема
--- валидации (Zod) — `@broker/promo` (`rules.ts`), одна на запись и чтение.
--- `texts` — тексты для клиента по локалям {ru:{title,summary,terms}, en:…}.
--- `countries_allow` / `countries_deny` — юрисдикционный фильтр акции (пустой
--- allow = все страны). `spent_minor` — сумма ОДОБРЕННЫХ начислений (резерв
--- бюджета на одобрении; освобождается только отклонением после отказа
--- терминала).
 CREATE TABLE IF NOT EXISTS promotions (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   slug TEXT NOT NULL CHECK (slug ~ '^[a-z0-9][a-z0-9-]{1,62}$'),
@@ -97,11 +54,6 @@ CREATE TABLE IF NOT EXISTS promotions (
 );
 CREATE INDEX IF NOT EXISTS promotions_status_idx ON promotions (status, type);
 
--- Участие клиента в акции (deposit_bonus / cashback / referral-друг).
--- enrolled → qualified → rewarded; ветки expired (окно истекло / вывод до
--- выплаты), rejected (оператор), not_eligible (условие входа не выполнено,
--- напр. первый депозит до старта акции). `progress` — снимок последней оценки
--- (условия, факты) для показа и аудита.
 CREATE TABLE IF NOT EXISTS promo_participations (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   promotion_id UUID NOT NULL REFERENCES promotions(id),
@@ -116,11 +68,6 @@ CREATE TABLE IF NOT EXISTS promo_participations (
 );
 CREATE INDEX IF NOT EXISTS promo_participations_user_idx ON promo_participations (user_id);
 
--- ── IB-партнёры ────────────────────────────────────────────────────────────
--- Партнёр — клиент платформы (выплаты — на его реальный счёт), привлекает по
--- своему реф-коду. Модель: CPA (фикс за квалифицированного клиента, условия
--- квалификации — `cpa_rules`) или revshare (доля дохода платформы — наценка +
--- комиссия — с привлечённых, в б.п.).
 CREATE TABLE IF NOT EXISTS ib_partners (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES users(id),
@@ -141,8 +88,6 @@ CREATE TABLE IF NOT EXISTS ib_partners (
   )
 );
 
--- ── Рефералы ───────────────────────────────────────────────────────────────
--- Реф-код клиента: создаётся лениво (первое открытие «Пригласи друга»).
 CREATE TABLE IF NOT EXISTS referral_codes (
   user_id UUID PRIMARY KEY REFERENCES users(id),
   code TEXT NOT NULL CHECK (code ~ '^[A-Z0-9]{6,16}$'),
@@ -150,11 +95,6 @@ CREATE TABLE IF NOT EXISTS referral_codes (
   CONSTRAINT referral_codes_code_uniq UNIQUE (code)
 );
 
--- Атрибуция: кто привёл клиента. Один реферер на клиента (PK по рефералу),
--- first-click, без перезаписи кодом; переназначение — только admin с
--- основанием (журнал `referral.attribution.*`). Самореферал отсекается:
--- CHECK + `status = 'rejected'` с причиной (общий IP / email), строка
--- остаётся для аудита. `ib_partner_id` — если реферер — IB-партнёр.
 CREATE TABLE IF NOT EXISTS referral_attributions (
   referee_user_id UUID PRIMARY KEY REFERENCES users(id),
   referrer_user_id UUID REFERENCES users(id),
@@ -180,14 +120,6 @@ CREATE TABLE IF NOT EXISTS referral_attributions (
 CREATE INDEX IF NOT EXISTS referral_attributions_referrer_idx ON referral_attributions (referrer_user_id);
 CREATE INDEX IF NOT EXISTS referral_attributions_ib_idx ON referral_attributions (ib_partner_id);
 
--- ── Конкурс на демо-счетах ─────────────────────────────────────────────────
--- Конкурс — акция типа `contest` (период = starts_at/ends_at акции; стартовая
--- сумма, мин. число сделок, призы по местам — в `rules`). Участие сбрасывает
--- демо-счёт терминалом (`POST /account/demo-reset`): строка `pending_reset`
--- пишется ДО вызова, базу (`baseline_minor`) ставит консюмер по событию
--- `terminal.balance.changed` reason=reset — фактическую сумму сброса.
--- Доходность = Σ realized P&L демо-сделок в окне / baseline (незакрытые
--- позиции не считаются; повторный сброс доходность не обнуляет).
 CREATE TABLE IF NOT EXISTS contest_entries (
   promotion_id UUID NOT NULL REFERENCES promotions(id),
   user_id UUID NOT NULL REFERENCES users(id),
@@ -205,8 +137,6 @@ CREATE TABLE IF NOT EXISTS contest_entries (
 );
 CREATE INDEX IF NOT EXISTS contest_entries_user_idx ON contest_entries (user_id, status);
 
--- Снимки лидерборда: промежуточные (для истории) и ОДИН итоговый на конкурс —
--- по нему призы уходят в очередь начислений.
 CREATE TABLE IF NOT EXISTS contest_snapshots (
   id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   promotion_id UUID NOT NULL REFERENCES promotions(id),
@@ -218,17 +148,6 @@ CREATE TABLE IF NOT EXISTS contest_snapshots (
 CREATE UNIQUE INDEX IF NOT EXISTS contest_snapshots_one_final
   ON contest_snapshots (promotion_id) WHERE is_final;
 
--- ── Начисления — очередь одобрения ─────────────────────────────────────────
--- pending ─► approved ─► credited
---    │          └─► needs_review (терминал отказал) ─► rejected (бюджет освобождён)
---    └─► rejected
--- `approved` — бюджет зарезервирован, вызов терминала мог не дойти (исход
--- неизвестен): повтор с тем же `external_ref` безопасен. Отклонить `approved`
--- нельзя — деньги могли уйти.
--- external_ref: promo:<promotion>:<user> · ref:<friend>:<referrer|referee> ·
--- cashback:<promotion>:<YYYY-MM>:<user> · contest:<promotion>:<place> ·
--- ib:cpa:<client> · ib:rev:<partner>:<YYYY-MM>.
--- `signals` — сигналы связанности на момент постановки (подсказка оператору).
 CREATE TABLE IF NOT EXISTS promo_rewards (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   kind TEXT NOT NULL CHECK (kind IN ('promo', 'referral', 'cashback', 'contest', 'ib')),
@@ -236,7 +155,6 @@ CREATE TABLE IF NOT EXISTS promo_rewards (
   ib_partner_id UUID REFERENCES ib_partners(id),
   participation_id UUID REFERENCES promo_participations(id),
   user_id UUID NOT NULL REFERENCES users(id),
-  -- Второй участник пары (друг для реферера, клиент IB) — для показа и сигналов.
   related_user_id UUID REFERENCES users(id),
   amount_minor BIGINT NOT NULL CHECK (amount_minor > 0),
   currency TEXT NOT NULL DEFAULT 'USD',
@@ -268,9 +186,6 @@ CREATE INDEX IF NOT EXISTS promo_rewards_status_idx ON promo_rewards (status, cr
 CREATE INDEX IF NOT EXISTS promo_rewards_user_idx ON promo_rewards (user_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS promo_rewards_promotion_idx ON promo_rewards (promotion_id);
 
--- ── Комиссия и наценка в проекции сделок (аддитивно, терпимо к отсутствию) ─
--- Терминал добавляет в `trade.executed` поля `commissionMinor`, `markupMinor`,
--- `marketPrice`. Старые события их не несут: NULL = «не знаем», не ноль.
 ALTER TABLE real_trades ADD COLUMN IF NOT EXISTS commission_minor BIGINT;
 ALTER TABLE real_trades ADD COLUMN IF NOT EXISTS markup_minor BIGINT;
 ALTER TABLE real_trades ADD COLUMN IF NOT EXISTS market_price NUMERIC;

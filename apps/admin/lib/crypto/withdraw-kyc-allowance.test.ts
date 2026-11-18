@@ -12,16 +12,6 @@ import { createTestDb, seedOperator, seedUser, type TestDb } from '@broker/suppo
 import { updatePlatformMoneySettings } from './settings';
 import { formatBpsPercent, percentToBps, setClientUnverifiedWithdrawLimit } from './withdraw-limit';
 
-/**
- * Вывод без верификации до X % — на НАСТОЯЩЕМ Postgres (PGlite, все миграции):
- * суммарный потолок, учёт статусов заявок, fail-closed без баланса, настройка
- * платформы и переопределение у клиента с журналом.
- *
- * Формула (kyc-allowance.ts): limit = floor((баланс + Σ подтверждённых
- * списаний занимающих заявок) × bps / 10 000); used = Σ заявок requested |
- * approved | sent | settled | needs_review; остаток = limit − used.
- */
-
 const ADDR = tronHexToBase58('41' + '33'.repeat(20));
 
 let db: TestDb;
@@ -46,7 +36,7 @@ beforeEach(async () => {
   client = await seedUser(db);
   await setKyc(client, 'pending');
   term = new FakeTerminal();
-  term.balances.set(client, 100_000); // 1 000 USDT
+  term.balances.set(client, 100_000);
 });
 
 afterEach(async () => {
@@ -60,13 +50,11 @@ describe('формула потолка', () => {
       limitMinor: 5_000,
       remainingMinor: 5_000,
     });
-    // После вывода 30 USDT: база та же (970 + 30), остаток 20.
     expect(computeKycAllowance({ bps: 500, balanceMinor: 97_000, usage: { usedMinor: 3_000, usedDebitedMinor: 3_000 } })).toMatchObject({
       baseMinor: 100_000,
       limitMinor: 5_000,
       remainingMinor: 2_000,
     });
-    // Списание не подтверждено: в базу не входит (сумма ещё может быть в балансе), в used — входит.
     expect(computeKycAllowance({ bps: 500, balanceMinor: 100_000, usage: { usedMinor: 3_000, usedDebitedMinor: 0 } })).toMatchObject({
       limitMinor: 5_000,
       remainingMinor: 2_000,
@@ -74,7 +62,6 @@ describe('формула потолка', () => {
     expect(computeKycAllowance({ bps: 333, balanceMinor: 1_001, usage: { usedMinor: 0, usedDebitedMinor: 0 } }).limitMinor).toBe(33);
     const big = computeKycAllowance({ bps: 9_999, balanceMinor: 9_000_000_000_000_000, usage: { usedMinor: 0, usedDebitedMinor: 0 } });
     expect(big.limitMinor).toBe(Number((9_000_000_000_000_000n * 9_999n) / 10_000n));
-    // Отрицательный баланс не уменьшает базу ниже выведенного.
     expect(computeKycAllowance({ bps: 500, balanceMinor: -500, usage: { usedMinor: 0, usedDebitedMinor: 0 } }).limitMinor).toBe(0);
   });
 
@@ -102,7 +89,6 @@ describe('подача заявки без верификации (умолча�
     const ok = await wd(5_000);
     expect(ok).toMatchObject({ ok: true, debit: 'debited' });
     expect(term.balances.get(client)).toBe(95_000);
-    // Журнал заявки помечает, что она подана под лимитом.
     const j = await db.query(`SELECT payload FROM admin_action_journal WHERE action = 'crypto.withdrawal.requested'`);
     expect(j.rows[0]!.payload).toMatchObject({ amountMinor: 5_000, kycAllowanceBps: 500 });
   });
@@ -111,7 +97,6 @@ describe('подача заявки без верификации (умолча�
     expect(await wd(1_500)).toMatchObject({ ok: true });
     expect(await wd(1_500)).toMatchObject({ ok: true });
     expect(await wd(1_500)).toMatchObject({ ok: true });
-    // 4 500 использовано, база 95 500 + 4 500 = 100 000 → лимит 5 000, остаток 500 < минимума 10.
     expect(await wd(1_000)).toEqual({ ok: false, reason: 'kycLimitExceeded', limitMinor: 5_000, usedMinor: 4_500, remainingMinor: 500 });
     const a = await resolveKycAllowance(db, term, client, 500);
     expect(a).toMatchObject({ balanceMinor: 95_500, baseMinor: 100_000, usedMinor: 4_500, remainingMinor: 500 });
@@ -121,10 +106,8 @@ describe('подача заявки без верификации (умолча�
     const r1 = await wd(3_000);
     expect(r1).toMatchObject({ ok: true });
     const id1 = (r1 as { withdrawalId: string }).withdrawalId;
-    // В ожидании — занимает потолок.
     expect(await wd(2_001)).toMatchObject({ reason: 'kycLimitExceeded', remainingMinor: 2_000 });
 
-    // Одобрено (и далее sent/settled) — всё ещё занимает.
     await db.query(`UPDATE crypto_withdrawals SET status = 'approved' WHERE id = $1`, [id1]);
     expect(await wd(2_001)).toMatchObject({ reason: 'kycLimitExceeded', remainingMinor: 2_000 });
     await db.query(
@@ -133,7 +116,6 @@ describe('подача заявки без верификации (умолча�
     );
     expect(await wd(2_001)).toMatchObject({ reason: 'kycLimitExceeded', remainingMinor: 2_000 });
 
-    // Отклонена с возвратом — потолок освобождается целиком.
     const r2 = await wd(2_000);
     const id2 = (r2 as { withdrawalId: string }).withdrawalId;
     const op = await seedOperator(db, 'finance_operator');
@@ -148,7 +130,6 @@ describe('подача заявки без верификации (умолча�
   it('списание с неизвестным исходом занимает потолок (строже)', async () => {
     term.next = ['apply-then-unavailable'];
     expect(await wd(4_000)).toMatchObject({ ok: true, debit: 'pending' });
-    // Баланс уже 96 000, списание не подтверждено: база 96 000, лимит 4 800, used 4 000.
     expect(await wd(1_000)).toMatchObject({ reason: 'kycLimitExceeded', remainingMinor: 800 });
   });
 

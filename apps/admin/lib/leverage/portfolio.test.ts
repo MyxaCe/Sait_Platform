@@ -4,15 +4,6 @@ import { FakeTerminal } from '@broker/money/testing';
 import { changePortfolioLeverage, setClassOverride } from './portfolio';
 import type { LeverageTerminalSync } from './terminal-sync';
 
-/**
- * WEB-47/45 · смена плеча портфеля глобально и планка класса (Р-446, Р-049).
- *
- * База не поднимается — in-memory фейк ведёт себя как `leverage_portfolios` +
- * `leverage_portfolio_class_overrides` + `admin_action_journal` в одной
- * транзакции. Проверяем содержательный переход, журнал с diff/основанием и
- * fail-closed без основания.
- */
-
 const OP = '11111111-1111-1111-1111-111111111111';
 const CLIENT = '33333333-3333-3333-3333-333333333333';
 
@@ -83,8 +74,6 @@ function fakePool(opts: { base?: number | null; classLeverage?: number | null; p
     release() {},
   };
   const pool = { async connect() { return client as unknown as PoolClient; } };
-  // Терминал и чтение действующего плеча: один клиент, сидящий в портфеле;
-  // терминал торгует криптой, значит действует крипто-планка, иначе база.
   const terminal = new FakeTerminal();
   const sync: LeverageTerminalSync = {
     terminal,

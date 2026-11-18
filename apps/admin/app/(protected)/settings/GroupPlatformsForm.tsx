@@ -6,13 +6,6 @@ import { upsertPlatformAction } from '@/lib/transfer/actions';
 import { transferErrorText } from '@/lib/transfer/labels';
 import { ActionForm } from '../_money/ActionForm';
 
-/**
- * Реестр платформ группы — правка записи (ветка client-transfer). Выбор
- * существующей записи подставляет её значения; «новая» — пустая форма.
- * Сохранение — с основанием, журнал `platform.group_registry.upserted`
- * (ключ — отпечатком). Приватного ключа здесь нет и быть не может.
- */
-
 export interface PlatformFormValue {
   slug: string;
   name: string;

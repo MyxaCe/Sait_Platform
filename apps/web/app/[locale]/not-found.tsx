@@ -4,10 +4,6 @@ import { useLocale } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import { Button } from '@broker/ui';
 
-/**
- * 404 внутри локали: обязателен при route-сегменте [locale] —
- * без него notFound() в production отдаёт 500 вместо 404.
- */
 export default function NotFound() {
   const locale = useLocale();
   const en = locale === 'en';

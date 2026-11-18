@@ -13,14 +13,6 @@ import { ActionResult, ArmedSubmit, Field, ReasonField } from '@/components/cont
 import { OPERATOR_ERRORS } from './messages';
 import { ROLES, ROLE_LABEL, ROLE_SCOPE } from './roles';
 
-/**
- * Отзывающие действия над оператором (ADM-04): сменить роль и отключить.
- * Асимметрия Р-394 — это НЕ событие, а изменение прав: подтверждение в два
- * шага (§6.7), основание обязательно (уходит в журнал). Действия над самим
- * собой сюда не попадают — таблица не даёт выбрать себя (fail-closed в UI), и
- * server action проверяет это ещё раз.
- */
-
 export function ChangeRoleForm({
   operatorId,
   login,

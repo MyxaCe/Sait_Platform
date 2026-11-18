@@ -3,14 +3,6 @@
 import { useEffect, useState } from 'react';
 import { ConnectionDot, type ConnectionState } from '@broker/ui';
 
-/**
- * Индикатор здоровья платформы (§2.1, §4.1). Опрашивает единственный публичный
- * роут `/api/health` (он и есть liveness-проба гейта) и переводит ответ в
- * `ConnectionDot`. Первое, что видит оператор: закрывается ли периметр.
- *
- * Fail-closed в показе: любая ошибка/не-200 → «нет связи», а не молчаливое
- * «вроде ок». Пустой/недостижимый health читаем как offline.
- */
 const LABELS: Record<Exclude<ConnectionState, 'reconnecting' | 'simulated'>, string> = {
   connecting: 'Проверка…',
   connected: 'Платформа в норме',

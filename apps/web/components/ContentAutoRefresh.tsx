@@ -5,20 +5,8 @@ import { useRouter } from 'next/navigation';
 
 const POLL_INTERVAL_MS = 10_000;
 
-/**
- * Автообновление контента открытой страницы после публикации в CMS.
- *
- * Раз в POLL_INTERVAL_MS сравнивает метку `rendered-at` (ADR-020) текущей
- * ISR-версии страницы с последней увиденной; изменилась → router.refresh():
- * серверные компоненты перезапрашиваются на месте, без перезагрузки и потери
- * состояния (скролл, формы, WS-подписки котировок не рвутся).
- *
- * Вкладка в фоне не опрашивает (visibility). В draft-режиме выключен:
- * preview рендерится динамически и метка меняется на каждый запрос.
- */
 export function ContentAutoRefresh({ disabled = false }: { disabled?: boolean }) {
   const router = useRouter();
-  // Последняя увиденная метка привязана к пути: смена страницы — новый отсчёт
   const lastSeen = useRef<{ path: string; renderedAt: string } | null>(null);
 
   useEffect(() => {
@@ -50,7 +38,6 @@ export function ContentAutoRefresh({ disabled = false }: { disabled?: boolean })
           if (!stopped) router.refresh();
         }
       } catch {
-        // сеть недоступна — попробуем на следующем тике
       }
     };
 

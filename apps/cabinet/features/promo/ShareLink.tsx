@@ -4,11 +4,6 @@ import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { CopyButtonLarge } from '@/features/money/CopyText';
 
-/**
- * «Поделиться»: на телефоне — системное меню (Web Share API), где его нет —
- * копирование ссылки. Кнопка рисуется всегда; поддержку проверяем после
- * гидрации (на сервере `navigator` нет).
- */
 export function ShareButton({ link, title }: { link: string; title: string }) {
   const t = useTranslations('referrals');
   const [canShare, setCanShare] = useState(false);
@@ -23,7 +18,6 @@ export function ShareButton({ link, title }: { link: string; title: string }) {
         await navigator.share({ title, text: t('shareText'), url: link });
         return;
       } catch (e) {
-        // Пользователь закрыл меню — не ошибка; иначе — запасной путь ниже.
         if (e instanceof DOMException && e.name === 'AbortError') return;
       }
     }
@@ -32,7 +26,6 @@ export function ShareButton({ link, title }: { link: string; title: string }) {
       setDone(true);
       setTimeout(() => setDone(false), 2000);
     } catch {
-      /* буфер недоступен — ссылка видна и выделяется целиком */
     }
   }
 

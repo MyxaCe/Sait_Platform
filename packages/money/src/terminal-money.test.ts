@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createTerminalMoneyClient } from './terminal-money';
 
-/** Ни одного сетевого вызова: `fetch` подменён. */
 function client(
   respond: (url: string, init: RequestInit) => Promise<Response> | Response,
   over: { baseUrl?: string; token?: string; tenant?: string } = {},
@@ -68,7 +67,6 @@ describe('клиент internal-маршрутов терминала', () => {
       state: 'unavailable',
       reason: 'malformed',
     });
-    // а 403 account_frozen — отказ по существу
     expect(await client(() => json(403, { error: 'account_frozen' })).c.withdraw('u', BODY)).toMatchObject({
       state: 'refused',
       code: 'account_frozen',

@@ -1,12 +1,6 @@
 import type { ElementType, ReactNode } from 'react';
 import { cn } from '../../lib/cn';
 
-/**
- * Вкладки-ссылки (концепция §6.11): каждая вкладка — URL (`?tab=…`), поэтому
- * работают без JS, открываются в новой вкладке и переживают перезагрузку.
- * Server-safe. Счётчик справа от подписи; `countTone="warning"` — «есть что
- * делать» (напр. выводы на проверке).
- */
 export interface TabItem {
   key: string;
   label: ReactNode;

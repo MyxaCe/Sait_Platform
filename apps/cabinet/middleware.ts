@@ -8,17 +8,11 @@ import { homePathFor, isMailLinkPath, isPublicAuthPath, loginPathFor } from './l
 
 const intl = createMiddleware(routing);
 
-/**
- * Гейт по НАЛИЧИЮ сессионной куки (в middleware нет БД — edge);
- * настоящая валидация сессии — в layout защищённой зоны. Пути — с префиксом
- * любой локали (`/ru/…`, `/en/…`) или без него (lib/auth/public-paths.ts).
- */
 export default function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const hasSessionCookie = request.cookies.has(SESSION_COOKIE);
   const isPublic = isPublicAuthPath(pathname);
 
-  // Ссылки из писем (поддержка, 10.11): и гостю, и вошедшему.
   if (isMailLinkPath(pathname)) return intl(request);
 
   if (!hasSessionCookie && !isPublic) {
@@ -35,7 +29,6 @@ export default function middleware(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // Регистрация по ссылке акции / реф-ссылке: first-click cookie (атрибуция).
   if (isPublic) {
     return applyAttributionCookies(request, intl(request));
   }

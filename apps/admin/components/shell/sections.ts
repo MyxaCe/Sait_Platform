@@ -1,29 +1,5 @@
 import type { OperatorRole } from '@/lib/auth/session';
 
-/**
- * МАТРИЦА ДОСТУПА «раздел → роли» — единственный источник правды и для рельса
- * (`nav-registry.ts` берёт отсюда `roles`), и для доступа (middleware, layout
- * каждого раздела, server actions). Пункт меню и право открыть адрес не могут
- * разойтись: это одна и та же строка.
- *
- * Fail-closed (Р-394):
- *  - путь раздела открыт только ролям раздела;
- *  - путь, не принадлежащий ни одному разделу и не общий (`COMMON_PATHS`),
- *    открыт только admin — новый экран, забытый здесь, закрыт для узких ролей,
- *    а не открыт всем «пока кто-нибудь не вспомнит».
- *
- * Edge-совместим (без node:* и БД): используется в middleware.
- *
- * Матрица (решение штаба 10.11, волна 3):
- *  - admin — всё;
- *  - operator — дашборд, клиенты, KYC, AML, журнал; риск — только просмотр
- *    (запись гейтится на страницах, §3.8); поддержка — вся очередь (§3.3
- *    дизайна поддержки);
- *  - finance_operator — дашборд, клиенты (карточка без KYC-документов), деньги,
- *    акции и партнёры, журнал; поддержка — только назначенные ему обращения
- *    (эскалация «в финансы», фильтр в SQL @broker/support);
- *  - support_operator — только поддержка.
- */
 export type SectionKey =
   | 'dashboard'
   | 'clients'
@@ -38,17 +14,13 @@ export type SectionKey =
   | 'settings';
 
 export interface SectionAccess {
-  /** Кто открывает раздел (и видит его пункт в рельсе). */
   roles: readonly OperatorRole[];
-  /** Префиксы путей раздела: страницы и его `/api`. */
   paths: readonly string[];
-  /** Только точное совпадение пути (корень `/`). */
   exact?: boolean;
 }
 
 export const ALL_ROLES: readonly OperatorRole[] = ['admin', 'operator', 'finance_operator', 'support_operator'];
 
-/** Порядок — приоритет «домашней» страницы роли (первый доступный раздел). */
 export const SECTIONS: Record<SectionKey, SectionAccess> = {
   dashboard: { roles: ['admin', 'operator', 'finance_operator'], paths: ['/'], exact: true },
   clients: { roles: ['admin', 'operator', 'finance_operator'], paths: ['/clients'] },
@@ -68,10 +40,8 @@ export const SECTIONS: Record<SectionKey, SectionAccess> = {
 
 export const SECTION_KEYS = Object.keys(SECTIONS) as SectionKey[];
 
-/** Открыто любому вошедшему оператору: включение 2FA, проверка живости. */
 export const COMMON_PATHS: readonly string[] = ['/enroll', '/api/health'];
 
-/** «Домашняя» страница раздела (куда ведёт пункт рельса и редирект отказа). */
 const SECTION_HOME: Record<SectionKey, string> = {
   dashboard: '/',
   clients: '/clients',
@@ -95,7 +65,6 @@ export function canAccessSection(role: OperatorRole | null | undefined, key: Sec
   return role != null && SECTIONS[key].roles.includes(role);
 }
 
-/** Раздел, которому принадлежит путь; `null` — путь вне матрицы. */
 export function sectionOfPath(pathname: string): SectionKey | null {
   for (const key of SECTION_KEYS) {
     const s = SECTIONS[key];
@@ -104,7 +73,6 @@ export function sectionOfPath(pathname: string): SectionKey | null {
   return null;
 }
 
-/** Может ли роль открыть путь (страница или `/api`). Неизвестный путь — только admin. */
 export function canAccessPath(role: OperatorRole, pathname: string): boolean {
   if (COMMON_PATHS.some((p) => under(pathname, p))) return true;
   const key = sectionOfPath(pathname);
@@ -112,10 +80,8 @@ export function canAccessPath(role: OperatorRole, pathname: string): boolean {
   return canAccessSection(role, key);
 }
 
-/** Первая доступная роли страница — куда уводить при отказе. */
 export function homeFor(role: OperatorRole): string {
   const key = SECTION_KEYS.find((k) => canAccessSection(role, k));
-  // Роль без разделов (не должно случаться) — на вход 2FA, он вне матрицы и не зациклит.
   return key ? SECTION_HOME[key] : '/enroll';
 }
 
@@ -123,26 +89,10 @@ export function sectionHome(key: SectionKey): string {
   return SECTION_HOME[key];
 }
 
-/**
- * KYC-документы (ссылки, presign) — те же роли, что раздел KYC. finance_operator
- * и support_operator документов не видят ни в карточке, ни по прямому вызову.
- */
 export function canViewKycDocuments(role: OperatorRole | null | undefined): boolean {
   return canAccessSection(role, 'kyc');
 }
 
-/**
- * Правка учётных данных клиента — email, пароль, адрес в заявке на вывод,
- * заморозка вывода (функция 3, решения владельца 10.11). Раздел «Клиенты»
- * открывает карточку, но править может НЕ вся роль:
- *  - admin — любого клиента;
- *  - менеджер клиента (флаг `is_client_manager` + закрепление за ним) — только
- *    своих закреплённых, какой бы ни была его роль раздела (operator,
- *    finance_operator);
- *  - остальные — нет (в т.ч. support_operator: карточки клиента он не видит).
- * Здесь — ролевая часть; флаг и закрепление server action перепроверяет в
- * базе внутри своей транзакции (`lib/credentials/core.ts`, fail-closed).
- */
 export function canEditClientCredentials(
   role: OperatorRole | null | undefined,
   ctx: { isAssignedManager: boolean },

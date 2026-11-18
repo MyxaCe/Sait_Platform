@@ -1,11 +1,8 @@
 import { appendJournalSeqWithinTx, type JournalEntryInput, type Queryable } from '@broker/money';
 
-/** Системный автор журнала канала (миграция 1795710000000_platform_transfers). */
 export const TRANSFER_SYSTEM_OPERATOR = '00000000-0000-4000-8000-00000000c0b5';
 
-/** Коды журнала перевода — один словарь (подписи — apps/admin/lib/journal/labels.ts). */
 export const TRANSFER_ACTIONS = {
-  // источник
   sent: 'client.transfer.sent',
   delivered: 'client.transfer.delivered',
   refused: 'client.transfer.refused',
@@ -19,7 +16,6 @@ export const TRANSFER_ACTIONS = {
   restored: 'client.transfer.source_restored',
   deliveryRetried: 'client.transfer.delivery_retried',
   seen: 'client.transfer.reviewed',
-  // цель
   received: 'client.transfer.received',
   inviteQueued: 'client.transfer.invite_queued',
   invited: 'client.transfer.invited',
@@ -29,7 +25,6 @@ export const TRANSFER_ACTIONS = {
   inviteRevoked: 'client.transfer.invite_revoked',
   revokedByGroup: 'client.transfer.revoked_by_group',
   refundTaskDone: 'client.transfer.refund_task_done',
-  // канал
   messageRefused: 'platform.transfer_channel.refused',
 } as const;
 
@@ -42,12 +37,6 @@ export async function journal(tx: Queryable, entry: JournalEntryInput): Promise<
   return appendJournalSeqWithinTx(entry, tx);
 }
 
-/**
- * Флаги денег клиента (заморозка/запрет вывода) ВНУТРИ транзакции — та же
- * таблица и те же коды журнала, что у формы «Деньги» карточки
- * (`apps/admin/lib/crypto/flags.ts`). Терминал (торговля) вызывается отдельно,
- * вне транзакции, и повторяется воркером — у терминала свой failure domain.
- */
 export async function setMoneyFlagsWithinTx(
   tx: Queryable,
   input: {
@@ -60,10 +49,6 @@ export async function setMoneyFlagsWithinTx(
   },
 ): Promise<{ changed: ('frozen' | 'withdrawBanned')[]; before: { frozen: boolean; withdrawBanned: boolean } }> {
   await tx.query(`INSERT INTO client_money_flags (user_id) VALUES ($1) ON CONFLICT (user_id) DO NOTHING`, [input.userId]);
-  // «Запрет вывода» читается как ДЕЙСТВУЮЩИЙ (admin-credentials: срок
-  // withdraw_ban_until). Истёкшая автозаморозка оставляет withdraw_banned=true
-  // со сроком в прошлом — сравнивать с сырым флагом нельзя: перевод счёл бы
-  // запрет уже стоящим и не поставил бы бессрочный.
   const cur = await tx.query(
     `SELECT frozen,
             (withdraw_banned AND (withdraw_ban_until IS NULL OR withdraw_ban_until > now())) AS withdraw_banned
@@ -77,9 +62,6 @@ export async function setMoneyFlagsWithinTx(
   };
   const changed = (['frozen', 'withdrawBanned'] as const).filter((k) => before[k] !== next[k]);
   if (!changed.length) return { changed: [], before };
-  // Смена запрета вывода — как в форме «Деньги» (apps/admin/lib/crypto/flags.ts):
-  // запрет бессрочный с происхождением money_flags (менеджер его не снимет),
-  // снятие сбрасывает срок/происхождение/причину.
   await tx.query(
     `UPDATE client_money_flags
         SET frozen = $2, withdraw_banned = $3,
@@ -118,17 +100,7 @@ export interface RealAccountState {
   openPositions: number | null;
 }
 
-/**
- * Порт терминала: заморозка торговли реального счёта и баланс. Реализация —
- * в приложении (админка: `@broker/money` клиент терминала). Пакет не знает
- * адресов и токенов.
- */
 export interface TransferTerminalPort {
   setTradingFrozen(userId: string, frozen: boolean, reason: string): Promise<'ok' | 'unavailable' | 'refused'>;
-  /**
-   * Состояние РЕАЛЬНОГО счёта (демо не учитывается): `null` — счёт в терминале
-   * не открыт; `'unavailable'` — терминал не ответил. Поля `null` в ответе
-   * терминала вызывающий трактует как «не удалось проверить» (fail-closed).
-   */
   realAccountState(userId: string): Promise<RealAccountState | null | 'unavailable'>;
 }

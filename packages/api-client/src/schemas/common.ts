@@ -3,10 +3,6 @@ import { z } from 'zod';
 export const localeSchema = z.enum(['ru', 'en']);
 export type Locale = z.infer<typeof localeSchema>;
 
-/**
- * Медиа-объект из CRM. width/height/alt ОБЯЗАТЕЛЬНЫ:
- * это контрактная защита от CLS и провалов a11y (риск R-05).
- */
 export const mediaSchema = z.object({
   url: z.string().url(),
   width: z.number().int().positive(),

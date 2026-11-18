@@ -18,12 +18,6 @@ import { ContestScreen } from './ContestScreen';
 import { PromotionsScreen } from './PromotionsScreen';
 import { ReferralScreen } from './ReferralScreen';
 
-/**
- * Экраны акций/рефералов/конкурса/условий счетов НЕ падают на пустых и
- * частичных данных и говорят, почему пусто (пусто ≠ сломалось). Деньги —
- * только денежным форматом; нет числа — «—», а не «0,00» (QA-05).
- */
-
 vi.mock('@/lib/promo-actions', () => ({ enrollPromotionAction: () => undefined, joinContestAction: () => undefined }));
 vi.mock('@/i18n/navigation', () => ({
   Link: ({ href, children, ...rest }: { href: string; children: ReactNode }) => (

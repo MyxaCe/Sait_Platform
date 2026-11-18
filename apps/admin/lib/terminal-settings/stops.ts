@@ -10,22 +10,9 @@ import {
 } from '@broker/money';
 import { moneyPool } from '../crypto/runtime';
 
-/**
- * «Минимальное расстояние стоп-лосса/тейк-профита» (б.п., 10 б.п. = 0,1 % от
- * цены). Значение ЖИВЁТ В ТЕРМИНАЛЕ (он отвергает слишком близкие SL/TP) —
- * у сайта своей копии нет, экран показывает то, что вернул терминал (GET).
- *
- * Сохранение — как заморозка в денежных флагах: одна транзакция, в ней
- * сначала вызов терминала (`PUT …/settings/stops`), затем запись журнала
- * `platform.terminal_stops.updated` (до/после, основание). Терминал отказал
- * или не ответил — откат, журнала нет, оператор видит ошибку (не делаем вид,
- * что сохранено). Повтор той же формы безопасен: PUT идемпотентен по смыслу.
- */
-
 export type StopsResult =
   | { ok: true; minStopBps: number; journalSeq: number }
   | { ok: false; reason: 'missingReason' | 'invalidStopBps' | 'noChange' }
-  /** `code` — почему недоступно (network / auth / http-error…): оператору видно, что чинить. */
   | { ok: false; reason: 'terminalUnavailable'; code: string }
   | { ok: false; reason: 'terminalRefused'; code: string };
 
@@ -36,7 +23,6 @@ export function terminalStops(): TerminalStopsClient {
   return store.__adminTerminalStops;
 }
 
-/** Чтение для экрана — короткий таймаут: страница настроек не висит, если терминал лежит. */
 function terminalStopsReader(): TerminalStopsClient {
   store.__adminTerminalStopsReader ??= terminalStopsClientFromEnv(process.env, 2_500);
   return store.__adminTerminalStopsReader;
@@ -55,7 +41,6 @@ export async function updateMinStop(
   if (!reason) return { ok: false, reason: 'missingReason' };
   if (!isMinStopBps(input.minStopBps)) return { ok: false, reason: 'invalidStopBps' };
 
-  // «До» — из терминала; не ответил — `null` (запись всё равно возможна, если PUT пройдёт).
   const current = await readMinStop(terminal);
   const before = current.state === 'ok' ? current.minStopBps : null;
   if (before === input.minStopBps) return { ok: false, reason: 'noChange' };

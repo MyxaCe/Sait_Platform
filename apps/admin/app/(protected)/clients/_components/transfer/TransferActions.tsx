@@ -10,8 +10,6 @@ import {
 import { transferErrorText } from '@/lib/transfer/labels';
 import { ActionForm, ConfirmFacts } from '../../../_money/ActionForm';
 
-/** Формы-с-основанием раздела «Переводы клиентов» (журнал, двухшаговые для опасных). */
-
 export function RevokeTransferForm({
   transferId,
   number,

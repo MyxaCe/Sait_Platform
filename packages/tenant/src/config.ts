@@ -1,23 +1,3 @@
-/**
- * Чтение конфига тенанта: `GET {CMS_API_URL}/cms/sites/{slug}`.
- *
- * ОДНА реализация на витрину и кабинет (Р-029). До выноса здесь лежали
- * две дословные копии, связанные парными тестами: тип расхождение
- * устранил, возможность расхождения кода — нет. Теперь расходиться
- * нечему, а различия потребителей сведены к параметрам вызова (теги
- * ревалидации у витрины, их отсутствие у кабинета).
- *
- * Из одного ответа читаются ТРИ разные вещи, и у каждой своя политика:
- *
- *   access       — граница доступа, fail-closed (`access.ts`);
- *   startBalance — сумма, отказ вместо умолчания (`balance.ts`);
- *   expiry       — срок годности списка от источника (`expiry.ts`).
- *
- * Разбор полей независим: сломанное `instruments` не делает недоступной
- * сумму, и наоборот. Склеить их значило бы снова получить один исход на
- * несколько причин.
- */
-
 import { readAccess, UNAVAILABLE, type TenantAccess, type TenantAccessUnavailableReason } from './access';
 import {
   readStartBalance,
@@ -35,41 +15,19 @@ import {
 export interface TenantConfig {
   readonly access: TenantAccess;
   readonly startBalance: TenantStartBalance;
-  /** Что источник сказал о сроке годности списка — для отчётов и тестов;
-   *  к `access` он уже применён. */
   readonly expiry: TenantListExpiry;
 }
 
 export interface TenantConfigRequest {
-  /** `CMS_API_URL`. Пустой или незаданный — `not-configured`, в сеть не идём. */
   readonly baseUrl: string | undefined;
-  /**
-   * Слаг тенанта. `null` — неизвестен (сборка, PKG-05): в сеть не
-   * идём и возвращаем `not-configured`. Запрос без слага ушёл бы к CMS
-   * как `?site=`, а она отдала бы САЙТ ПО УМОЛЧАНИЮ — то есть чужой
-   * allow-list под видом нашего.
-   */
   readonly slug: string | null;
   readonly apiKey?: string | undefined;
-  /**
-   * Параметры запроса, специфичные для потребителя: у Next это
-   * `next: { revalidate, tags }`. Кеширование — дело вызывающего, решение
-   * о доступе — дело этого пакета.
-   */
   readonly fetchInit?: RequestInit;
   readonly timeoutMs?: number;
-  /** Время решения. Параметром — чтобы истечение срока проверялось без
-   *  ожидания в тесте, а не подставлялось из часов внутри функции. */
   readonly now?: () => number;
   readonly onUnavailable?: (reason: TenantAccessUnavailableReason, detail: unknown) => void;
 }
 
-/**
- * Недоступность границы — инцидент, а не рутина: фолбэк без алерта это
- * скрытая авария (R-15). `not-configured` сюда сознательно не попадает —
- * ненастроенная CMS это конфигурация контура, и в логе ошибок ей делать
- * нечего; для неё сигнал — отпечаток конфигурации в `/api/health` (B-019).
- */
 function defaultReport(reason: TenantAccessUnavailableReason, detail: unknown): void {
   console.error(
     `[tenant] конфиг тенанта недоступен (${reason}) — граница закрыта fail-closed`,
@@ -100,8 +58,6 @@ export async function fetchTenantConfig(request: TenantConfigRequest): Promise<T
   const unnamed: TenantListExpiry = { state: 'unnamed' };
 
   if (!base) return { ...both('not-configured'), expiry: unnamed };
-  // Слага нет — мы не знаем, чей конфиг просить. Это та же
-  // ненастроенность, что отсутствие адреса CMS, и так же fail-closed.
   if (slug === null) return { ...both('not-configured'), expiry: unnamed };
 
   try {
@@ -120,35 +76,15 @@ export async function fetchTenantConfig(request: TenantConfigRequest): Promise<T
       settings?: unknown;
     };
 
-    /**
-     * Срок берётся из ТЕЛА, и только если тело о нём молчит — из
-     * заголовков (Р-042, WEB-06).
-     *
-     * Порядок именно такой, а не «минимум из двух». Поле
-     * `settings.instrumentsExpiresAt` — утверждение источника о
-     * действительности РАЗРЕШЕНИЙ; `Cache-Control` — о переиспользовании
-     * ОТВЕТА посредником. Это разные величины, и закрывать границу по
-     * второй, когда есть первая, значило бы мерить соседнее.
-     *
-     * `unnamed` от поля означает «ответ не `site-config.v1`» — тогда
-     * заголовки остаются единственным, что у нас есть. `malformed`
-     * означает «контракт обещал срок и не дал», и заголовками это не
-     * лечится: смотреть их дальше значило бы искать способ не закрыть
-     * границу, которую контракт велел закрыть.
-     */
     const fromConfig = readConfigExpiry((data as { settings?: unknown }).settings);
     const expiry = fromConfig.state === 'unnamed' ? readListExpiry(res.headers) : fromConfig;
     const parsed = readAccess(data.instruments);
     if (parsed.state === 'unavailable') onUnavailable(parsed.reason, { slug, got: typeof data.instruments });
 
-    // Срок применяется ПОСЛЕ разбора: истечение закрывает полученный
-    // список, а не подменяет причину у списка, которого не было.
     const access = applyListExpiry(parsed, expiry, now());
     if (access.state === 'unavailable' && access.reason === 'expired') {
       onUnavailable('expired', { slug, expiresAt: expiry.state === 'named' ? expiry.expiresAt : null });
     }
-    // Нечитаемый обязательный срок — инцидент выдачи, а не рутина, и
-    // молча закрытая граница здесь была бы скрытой аварией (R-15).
     if (access.state === 'unavailable' && access.reason === 'expiry-malformed') {
       onUnavailable('expiry-malformed', {
         slug,

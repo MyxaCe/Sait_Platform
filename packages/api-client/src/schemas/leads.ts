@@ -1,12 +1,6 @@
 import { z } from 'zod';
 import { localeSchema } from './common';
 
-/**
- * Лиды: сайт (BFF) → CRM.
- * fieldErrors в ответах — ЯЗЫКОНЕЗАВИСИМЫЕ ключи (emailExists, invalidEmail...);
- * перевод выполняет сайт.
- */
-
 export const accountOpeningLeadSchema = z.object({
   firstName: z.string().min(2).max(60),
   lastName: z.string().min(2).max(60),

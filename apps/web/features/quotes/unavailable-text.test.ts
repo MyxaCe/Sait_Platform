@@ -2,22 +2,11 @@ import { describe, expect, it } from 'vitest';
 import { SYMBOL_UNAVAILABLE_REASONS } from '@broker/realtime';
 import { explainUnavailable } from './unavailable-text';
 
-/**
- * WEB-38 · молчащий инструмент называет себя.
- *
- * Довод владельца: витрина без цен на семнадцати инструментах
- * **выглядит сломанной, а не ограниченной**. Причина при этом уже
- * приезжает от источника машинным именем — мы её разбирали и
- * выбрасывали.
- */
-
 describe('у каждой причины из контракта есть свой текст', () => {
   it.each(SYMBOL_UNAVAILABLE_REASONS)('%s объяснена', (reason) => {
     const e = explainUnavailable(reason);
 
     expect(e.key).toBeTruthy();
-    // Общая заглушка здесь означала бы, что причину назвали, а мы её
-    // пересказали как «что-то техническое».
     expect(e.key).not.toBe('technical');
   });
 
@@ -43,7 +32,6 @@ describe('два семейства: «пока не даём» и «у нас �
   it('различие не пустое: оба семейства встречаются', () => {
     const families = new Set(SYMBOL_UNAVAILABLE_REASONS.map((r) => explainUnavailable(r).family));
 
-    // Иначе «отличать одно от другого» было бы словами без следствия.
     expect(families).toEqual(new Set(['limited', 'fault']));
   });
 });
@@ -55,9 +43,6 @@ describe('края', () => {
   });
 
   it('незнакомое имя → общий текст, и отнесено к неполадке', () => {
-    // Сосед мог завести причину раньше, чем мы узнали. Относить её к
-    // ограничению нельзя: о том, что это «так задумано», нам никто не
-    // говорил.
     const e = explainUnavailable('cosmic-rays');
 
     expect(e.key).toBe('technical');

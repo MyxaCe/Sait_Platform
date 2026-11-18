@@ -26,16 +26,6 @@ import { mapTrade, readClientFacts, readLinkSignals, readPromoSettings, readProm
 import { rewardRef } from './refs';
 import { ibCpaRules, type ContestRules, type DepositBonusRules, type ReferralRules } from './rules';
 
-/**
- * ДВИЖОК ОЧЕРЕДИ: оценить участников и поставить выполнивших условия в очередь
- * начислений. Денег не двигает — только заявки (`promo_rewards.pending`).
- *
- * Для демо запускается кнопкой оператора «Пересчитать» (и сидом); для боя —
- * воркером по событиям (дизайн §3.5). Каждый клиент — своя транзакция: сбой
- * одного не откатывает остальных. Повтор безопасен: начисления уникальны по
- * external_ref, участие — по (акция, клиент).
- */
-
 export interface SyncReport {
   evaluated: number;
   queued: number;
@@ -85,7 +75,6 @@ async function promotionGate(
   return { promo, settings };
 }
 
-/** Пересчитать акцию (бонус на депозит / реферальную) и пополнить очередь. */
 export async function syncPromotionQueue(pool: PoolLike, promotionId: string, now: Date = new Date()): Promise<SyncReport> {
   const gate = await promotionGate(pool, promotionId);
   if ('skipped' in gate) return { evaluated: 0, queued: 0, expired: 0, skipped: gate.skipped };
@@ -123,7 +112,6 @@ async function syncDepositBonus(
       const status =
         ev.state === 'qualified' ? 'qualified' : ev.state === 'expired' ? 'expired' : ev.state === 'not_eligible' ? 'not_eligible' : 'enrolled';
       if (status === 'qualified' && !countryAllowed(settings, promo, facts.country, now)) {
-        // Страна клиента под запретом — в очередь не ставим, участие ждёт.
         await tx.query(
           `UPDATE promo_participations SET progress = $2, evaluated_at = now(), updated_at = now() WHERE id::text = $1`,
           [p.id, progressJson(ev)],
@@ -179,7 +167,6 @@ async function syncDepositBonus(
   return report;
 }
 
-/** Оплачено (не отклонено) наград рефереру в календарном месяце `now`. */
 async function referrerPaidThisMonth(db: Queryable, referrerUserId: string, now: Date): Promise<number> {
   const { from, until } = periodBounds(periodOf(now));
   const r = await db.query(
@@ -198,7 +185,6 @@ async function syncReferral(
   settings: PlatformPromoSettings,
   now: Date,
 ): Promise<SyncReport> {
-  // Друзья, приведённые клиентами (не IB — у партнёров свои условия), в период акции.
   const pairs = await pool.query(
     `SELECT ra.referee_user_id::text AS referee, ra.referrer_user_id::text AS referrer, ra.attributed_at
        FROM referral_attributions ra
@@ -296,16 +282,10 @@ async function syncReferral(
   return report;
 }
 
-/* ── Кешбэк за период ─────────────────────────────────────────────────── */
-
 export type AccrueResult =
   | { ok: true; queued: number; zero: number; period: string }
   | { ok: false; reason: 'missingReason' | 'invalidPeriod' | 'periodOpen' | 'notFound' | 'wrongType' | 'platformDisabled' | 'badRules' };
 
-/**
- * Начислить кешбэк за ЗАКРЫТЫЙ месяц всем вступившим: % от их наценки +
- * комиссии за период (после вступления). Без полей комиссии в сделках — 0.
- */
 export async function accrueCashback(
   pool: PoolLike,
   input: { promotionId: string; period: string; operatorId: string; reason: string; now?: Date },
@@ -391,9 +371,6 @@ export async function accrueCashback(
   return { ok: true, queued, zero, period: input.period };
 }
 
-/* ── IB-партнёры ──────────────────────────────────────────────────────── */
-
-/** CPA: квалифицированные клиенты партнёров → в очередь (ib:cpa:<клиент>). */
 export async function syncIbCpa(pool: PoolLike, now: Date = new Date()): Promise<SyncReport> {
   const settings = await readPromoSettings(pool);
   if (!settings?.promotionsEnabled) return { evaluated: 0, queued: 0, expired: 0, skipped: 'platform_disabled' };
@@ -439,7 +416,6 @@ export async function syncIbCpa(pool: PoolLike, now: Date = new Date()): Promise
   return report;
 }
 
-/** Revshare: доля дохода платформы (наценка + комиссия) с клиентов партнёра за закрытый месяц. */
 export async function accrueIbRevshare(
   pool: PoolLike,
   input: { partnerId: string; period: string; operatorId: string; reason: string; now?: Date },
@@ -504,18 +480,10 @@ export async function accrueIbRevshare(
   return { ok: true, amountMinor: amount, revenueMinor: revenue, queued };
 }
 
-/* ── Конкурс: итоги ───────────────────────────────────────────────────── */
-
 export type FinalizeResult =
   | { ok: true; queued: number; standings: number }
   | { ok: false; reason: 'missingReason' | 'notFound' | 'wrongType' | 'notFinished' | 'alreadyFinal' | 'badRules' };
 
-/**
- * Подвести итоги конкурса (после окончания периода): итоговый снимок
- * лидерборда + призы в очередь начислений (`contest:<акция>:<место>`), акция
- * → `ended`. Приз без KYC (если правила требуют) в очередь не идёт — он виден
- * в снимке с пометкой.
- */
 export async function finalizeContest(
   pool: PoolLike,
   input: { promotionId: string; operatorId: string; reason: string; now?: Date },

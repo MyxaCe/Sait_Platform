@@ -39,7 +39,6 @@ export function ContactForm() {
   const locale = useLocale();
   const topics = t.raw('topics') as TopicOption[];
 
-  // Ошибки валидации приходят ключами — переводим при показе
   const msg = (key?: string) => (key ? (tv.has(key as never) ? tv(key as never) : key) : undefined);
 
   const {
@@ -55,7 +54,6 @@ export function ContactForm() {
     defaultValues: { topic: 'general' },
   });
 
-  // Предвыбор темы из /company/contacts?topic=partnership (ссылка со страницы партнёрки)
   useEffect(() => {
     const topic = new URLSearchParams(window.location.search).get('topic');
     if (topic && (CONTACT_TOPIC_VALUES as readonly string[]).includes(topic)) {
@@ -100,7 +98,6 @@ export function ContactForm() {
 
   return (
     <form onSubmit={handleSubmit((d) => mutation.mutate({ ...d, locale }))} noValidate className="space-y-5">
-      {/* Honeypot для ботов */}
       <input
         type="text"
         name="website"

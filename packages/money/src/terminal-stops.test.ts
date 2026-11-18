@@ -1,11 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createTerminalStopsClient } from './terminal-stops';
 
-/**
- * Контракт маршрута «минимальная дистанция SL/TP»: метод, путь, заголовок,
- * тело — ровно как договорено с терминалом; исходы ok / refused / unavailable.
- */
-
 function client(respond: (req: { url: string; init: RequestInit }) => Response | Promise<Response>) {
   const seen: { url: string; init: RequestInit }[] = [];
   const fetchImpl = (async (url: string, init: RequestInit) => {
@@ -52,7 +47,6 @@ describe('terminal-stops', () => {
     expect(await client(() => json(503, { error: 'x' })).c.setMinStop(10)).toEqual({ state: 'unavailable', reason: 'http-error' });
     expect(await client(() => json(200, { nope: 1 })).c.setMinStop(10)).toEqual({ state: 'unavailable', reason: 'malformed' });
     expect(await client(() => json(401, { error: 'invalid_internal_token' })).c.getMinStop()).toEqual({ state: 'unavailable', reason: 'auth' });
-    // Контракт терминала: 401 без заголовка, 403 неверный токен, 404 токен не задан.
     for (const status of [401, 403, 404]) {
       expect(await client(() => new Response('', { status })).c.setMinStop(10)).toEqual({ state: 'unavailable', reason: 'auth' });
     }

@@ -5,12 +5,6 @@ import { DEFAULT_SUPPORT_SETTINGS, type SupportSettings } from './settings';
 import { changeTicketStatus, operatorReply, type Actor } from './tickets';
 import { createTestDb, seedOperator, type TestDb } from './testing/pg';
 
-/**
- * Почтовый канал: привязка входящего (новое / ответ / дубль / метка в теме /
- * автоответчик / блок-лист) и очередь исходящих (успех, сбой с повтором,
- * исчерпание попыток, истёкшие, стирание секретного тела).
- */
-
 const S: SupportSettings = { ...DEFAULT_SUPPORT_SETTINGS, hours: { ...DEFAULT_SUPPORT_SETTINGS.hours, alwaysOpen: true } };
 const OWN = ['support@wholesalefy.com'];
 let db: TestDb;
@@ -171,7 +165,6 @@ describe('очередь исходящих', () => {
     expect(await markMailFailed(db, a!, 'ECONNRESET')).toBe('retry');
     const row = (await db.query(`SELECT status, next_attempt_at, last_error FROM outbound_mail`)).rows[0]!;
     expect(row).toMatchObject({ status: 'queued', last_error: 'ECONNRESET' });
-    // Ещё рано — не забирается; после паузы — тот же Message-ID.
     expect(await claimDueMail(db, { limit: 5, domain: 'x' })).toEqual([]);
     const later = new Date(Date.now() + backoffMs(1) + 1000);
     const [b] = await claimDueMail(db, { limit: 5, domain: 'other-domain', now: later });

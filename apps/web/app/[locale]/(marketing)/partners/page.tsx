@@ -16,8 +16,6 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 export default async function PartnersPage({ params }: PageProps) {
   setRequestLocale(params.locale);
   const t = await getTranslations('partners');
-  // Модели, уровни и шаги — из CMS (`/cms/partners`, теги cms:partners[:<сайт>]).
-  // Прежде страница брала их из messages, хотя коллекция в CMS была (аудит 10.11).
   const { models, tiers, steps } = await getCms('partners', {
     locale: params.locale === 'en' ? 'en' : 'ru',
   });

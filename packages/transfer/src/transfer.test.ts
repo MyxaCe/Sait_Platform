@@ -27,15 +27,6 @@ import {
   type TransferTerminalPort,
 } from './index';
 
-/**
- * Две платформы в одном тесте: две независимые базы (PGlite со всеми
- * миграциями), свои ключи, «сеть» — fetch, который вызывает приёмник другой
- * базы. Проверяется весь путь: тикет клиента → перевод менеджером → пакет →
- * приглашение → регистрация → статусы назад → возврат admin на двух стадиях;
- * и запреты: без доказательства, тикет оператора, запрещённое направление,
- * неверная подпись, повтор.
- */
-
 const ALWAYS: SupportSettings = { ...DEFAULT_SUPPORT_SETTINGS, hours: { ...DEFAULT_SUPPORT_SETTINGS.hours, alwaysOpen: true } };
 
 interface Cell {
@@ -167,7 +158,6 @@ describe('подпись и конверт', () => {
     };
     const signed = signEnvelope(env, apex.key);
     expect(verifyEnvelope(signed, publicKeyPemOf(apex.key))).toBe(true);
-    // порядок ключей не важен (каноническая форма)
     const reordered = { signature: signed.signature, envelope: { ...env, data: { b: [1, 2], a: 1 } } };
     expect(verifyEnvelope(reordered, publicKeyPemOf(apex.key))).toBe(true);
     expect(verifyEnvelope({ ...signed, envelope: { ...env, data: { a: 2, b: [1, 2] } } }, publicKeyPemOf(apex.key))).toBe(false);
@@ -289,7 +279,6 @@ describe('путь перевода между двумя платформами
     let src = await apex.db.query(`SELECT status, delivery_state FROM platform_transfers WHERE id = $1`, [r.transferId]);
     expect(src.rows[0]).toMatchObject({ status: 'delivered', delivery_state: 'delivered' });
 
-    // письмо-приглашение в очереди цели; ссылку берём из тела (до отправки)
     const mail = await nordex.db.query(`SELECT id, purpose, body_text, to_address FROM outbound_mail WHERE purpose = 'transfer_invite'`);
     expect(mail.rows[0]!.to_address).toBe('anna@client.test');
     const token = /invite=([A-Za-z0-9_-]+)/.exec(String(mail.rows[0]!.body_text))![1]!;
@@ -304,7 +293,7 @@ describe('путь перевода между двумя платформами
 
     const newUser = await seedUser(nordex.db, { email: 'anna@client.test' });
     expect(await bindInviteWithinTx(nordex.db, { token, userId: newUser })).toBe(true);
-    expect(await bindInviteWithinTx(nordex.db, { token, userId: newUser })).toBe(false); // одноразовый
+    expect(await bindInviteWithinTx(nordex.db, { token, userId: newUser })).toBe(false);
     expect((await inspectInvite(nordex.db, token)).ok).toBe(false);
     await tick(nordex);
     src = await apex.db.query(`SELECT status FROM platform_transfers WHERE id = $1`, [r.transferId]);
@@ -315,7 +304,6 @@ describe('путь перевода между двумя платформами
     src = await apex.db.query(`SELECT status FROM platform_transfers WHERE id = $1`, [r.transferId]);
     expect(src.rows[0]!.status).toBe('kyc_passed');
 
-    // журнал обеих сторон связан номером
     const aj = await apex.db.query(`SELECT action FROM admin_action_journal WHERE action LIKE 'client.transfer.%' ORDER BY seq`);
     expect(aj.rows.map((x) => x.action)).toEqual([
       'client.transfer.sent',
@@ -333,13 +321,11 @@ describe('путь перевода между двумя платформами
       'client.transfer.kyc_passed',
     ]);
 
-    // повтор доставки того же пакета (новый nonce) — дубликат, без второго приглашения
     await apex.db.query(`UPDATE platform_transfer_outbox SET state = 'queued', next_attempt_at = now() WHERE kind = 'transfer.package'`);
     await deliverDue(apex.db, { selfSlug: 'apex-ru', signingKey: apex.key, fetch: fetchFor([apex, nordex]) });
     const invites = await nordex.db.query(`SELECT count(*)::int AS n FROM outbound_mail WHERE purpose = 'transfer_invite'`);
     expect(invites.rows[0]!.n).toBe(1);
 
-    // закрытие источника: баланс нулевой → заморозка
     const closed = await closeSourceAccount(apex.db, nullTerminal, {
       operatorId: manager,
       role: 'operator',
@@ -422,7 +408,6 @@ describe('приёмник: неверная подпись, повтор, чу�
     const src = await apex.db.query(`SELECT status, delivery_error FROM platform_transfers WHERE id = $1`, [r.transferId]);
     expect(src.rows[0]).toMatchObject({ status: 'refused', delivery_error: 'badSignature' });
 
-    // повтор перехваченного валидного конверта
     const env: Envelope = {
       v: 1,
       kind: 'transfer.status',
@@ -436,12 +421,11 @@ describe('приёмник: неверная подпись, повтор, чу�
     };
     const body = JSON.stringify(signEnvelope(env, apex.key));
     const first = await handleIncoming(nordex.db, body, { selfSlug: 'nordex-eu' });
-    expect(first.status).toBe(422); // перевода в цели нет — отказ по смыслу, nonce не съеден
+    expect(first.status).toBe(422);
     const revokeEnv = { ...env, kind: 'transfer.revoke' as const, nonce: 'fixed-nonce-2', data: { number: 'x', basis: 'b', revokedAt: env.issuedAt } };
     const rb = JSON.stringify(signEnvelope(revokeEnv, apex.key));
     expect((await handleIncoming(nordex.db, rb, { selfSlug: 'nordex-eu' })).status).toBe(200);
     expect((await handleIncoming(nordex.db, rb, { selfSlug: 'nordex-eu' })).body.code).toBe('replay');
-    // другой получатель и устаревшее сообщение
     expect((await handleIncoming(apex.db, rb, { selfSlug: 'apex-ru' })).body.code).toBe('wrongRecipient');
     const stale = JSON.stringify(signEnvelope({ ...revokeEnv, nonce: 'n3', issuedAt: new Date(Date.now() - 3_600_000).toISOString() }, apex.key));
     expect((await handleIncoming(nordex.db, stale, { selfSlug: 'nordex-eu' })).body.code).toBe('staleMessage');
@@ -450,7 +434,6 @@ describe('приёмник: неверная подпись, повтор, чу�
   });
 
   it('цель сама отвергает запрещённое направление (свой профиль), источник видит refused', async () => {
-    // в реестре источника цель допускает DE, а сама цель — нет
     const nAdmin = await nordex.db.query(`SELECT id FROM operators WHERE login = 'nadm'`);
     await upsertGroupPlatformWithinTx(nordex.db, {
       operatorId: String(nAdmin.rows[0]!.id),
@@ -497,7 +480,6 @@ describe('возврат перевода admin', () => {
     const src = await apex.db.query(`SELECT status, revoke_applied_at, revoke_target_detail FROM platform_transfers WHERE id = $1`, [r.transferId]);
     expect(src.rows[0]!.status).toBe('revoked');
     expect(src.rows[0]!.revoke_applied_at).not.toBeNull();
-    // тикет снова свободен (возвращённый перевод не держит его)
     const list = await listTicketsForTransfer(apex.db, client);
     expect(list.eligible.every((t) => t.usedByTransfer === null)).toBe(true);
   });
@@ -530,7 +512,7 @@ describe('возврат перевода admin', () => {
     expect(rv).toMatchObject({ ok: true, stage: 'after_registration', restorePending: true });
     const srcFlags = await apex.db.query(`SELECT frozen FROM client_money_flags WHERE user_id = $1`, [client]);
     expect(srcFlags.rows[0]!.frozen).toBe(false);
-    await tick(apex); // доставка возврата + терминал разморозки
+    await tick(apex);
     const tf = await nordex.db.query(`SELECT frozen, withdraw_banned FROM client_money_flags WHERE user_id = $1`, [newUser]);
     expect(tf.rows[0]).toMatchObject({ frozen: true, withdraw_banned: true });
     const inb = await nordex.db.query(`SELECT status, freeze_state, refund_task FROM platform_transfers_inbound`);

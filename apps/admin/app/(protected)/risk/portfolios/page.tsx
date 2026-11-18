@@ -9,18 +9,6 @@ import { countClientsInDefaultImplicitly } from '../_components/queries';
 import { PortfolioEditor } from './_components/PortfolioEditor';
 import { bpsText } from '@/lib/promo/labels';
 
-/**
- * Риск/плечо — портфели `/risk/portfolios` (WEB-47/45, Р-446, §3.9).
- *
- * Глобальная смена плеча портфеля (действует на всех клиентов портфеля) и
- * планка класса внутри портфеля (крипта — Р-446). Главное число карточки —
- * плечо, которое реально уходит в терминал (итог закона для класса crypto):
- * у Standard база 1:20, но торгует он 1:10 — это видно сразу.
- *
- * Роль-гейт (§3.9): просмотр — operator+admin (гейт layout/middleware);
- * изменение — только admin (формы рендерятся лишь для admin, fail-closed).
- * Чтение НЕ журналируем; изменения journaled в `admin_action_journal`.
- */
 export const dynamic = 'force-dynamic';
 
 export default async function PortfoliosPage({
@@ -33,7 +21,6 @@ export default async function PortfoliosPage({
     getOperatorSession(),
     countClientsInDefaultImplicitly(),
   ]);
-  // Клиенты без явной строки сидят в портфеле по умолчанию.
   const clientsOf = (p: { clientCount: number; isDefault: boolean }) =>
     p.clientCount + (p.isDefault ? implicit : 0);
   const isAdmin = operator?.role === 'admin';

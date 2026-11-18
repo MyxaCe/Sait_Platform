@@ -3,34 +3,14 @@ import { cookies, headers } from 'next/headers';
 import { getPool } from '../db';
 import { SESSION_COOKIE, SESSION_TTL_DAYS } from './constants';
 
-/**
- * Сессии (ADR-022): в куке — opaque-токен, в БД — его sha256.
- * Ревокация из UI работает мгновенно; дамп БД не даёт живых сессий;
- * JWT сознательно не используется — нечего инвалидировать.
- */
-
 export interface SessionUser {
   id: string;
-  /**
-   * Публичный номер пользователя (показывается в ЛК, ADR-026).
-   *
-   * `null` — номера нет. Это аномалия строки, а не состояние: колонка
-   * `NOT NULL`, последовательность начинается со 100001. Но подставить
-   * вместо него ноль нельзя: «UID 0» выглядит как настоящий номер, и
-   * человек процитирует его поддержке как факт — отправив и себя, и
-   * поддержку искать несуществующий счёт.
-   */
   uid: number | null;
   email: string;
   fullName: string;
   locale: 'ru' | 'en';
   vipLevel: number;
   createdAt: Date;
-  /**
-   * Вход по временному паролю от менеджера: пока клиент не задал свой
-   * пароль, кабинет пускает только на страницу смены пароля, терминал
-   * токена не получает (функция 3, 10.11).
-   */
   mustChangePassword: boolean;
 }
 
@@ -64,7 +44,6 @@ export async function createSession(userId: string): Promise<string> {
   return token;
 }
 
-/** Пользователь текущего запроса или null (протухшие сессии и заблокированные клиенты — null). */
 export async function getSessionUser(): Promise<SessionUser | null> {
   const token = cookies().get(SESSION_COOKIE)?.value;
   if (!token) return null;
@@ -78,24 +57,7 @@ export async function getSessionUser(): Promise<SessionUser | null> {
   );
   const row = result.rows[0];
   if (!row) return null;
-  /*
-   * Заблокированный клиент (ADM-02) — не пользователь сессии, даже если
-   * строка сессии ещё жива. Блокировка в админке гасит сессии той же
-   * транзакцией, но этот рубеж не полагается на то, что гашение было:
-   * сессия могла родиться в гонке с блоком. Отсюда же следует отказ
-   * `/api/sso/token` (терминал не получит токен) и редирект зоны `(app)`
-   * на вход. Разблокировка возвращает доступ без иных действий.
-   */
   if (row.blocked === true) return null;
-  /*
-   * Ноль вместо номера не подставляем (Р-086, QA-05). Грабля, из-за которой
-   * одного удаления `?? 0` было бы мало: `Number(null)` это **0**, то есть
-   * приведение подставляет ноль само. Поэтому проверка стоит ДО него.
-   *
-   * Колонка `NOT NULL`, так что пустое значение означает сломанную строку, а
-   * не «пользователь без номера». Называем это в логе — молча показать
-   * прочерк значило бы потерять аномалию.
-   */
   if (row.uid === null || row.uid === undefined) {
     console.error(
       `[auth] у пользователя ${row.id} нет uid, хотя колонка NOT NULL: ` +
@@ -109,9 +71,6 @@ export async function getSessionUser(): Promise<SessionUser | null> {
     email: row.email,
     fullName: row.full_name,
     locale: row.locale === 'en' ? 'en' : 'ru',
-    // `vip_level` — `INT NOT NULL DEFAULT 0`, и ноль здесь НАСТОЯЩЕЕ
-    // значение: «уровня нет». Это не подстановка, и прочерк был бы здесь
-    // неправдой наоборот. Приведение оставлено осознанно.
     vipLevel: Number(row.vip_level),
     createdAt: row.created_at,
     mustChangePassword: row.password_must_change === true,
@@ -152,7 +111,6 @@ export async function listSessions(userId: string): Promise<SessionInfo[]> {
   }));
 }
 
-/** Ревокация чужой сессии пользователя (только своей учётки). */
 export async function revokeSession(userId: string, sessionId: string): Promise<void> {
   await getPool().query(`DELETE FROM sessions WHERE id = $1 AND user_id = $2`, [
     sessionId,

@@ -3,7 +3,6 @@ import { selfSlug, signingKey, transferPool, transferTerminal } from './runtime'
 
 const store = globalThis as unknown as { __transferWorker?: ReturnType<typeof setInterval> };
 
-/** Фоновый такт канала переводов (см. instrumentation.ts). Один на процесс. */
 export function startTransferWorker(): void {
   if (store.__transferWorker) return;
   const slug = selfSlug();

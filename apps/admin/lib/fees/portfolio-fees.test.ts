@@ -3,11 +3,6 @@ import type { PoolClient } from 'pg';
 import type { FeesOutcome, TerminalFeesClient } from '@broker/money';
 import { changePortfolioFees, type FeesSync } from './portfolio-fees';
 
-/**
- * Тариф портфеля: журнал той же транзакцией, доставка всем клиентам портфеля,
- * fail-closed (отказ/недоступность терминала → ROLLBACK + откат применённого).
- */
-
 const OP = '11111111-1111-1111-1111-111111111111';
 
 function fakePool(initial = { markup_bps: 0, commission_bps: 0, instruments: null as string | null, description: null as string | null }) {

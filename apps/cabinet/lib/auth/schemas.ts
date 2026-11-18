@@ -1,7 +1,5 @@
 import { z } from 'zod';
 
-/** Zod-сообщения — ключи namespace `validation` (ADR-011), перевод на рендере. */
-
 export const registerSchema = z.object({
   firstName: z.string().min(2, 'tooShort').max(60, 'tooLong'),
   lastName: z.string().min(2, 'tooShort').max(60, 'tooLong'),
@@ -11,7 +9,6 @@ export const registerSchema = z.object({
   accountType: z.enum(['standard', 'pro', 'ecn']),
   password: z.string().min(8, 'passwordTooShort').max(200, 'tooLong'),
   locale: z.enum(['ru', 'en']),
-  /** honeypot: заполнено — бот */
   website: z.string().max(0, 'bot').optional().or(z.literal('')),
 });
 

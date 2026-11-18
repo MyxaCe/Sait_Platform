@@ -1,10 +1,5 @@
 import type { StatusTone } from '@broker/ui';
 
-/**
- * Подписи зоны «Акции и партнёры» (без БД — годятся и для клиентских
- * компонентов). Числа акций здесь не живут — только слова.
- */
-
 export const PROMO_ERRORS: Record<string, string> = {
   forbidden: 'Недостаточно прав для этого действия.',
   missingReason: 'Нужно указать основание.',
@@ -108,7 +103,6 @@ export const SIGNAL_LABELS: Record<string, string> = {
   budget_insufficient: 'Не хватает бюджета',
 };
 
-/** Короткие подписи сигналов — для плотных таблиц. */
 export const SIGNAL_SHORT: Record<string, string> = {
   shared_deposit_wallet: 'Общий кошелёк',
   shared_withdraw_address: 'Общий адрес вывода',
@@ -150,7 +144,6 @@ export const INELIGIBLE: Record<string, string> = {
   min_trades: 'мало сделок',
 };
 
-/** Базисные пункты → «30 %», «0,15 %». */
 export function bpsText(bps: number): string {
   return `${(bps / 100).toLocaleString('ru-RU', { maximumFractionDigits: 2 })} %`;
 }

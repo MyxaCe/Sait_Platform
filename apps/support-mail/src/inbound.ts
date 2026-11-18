@@ -13,11 +13,6 @@ import {
   type SupportSettings,
 } from '@broker/support';
 
-/**
- * Разбор сырого письма → `InboundMail` и обработка одного письма ящика.
- * Транспорт (IMAP) — в `imap.ts`; здесь — то, что проверяется без сервера.
- */
-
 export interface ObjectStore {
   put(key: string, body: Buffer, contentType: string): Promise<void>;
 }
@@ -47,7 +42,6 @@ function refs(v: string | string[] | undefined): string[] {
   return (Array.isArray(v) ? v : v.split(/\s+/)).map((x) => x.trim()).filter(Boolean);
 }
 
-/** HTML → текст: разметка, скрипты, стили и картинки отбрасываются (ничего внешнего не грузится). */
 export function htmlToText(html: string): string {
   return html
     .replace(/<(script|style|head)[\s\S]*?<\/\1>/gi, '')
@@ -70,11 +64,6 @@ export interface ParsedInbound {
   rawSha256: string;
 }
 
-/**
- * Сырое письмо → нормализованное. Вложения из закрытого перечня MIME и не
- * больше лимита настроек сохраняются в хранилище; прочие — только упоминание
- * в тексте (оператор видит, что было что-то ещё, — исходник в `.eml`).
- */
 export async function parseInbound(
   raw: Buffer,
   meta: { mailbox: string; uid: number | null; uidValidity: number | null; tenant: string },
@@ -112,7 +101,6 @@ export async function parseInbound(
       sha256: createHash('sha256').update(a.content).digest('hex'),
     });
   }
-  // HTML-письмо: mailparser сам строит текст; внешние картинки и разметка не хранятся.
   const body = parsed.text?.trim() ? parsed.text : typeof parsed.html === 'string' ? htmlToText(parsed.html) : '';
   const text = [body, ...notes].filter(Boolean).join('\n\n');
   return {
@@ -142,10 +130,6 @@ export async function parseInbound(
 
 export type HandleResult = { ok: true; verdict: InboundVerdict } | { ok: false; error: string };
 
-/**
- * Одно письмо ящика: разобрать → обработать. Ошибка разбора/обработки →
- * запись `failed` для оператора; вызывающий переносит письмо в `Failed`.
- */
 export async function handleRawMessage(
   db: PoolLike,
   raw: Buffer,

@@ -1,30 +1,6 @@
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { FakeBroker } from './testing/fake-broker.js';
 
-/**
- * REL-04 на уровне СВЯЗКИ: «издатель отказал → что лежит в строке outbox».
- *
- * Вопрос, который задаётся отказу, — не «виден ли он», а в каком из двух
- * мест он виден: в логе процесса или в состоянии строки. В логе он был
- * виден всегда, и именно поэтому дефект выглядел починенным. В строке он
- * не появлялся ни разу: слушатель ошибок канала навешивался после первого
- * топологического вызова, процесс умирал раньше `catch`, и строка
- * оставалась с `attempts = 0` и пустым `last_error` — повторы не
- * отрабатывали ни разу.
- *
- * **Почему проверка здесь, а не в `publisher.test.ts`.** Там издатель
- * отказывает правильно и с дефектом, и без него — отличается только
- * судьба процесса, а строки outbox тому файлу не видно вовсе. Класс
- * «процесс умер до записи» модульным тестом издателя не ловится в
- * принципе. Измерено: мутация «слушатели снова после `checkExchange`»
- * красит 1 тест издателя и 2 здесь, и это разные вопросы, а не один
- * дважды.
- *
- * **Что моделирует двойник БД.** После смерти процесса запросы перестают
- * доходить. Без этого тест проверял бы вселенную, в которой упавший
- * процесс ещё дописывает строки, — то есть доказывал бы не то.
- */
-
 const connect = vi.fn();
 vi.mock('amqplib', () => ({ default: { connect: (...a: unknown[]) => connect(...a) } }));
 
@@ -56,10 +32,6 @@ interface Executed {
   params: unknown[];
 }
 
-/**
- * Двойник pg-клиента: отдаёт одну строку outbox на SELECT и записывает
- * всё, что с ней делали. Мёртвый процесс запросов не выполняет.
- */
 function fakeClient(broker: FakeBroker, rows: Row[] = [ROW]) {
   const executed: Executed[] = [];
   const client = {
@@ -75,28 +47,12 @@ function fakeClient(broker: FakeBroker, rows: Row[] = [ROW]) {
   return { client, executed };
 }
 
-/** Что записано в строку: `attempts` и текст ошибки, либо `null`. */
 function attemptWrite(executed: Executed[]) {
   const update = executed.find((q) => q.sql.includes('SET attempts'));
   if (!update) return null;
   return { attempts: update.params[1], lastError: update.params[3] };
 }
 
-/**
- * Прогрев графа модулей (WEB-33).
- *
- * Первый `await import(...)` в файле платит за превращение всего графа
- * зависимостей; дальше работает кеш преобразования, и остальные
- * импорты мгновенны. Внутри теста это время меряется **как работа
- * кода**, и под параллельной нагрузкой упирается в предел в 5 с —
- * краснеет первая по списку проверка безотносительно того, что она
- * проверяет.
- *
- * Импорт в каждом тесте остаётся нарочным: он нужен чистому состоянию
- * модуля после `vi.resetModules()` и подменам до загрузки. Сброс
- * реестра модулей кеша преобразования не трогает — поэтому прогрев
- * помогает, а свежесть состояния сохраняется.
- */
 beforeAll(async () => {
   await import('./outbox.js');
   await import('./publisher.js');
@@ -127,17 +83,15 @@ async function run(broker: FakeBroker, rows?: (typeof ROW)[]) {
 
 describe('outbox · отказ публикации виден в СОСТОЯНИИ строки, а не только в логе', () => {
   it('пропавший обменник → attempts = 1 и текст ошибки в строке', async () => {
-    const broker = new FakeBroker([]); // владелец шины обменник не завёл
+    const broker = new FakeBroker([]);
 
     const { outcome, executed } = await run(broker);
 
-    expect(broker.died).toBeNull(); // процесс дожил до записи
+    expect(broker.died).toBeNull();
     expect(outcome.ok).toBe(true);
     const written = attemptWrite(executed);
     expect(written).not.toBeNull();
     expect(written!.attempts).toBe(1);
-    // Пустая строка ошибки — это «отказ записан и ничего не говорит»:
-    // ровно тот исход, от которого уходим
     expect(String(written!.lastError)).toMatch(/NOT_FOUND/);
   });
 
@@ -147,8 +101,6 @@ describe('outbox · отказ публикации виден в СОСТОЯН
     const { executed } = await run(broker);
 
     const update = executed.find((q) => q.sql.includes('SET attempts'))!;
-    // `attempts = 0` в строке означал бы «повторять немедленно и вечно»;
-    // backoff существует только если попытка вообще записана
     expect(update.params[2]).toBe('5000');
   });
 
@@ -174,9 +126,6 @@ describe('outbox · отказ публикации виден в СОСТОЯН
   });
 
   it('сломанный конверт тоже попадает в строку, а не только в лог', async () => {
-    // Растяжка: запись попытки обязана работать для ЛЮБОГО отказа строки,
-    // не только для отказа шины. Иначе следующий отказ снова окажется
-    // виден в одном месте из двух.
     const broker = new FakeBroker(['platform.events']);
     const broken = { ...ROW, payload: { event: 'lead.submitted' } };
 

@@ -32,13 +32,6 @@ import { AutoRefresh } from './_components/AutoRefresh';
 import { MailStatusCallout } from './_components/MailStatus';
 import { SupportNav } from './_components/SupportNav';
 
-/**
- * Очередь «Поддержка» (концепция §7.1: очередь — «что старейшее / что горит»).
- * Ждущие ответа сортируются по сроку SLA первого ответа (рабочие часы из
- * настроек); просроченные — полоска `warning` и возраст `text-warning`.
- * Видимость — по роли в самом запросе (finance_operator — только своё).
- * Обновляется опросом раз в 10 с.
- */
 export const dynamic = 'force-dynamic';
 
 const PAGE_SIZE = 50;

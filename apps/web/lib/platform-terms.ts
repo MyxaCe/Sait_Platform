@@ -1,17 +1,5 @@
 import { envOr } from '@broker/utils';
 
-/**
- * Условия типов счетов для `/accounts` — ТОЛЬКО из админки (решение
- * владельца №9): публичная ручка кабинета `GET /api/public/platform-terms`
- * (у витрины нет базы). Адрес — `CABINET_INTERNAL_URL`, иначе публичный
- * адрес кабинета.
- *
- * Потребитель парсит мягко: запись с неполными/битыми полями отбрасывается,
- * остальные остаются. Кабинет недоступен или ответ не разобран — `null`, и
- * страница честно говорит «условия временно недоступны», без выдуманных
- * цифр (свой failure domain: витрина не ждёт кабинет дольше таймаута).
- */
-
 export interface PublicAccountType {
   key: string;
   title: string;
@@ -31,7 +19,6 @@ const int = (v: unknown, min = 0): number | null =>
   typeof v === 'number' && Number.isInteger(v) && v >= min ? v : null;
 const text = (v: unknown): string | null => (typeof v === 'string' && v.trim() ? v.trim() : null);
 
-/** Мягкий разбор одной записи; неполная — `null` (отбрасывается, не «нулями»). */
 export function parseAccountType(raw: unknown): PublicAccountType | null {
   if (!raw || typeof raw !== 'object') return null;
   const r = raw as Record<string, unknown>;
@@ -86,7 +73,6 @@ export async function fetchAccountTypes(fetchImpl: typeof fetch = fetch): Promis
   }
 }
 
-/** Б.п. → «0,15 %» / «0.15%». */
 export function bpsPercent(bps: number, locale: string): string {
   const n = new Intl.NumberFormat(locale === 'en' ? 'en-US' : 'ru-RU', { maximumFractionDigits: 2 }).format(bps / 100);
   return locale === 'en' ? `${n}%` : `${n} %`;

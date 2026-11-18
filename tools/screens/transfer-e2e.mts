@@ -1,27 +1,9 @@
-// E2E «Перевод клиента на другую платформу группы» на ДВУХ платформах (ветка client-transfer).
-//
-//   npx tsx tools/screens/transfer-e2e.mts <outDir>
-//
-// Стенд (см. отчёт ветки): Postgres с базами broker_apex / broker_nordex (все
-// миграции; apex — seed:demo + менеджер Соколов закреплён за Морозовым, Смирнов
-// с country=US; nordex — один admin), реестр группы в обеих базах
-// (seed:group-registry), админки 3611/3621, кабинеты 3612/3622 (next start -H localhost: на 127.0.0.1 цикл редиректа next-intl), заглушки CMS
-// 3631 и терминала 3632, воркер почты nordex → GreenMail (IMAP 55523).
-//
-// Сценарий: клиент apex пишет заявление в чат поддержки → менеджер проводит
-// перевод (UI) → пакет уходит в nordex → письмо-приглашение (GreenMail) →
-// регистрация по ссылке с предзаполнением → KYC → статусы вернулись в apex →
-// закрытие счёта → admin возвращает перевод ПОСЛЕ регистрации; второй клиент —
-// возврат ДО регистрации (ссылка отозвана). Негативы: без доказательства
-// (кнопка неактивна), тикет оператора, запрещённое направление, неверная
-// подпись, чужой ключ, повтор сообщения, повтор пакета.
 import { createRequire } from 'node:module';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { generateKeyPairSync } from 'node:crypto';
 import type { Envelope } from '../../packages/transfer/src/index.ts';
 
-// Пакеты монорепо — CJS-исходники TS: берём через динамический импорт (tsx), без статических имён.
 const unwrap = <T,>(m: T): T => ((m as { default?: T }).default ?? m);
 const T = unwrap(await import('../../packages/transfer/src/index.ts')) as typeof import('../../packages/transfer/src/index.ts');
 const SUP = unwrap(await import('../../packages/support/src/index.ts')) as typeof import('../../packages/support/src/index.ts');
@@ -97,7 +79,6 @@ const go = async (page: { goto(u: string, o: object): Promise<unknown>; waitForT
 };
 
 try {
-  // ── 1. Клиент apex пишет заявление в чат поддержки кабинета ──
   const cab = await (await browser.newContext({ viewport: { width: 1440, height: 900 }, locale: 'ru-RU' })).newPage();
   await go(cab, `${A_CAB}/login`);
   await cab.fill('#email', 'a.morozov@northbay.capital');
@@ -119,7 +100,6 @@ try {
   );
   check('клиент написал заявление в поддержку (тикет из чата кабинета)', true, `тикет #${ticket.number}`);
 
-  // ── 2. Менеджер (Соколов) проводит перевод ──
   const mgr = await adminPage(A_ADMIN, SOKOLOV, 'd.sokolov', 'Дмитрий Соколов', 'operator');
   await go(mgr, `${A_ADMIN}/clients/${HERO}`);
   await shot(mgr, 't02-apex-client-card-transfer-button', false);
@@ -148,7 +128,6 @@ try {
   const tr = (await q(apex, `SELECT number, status FROM platform_transfers WHERE id = $1`, [transferId]))[0];
   check('перевод проведён менеджером (без одобрения admin)', Boolean(tr), `${tr.number}, статус ${tr.status}`);
 
-  // ── 3. Пакет доставлен в nordex, письмо ушло, статус invited вернулся ──
   const inbound = await waitFor('входящий в nordex', async () =>
     (await q(nordex, `SELECT * FROM platform_transfers_inbound WHERE transfer_id = $1`, [transferId]))[0],
   );
@@ -160,7 +139,6 @@ try {
   await go(mgr, `${A_ADMIN}/clients/transfers/${transferId}`);
   await shot(mgr, 't06-apex-transfer-detail-invited');
 
-  // письмо-приглашение из GreenMail
   const imap = new ImapFlow({ host: '127.0.0.1', port: 55523, secure: false, auth: { user: 'a.morozov@northbay.capital', pass: 'x' }, logger: false });
   await imap.connect();
   const lock = await imap.getMailboxLock('INBOX');
@@ -179,7 +157,6 @@ try {
   );
   await shot(mp, 't07-email-invite-greenmail');
 
-  // ── 4. Регистрация по ссылке с предзаполнением ──
   const reg = await (await browser.newContext({ viewport: { width: 1440, height: 900 }, locale: 'ru-RU' })).newPage();
   await go(reg, link!);
   const prefilled = {
@@ -200,17 +177,14 @@ try {
   check('клиент сам зарегистрировался в nordex', true, nUser.id);
   await waitFor('apex: registered', async () => (await q(apex, `SELECT 1 FROM platform_transfers WHERE id = $1 AND status = 'registered'`, [transferId]))[0], 60_000);
   check('статус «клиент зарегистрировался» вернулся в apex', true);
-  // повторная ссылка — использована (новый браузер: у зарегистрировавшегося есть сессия)
   const again = await (await browser.newContext({ viewport: { width: 1440, height: 900 }, locale: 'ru-RU' })).newPage();
   await go(again, link!);
   check('ссылка приглашения одноразовая', (await again.getByText(/недействительна или уже использована/).count()) > 0);
 
-  // KYC в цели (решение KYC nordex) → kyc_passed
   await nordex.query(`INSERT INTO client_verification (user_id, state) VALUES ($1, 'verified') ON CONFLICT (user_id) DO UPDATE SET state = 'verified', updated_at = now()`, [nUser.id]);
   await waitFor('apex: kyc_passed', async () => (await q(apex, `SELECT 1 FROM platform_transfers WHERE id = $1 AND status = 'kyc_passed'`, [transferId]))[0], 60_000);
   check('статус «KYC в цели пройден» вернулся в apex', true);
 
-  // экраны: источник (admin, уведомление, деталь), цель (входящие), кабинет-источник
   const adm = await adminPage(A_ADMIN, KOVALEVA, 'i.kovaleva', 'Ирина Ковалёва', 'admin');
   await go(adm, `${A_ADMIN}/`);
   await shot(adm, 't09-apex-dashboard-admin-notification', false);
@@ -225,7 +199,6 @@ try {
   await go(cab, `${A_CAB}/wallet?tab=withdraw`);
   await shot(cab, 't13-cabinet-apex-wallet-transfer-notice', false);
 
-  // ── 5. Закрытие счёта в источнике (менеджер): только пустой счёт, fail-closed ──
   const setBalance = (minor: number, positions = 0) =>
     fetch(`${TERMINAL}/__stand/balance?minor=${minor}&positions=${positions}`, { method: 'POST' });
   const tryClose = async () => {
@@ -236,29 +209,24 @@ try {
     await mgr.waitForTimeout(2500);
   };
   const statusNow = async () => (await q(apex, `SELECT status FROM platform_transfers WHERE id = $1`, [transferId]))[0].status;
-  // незавершённые заявки ввода/вывода (из сида) — отказ
   await setBalance(0);
   await tryClose();
   check('закрытие отказано: незавершённые вывод/пополнение на сайте', (await mgr.getByText(/незавершённых заявок на вывод/).count()) > 0 && (await statusNow()) === 'kyc_passed');
   await apex.query(`UPDATE crypto_withdrawals SET status = 'cancelled' WHERE user_id = $1 AND status NOT IN ('settled', 'rejected', 'cancelled')`, [HERO]);
   await apex.query(`UPDATE crypto_deposits SET status = 'rejected', reject_reason = 'стенд' WHERE user_id = $1 AND status = 'claimed'`, [HERO]);
-  // на счёте деньги и позиции — отказ с суммой
   await setBalance(4_825_013, 1);
   await tryClose();
   check('закрытие отказано: на счёте 48 250,13 USDT и позиция', (await mgr.getByText(/Сначала клиент выводит средства \(48\s?250,13 USDT\) и закрывает позиции/).count()) > 0 && (await statusNow()) === 'kyc_passed');
   await shot(mgr, 't13b-apex-close-refused-funds', false);
-  // терминал недоступен — отказ (fail-closed)
   await fetch(`${TERMINAL}/__stand/down?on=1`, { method: 'POST' });
   await tryClose();
   check('закрытие отказано: терминал недоступен → «не удалось проверить баланс»', (await mgr.getByText(/не удалось проверить баланс/).count()) > 0 && (await statusNow()) === 'kyc_passed');
   await fetch(`${TERMINAL}/__stand/down?on=0`, { method: 'POST' });
-  // ноль — можно
   await setBalance(0);
   await tryClose();
   const closed = (await q(apex, `SELECT t.status, f.frozen FROM platform_transfers t LEFT JOIN client_money_flags f ON f.user_id = t.user_id WHERE t.id = $1`, [transferId]))[0];
   check('счёт в источнике закрыт по переводу (заморожен)', closed.status === 'source_closed' && closed.frozen === true);
 
-  // ── 6. Возврат ПОСЛЕ регистрации (admin) — клиент уже пополнил цель ──
   await nordex.query(`INSERT INTO crypto_deposits (user_id, tx_hash, status, amount_minor, credited_at) VALUES ($1, $2, 'credited', 150000, now())`, [nUser.id, 'b'.repeat(64)]);
   await go(adm, `${A_ADMIN}/clients/transfers/${transferId}`);
   await adm.getByPlaceholder(/Что не так с переводом/).fill('Проверка: заявление клиента не подтверждено звонком на номер из анкеты — возврат по регламенту.');
@@ -287,7 +255,6 @@ try {
   await go(nadm, `${N_ADMIN}/clients/${nUser.id}`);
   await shot(nadm, 't17-nordex-client-card-frozen', false);
 
-  // ── 7. Второй клиент: возврат ДО регистрации ──
   const fischer = (await q(apex, `SELECT id FROM users WHERE email = 'elena.fischer@fischer-holding.de'`))[0].id;
   await apex.query(`UPDATE users SET country = 'DE' WHERE id = $1`, [fischer]);
   const settings = { ...DEFAULT_SUPPORT_SETTINGS, hours: { ...DEFAULT_SUPPORT_SETTINGS.hours, alwaysOpen: true } };
@@ -309,7 +276,6 @@ try {
   });
   if (!r2.ok) throw new Error(`перевод Fischer: ${JSON.stringify(r2)}`);
   await waitFor('nordex: invite Fischer sent', async () => (await q(nordex, `SELECT 1 FROM platform_transfers_inbound WHERE transfer_id = $1 AND status = 'invited'`, [r2.transferId]))[0], 90_000);
-  // ссылку берём из письма Fischer
   const imap2 = new ImapFlow({ host: '127.0.0.1', port: 55523, secure: false, auth: { user: 'elena.fischer@fischer-holding.de', pass: 'x' }, logger: false });
   await imap2.connect();
   const lock2 = await imap2.getMailboxLock('INBOX');
@@ -333,8 +299,6 @@ try {
   await go(adm, `${A_ADMIN}/clients/transfers/${r2.transferId}`);
   await shot(adm, 't19-apex-transfer-revoked-before-registration');
 
-  // ── 8. Негативы ──
-  // запрещённое направление: Смирнов (US) — UI и сервер
   const smirnov = (await q(apex, `SELECT id FROM users WHERE email = 'igor.smirnov@example.net'`))[0].id;
   await go(mgr, `${A_ADMIN}/clients/${smirnov}/transfer`);
   check('UI: Nordex для клиента из US помечена «запрещено»', (await mgr.getByText('страна клиента запрещена в цели').count()) > 0);
@@ -344,19 +308,15 @@ try {
   const m3 = (await q(apex, `SELECT id FROM support_messages WHERE ticket_id = $1 LIMIT 1`, [t3.ticketId]))[0].id;
   const r3 = await createTransfer(apex, { operatorId: SOKOLOV, userId: smirnov, targetSlug: 'nordex-eu', ticketId: t3.ticketId, consentMessageId: m3, consentConfirmed: true, basis: 'x', selfSlug: 'apex-ru' });
   check('сервер: запрещённое направление отвергнуто', !r3.ok && r3.reason === 'directionForbidden', JSON.stringify(r3));
-  // тикет оператора (сервер)
   const opTicket = (await q(apex, `SELECT t.id FROM support_tickets t WHERE t.subject = 'Условия на Nordex'`))[0].id;
   const opMsg = (await q(apex, `SELECT id FROM support_messages WHERE ticket_id = $1 LIMIT 1`, [opTicket]))[0].id;
   const r4 = await createTransfer(apex, { operatorId: SOKOLOV, userId: HERO, targetSlug: 'nordex-eu', ticketId: opTicket, consentMessageId: opMsg, consentConfirmed: true, basis: 'x', selfSlug: 'apex-ru' });
   check('сервер: тикет, открытый оператором, отвергнут', !r4.ok && r4.reason === 'ticketOpenedByOperator', JSON.stringify(r4));
-  // без доказательства (нет тикета)
   const r5 = await createTransfer(apex, { operatorId: SOKOLOV, userId: HERO, targetSlug: 'nordex-eu', ticketId: '00000000-0000-4000-8000-000000000999', consentMessageId: opMsg, consentConfirmed: true, basis: 'x', selfSlug: 'apex-ru' });
   check('сервер: без доказательства (несуществующий тикет) — отказ', !r5.ok && r5.reason === 'ticketNotFound');
-  // admin не проводит перевод
   const r6 = await createTransfer(apex, { operatorId: KOVALEVA, userId: HERO, targetSlug: 'nordex-eu', ticketId: ticket.id, consentMessageId: opMsg, consentConfirmed: true, basis: 'x', selfSlug: 'apex-ru' });
   check('сервер: перевод проводит только закреплённый менеджер (admin — нет)', !r6.ok && r6.reason === 'notClientManager');
 
-  // подпись: подмена тела, чужой ключ, повтор, устаревшее
   const apexKey = (await import('node:crypto')).createPrivateKey(Buffer.from(readFileSync(join(STAND, 'apex.key.b64'), 'utf8'), 'base64').toString('utf8'));
   const post = async (body: string) => {
     const r = await fetch(`${N_ADMIN}/api/platform-transfer/v1/messages`, { method: 'POST', headers: { 'content-type': 'application/json' }, body });
@@ -379,14 +339,12 @@ try {
   const stale = signEnvelope({ ...env('transfer.revoke', { number: 'x', basis: 'x', revokedAt: 'x' }), issuedAt: new Date(Date.now() - 3_600_000).toISOString() }, apexKey);
   r = await post(JSON.stringify(stale));
   check('приёмник: устаревшее (час назад) → 401 staleMessage', r.status === 401 && r.body.code === 'staleMessage');
-  // повтор пакета перевода (новый nonce, тот же transferId) — дубликат без второго письма
   await apex.query(`UPDATE platform_transfer_outbox SET state = 'queued', next_attempt_at = now(), attempts = 0 WHERE transfer_id = $1 AND kind = 'transfer.package'`, [r2.transferId]);
   await waitFor('повтор пакета обработан', async () => (await q(apex, `SELECT 1 FROM platform_transfer_outbox WHERE transfer_id = $1 AND kind = 'transfer.package' AND state <> 'queued' AND state <> 'sending'`, [r2.transferId]))[0]);
   const pk = (await q(apex, `SELECT state, response_code FROM platform_transfer_outbox WHERE transfer_id = $1 AND kind = 'transfer.package'`, [r2.transferId]))[0];
   const invites = (await q(nordex, `SELECT count(*)::int AS n FROM outbound_mail WHERE purpose = 'transfer_invite' AND to_address = 'elena.fischer@fischer-holding.de'`))[0].n;
   check('повтор пакета: отвергнут как отозванный/дубликат, второго приглашения нет', invites === 1, `${pk.state} ${pk.response_code}`);
 
-  // ── 9. Итоговые экраны ──
   await go(adm, `${A_ADMIN}/clients/transfers`);
   await shot(adm, 't21-apex-transfers-list-final');
   await go(adm, `${A_ADMIN}/clients/transfers?tab=report`);

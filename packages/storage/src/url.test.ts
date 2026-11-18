@@ -2,10 +2,6 @@ import { describe, expect, it } from 'vitest';
 import { clampViewTtl, issueViewUrl, MAX_VIEW_TTL_SECONDS, MIN_VIEW_TTL_SECONDS } from './storage';
 import type { StorageEnvSource } from './config';
 
-/**
- * ADM-12 · выдача подписанной ссылки. Подпись SigV4 считается локально (без
- * сети), поэтому срок и адресацию можно проверить без живого хранилища.
- */
 const source: StorageEnvSource = {
   S3_ENDPOINT: 'http://minio.local:9000',
   S3_BUCKET: 'kyc-docs',
@@ -35,7 +31,6 @@ describe('issueViewUrl', () => {
     const parsed = new URL(url);
     expect(parsed.pathname).toContain('kyc-docs');
     expect(parsed.pathname).toContain('identity');
-    // 3600 → зажато к 900 (15 мин).
     expect(parsed.searchParams.get('X-Amz-Expires')).toBe(String(MAX_VIEW_TTL_SECONDS));
     expect(parsed.searchParams.get('X-Amz-Signature')).toBeTruthy();
   });

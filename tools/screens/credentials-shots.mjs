@@ -1,12 +1,3 @@
-// Скрины «Учётные данные клиента» (ветка admin-credentials, функция 3), 1440.
-//   ADMIN_URL=http://127.0.0.1:3521 node tools/screens/credentials-shots.mjs <outDir>
-// Нужны: миграции + seed:demo + seed:support-demo; Д. Соколов — менеджер
-// А. Морозова (HERO) и E. Fischer, М. Орлова — менеджер О. Лебедевой; у HERO
-// есть заявка на вывод «подана» и две сессии. Админка запущена с
-// CABINET_PUBLIC_URL (ссылки в письмах).
-// Сцена: менеджер меняет email → выдаёт временный пароль → исправляет адрес
-// в заявке → снимает автозаморозку → история; чужой клиент — только чтение;
-// admin: настройки, фильтр журнала, алерт на дашборде.
 import { createRequire } from 'node:module';
 import { mkdirSync } from 'node:fs';
 import { join, resolve } from 'node:path';
@@ -51,12 +42,10 @@ async function go(page, path) {
   await page.waitForTimeout(400);
 }
 const shot = async (target, name, full = true) => {
-  // Страница — во всю высоту (или первый экран); локатор — ровно элемент.
   const isPage = typeof target.goto === 'function';
   await target.screenshot({ path: join(outDir, `${name}.png`), ...(isPage ? { fullPage: full } : {}) });
   console.log('ok', name);
 };
-// Блок формы — `<section>` с заголовком `<h3>` прямо внутри (не панель целиком).
 const section = (p, title) => p.locator(`section:has(> div > h3:text-is("${title}"))`);
 async function verify(scope, labels) {
   for (const l of labels) await scope.getByText(l, { exact: false }).first().click();
@@ -65,13 +54,11 @@ async function verify(scope, labels) {
 
 const CARD = `/clients/${HERO}?tab=credentials`;
 
-// ── Менеджер клиента ──
 const mgr = await ctxFor('manager');
 let p = await mgr.newPage();
 await go(p, CARD);
 await shot(p, 'c01-tab-manager-overview');
 
-// Email: заполнение → взвод со сводкой → готово
 let s = section(p, 'Email');
 await s.locator('input[name="newEmail"]').fill('a.morozov.new@gmail.com');
 await verify(s, ['Видеозвонок', 'Документ клиента']);
@@ -84,7 +71,6 @@ await p.waitForTimeout(2500);
 await go(p, CARD);
 await shot(p, 'c03-after-email-autohold');
 
-// Временный пароль: взвод → показан один раз
 s = section(p, 'Пароль');
 const tmp = s.locator('form').nth(1);
 await verify(tmp, ['Видеозвонок', 'Ответы о счёте']);
@@ -95,7 +81,6 @@ await tmp.getByRole('button', { name: 'Да, выдать пароль' }).click
 await p.getByTestId('temp-password').waitFor({ timeout: 30_000 });
 await shot(s, 'c05-temp-password-shown-once');
 
-// Адрес в заявке на вывод
 await go(p, CARD);
 s = section(p, 'Адрес в заявке на вывод');
 await s.locator('input[name="newAddress"]').fill(NEW_ADDRESS);
@@ -107,7 +92,6 @@ await s.getByRole('button', { name: 'Да, исправить адрес' }).cli
 await p.waitForTimeout(2500);
 await shot(s, 'c07-address-done');
 
-// Снять автозаморозку
 await go(p, CARD);
 s = section(p, 'Заморозка вывода');
 await s.locator('form').first().locator('textarea[name="reason"]').fill('Клиент подтвердил смену email и пароля на видеозвонке, вывод нужен сегодня');
@@ -116,7 +100,6 @@ await shot(s, 'c08-hold-lift-confirm');
 await s.getByRole('button', { name: 'Да, снять' }).click();
 await p.waitForTimeout(2500);
 
-// Заморозка по распоряжению — 72 ч
 await go(p, CARD);
 s = section(p, 'Заморозка вывода');
 await s.locator('input[name="hours"]').fill('72');
@@ -130,12 +113,10 @@ await shot(p, 'c10-tab-history-after');
 await go(p, `/clients/${HERO}`);
 await shot(p, 'c11-card-banner-hold', false);
 
-// Чужой клиент — только просмотр
 await go(p, `/clients/${FOREIGN}?tab=credentials`);
 await shot(p, 'c12-foreign-client-readonly', false);
 await mgr.close();
 
-// ── admin: настройки, журнал, дашборд ──
 const adm = await ctxFor('admin');
 p = await adm.newPage();
 await go(p, '/settings');

@@ -1,14 +1,8 @@
-/**
- * Разбор суммы на КЛИЕНТЕ (подсказка до отправки) — зеркало
- * `parseUsdtAmountToCents` из @broker/money: тот модуль тянет за собой БД и в
- * браузерный бандл не идёт. Совпадение исходов закреплено тестом
- * (`amount.test.ts`); окончательный разбор всё равно делает сервер.
- */
 export type ClientAmount =
   | { ok: true; cents: number }
   | { ok: false; reason: 'empty' | 'invalid' | 'tooPrecise' | 'notPositive' | 'tooLarge' };
 
-const MAX_CENTS = 1_000_000_000n; // как на сервере (10 млн USDT)
+const MAX_CENTS = 1_000_000_000n;
 
 export function parseAmount(input: string): ClientAmount {
   const s = input.trim().replace(/\s+/g, '').replace(',', '.');

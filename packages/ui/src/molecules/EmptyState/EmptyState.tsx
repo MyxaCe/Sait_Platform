@@ -1,17 +1,10 @@
 import type { ReactNode } from 'react';
 import { cn } from '../../lib/cn';
 
-/**
- * Пустое состояние (концепция §6.9): говорит, ПОЧЕМУ пусто и что это значит
- * («Очередь пуста — клиентов, ожидающих проверки, нет»), а не «Нет данных».
- * Для «пусто из-за фильтра» — действие «Сбросить фильтр». Ошибку/недоступность
- * источника рисует `Callout`, не EmptyState: пусто ≠ сломалось.
- */
 export interface EmptyStateProps {
   title: ReactNode;
   description?: ReactNode;
   action?: ReactNode;
-  /** `compact` — внутри панели/таблицы; `default` — на всю страницу. */
   size?: 'default' | 'compact';
   className?: string;
 }

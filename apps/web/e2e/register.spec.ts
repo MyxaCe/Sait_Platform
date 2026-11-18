@@ -5,7 +5,6 @@ test('регистрация: клиентская валидация не пу�
 
   await page.getByRole('button', { name: 'Открыть счёт' }).click();
 
-  // Ошибки появляются без запроса на сервер
   await expect(page.getByText('Минимум 2 символа').first()).toBeVisible();
   await expect(page.getByText('Некорректный email')).toBeVisible();
   await expect(page.getByText('Необходимо принять условия')).toBeVisible();

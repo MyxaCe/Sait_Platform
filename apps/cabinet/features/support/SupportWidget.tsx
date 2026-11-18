@@ -5,13 +5,6 @@ import { useTranslations } from 'next-intl';
 import { Button, cn } from '@broker/ui';
 import type { SupportWidgetState } from '@/lib/support/state';
 
-/**
- * Кнопка «Поддержка» в правом нижнем углу кабинета + панель диалога (дизайн
- * §2-A). На телефоне — над нижней навигацией, панель — во весь экран.
- * Опрос раз в 4 с, пока панель открыта; закрытая — раз в 30 с (бейдж).
- * Тексты приветствия / «вне часов» / оценки — из настроек поддержки.
- */
-
 const ERR_KEYS = ['rateLimited', 'fileTooLarge', 'unsupportedFormat', 'attachmentsUnavailable', 'channelDisabled', 'emptyBody'] as const;
 
 function fmtTime(iso: string, locale: string): string {

@@ -11,15 +11,6 @@ import {
 } from '@/lib/leverage/actions';
 import { ActionResult, Field, ReasonField, SubmitButton } from '@/components/control/forms';
 
-/**
- * Панель управления плечом клиента (§3.8, admin only). Три формы-с-основанием:
- *  - назначить портфель (WEB-44, атрибут клиента);
- *  - выдать индивидуальное плечо по заявке (WEB-46 — № заявки обязателен);
- *  - снять индивидуальное плечо (вернуть к портфелю).
- * Под каждой формой — что станет в терминале после сохранения (чтобы оператор
- * видел последствие до клика). Server actions прежние.
- */
-
 const MESSAGES: Record<string, string> = {
   forbidden: 'Недостаточно прав: управление плечом — действие администратора.',
   invalidClient: 'Клиент не указан.',
@@ -39,7 +30,6 @@ interface PortfolioOpt {
   key: string;
   title: string;
   baseLeverage: number;
-  /** Планка класса crypto (то, что реально уходит в терминал), или null. */
   cryptoLeverage: number | null;
 }
 

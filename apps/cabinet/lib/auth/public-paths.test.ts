@@ -4,14 +4,8 @@ import middleware from '../../middleware';
 import { homePathFor, isMailLinkPath, isPublicAuthPath, loginPathFor } from './public-paths';
 import { SESSION_COOKIE } from './constants';
 
-// Middleware next-intl (ESM-импорт `next/server`) в node-прогоне не грузится —
-// подменяем пропуском: проверяем НАШ гейт до него.
 vi.mock('next-intl/middleware', () => ({ default: () => () => NextResponse.next() }));
 
-/**
- * Публичные страницы входа с ЛЮБЫМ префиксом локали (волна 3): `/ru/forgot-password`
- * без сессии уводил на /login — регулярка знала только `/en`.
- */
 describe('классификация путей', () => {
   it('вход/регистрация/восстановление — с префиксом ru, en и без него', () => {
     for (const p of [

@@ -11,11 +11,6 @@ type Item =
   | { kind: 'deposit'; at: Date; item: DepositView }
   | { kind: 'withdrawal'; at: Date; item: WithdrawalView };
 
-/**
- * «Последние операции» на главной (десктоп-раскладка): 5 последних событий
- * реального счёта — сделки и ввод/вывод — компактными строками, со ссылкой
- * на полную «Историю». Те же данные, что в «Истории», только чтение.
- */
 export async function RecentActivity({
   trades,
   deposits,

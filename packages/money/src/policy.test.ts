@@ -8,10 +8,6 @@ import {
 import { FakeDb } from './testing/fake-db';
 import { resolveMoneyPolicy } from './policy';
 
-/**
- * Политика — ВСЕ комбинации гейтов. Ожидание считается здесь независимой
- * формулой по дизайну (§0, §3), а не повтором кода резолвера.
- */
 const BOOLS = [false, true];
 const KYC: KycSetting[] = ['inherit', 'required', 'not_required'];
 
@@ -50,7 +46,6 @@ describe('resolveMoneyPolicy · все комбинации гейтов', () =>
       const depKyc = needs(c.flags.depositKyc, c.settings.depositRequiresKyc);
       const wdKyc = needs(c.flags.withdrawKyc, c.settings.withdrawRequiresKyc);
       const expDeposit = !c.blocked && (!depKyc || c.kycVerified);
-      // Доля вывода без верификации > 0 — вывод открыт, но под потолком.
       const allowance = c.settings.unverifiedWithdrawBps > 0;
       const expWithdraw =
         !c.blocked && !c.flags.frozen && !c.flags.withdrawBanned && (!wdKyc || c.kycVerified || allowance);
@@ -61,7 +56,6 @@ describe('resolveMoneyPolicy · все комбинации гейтов', () =>
         wd: expWithdraw,
         rt: !c.blocked && !c.flags.frozen,
       });
-      // Разрешено ⇔ причин нет.
       expect(p.depositReasons.length === 0).toBe(p.depositAllowed);
       expect(p.withdrawReasons.length === 0).toBe(p.withdrawAllowed);
     }
@@ -115,7 +109,6 @@ describe('resolveMoneyPolicy · все комбинации гейтов', () =>
     const client0 = computeMoneyPolicy({ ...base, settings: DEFAULT_PLATFORM_SETTINGS, unverifiedWithdrawBpsOverride: 0 });
     expect(client0.withdrawReasons).toEqual(['kyc_required']);
     expect(client0.unverifiedWithdraw).toEqual({ bps: 0, source: 'client' });
-    // Переопределение у клиента сильнее платформы и в обратную сторону.
     const client10 = computeMoneyPolicy({
       ...base,
       settings: { ...DEFAULT_PLATFORM_SETTINGS, unverifiedWithdrawBps: 0 },

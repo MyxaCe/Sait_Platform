@@ -4,11 +4,6 @@ import { Checkbox, Input } from '@broker/ui';
 import { updatePlatformSettingsAction } from '@/lib/crypto/actions';
 import { ActionForm } from '../_money/ActionForm';
 
-/**
- * Форма денежных настроек платформы. Фаза 2 — только вид (карточки-чекбоксы
- * с последствием, суммы с валютой); имена полей и action прежние.
- */
-
 function Gate({
   name,
   defaultChecked,
@@ -82,7 +77,6 @@ export function SettingsForm({
     withdrawRequiresKyc: boolean;
     minDeposit: string;
     minWithdraw: string;
-    /** Доля вывода без верификации, проценты строкой («5», «2.5»). */
     unverifiedWithdrawPct: string;
   };
 }) {

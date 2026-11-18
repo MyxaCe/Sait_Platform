@@ -144,7 +144,7 @@ describe('зачисление (наблюдатель)', () => {
       minDepositMinor: 0,
     });
     expect(r).toMatchObject({ state: 'credited' });
-    expect(term.balances.get(A)).toBe(2000); // ровно один раз
+    expect(term.balances.get(A)).toBe(2000);
   });
 
   it('ниже минимума — rejected below_minimum, терминал не вызывался', async () => {
@@ -203,7 +203,6 @@ describe('неопознанные поступления', () => {
     expect(db.deposits.get(id)).toMatchObject({ status: 'credited', user_id: B, resolved_by: OP });
     expect(db.journal.at(-1)).toMatchObject({ action: 'crypto.deposit.bound', operator_id: OP });
 
-    // Повторная привязка (другому клиенту) невозможна.
     expect(
       await bindUnidentifiedDeposit(db, term, { depositId: id, userId: A, operatorId: OP, operatorLogin: 'a', reason: 'x' }),
     ).toEqual({ ok: false, reason: 'notUnidentified' });

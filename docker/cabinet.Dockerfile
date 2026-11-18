@@ -1,5 +1,3 @@
-# Production-образ кабинета (Next.js standalone).
-# Сборка из корня монорепо: docker build -f docker/cabinet.Dockerfile .
 FROM node:22-alpine AS base
 RUN corepack enable && corepack prepare pnpm@9.15.0 --activate
 WORKDIR /repo
@@ -24,14 +22,9 @@ RUN pnpm install --frozen-lockfile
 FROM deps AS build
 COPY . .
 ENV BUILD_STANDALONE=1
-# Публичные адреса в сборку НЕ попадают (WEB-22, Р-220): образ не знает
-# домена, адреса подставляет `docker/runtime-config.sh` при запуске.
-# Обязательные без значения не дают стартовать; `WS_URL` необязателен —
-# пустой означает «живого фида нет, работает мок».
 ENV NEXT_PUBLIC_SITE_URL=https://runtime-site-url.invalid
 ENV NEXT_PUBLIC_TERMINAL_URL=https://runtime-terminal-url.invalid
 ENV NEXT_PUBLIC_WS_URL=https://runtime-ws-url.invalid
-# GlitchTip клиентский DSN (site-web /1) — вшивается в браузерный бандл
 ARG NEXT_PUBLIC_SENTRY_DSN=""
 ENV NEXT_PUBLIC_SENTRY_DSN=$NEXT_PUBLIC_SENTRY_DSN
 RUN pnpm --filter @broker/cabinet build
@@ -43,7 +36,6 @@ RUN addgroup -S app && adduser -S app -G app
 COPY --from=build --chown=app:app /repo/apps/cabinet/.next/standalone ./
 COPY --from=build --chown=app:app /repo/apps/cabinet/.next/static ./apps/cabinet/.next/static
 RUN mkdir -p /app/uploads && chown app:app /app/uploads
-# Подстановка адресов из окружения — до старта сервера (WEB-22).
 COPY --chown=app:app docker/runtime-config.sh /usr/local/bin/runtime-config
 RUN chmod +x /usr/local/bin/runtime-config
 USER app

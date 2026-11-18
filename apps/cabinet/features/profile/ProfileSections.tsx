@@ -10,11 +10,6 @@ import { PasswordForm } from '@/features/security/PasswordForm';
 import { UploadForm } from '@/features/documents/UploadForm';
 import { KycUploadForm } from '@/features/kyc/KycUploadForm';
 
-/**
- * Разделы страницы «Профиль» (r2: профиль, верификация, безопасность и
- * документы — одна страница с вкладками). Формы и экшены — прежние.
- */
-
 function Card({ title, hint, children }: { title: string; hint?: string; children: React.ReactNode }) {
   return (
     <section className="rounded-2xl border border-border bg-elevated p-4 sm:p-5">
@@ -47,7 +42,6 @@ export async function VerificationSection({ userId, state }: { userId: string; s
   const documents = await listKycDocuments(userId);
   const submitted = new Set(documents.map((d) => d.kind));
 
-  // Шаги верификации: что подано — отмечено; итог — решение оператора.
   const steps = [
     ...KYC_DOC_KINDS.slice(0, 3).map((kind) => ({
       key: kind,
@@ -205,11 +199,6 @@ export async function DocumentsSection({ userId }: { userId: string }) {
   );
 }
 
-/**
- * Сводка справа от «Личных данных» на десктопе: статус верификации с
- * переходом в раздел и безопасность (активные сессии) — то, что владелец
- * ждёт «во второй колонке». Только чтение.
- */
 export async function AccountOverview({ userId, state }: { userId: string; state: VerificationState }) {
   const t = await getTranslations('profile');
   const tk = await getTranslations('kyc');

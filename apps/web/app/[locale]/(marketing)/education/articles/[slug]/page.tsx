@@ -16,7 +16,6 @@ async function findArticle(locale: string, slug: string) {
   return articles.find((a) => a.slug === slug) ?? null;
 }
 
-// Список статей — из CMS; нет CMS на сборке → пусто, страницы по первому запросу
 export function generateStaticParams({ params }: { params: { locale: string } }) {
   return staticParamsFromCms(async () => {
     const { articles } = await getCms('academy', { locale: params.locale === 'en' ? 'en' : 'ru' });
@@ -33,7 +32,6 @@ export async function generateMetadata({ params }: PageParams): Promise<Metadata
 export default async function EducationArticlePage({ params }: PageParams) {
   setRequestLocale(params.locale);
 
-  // Статья из CMS (теги cms:academy, cms:academy:<сайт>)
   const article = await findArticle(params.locale, params.slug);
   if (!article) notFound();
   const organization = await brandName(params.locale);

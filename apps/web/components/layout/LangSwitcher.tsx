@@ -3,11 +3,6 @@
 import { useLocale } from 'next-intl';
 import { Link, usePathname } from '@/i18n/navigation';
 
-/**
- * Переключатель языка: ведёт на текущую страницу в другой локали.
- * usePathname из i18n-навигации возвращает путь без префикса локали,
- * поэтому ссылка всегда корректна.
- */
 export function LangSwitcher() {
   const locale = useLocale();
   const pathname = usePathname();

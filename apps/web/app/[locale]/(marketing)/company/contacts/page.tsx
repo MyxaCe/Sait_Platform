@@ -16,7 +16,6 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 export default async function ContactsPage({ params }: PageProps) {
   setRequestLocale(params.locale);
   const t = await getTranslations('contacts');
-  // Каналы и офисы из CMS-слоя (тег cms:contacts, вебхук-инвалидация)
   const { channels, offices } = await getCms('contacts', {
     locale: params.locale === 'en' ? 'en' : 'ru',
   });
@@ -58,8 +57,6 @@ export default async function ContactsPage({ params }: PageProps) {
             </div>
           </div>
 
-          {/* Офисов нет — нет и блока: пустой заголовок «Офисы» читался бы
-              как обещание адресов (раньше там стояли выдуманные). */}
           {offices.length > 0 && (
             <div>
               <h2 className="text-2xl font-semibold tracking-tight text-primary sm:text-3xl">

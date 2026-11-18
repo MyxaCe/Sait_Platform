@@ -12,11 +12,6 @@ import { PromoHeader } from '../_components/PromoHeader';
 import { FinalizeForm } from '../_components/PromoForms';
 import { RulesList } from '../_components/RulesList';
 
-/**
- * Конкурсы на демо-счетах: список, лидерборд выбранного (`?c=<id>`), итоги.
- * Доходность = Σ realized P&L закрытых демо-сделок в окне / база после
- * сброса демо. После итогов — итоговый снимок, призы в очереди начислений.
- */
 export const dynamic = 'force-dynamic';
 
 function returnText(bps: number | null) {

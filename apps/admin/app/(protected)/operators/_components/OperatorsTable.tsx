@@ -11,12 +11,6 @@ import type { OperatorListItem } from '@/lib/operators/queries';
 import { fmtDate } from '@/lib/ui/format';
 import { ROLE_LABEL } from './roles';
 
-/**
- * Таблица операторов (ADM-04, концепция §6.1): кто, роль, 2FA, статус, когда
- * заведён. Строка-переход — «Управлять» открывает панель оператора справа
- * (`?op=id`, без JS). Над собой действий нет (нельзя отключить/понизить себя) —
- * вместо ссылки «это вы».
- */
 export function OperatorsTable({
   operators,
   currentOperatorId,
@@ -27,9 +21,7 @@ export function OperatorsTable({
   operators: OperatorListItem[];
   currentOperatorId: string;
   selectedId?: string;
-  /** Число закреплённых клиентов по оператору (ветка admin-managers). */
   managerClients?: Map<string, number>;
-  /** Возвращённые admin переводы, проведённые оператором (ветка client-transfer). */
   revokedTransfers?: Map<string, number>;
 }) {
   const columns: DataTableColumn<OperatorListItem>[] = [
@@ -71,7 +63,6 @@ export function OperatorsTable({
               менеджер · клиентов {managerClients.get(op.id) ?? 0}
             </span>
           ) : null}
-          {/* ── Переводы клиентов (ветка client-transfer): возвращённые переводы менеджера ── */}
           {revokedTransfers.get(op.id) ? (
             <span className="text-negative text-xs tabular-nums">возвращено переводов {revokedTransfers.get(op.id)}</span>
           ) : null}

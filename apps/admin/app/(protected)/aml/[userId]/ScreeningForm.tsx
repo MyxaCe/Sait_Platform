@@ -6,18 +6,6 @@ import { Button, Callout, Checkbox, Textarea, cn } from '@broker/ui';
 import { recordScreeningAction, type ScreeningState } from '@/lib/aml/actions';
 import { REQUIRED_LISTS_FOR_CLEAR, SANCTIONS_LISTS, type AmlOutcome, type SanctionsListId } from '@/lib/aml/lists';
 
-/**
- * Фиксация результата ручного AML-скрининга (ADM-14; концепция §6.6, §6.7).
- * Прежний server action `recordScreeningAction`, прежние поля формы
- * (`userId`, `lists`, `outcome`, `reason`); личность — из сессии (Р-451).
- *
- * Вид: списки и исход — карточки-выборы; основание обязательно. Исход
- * «найдено» блокирует клиента автоматически (Р-456 D) — поэтому он
- * двухшаговый: спокойная красная обводка → подтверждение с последствиями.
- * Подсказка «для „совпадений нет“ нужны все три списка» — сразу у выбора;
- * сервер проверяет то же самое сам.
- */
-
 const MESSAGES: Record<string, string> = {
   invalidClient: 'Клиент не указан.',
   invalidOutcome: 'Выберите исход сверки.',
@@ -184,7 +172,6 @@ export function ScreeningForm({ userId }: { userId: string }) {
           Зафиксировать результат
         </Submit>
       )}
-      {/* В конце: скрытое поле не должно получать отступ space-y. */}
       <input type="hidden" name="userId" value={userId} />
     </form>
   );

@@ -5,15 +5,6 @@ import { useFormState, useFormStatus } from 'react-dom';
 import { Button, Callout, Textarea } from '@broker/ui';
 import { clearEscalationAction, type ScreeningState } from '@/lib/aml/actions';
 
-/**
- * Снятие AML-эскалации (ложное срабатывание) — ТОЛЬКО admin (ADM-14, Р-456 D).
- * Прежний server action `clearEscalationAction` (роль проверяется на сервере
- * повторно); в форме только `userId` и `reason`, личность — из сессии.
- *
- * Вид (концепция §6.7): живёт в «Опасной зоне», двухшаговое — основание →
- * спокойная красная обводка → подтверждение с последствиями.
- */
-
 const MESSAGES: Record<string, string> = {
   forbidden: 'Снятие эскалации доступно только администратору.',
   invalidClient: 'Клиент не указан.',
@@ -80,7 +71,6 @@ export function ClearEscalationForm({ userId }: { userId: string }) {
           Снять эскалацию…
         </Button>
       )}
-      {/* В конце: скрытое поле не должно получать отступ space-y. */}
       <input type="hidden" name="userId" value={userId} />
     </form>
   );

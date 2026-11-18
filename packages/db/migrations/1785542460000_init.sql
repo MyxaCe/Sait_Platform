@@ -1,11 +1,4 @@
 -- Up Migration
---
--- Перенесено из `db/init` (WEB-31). Содержимое не менялось: перенос
--- отделён от правок нарочно, чтобы в разборе было видно, что механизм
--- ничего не переписал.
-
--- Схема БД сайта (ADR-018): лиды — локальный source of truth,
--- события наружу — только через transactional outbox.
 
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
@@ -18,16 +11,12 @@ CREATE TABLE IF NOT EXISTS leads (
     created_at  timestamptz NOT NULL DEFAULT now()
 );
 
--- Дубликаты email: уникальность только для заявок на счёт
--- (обращения в поддержку с одного email — нормальны).
 CREATE UNIQUE INDEX IF NOT EXISTS leads_account_email_uniq
     ON leads (lower(email))
     WHERE kind = 'account-opening';
 
 CREATE INDEX IF NOT EXISTS leads_created_at_idx ON leads (created_at);
 
--- Outbox: событие пишется В ТОЙ ЖЕ транзакции, что и бизнес-запись.
--- payload = полный envelope события (см. contract: eventEnvelopeSchema).
 CREATE TABLE IF NOT EXISTS outbox (
     id              bigserial PRIMARY KEY,
     event_id        uuid NOT NULL UNIQUE,

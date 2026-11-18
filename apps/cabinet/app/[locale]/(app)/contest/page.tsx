@@ -5,7 +5,6 @@ import { loadContests, loadLeaderboard } from '@/lib/promo';
 import { ContestScreen } from '@/features/promo/ContestScreen';
 import { defaultContest } from '@/features/promo/format';
 
-/** «Конкурс»: турнир на демо-счетах — вкладки, правила, призы, лидерборд с моим местом. */
 export const dynamic = 'force-dynamic';
 
 export default async function ContestPage({
@@ -31,7 +30,6 @@ export default async function ContestPage({
       contests={contests}
       selected={selected}
       board={board?.state === 'ok' ? board.data : null}
-      // Валюта демо-счёта — из его проекции; счёта ещё нет — валюта демо терминала по умолчанию.
       demoCurrency={demo?.currency ?? 'USD'}
     />
   );

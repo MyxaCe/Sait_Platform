@@ -41,7 +41,6 @@ export function RegisterForm() {
   const locale = useLocale();
   const countries = t.raw('countries') as CountryOption[];
 
-  // Ошибки валидации приходят КЛЮЧАМИ (см. schema.ts) — переводим при показе
   const msg = (key?: string) => (key ? (tv.has(key as never) ? tv(key as never) : key) : undefined);
 
   const {
@@ -57,7 +56,6 @@ export function RegisterForm() {
     defaultValues: { accountType: 'standard', country: '' },
   });
 
-  // Предвыбор тарифа из /register?account=pro (ссылки со страницы тарифов)
   useEffect(() => {
     const account = new URLSearchParams(window.location.search).get('account');
     if (account && (ACCOUNT_TYPE_VALUES as readonly string[]).includes(account)) {
@@ -106,7 +104,6 @@ export function RegisterForm() {
       noValidate
       className="space-y-5"
     >
-      {/* Honeypot: невидимое поле-ловушка для ботов */}
       <input
         type="text"
         name="website"
@@ -177,7 +174,6 @@ export function RegisterForm() {
         </Select>
       </FormField>
 
-      {/* Тип счёта — радио-карточки */}
       <fieldset>
         <legend className="mb-2 text-sm text-secondary">
           {t('accountType')}

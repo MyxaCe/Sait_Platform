@@ -42,13 +42,6 @@ import { AutoRefresh } from '../_components/AutoRefresh';
 import { MailStatusCallout } from '../_components/MailStatus';
 import { AssignForm, Composer, LinkClientForm, RequeueButton, SpamForm, StatusForm } from '../_components/TicketForms';
 
-/**
- * Экран обращения (концепция §7.4: слева материалы — переписка и ответ,
- * справа — контекст клиента и решения). Контекст собирается на сервере ПО
- * РОЛИ (`loadClientContext`): у оператора поддержки нет сумм, балансов,
- * адресов и KYC-документов — их не выбирают запросы, а не прячет вёрстка.
- * Просмотр контекста журналируется (не чаще раза в 30 мин).
- */
 export const dynamic = 'force-dynamic';
 
 const KYC_KEY: Record<string, StatusKey> = {

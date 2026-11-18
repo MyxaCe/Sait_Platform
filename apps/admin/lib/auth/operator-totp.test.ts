@@ -1,14 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { generateTotp, generateTotpSecret } from './totp';
 
-/**
- * ADM-13 · операции второго фактора над `operators` (Р-454 III-3, Р-451).
- *
- * База и журнал замоканы; TOTP-крипто настоящее. Проверяется второй шаг входа
- * (верный/неверный код, отключённый, без секрета), статус включённости и
- * сохранение секрета с записью в журнал одной транзакцией.
- */
-
 const ID = '33333333-3333-3333-3333-333333333333';
 
 const poolQueries: { sql: string; params: unknown[] }[] = [];
@@ -88,7 +80,6 @@ describe('verifyOperatorTotpStep · второй шаг входа', () => {
     operatorRow = makeRow(secret);
     const { verifyOperatorTotpStep } = await import('./operator-totp');
 
-    // Код на 10 шагов вперёд — вне окна ±1.
     const wrong = generateTotp(secret, {}, Date.now() + 10 * 30_000);
     expect(await verifyOperatorTotpStep(ID, wrong)).toEqual({ ok: false });
   });

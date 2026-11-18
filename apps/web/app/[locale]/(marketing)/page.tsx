@@ -6,7 +6,6 @@ import { Hero } from '@/components/home/Hero';
 import { getCms } from '@/lib/cms';
 
 export default async function HomePage({ params }: { params: { locale: string } }) {
-  // Обязательно для статического рендеринга: Hero/Advantages используют переводы на сервере
   setRequestLocale(params.locale);
   const brand = await getCms('brand', { locale: params.locale === 'en' ? 'en' : 'ru' });
 

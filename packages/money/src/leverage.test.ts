@@ -10,11 +10,6 @@ import {
 import { createTerminalMoneyClient } from './terminal-money';
 import { FakeTerminal } from './testing';
 
-/**
- * Плечо счёта для терминала (Р-446): закон на базе, доставка fail-closed,
- * транспорт. Базы и сети нет — фейки.
- */
-
 interface State {
   users: string[];
   clients: Record<string, { portfolio_key: string; override_leverage: number | null }>;
@@ -83,9 +78,9 @@ describe('readTerminalLeverage — закон Р-446 на базе', () => {
   it('крипто-override портфеля действует на все инструменты терминала; override клиента — выше всего', async () => {
     expect(TERMINAL_INSTRUMENT_CLASS).toBe('crypto');
     const m = await readTerminalLeverage(fakeDb(seed()), ['u-default', 'u-pro', 'u-override']);
-    expect(m.get('u-default')).toBe(10); // Standard 1:20, но крипта 1:10
-    expect(m.get('u-pro')).toBe(50); // у Pro крипто-планки нет — база
-    expect(m.get('u-override')).toBe(200); // override клиента перекрывает класс
+    expect(m.get('u-default')).toBe(10);
+    expect(m.get('u-pro')).toBe(50);
+    expect(m.get('u-override')).toBe(200);
   });
 
   it('нет строки и нет портфеля по умолчанию — плечо не выдумывается', async () => {
@@ -143,7 +138,6 @@ describe('pushLeverageToTerminal — fail-closed', () => {
   it('отказ посреди пачки — уже применённое откатывается к плечу «до» терминала', async () => {
     const t = new FakeTerminal();
     t.leverage.set('u1:demo', 30);
-    // u1:demo ok, u1:real ok, u2:demo — отказ
     t.next = ['ok', 'ok', 'account_quarantined'];
     const out = await pushLeverageToTerminal(
       t,

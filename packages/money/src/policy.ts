@@ -1,27 +1,5 @@
 import type { Queryable } from './db';
 
-/**
- * Денежная политика клиента — ОДИН резолвер на кабинет и админку
- * (`resolveMoneyPolicy`). Кабинет решает по нему, активна ли кнопка
- * «Пополнить/Вывести» и принимать ли заявку; админка показывает то же
- * итоговое значение и его источник. Два места решения разошлись бы.
- *
- * Гейты (дизайн §0, §3):
- *  - блокировка клиента — нет ни ввода, ни вывода (и входа нет вовсе);
- *  - «Заморозка счёта» — нет вывода (и торговли на реальном счёте); ввод
- *    НЕ закрыт: деньги, пришедшие в сеть, всё равно надо зачислить;
- *  - «Запрет вывода» — нет вывода;
- *  - KYC: ввод/вывод «только после KYC» — платформа (по умолчанию: ввод
- *    нет, вывод да) или индивидуально у клиента (inherit/required/
- *    not_required). Проверка KYC = `client_verification.state = 'verified'`
- *    (та же логика, что `isKycVerified` в кабинете), иначе fail-closed.
- *  - Вывод без KYC в пределах доли (ветка demo-withdraw-limits): если вывод
- *    «только после KYC», клиент не верифицирован и действующая доля
- *    `unverifiedWithdrawBps` > 0 — вывод НЕ закрыт, а ограничен суммарным
- *    потолком (`withdrawKycLimited`; сумму проверяет `requestWithdrawal`,
- *    формула — `kyc-allowance.ts`). Доля 0 — прежнее поведение (`kyc_required`).
- */
-
 export type KycSetting = 'inherit' | 'required' | 'not_required';
 export type PolicySource = 'platform' | 'client';
 
@@ -37,14 +15,9 @@ export interface PlatformMoneySettings {
   withdrawRequiresKyc: boolean;
   minDepositMinor: number;
   minWithdrawMinor: number;
-  /**
-   * Сколько можно вывести БЕЗ верификации — доля «баланса до выводов» в б.п.
-   * (500 = 5 %), суммарно за всё время. 0 — без верификации вывода нет.
-   */
   unverifiedWithdrawBps: number;
 }
 
-/** Предел доли вывода без верификации: 10 000 б.п. = 100 %. */
 export const MAX_UNVERIFIED_WITHDRAW_BPS = 10_000;
 
 export const DEFAULT_PLATFORM_SETTINGS: PlatformMoneySettings = {
@@ -69,12 +42,6 @@ export const DEFAULT_CLIENT_FLAGS: ClientMoneyFlags = {
   withdrawBanned: false,
 };
 
-/**
- * Происхождение «Запрета вывода» (миграция 1795520000000): поставлен в
- * денежных флагах, менеджером по распоряжению или автозаморозкой после смены
- * учётных данных. Сущность одна — флаг `withdraw_banned`; здесь только срок и
- * источник, чтобы клиенту и оператору показать «до …» и кто может снять.
- */
 export type WithdrawBanKind = 'money_flags' | 'credentials_manual' | 'credentials_auto';
 
 export interface MoneyPolicyInputs {
@@ -82,12 +49,9 @@ export interface MoneyPolicyInputs {
   blocked: boolean;
   kycVerified: boolean;
   settings: PlatformMoneySettings;
-  /** `withdrawBanned` — ДЕЙСТВУЮЩИЙ запрет (истёкший срок уже учтён в SQL). */
   flags: ClientMoneyFlags;
-  /** Срок действующего запрета вывода; `null` — бессрочно или запрета нет. */
   withdrawBanUntil?: string | null;
   withdrawBanKind?: WithdrawBanKind | null;
-  /** Доля вывода без KYC у клиента (б.п.); `null`/нет — наследовать из платформы. */
   unverifiedWithdrawBpsOverride?: number | null;
 }
 
@@ -104,9 +68,7 @@ export interface EffectiveBps {
 export interface MoneyPolicy {
   depositAllowed: boolean;
   withdrawAllowed: boolean;
-  /** Торговля на РЕАЛЬНОМ счёте (SSO с account_kind=real). Демо не гейтится. */
   realTradingAllowed: boolean;
-  /** Все причины ограничений (объединение). */
   reasons: MoneyPolicyReason[];
   depositReasons: MoneyPolicyReason[];
   withdrawReasons: MoneyPolicyReason[];
@@ -116,17 +78,11 @@ export interface MoneyPolicy {
   blocked: boolean;
   frozen: boolean;
   withdrawBanned: boolean;
-  /** До какого момента действует запрет вывода (`null` — бессрочно / нет запрета). */
   withdrawBanUntil: string | null;
   withdrawBanKind: WithdrawBanKind | null;
   minDepositMinor: number;
   minWithdrawMinor: number;
-  /** Действующая доля вывода без верификации и её источник (показывается всегда). */
   unverifiedWithdraw: EffectiveBps;
-  /**
-   * Вывод разрешён, но ТОЛЬКО в пределах доли без верификации: KYC нужен, не
-   * пройден, доля > 0. Сумму проверяет сервер при подаче заявки.
-   */
   withdrawKycLimited: boolean;
 }
 
@@ -135,7 +91,6 @@ function effectiveKyc(flag: KycSetting, platform: boolean): EffectiveKyc {
   return { required: flag === 'required', source: 'client' };
 }
 
-/** Чистая функция политики — все комбинации гейтов проверяются на ней. */
 export function computeMoneyPolicy(input: MoneyPolicyInputs): MoneyPolicy {
   const depositKyc = effectiveKyc(input.flags.depositKyc, input.settings.depositRequiresKyc);
   const withdrawKyc = effectiveKyc(input.flags.withdrawKyc, input.settings.withdrawRequiresKyc);
@@ -185,7 +140,6 @@ export function computeMoneyPolicy(input: MoneyPolicyInputs): MoneyPolicy {
     minDepositMinor: input.settings.minDepositMinor,
     minWithdrawMinor: input.settings.minWithdrawMinor,
     unverifiedWithdraw,
-    // Лимит имеет смысл, только пока вывод вообще открыт иными гейтами.
     withdrawKycLimited: withdrawKycLimited && withdrawReasons.length === 0,
   };
 }
@@ -194,12 +148,6 @@ function asKyc(v: unknown): KycSetting {
   return v === 'required' || v === 'not_required' ? v : 'inherit';
 }
 
-/**
- * Действующий «Запрет вывода» в SQL (алиас таблицы флагов — параметр). Запрет
- * со сроком (`withdraw_ban_until`) сам перестаёт действовать, когда срок
- * прошёл: снимать его фоновой задачей не нужно, а истёкший запрет не может
- * «залипнуть». Одно выражение на кабинет, админку и поддержку.
- */
 export function activeWithdrawBanSql(alias: string): string {
   return `COALESCE(${alias}.withdraw_banned AND (${alias}.withdraw_ban_until IS NULL OR ${alias}.withdraw_ban_until > now()), false)`;
 }
@@ -208,13 +156,11 @@ function asBanKind(v: unknown): WithdrawBanKind {
   return v === 'credentials_manual' || v === 'credentials_auto' ? v : 'money_flags';
 }
 
-/** Доля в б.п. из базы; мусор/вне диапазона → `fallback` (CHECK в базе это исключает). */
 function bpsOr(v: unknown, fallback: number): number {
   const n = Number(v);
   return Number.isInteger(n) && n >= 0 && n <= MAX_UNVERIFIED_WITHDRAW_BPS ? n : fallback;
 }
 
-/** Переопределение у клиента: `null` — наследовать; мусор — 0 (fail-closed: строже). */
 function bpsOverride(v: unknown): number | null {
   if (v === null || v === undefined) return null;
   return bpsOr(v, 0);
@@ -223,7 +169,6 @@ function bpsOverride(v: unknown): number | null {
 const isoOrNull = (v: unknown): string | null =>
   v === null || v === undefined ? null : v instanceof Date ? v.toISOString() : String(v);
 
-/** Настройки платформы (строка-синглтон; нет строки — умолчания миграции). */
 export async function readPlatformMoneySettings(db: Queryable): Promise<PlatformMoneySettings> {
   const r = await db.query(
     `SELECT deposit_requires_kyc, withdraw_requires_kyc, min_deposit_minor, min_withdraw_minor,
@@ -241,7 +186,6 @@ export async function readPlatformMoneySettings(db: Queryable): Promise<Platform
   };
 }
 
-/** Входы политики из базы — одним запросом (согласованный снимок). */
 export async function loadMoneyPolicyInputs(
   db: Queryable,
   userId: string,
@@ -287,7 +231,6 @@ export async function loadMoneyPolicyInputs(
           withdrawRequiresKyc: Boolean(row.withdraw_requires_kyc),
           minDepositMinor: Number(row.min_deposit_minor),
           minWithdrawMinor: Number(row.min_withdraw_minor),
-          // Нет/мусор → 0: без верификации вывода нет (строже, fail-closed).
           unverifiedWithdrawBps: bpsOr(row.unverified_withdraw_bps, 0),
         }
       : { ...DEFAULT_PLATFORM_SETTINGS },

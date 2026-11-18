@@ -12,18 +12,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   return {
     title: t('metaTitle'),
     description: t('metaDescription', { brand: await brandName(params.locale) }),
-    // Пустой раздел не индексируем
     robots: { index: false, follow: true },
   };
 }
 
-/**
- * Блог компании — коллекции в legacy CMS нет.
- *
- * Посты жили в коде (`features/blog/posts-data.ts`) и удалены 10.11
- * вместе с остальным контентом в коде. До появления коллекции (CMS v2:
- * `articles` с рубрикой) раздел честно пуст.
- */
 export default async function BlogPage({ params }: PageProps) {
   setRequestLocale(params.locale);
   const t = await getTranslations('blog');

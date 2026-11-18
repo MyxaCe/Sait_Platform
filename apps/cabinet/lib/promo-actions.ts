@@ -8,12 +8,6 @@ import { getPool } from './db';
 import { isRateLimited } from './rate-limit';
 import { resetDemoAccount } from './terminal/client';
 
-/**
- * Записи экранов акций: «Участвовать» в акции и в конкурсе. Исход всегда
- * размеченный — форма показывает, что произошло, а не перерисовывается
- * молча (урок WEB-42).
- */
-
 export type EnrollOutcome =
   | { state: 'idle' }
   | { state: 'ok' }
@@ -45,7 +39,6 @@ export type JoinContestOutcome =
   | { state: 'too-often' }
   | { state: 'no-session' };
 
-/** Сброс демо для конкурса — кабинетный `resetDemoAccount` (тот же, что на главной). */
 async function resetForContest(userId: string): Promise<DemoResetResult> {
   const out = await resetDemoAccount(userId);
   if (out.state === 'accepted') return { state: 'accepted' };

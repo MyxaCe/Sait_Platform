@@ -3,28 +3,12 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
-/**
- * getCms — точка, где витрина решает, что показать (решение владельца 10.11).
- *
- * Контента в коде нет даже как запасного: прежде при любой ошибке CMS и на
- * сборке без CMS подставлялись фикстуры из `lib/cms-mock.ts`, и стенд час
- * после каждого деплоя показывал код вместо CMS. Теперь:
- *   CMS ответила            → данные, и они сохраняются как «последние»;
- *   CMS не ответила          → последняя сохранённая версия ответа CMS;
- *   сохранённой нет          → CmsUnavailableError (страница → 503),
- *                              а НЕ «пустые данные»: пустой ответ ISR
- *                              закешировал бы поверх настоящей версии.
- *
- * Каталог последней версии — временный на каждый тест.
- */
-
 vi.mock('next/headers', () => ({ draftMode: () => ({ isEnabled: false }) }));
 
 const FAQ_LIVE = { sections: [{ title: 'Из CMS', items: [{ question: 'q', answer: 'a' }] }] };
 
 let dir: string;
 
-// Прогрев графа модулей (WEB-33): первый импорт платит за трансформацию.
 beforeAll(async () => {
   await import('./cms');
 });
@@ -90,7 +74,7 @@ describe('CMS упала, последняя версия есть', () => {
     let { getCms } = await import('./cms');
     await getCms('faq', { locale: 'ru' });
 
-    vi.resetModules(); // новый процесс: память о записанном сброшена, диск — нет
+    vi.resetModules();
     stubFetch(failing as () => Promise<Response>);
     ({ getCms } = await import('./cms'));
 
@@ -179,11 +163,6 @@ describe('списки страниц для сборки', () => {
   });
 });
 
-/**
- * Бренд v2 (Р-040): строгая схема отвергла бы ответ из-за одного пустого
- * поля. Раньше это давало чужой бренд из фикстуры, теперь — ошибку; оба
- * исхода плохи, поэтому бренд разбирается мягко по полям.
- */
 describe('бренд из CMS v2', () => {
   it('primaryColor: null → бренд остаётся боевым', async () => {
     stubFetch(() =>

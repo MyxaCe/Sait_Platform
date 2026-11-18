@@ -1,10 +1,5 @@
 import { Skeleton } from '@broker/ui';
 
-/**
- * Загрузка раздела кабинета: каркас вместо пустоты (концепция §1.8 — «пусто ≠
- * сломалось ≠ грузится»). Форма повторяет главную: шапка профиля, две карточки
- * счетов, ряд шагов — на остальных разделах читается как «грузится контент».
- */
 export default function Loading() {
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-4 lg:gap-5 xl:max-w-[1600px]" aria-busy="true">

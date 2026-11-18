@@ -1,40 +1,19 @@
 import type { Queryable } from '@broker/money';
 
-/**
- * Настройки поддержки — ничего не хардкодим (решение владельца 10.11).
- *
- * Хранятся одним JSONB (`support_settings.settings`, строка на базу = на
- * ячейку/тенант). **Ключи совпадают с будущим глобалом CMS «Поддержка»**
- * (camelCase, вложенность как у Payload-группы): переезд текстов в CMS —
- * смена источника чтения, а не схемы и не кода экранов.
- *
- * Чтение МЯГКОЕ (потребитель парсит мягко, CLAUDE.md): неизвестный ключ
- * отбрасывается, кривое значение заменяется умолчанием — экран поддержки не
- * падает из-за одной опечатки в настройке. Запись — СТРОГАЯ
- * (`validateSettings`): админка не сохранит то, что потом прочтётся иначе.
- */
-
 export type Weekday = 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun';
 export const WEEKDAYS: readonly Weekday[] = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
 
 export interface DayHours {
-  /** «HH:MM» местного времени. */
   open: string;
   close: string;
 }
 
 export interface SupportTexts {
-  /** Приветствие в пустом чате кабинета. */
   greeting: string;
-  /** Плашка/автоответ вне рабочих часов. */
   offHours: string;
-  /** Автоответ на новое обращение (чат в часы работы / письмо-подтверждение). */
   autoReply: string;
-  /** Подпись в письмах оператора. */
   signature: string;
-  /** Подзаголовок формы обращения на витрине. */
   formIntro: string;
-  /** Просьба оценить после «решено». */
   csatPrompt: string;
   passwordResetSubject: string;
   passwordResetBody: string;
@@ -49,18 +28,14 @@ export interface SupportCategory {
 
 export interface SupportSettings {
   channels: {
-    /** Чат в кабинете (кнопка в углу). */
     chat: boolean;
-    /** Форма обращения на витрине (гость → тикет, ответ на почту). */
     webForm: boolean;
-    /** Почтовый канал поддержки: приём писем и ответы письмом. */
     email: boolean;
   };
   hours: {
     timezone: string;
     alwaysOpen: boolean;
     week: Record<Weekday, DayHours | null>;
-    /** Праздники «YYYY-MM-DD» (местная дата). */
     holidays: string[];
   };
   sla: {
@@ -69,20 +44,17 @@ export interface SupportSettings {
     webFormFirstResponseMinutes: number;
   };
   autoReply: { enabled: boolean };
-  /** Решённое закрывается после N дней тишины. */
   autoCloseDays: number;
   attachments: { maxBytes: number };
   limits: {
     chatMessagesPerMinute: number;
     emailsPerSenderPerHour: number;
   };
-  /** Имя отправителя писем (адрес — env ячейки, не настройка). */
   mail: { fromName: string };
   categories: SupportCategory[];
   texts: { ru: SupportTexts; en: SupportTexts };
 }
 
-/** MIME вложений — закрытый перечень (как KYC); размер — настройка. */
 export const ATTACHMENT_MIME: readonly string[] = ['application/pdf', 'image/jpeg', 'image/png'];
 
 const WORKDAY: DayHours = { open: '09:00', close: '21:00' };
@@ -154,8 +126,6 @@ export const TEXT_KEYS: readonly (keyof SupportTexts)[] = [
   'emailVerifySubject',
   'emailVerifyBody',
 ];
-
-/* ─── мягкое чтение ─────────────────────────────────────────────────── */
 
 type Obj = Record<string, unknown>;
 const isObj = (v: unknown): v is Obj => typeof v === 'object' && v !== null && !Array.isArray(v);
@@ -247,14 +217,8 @@ export function parseSupportSettings(raw: unknown): SupportSettings {
   };
 }
 
-/* ─── строгая запись ────────────────────────────────────────────────── */
-
 export type SettingsError = { field: string; code: string };
 
-/**
- * Строгая проверка перед сохранением: то, что сохранили, прочтётся ровно так
- * же (мягкое чтение не подменит ни одного значения умолчанием).
- */
 export function validateSettings(s: SupportSettings): SettingsError[] {
   const errors: SettingsError[] = [];
   if (!isValidTimezone(s.hours.timezone)) errors.push({ field: 'hours.timezone', code: 'invalidTimezone' });
@@ -299,7 +263,6 @@ export async function loadSupportSettings(db: Queryable): Promise<SupportSetting
   return parseSupportSettings(r.rows[0]?.settings ?? {});
 }
 
-/** Подпись рабочих часов для текстов («пн–пт 09:00–21:00 (Europe/Moscow)»). */
 export function describeHours(s: SupportSettings, locale: 'ru' | 'en'): string {
   if (s.hours.alwaysOpen) return locale === 'ru' ? 'круглосуточно' : '24/7';
   const names: Record<Weekday, [string, string]> = {

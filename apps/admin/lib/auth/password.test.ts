@@ -8,13 +8,6 @@ import {
   verifyPassword,
 } from './password';
 
-/**
- * ADM-01 · argon2id (Р-451). Настоящий `@node-rs/argon2`, не мок: смысл
- * модуля — именно в хеше. Параметры снижены окружением, чтобы прогон был
- * быстрым, но алгоритм и формат PHC — настоящие.
- */
-
-/** Дешёвые параметры: тест про корректность, не про стойкость. */
 function setCheapParams() {
   process.env.ADMIN_ARGON_MEMORY_KIB = '1024';
   process.env.ADMIN_ARGON_TIME = '1';
@@ -85,8 +78,7 @@ describe('argon2id · needsRehash (Р-451: параметры рядом с хе
 
   it('параметры усилили (память выросла) → нужен перехеш', async () => {
     setCheapParams();
-    const hash = await hashPassword('pw'); // m=1024
-    // Конфиг теперь строже — старый хеш отстал.
+    const hash = await hashPassword('pw');
     process.env.ADMIN_ARGON_MEMORY_KIB = String(DEFAULT_ARGON_PARAMS.memoryCost);
     expect(currentArgonParams().memoryCost).toBe(DEFAULT_ARGON_PARAMS.memoryCost);
     expect(needsRehash(hash)).toBe(true);
@@ -94,7 +86,7 @@ describe('argon2id · needsRehash (Р-451: параметры рядом с хе
 
   it('любой из t/p разошёлся → нужен перехеш', async () => {
     setCheapParams();
-    const hash = await hashPassword('pw'); // t=1,p=1
+    const hash = await hashPassword('pw');
     process.env.ADMIN_ARGON_TIME = '3';
     expect(needsRehash(hash)).toBe(true);
   });

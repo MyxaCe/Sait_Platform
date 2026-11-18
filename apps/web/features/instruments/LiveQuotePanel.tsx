@@ -11,7 +11,6 @@ import { formatPrice } from '@broker/utils';
 import { QuotePrice, priceReading } from './QuotePrice';
 import { usePriceFlash } from './usePriceFlash';
 
-/** Примерный спред по категориям (доля цены) — до подключения реального фида bid/ask */
 const SPREAD_FACTOR: Record<SymbolDef['category'], number> = {
   forex: 0.00006,
   metals: 0.0001,
@@ -27,27 +26,10 @@ export function LiveQuotePanel({ def }: { def: SymbolDef }) {
   const [quote] = useRealtimeQuotes([def.symbol]);
   const status = useConnectionStatus();
 
-  /*
-    Было `quote?.price ?? def.basePrice` — подстановка справочной цены
-    на место живой, самой крупной цифрой страницы (WEB-17). `basePrice`
-    из справочника означает «инструмент такой существует», а не «он
-    стоит столько»: это не старая котировка, а цифра из описания, и
-    показать её как цену значит утверждать сделку, которой не было.
-
-    Гейт ОДИН — общее правило `displayPrice`. Число для bid/ask берётся
-    только тогда, когда правило согласилось показать цену: написать
-    здесь `quote.ts !== 0` значило бы завести второй источник того же
-    условия, и при переносе порога наружу он остался бы прежним.
-  */
   const reading = priceReading(quote);
 
   const flash = usePriceFlash(reading);
 
-  /*
-    Bid и ask СЧИТАЮТСЯ из цены, значит без цены их нет. Раньше они
-    считались из подставленной и выглядели как настоящие котировки на
-    покупку и продажу — по ним можно принять решение.
-  */
   const halfSpread = reading === null ? null : (reading * SPREAD_FACTOR[def.category]) / 2;
   const bid =
     reading === null || halfSpread === null ? null : formatPrice(reading - halfSpread, def.digits);
@@ -71,12 +53,6 @@ export function LiveQuotePanel({ def }: { def: SymbolDef }) {
         >
           <QuotePrice quote={quote} noDataLabel={tConn('noData')} />
         </span>
-        {/*
-          Было `?? 0` — подстановка, прямо запрещённая контрактом: на крупной
-          цифре страницы инструмента она показывала уверенное «0.00%». Нулём
-          подменялись сразу два разных незнания — котировки ещё нет и
-          изменение не пришло, — и оба читались как «цена не изменилась».
-        */}
         <PriceChange value={quote?.changePercent ?? null} className="text-base" />
       </div>
 

@@ -3,11 +3,6 @@
 import { useState } from 'react';
 import { cn } from '@broker/ui';
 
-/**
- * Фасад видео-стрима (спецификация §7 «Стримы»): сторонний JS
- * YouTube/Vimeo НЕ грузится до клика — на странице только постер
- * и кнопка. Клик → iframe с privacy-доменом.
- */
 export interface StreamFacadeProps {
   provider: 'youtube' | 'vimeo';
   videoId: string;

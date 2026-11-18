@@ -1,18 +1,10 @@
 import type { ClientPromotionsView, ContestSummary, ParticipationView, PromoCardView } from '@broker/promo';
 import { REAL_ACCOUNT_CURRENCY } from '@broker/money/display-currency';
 
-/**
- * Чистые помощники экранов «Акции», «Пригласи друга», «Конкурс», «Условия
- * счетов». Ни одного числа акции здесь нет: проценты — из б.п. правил,
- * суммы — минорные единицы правил/начислений, сроки — из дат данных.
- */
-
 const DAY_MS = 86_400_000;
 
-/** Валюта выплат акций: деньги идут на реальный счёт (USDT TRC20, решение владельца №1). */
 export const PROMO_CURRENCY = REAL_ACCOUNT_CURRENCY;
 
-/** Б.п. → «30 %», «0,15 %», «0,05 %» (до двух знаков, без хвостовых нулей). */
 export function bpsPercent(bps: number, locale: string): string {
   const value = bps / 100;
   const n = new Intl.NumberFormat(locale === 'en' ? 'en-US' : 'ru-RU', {
@@ -22,13 +14,11 @@ export function bpsPercent(bps: number, locale: string): string {
   return locale === 'en' ? `${n}%` : `${n} %`;
 }
 
-/** Б.п. доходности со знаком: «+6,5 %» / «−3,2 %» (минус типографский). */
 export function signedBpsPercent(bps: number, locale: string): string {
   const sign = bps > 0 ? '+' : bps < 0 ? '−' : '';
   return `${sign}${bpsPercent(Math.abs(bps), locale)}`;
 }
 
-/** Сколько полных суток осталось до дедлайна (вверх; прошедший — 0). */
 export function daysLeft(deadlineIso: string | null, now: Date = new Date()): number | null {
   if (!deadlineIso) return null;
   const t = Date.parse(deadlineIso);
@@ -36,14 +26,12 @@ export function daysLeft(deadlineIso: string | null, now: Date = new Date()): nu
   return Math.max(0, Math.ceil((t - now.getTime()) / DAY_MS));
 }
 
-/** Доля выполнения 0…1 (цели нет или она нулевая — 1, если условие выполнено). */
 export function progressRatio(current: number | undefined, target: number | undefined, met: boolean): number {
   if (met) return 1;
   if (typeof current !== 'number' || typeof target !== 'number' || !(target > 0)) return 0;
   return Math.min(1, Math.max(0, current / target));
 }
 
-/** Удержание сделки: 120 → { value: 2, unit: 'min' }, 45 → { value: 45, unit: 'sec' }. */
 export function holdParts(seconds: number): { value: number; unit: 'sec' | 'min' } {
   return seconds >= 60 && seconds % 60 === 0 ? { value: seconds / 60, unit: 'min' } : { value: seconds, unit: 'sec' };
 }
@@ -71,7 +59,6 @@ export function formatShortDate(iso: string | null, locale: string): string | nu
   }).format(d);
 }
 
-/** Месяц начисления `YYYY-MM` → «октябрь 2026». */
 export function formatPeriod(period: string | null, locale: string): string | null {
   if (!period || !/^\d{4}-\d{2}$/.test(period)) return null;
   const [y, m] = period.split('-').map(Number) as [number, number];
@@ -82,16 +69,10 @@ export function formatPeriod(period: string | null, locale: string): string | nu
   }).format(new Date(Date.UTC(y, m - 1, 15)));
 }
 
-/* ── Главная: 1–2 самые релевантные акции ─────────────────────────────── */
-
 export type HomePromo =
   | { kind: 'participation'; item: ParticipationView }
   | { kind: 'available'; item: PromoCardView };
 
-/**
- * Что показать на главной: сначала мои активные участия (в процессе / ждут
- * проверки), затем — доступные к вступлению. Не больше `limit`.
- */
 export function pickHomePromos(view: Pick<ClientPromotionsView, 'participating' | 'available'>, limit = 2): HomePromo[] {
   const active = view.participating
     .filter((p) => p.status === 'enrolled' || p.status === 'qualified')
@@ -108,13 +89,10 @@ export function pickHomePromos(view: Pick<ClientPromotionsView, 'participating' 
 }
 
 function rankParticipation(p: ParticipationView): number {
-  // Где осталось меньше всего до награды — выше: условия-деньги с прогрессом, потом кешбэк.
   if (p.state === 'qualified' || p.status === 'qualified') return 0;
   if (p.type === 'deposit_bonus' || p.type === 'referral') return 1;
   return 2;
 }
-
-/* ── Конкурс: вкладки ─────────────────────────────────────────────────── */
 
 export type ContestTab = 'running' | 'upcoming' | 'finished';
 
@@ -125,7 +103,6 @@ export function contestTab(c: Pick<ContestSummary, 'phase'>): ContestTab | null 
   return null;
 }
 
-/** Конкурс по умолчанию: идущий › ближайший будущий › последний завершённый. */
 export function defaultContest<T extends Pick<ContestSummary, 'phase' | 'startsAt' | 'endsAt' | 'promotionId'>>(
   list: readonly T[],
 ): T | null {
@@ -138,12 +115,9 @@ export function defaultContest<T extends Pick<ContestSummary, 'phase' | 'startsA
   return finished[0] ?? null;
 }
 
-/** Есть ли что показать в навигации «Конкурс» (идущий или будущий). */
 export function hasLiveContest(list: readonly Pick<ContestSummary, 'phase'>[]): boolean {
   return list.some((c) => c.phase === 'running' || c.phase === 'upcoming');
 }
-
-/* ── Условия счетов ───────────────────────────────────────────────────── */
 
 export type FeeShape =
   | { kind: 'none' }

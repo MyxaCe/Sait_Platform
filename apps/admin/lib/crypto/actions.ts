@@ -20,12 +20,6 @@ import { percentToBps, setClientUnverifiedWithdrawLimit } from './withdraw-limit
 import { updateMinStop } from '../terminal-settings/stops';
 import { findClientForBinding } from './queries';
 
-/**
- * Серверные экшены денежной зоны. Автор — из сессии (Р-451), роль-гейт
- * fail-closed на сервере: деньги — admin и finance_operator (без второго
- * аппрува, решение штаба 09.11); настройки платформы — только admin.
- */
-
 export interface MoneyActionState {
   error?: string;
   detail?: string;
@@ -45,12 +39,9 @@ function fromResult(r: { ok: true } | { ok: false; reason: string; code?: string
   return { error: r.reason, ...(r.code ? { detail: r.code } : {}) };
 }
 
-/* ── Настройки платформы (admin) ───────────────────────────────────── */
-
 function minorFromField(fd: FormData, k: string): number | null {
   const p = parseUsdtAmountToCents(str(fd, k));
   if (p.ok) return p.cents;
-  // Ноль — законный минимум («без минимума»), а парсер суммы его отвергает.
   return /^0+(?:[.,]0{0,2})?$/.test(str(fd, k)) ? 0 : null;
 }
 
@@ -83,8 +74,6 @@ export async function updatePlatformSettingsAction(
   return fromResult(r);
 }
 
-/* ── Минимальное расстояние SL/TP в терминале (admin, как настройки платформы) ── */
-
 export async function updateMinStopAction(_prev: MoneyActionState, fd: FormData): Promise<MoneyActionState> {
   const operator = await getOperatorSession();
   if (!operator) redirect(LOGIN_PATH);
@@ -96,8 +85,6 @@ export async function updateMinStopAction(_prev: MoneyActionState, fd: FormData)
   revalidatePath('/settings');
   return fromResult(r);
 }
-
-/* ── Флаги клиента (admin, finance_operator) ───────────────────────── */
 
 function asKyc(v: string): KycSetting {
   return v === 'required' || v === 'not_required' ? v : 'inherit';
@@ -128,8 +115,6 @@ export async function setClientMoneyFlagsAction(
   return fromResult(r);
 }
 
-/* ── Лимит вывода без верификации у клиента (admin, finance_operator) ── */
-
 export async function setClientWithdrawLimitAction(
   _prev: MoneyActionState,
   fd: FormData,
@@ -139,7 +124,6 @@ export async function setClientWithdrawLimitAction(
   const userId = str(fd, 'userId');
   if (!userId) return { error: 'noClient' };
 
-  // «Наследовать» — пустое переопределение; иначе процент из поля.
   let bps: number | null = null;
   if (str(fd, 'mode') !== 'inherit') {
     bps = percentToBps(str(fd, 'pct'));
@@ -154,8 +138,6 @@ export async function setClientWithdrawLimitAction(
   revalidatePath(`/clients/${userId}`);
   return fromResult(r);
 }
-
-/* ── Неопознанные поступления ──────────────────────────────────────── */
 
 export async function bindUnidentifiedAction(
   _prev: MoneyActionState,
@@ -176,8 +158,6 @@ export async function bindUnidentifiedAction(
   revalidatePath('/money');
   return fromResult(r);
 }
-
-/* ── Выводы ────────────────────────────────────────────────────────── */
 
 function opInput(fd: FormData, operator: { operatorId: string; login: string }) {
   return {

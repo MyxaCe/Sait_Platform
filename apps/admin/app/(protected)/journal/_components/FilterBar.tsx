@@ -3,14 +3,6 @@ import { Button, Input, Select } from '@broker/ui';
 import { ACTION_GROUPS, ACTION_LABELS, actionGroup } from '@/lib/journal/labels';
 import type { JournalFilters, OperatorOption } from '../queries';
 
-/**
- * Фильтр журнала (ADM-06, концепция §6.1 toolbar): оператор, тип действия
- * (человеческие подписи, сгруппированные по областям), период. Обычная
- * GET-форма — фильтры живут в URL, лента серверная, работает без JS. Субъект
- * (из ссылки «все записи по субъекту») сохраняется скрытыми полями и
- * показывается снаружи как снимаемый фильтр. Смена фильтра сбрасывает страницу.
- */
-
 const label = 'text-secondary text-xs font-medium';
 
 export function FilterBar({
@@ -22,10 +14,8 @@ export function FilterBar({
   filters: JournalFilters;
   operators: OperatorOption[];
   actions: string[];
-  /** Есть ли хоть один фильтр — показать «Сбросить». */
   active: boolean;
 }) {
-  // Типы действий: известные — по группам словаря, неизвестные — «Прочее» кодом.
   const known = new Set(actions.filter((a) => ACTION_LABELS[a]));
   const unknown = actions.filter((a) => !ACTION_LABELS[a]);
 
@@ -50,7 +40,6 @@ export function FilterBar({
         <span className={label}>Тип действия</span>
         <Select name="action" controlSize="compact" defaultValue={filters.action ?? ''}>
           <option value="">Все действия</option>
-          {/* Служба безопасности: все правки учётных данных клиентов одним выбором. */}
           <option value="client.credentials.*">Все правки учётных данных клиентов</option>
           {ACTION_GROUPS.map((g) => {
             const items = [...known].filter((a) => actionGroup(a) === g.key);

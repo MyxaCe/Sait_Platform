@@ -18,18 +18,7 @@ import { readClientFacts, readPromoSettings, readPromotion, listPromotions, PROM
 import { ibCpaRules, type ContestRules, type PromotionType, type ReferralRules } from './rules';
 import type { ClientFacts } from './facts';
 
-/**
- * API ДЛЯ КАБИНЕТА — функции, по которым кабинет строит экраны «Акции»,
- * «Пригласи друга», «Конкурс». Чтения — живые (оценка на лету, без записи);
- * записи — вступление в акцию и в конкурс.
- *
- * Тексты для клиента приходят из админки (`promotions.texts[locale]`), числа
- * — из правил. В коде экранов ни одного числа акции быть не должно.
- */
-
 const iso = (v: unknown) => (v instanceof Date ? v.toISOString() : new Date(String(v)).toISOString());
-
-/* ── Публичное представление правил ───────────────────────────────────── */
 
 export interface PromoTextView {
   title: string;
@@ -42,7 +31,6 @@ function textsFor(promo: PromotionRow, locale: string): PromoTextView {
   return { title: t?.title ?? promo.title, summary: t?.summary ?? '', terms: t?.terms ?? '' };
 }
 
-/** Числа правил для показа клиенту (без внутренних полей). */
 export type PublicRules =
   | {
       type: 'deposit_bonus';
@@ -99,8 +87,6 @@ export function publicRules(promo: PromotionRow): PublicRules | null {
   }
 }
 
-/* ── «Акции»: доступные / участвую / начислено ────────────────────────── */
-
 export interface PromoCardView {
   id: string;
   slug: string;
@@ -110,7 +96,6 @@ export interface PromoCardView {
   rules: PublicRules;
   startsAt: string | null;
   endsAt: string | null;
-  /** Кнопка «Участвовать» (бонус, кешбэк). Конкурс — `joinContest`, реферальная — автоматически. */
   enrollable: boolean;
 }
 
@@ -122,13 +107,11 @@ export interface ParticipationView {
   rules: PublicRules | null;
   status: 'enrolled' | 'qualified' | 'rewarded' | 'expired' | 'rejected' | 'not_eligible';
   enrolledAt: string;
-  /** Живая оценка (для enrolled); для закрытых — последний снимок. */
   state: EvaluationState | null;
   reason: EvaluationReason | null;
   conditions: ConditionView[];
   deadline: string | null;
   expectedRewardMinor: number | null;
-  /** Кешбэк: прогресс текущего месяца. */
   cashback: CashbackResult | null;
 }
 
@@ -142,18 +125,14 @@ export interface RewardView {
   amountMinor: number;
   currency: string;
   period: string | null;
-  /** Клиенту — три состояния: в обработке / начислено / отклонено. */
   status: ClientRewardStatus;
-  /** Причина отказа (основание оператора) — показывается клиенту. */
   rejectReason: string | null;
-  /** Связь с записью в истории счёта терминала. */
   externalRef: string;
   createdAt: string;
   creditedAt: string | null;
 }
 
 export interface ClientPromotionsView {
-  /** Раздел акций доступен клиенту (платформа + страна). */
   enabled: boolean;
   disabledReason: 'platform_disabled' | 'country_blocked' | null;
   available: PromoCardView[];
@@ -189,11 +168,6 @@ export async function listClientRewards(db: Queryable, userId: string): Promise<
   }));
 }
 
-/**
- * Всё для раздела «Акции» кабинета. `locale` — язык текстов (из админки).
- * Платформа выключила акции / страна под запретом → `enabled: false` и пустые
- * списки доступного (начисленное всё равно показывается — это деньги клиента).
- */
 export async function getClientPromotions(
   db: Queryable,
   userId: string,
@@ -267,7 +241,6 @@ export async function getClientPromotions(
       const rules = publicRules(promo);
       if (!rules) continue;
       const a = promoAvailability({ settings, promo, clientCountry: country, now });
-      // Конкурс показывается и до старта (вступить можно заранее).
       const contestUpcoming = promo.type === 'contest' && !a.available && a.reason === 'not_started';
       if (!a.available && !contestUpcoming) continue;
       available.push({
@@ -297,7 +270,6 @@ export type EnrollResult =
   | { ok: true }
   | { ok: false; reason: Unavailability | 'not_found' | 'not_enrollable' | 'already_enrolled' };
 
-/** «Участвовать» (бонус на депозит, кешбэк). Журнал — от имени кабинета. */
 export async function enrollInPromotion(
   pool: PoolLike,
   input: { userId: string; promotionId: string; now?: Date },
@@ -339,18 +311,14 @@ export async function enrollInPromotion(
   }
 }
 
-/* ── «Пригласи друга» ─────────────────────────────────────────────────── */
-
 export type InviteeStage = 'registered' | 'kyc' | 'deposit' | 'turnover' | 'qualified' | 'rewarded' | 'expired' | 'rejected';
 
 export interface InviteeView {
-  /** Маскированное имя: «Алексей М.». */
   displayName: string;
   registeredAt: string;
   stage: InviteeStage;
   conditions: ConditionView[];
   deadline: string | null;
-  /** Моя награда за этого друга. */
   myReward: { amountMinor: number; status: ClientRewardStatus } | null;
 }
 
@@ -358,20 +326,13 @@ export interface MyReferralView {
   enabled: boolean;
   disabledReason: 'platform_disabled' | 'country_blocked' | null;
   code: string;
-  /** Ссылка: `linkBase` + `?ref=CODE`; `null`, если база ссылки не передана. */
   link: string | null;
-  /** Действующая реферальная акция (условия и награды) — из админки. */
   program: { promotionId: string; texts: PromoTextView; rules: Extract<PublicRules, { type: 'referral' }> } | null;
-  /** Клиент — IB-партнёр (у него свои условия, награды «друга» не платятся). */
   isPartner: boolean;
   invited: InviteeView[];
   totals: { invited: number; qualified: number; creditedMinor: number; processingMinor: number };
 }
 
-/**
- * Этапы клиента по фактам (без целей) — для партнёра с долей дохода, у
- * которого нет условий квалификации: KYC пройден, был депозит, была сделка.
- */
 export function factualConditions(facts: Pick<ClientFacts, 'kycVerified' | 'deposits' | 'trades'>): ConditionView[] {
   return [
     { key: 'kyc', met: facts.kycVerified },
@@ -392,7 +353,6 @@ function stageOf(conditions: ConditionView[], status: string, state: EvaluationS
   return 'turnover';
 }
 
-/** «Пригласи друга»: код (создаётся лениво), ссылка, правила, приглашённые, награды. */
 export async function getMyReferral(
   pool: PoolLike,
   userId: string,
@@ -406,8 +366,6 @@ export async function getMyReferral(
   const base = opts.linkBase?.trim();
   const link = base ? `${base}${base.includes('?') ? '&' : '?'}ref=${encodeURIComponent(code)}` : null;
 
-  // IB-партнёр: этапы его клиентов — по CPA-условиям ЕГО договора (ib_partners), а не по
-  // реферальной программе; у доли дохода (revshare) условий квалификации нет — этапы по фактам.
   const ib = await pool.query(
     `SELECT id::text AS id, model, cpa_rules FROM ib_partners WHERE user_id::text = $1 AND status = 'active'`,
     [userId],
@@ -448,7 +406,6 @@ export async function getMyReferral(
     let state: EvaluationState | null = null;
     const myReward = rewardByFriend.get(friendId) ?? null;
     if (partner) {
-      // Статус — по начислению партнёру за этого клиента (CPA): нет — идёт квалификация.
       partStatus = !myReward ? 'enrolled' : myReward.status === 'rejected' ? 'rejected' : myReward.status === 'credited' ? 'rewarded' : 'qualified';
       const facts = await readClientFacts(pool, friendId, { tradesFrom: attributedAt });
       if (facts && partner.model === 'cpa' && partner.cpa.success) {
@@ -514,8 +471,6 @@ export async function getMyReferral(
   };
 }
 
-/* ── Конкурс ──────────────────────────────────────────────────────────── */
-
 export interface ContestSummary {
   promotionId: string;
   slug: string;
@@ -525,7 +480,6 @@ export interface ContestSummary {
   endsAt: string;
   phase: ContestPhase;
   participants: number;
-  /** Моё участие (если передан userId). */
   myStatus: 'pending_reset' | 'active' | 'disqualified' | 'withdrawn' | null;
 }
 
@@ -566,21 +520,18 @@ export async function listContests(
 }
 
 export interface LeaderboardRow extends Omit<ContestStanding, 'userId' | 'displayName' | 'baselineMinor' | 'prizeBlockedByKyc'> {
-  /** Маскированное имя. */
   displayName: string;
   isMe: boolean;
 }
 
 export interface ContestLeaderboard {
   contest: ContestSummary;
-  /** Итоговый снимок (после подведения итогов) или живой расчёт. */
   final: boolean;
   computedAt: string;
   rows: LeaderboardRow[];
   me: LeaderboardRow | null;
 }
 
-/** Лидерборд конкурса и моё место. Имена маскированы; после итогов — из итогового снимка. */
 export async function getContestLeaderboard(
   db: Queryable,
   promotionId: string,
@@ -620,14 +571,10 @@ export async function getContestLeaderboard(
   };
 }
 
-/* ── IB-партнёр: свои условия ─────────────────────────────────────────── */
-
 export interface MyPartnerView {
   displayName: string;
   model: 'cpa' | 'revshare';
-  /** CPA: сумма за квалифицированного клиента (минорные). */
   cpaAmountMinor: number | null;
-  /** CPA: условия квалификации клиента (из договора в админке). */
   cpaRules: {
     kycRequired: boolean;
     minDepositMinor: number;
@@ -635,17 +582,10 @@ export interface MyPartnerView {
     minHoldSeconds: number;
     windowDays: number;
   } | null;
-  /** Доля дохода платформы (наценка + комиссия клиентов), б.п. */
   revshareBps: number | null;
-  /** Начисления партнёру по месяцам (доля дохода) и за клиентов (CPA). */
   rewards: { period: string | null; amountMinor: number; status: ClientRewardStatus; createdAt: string }[];
 }
 
-/**
- * Условия IB-партнёра для кабинета (партнёр видит свой договор: модель,
- * ставку, условия квалификации). `null` — клиент не партнёр или партнёрство
- * приостановлено.
- */
 export async function getMyPartner(db: Queryable, userId: string): Promise<MyPartnerView | null> {
   const r = await db.query(
     `SELECT display_name, model, cpa_amount_minor, cpa_rules, revshare_bps

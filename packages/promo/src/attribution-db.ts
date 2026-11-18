@@ -5,11 +5,6 @@ import { REFERRAL_ACTIONS } from './actions';
 import { isMeaningfulIp, normalizeEmail } from './antifraud';
 import type { ResolvedAttribution } from './attribution';
 
-/**
- * Атрибуция в базе: реф-коды и запись «кто привёл» при регистрации.
- */
-
-/** Алфавит кода без похожих символов (0/O, 1/I/L). */
 const CODE_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
 export const REFERRAL_CODE_LENGTH = 8;
 
@@ -19,7 +14,6 @@ export function generateReferralCode(rand: (max: number) => number = randomInt):
   return s;
 }
 
-/** Реф-код клиента; создаётся лениво (первое открытие «Пригласи друга»). */
 export async function ensureReferralCode(db: Queryable, userId: string): Promise<string> {
   const cur = await db.query(`SELECT code FROM referral_codes WHERE user_id::text = $1`, [userId]);
   if (cur.rows[0]) return String(cur.rows[0].code);
@@ -49,15 +43,6 @@ export type AttributionOutcome =
   | { state: 'attributed'; referrerUserId: string; ibPartnerId: string | null }
   | { state: 'rejected'; referrerUserId: string; reason: SelfReferralReason };
 
-/**
- * Записать атрибуцию нового клиента ВНУТРИ транзакции регистрации.
- *
- * Самореферал отсекается: реферер с тем же IP регистрации/сессий или тем же
- * email (с точностью до +метки и точек gmail) — атрибуция `rejected` с
- * причиной (строка для аудита, наград по ней не будет). Неизвестный код —
- * ничего не пишем (опечатка в ссылке не должна ломать регистрацию).
- * Слаг акции (`?promo=`) сохраняется всегда — это источник клиента.
- */
 export async function recordAttributionWithinTx(
   tx: Queryable,
   input: {

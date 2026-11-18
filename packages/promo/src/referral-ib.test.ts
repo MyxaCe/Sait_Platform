@@ -2,17 +2,6 @@ import { describe, expect, it } from 'vitest';
 import type { PoolLike } from '@broker/money';
 import { getMyReferral } from './cabinet';
 
-/**
- * Клиенты IB-партнёра: этапы и статусы — по CPA-условиям ЕГО договора
- * (`ib_partners.cpa_rules`), а не по правилам реферальной программы
- * (решение штаба 10.11). У доли дохода (revshare) условий квалификации нет —
- * этапы по фактам клиента.
- *
- * Сценарий различает два источника правил: реферальная программа требует
- * депозит 10 000 USDT, договор CPA — 100 USDT. Клиент внёс 150 и прошёл KYC.
- * По программе он застрял бы на «KYC», по договору — дошёл до «депозита».
- */
-
 const NOW = new Date('2026-11-10T12:00:00Z');
 const PARTNER = '00000000-0000-4000-8000-0000000000aa';
 const CLIENT = '00000000-0000-4000-8000-0000000000cc';
@@ -48,7 +37,6 @@ const REFERRAL_PROGRAM = {
 
 type Row = Record<string, unknown>;
 
-/** Пул-заглушка: маршрутизация по тексту SQL (только чтения getMyReferral). */
 function fakePool(opts: { partner: Row | null; rewards?: Row[] }): PoolLike {
   const route = (sql: string): Row[] => {
     if (sql.includes('FROM platform_promo_settings')) {

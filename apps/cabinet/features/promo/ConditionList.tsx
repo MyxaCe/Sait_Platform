@@ -3,11 +3,6 @@ import { cn, formatMinor, formatMoney, Money } from '@broker/ui';
 import type { ConditionView } from '@broker/promo';
 import { daysLeft, formatDate, PROMO_CURRENCY, progressRatio } from './format';
 
-/**
- * Прогресс по условиям участия: каждое условие — строка с отметкой; оборот —
- * прогресс-баром «3 400 из 9 000 USDT»; срок — «осталось N дней · до даты».
- * Ключи условий приходят из движка, числа — из правил акции и фактов клиента.
- */
 export function ConditionList({
   conditions,
   deadline,
@@ -72,7 +67,6 @@ function Turnover({ c, compact }: { c: ConditionView; compact: boolean }) {
       <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5">
         <span className={cn('text-sm', c.met ? 'text-primary' : 'text-secondary')}>{t('cond.turnover')}</span>
         <span className="text-sm tabular-nums text-primary">
-          {/* Нет числа от движка — «—», а не «0» (QA-05: охраняемая величина). */}
           {t('cond.turnoverValue', {
             current: typeof c.current === 'number' ? formatMinor(c.current) : '—',
             target: typeof c.target === 'number' ? formatMoney(c.target, PROMO_CURRENCY) : '—',

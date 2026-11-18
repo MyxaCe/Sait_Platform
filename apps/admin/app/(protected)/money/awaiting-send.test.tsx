@@ -4,7 +4,6 @@ import type { WithdrawalRowView } from '@/lib/crypto/queries';
 import { awaitingSend, requestsWord } from './view';
 
 vi.mock('next/navigation', () => ({ redirect: vi.fn() }));
-// Формы решения (server actions) в этом тесте не нужны.
 vi.mock('./MoneyForms', () => ({ WithdrawalActions: () => null }));
 
 const { AwaitingSendBanner } = await import('./WithdrawalsView');

@@ -1,17 +1,6 @@
 import { ImapFlow } from 'imapflow';
 import type { ImapConfig } from './config';
 
-/**
- * IMAP ящика поддержки (Dovecot на cPanel). ОДНО соединение на ящик (лимит
- * хостинга на число соединений с IP): IDLE в INBOX — новое письмо будит
- * обработку сразу; страховочный опрос раз в `pollIntervalMs` — на случай,
- * если IDLE молча умер. Обработанное письмо ПЕРЕНОСИТСЯ в `Processed` (не
- * удаляется: в Webmail видна вся история), сбойное — в `Failed`.
- *
- * Отдельное короткое соединение — для APPEND копии в «Отправленные» (не
- * мешает IDLE основного).
- */
-
 export interface MailboxMessage {
   uid: number;
   source: Buffer;
@@ -22,7 +11,6 @@ export function imapClient(cfg: ImapConfig, onError?: (e: Error) => void): ImapF
     host: cfg.host,
     port: cfg.port,
     secure: cfg.secure,
-    // Без шифрования пароль ящика не уходит: на 143 — обязательный STARTTLS.
     doSTARTTLS: cfg.secure ? undefined : true,
     auth: { user: cfg.user, pass: cfg.password },
     tls: { rejectUnauthorized: cfg.rejectUnauthorized },
@@ -41,7 +29,6 @@ export async function ensureFolders(client: ImapFlow, cfg: ImapConfig): Promise<
   }
 }
 
-/** Папка «Отправленные»: из env, иначе по special-use `\Sent`, иначе «Sent». */
 export async function resolveSentFolder(client: ImapFlow, cfg: ImapConfig): Promise<string> {
   if (cfg.sentFolder) return cfg.sentFolder;
   const list = await client.list();
@@ -53,12 +40,6 @@ export async function resolveSentFolder(client: ImapFlow, cfg: ImapConfig): Prom
   return 'Sent';
 }
 
-/**
- * Пройти INBOX: каждое письмо → `handle` → перенос в Processed/Failed.
- * Письма читаются по UID; UIDVALIDITY отдаётся обработчику (пишется в
- * `inbound_mail`): смена UIDVALIDITY не ведёт к повторной обработке, потому
- * что дедуп — по Message-ID, а обработанное уже вне INBOX.
- */
 export async function drainInbox(
   client: ImapFlow,
   cfg: ImapConfig,

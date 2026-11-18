@@ -1,13 +1,5 @@
 import { DataTable, Panel, cn, type DataTableColumn } from '@broker/ui';
 
-/**
- * Скелетоны `loading.tsx` разделов (концепция §6.1 «загрузка», аудит С10):
- * тот же каркас, что у готовой страницы (шапка → KPI → панель с таблицей /
- * карточка 2:1), чтобы при загрузке ничего не прыгало. Статичные плашки без
- * пульсации — «инструмент, не витрина» (§1). `aria-busy` + скрытая подпись
- * для скринридера.
- */
-
 function Bar({ className }: { className?: string }) {
   return <span aria-hidden className={cn('bg-primary/[0.07] block rounded', className)} />;
 }
@@ -83,14 +75,6 @@ function FormPanel({ fields = 3 }: { fields?: number }) {
 
 export type PageSkeletonVariant = 'dashboard' | 'list' | 'queue' | 'card' | 'split' | 'form';
 
-/**
- * - `dashboard` — шапка, два KPI-ряда, сетка 2:1 (очередь | лента);
- * - `list` — шапка + панель с фильтром и таблицей;
- * - `queue` — как `list`, но с KPI-рядом сверху;
- * - `card` — крошки, шапка сущности, вкладки, 2:1;
- * - `split` — таблица слева, панель/форма справа (операторы, плечо);
- * - `form` — панели настроек.
- */
 export function PageSkeleton({ variant }: { variant: PageSkeletonVariant }) {
   return (
     <div className="space-y-6" aria-busy="true">

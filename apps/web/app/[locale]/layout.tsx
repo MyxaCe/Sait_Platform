@@ -25,15 +25,6 @@ interface LayoutProps {
   params: { locale: string };
 }
 
-/**
- * Пререндер на сборке — только если сборке доступна CMS.
- *
- * В CI образ собирается без CMS. Прежде страницы пререндерились из
- * фикстур кода, и стенд час после каждого деплоя показывал код вместо
- * CMS (аудит 10.11). Теперь без CMS список пуст: страницы собираются
- * при первом запросе (on-demand ISR, `dynamicParams` по умолчанию true)
- * из CMS или из последней сохранённой версии её ответа.
- */
 export function generateStaticParams() {
   return isCmsConfigured() ? routing.locales.map((locale) => ({ locale })) : [];
 }
@@ -45,7 +36,6 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const t = await getTranslations({ locale: params.locale, namespace: 'meta' });
 
-  // Черновики не индексируются (риск R-09)
   let draft = false;
   try {
     draft = draftMode().isEnabled;
@@ -53,8 +43,6 @@ export async function generateMetadata({
     draft = false;
   }
 
-  // Бренд из CMS (White Label): имя — в title/OG/applicationName,
-  // favicon — если загружен, переопределяет статический. Имени в коде нет.
   const brand = await getCms('brand', {
     locale: params.locale === 'en' ? 'en' : 'ru',
   });
@@ -98,8 +86,6 @@ export async function generateMetadata({
       index: !draft,
       follow: !draft,
     },
-    // Возраст контента (ADR-020): по этой метке синтетический монитор
-    // проверяет цикл «правка → вебхук → обновление страницы»
     other: { 'rendered-at': new Date().toISOString() },
     appleWebApp: {
       capable: true,
@@ -122,20 +108,14 @@ export default async function RootLayout({ children, params }: LayoutProps) {
   const { locale } = params;
   if (!hasLocale(routing.locales, locale)) notFound();
 
-  // Обязательно для статического рендеринга страниц с переводами
   setRequestLocale(locale);
   const messages = await getMessages();
 
-  // Бренд из CMS (тег cms:brand): акцентный цвет инжектируется поверх
-  // токенов. Цвета в CMS нет (`null` в v2) — действует токен `--accent`:
-  // запасного цвета бренда в коде нет (10.11).
   const brand = await getCms('brand', { locale: locale as 'ru' | 'en' });
   const primary = resolvePrimaryColor(brand.primaryColor);
   const accentChannels = primary.color ? hexToRgbChannels(primary.color) : null;
   const tMeta = await getTranslations({ locale, namespace: 'meta' });
 
-  // В preview страница динамическая, rendered-at меняется на каждый запрос —
-  // автообновление там не имеет смысла (тот же try/catch, что в generateMetadata)
   let isDraft = false;
   try {
     isDraft = draftMode().isEnabled;
@@ -144,7 +124,6 @@ export default async function RootLayout({ children, params }: LayoutProps) {
   }
 
   return (
-    // suppressHydrationWarning: next-themes меняет data-theme до гидрации
     <html lang={locale} suppressHydrationWarning className={inter.variable}>
       <body className="bg-base font-sans text-primary" data-brand-color={primary.source}>
         {accentChannels && (

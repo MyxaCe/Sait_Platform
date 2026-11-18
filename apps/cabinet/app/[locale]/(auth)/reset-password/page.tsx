@@ -4,11 +4,6 @@ import { Link } from '@/i18n/navigation';
 import { ResetPasswordForm } from '@/features/auth/AuthMailForms';
 import { getPool } from '@/lib/db';
 
-/**
- * Новый пароль по ссылке из письма. Токен проверяется заранее (без расхода),
- * чтобы истёкшую/использованную ссылку назвать сразу, а не после ввода пароля.
- * Расходуется токен только отправкой формы (POST).
- */
 export const dynamic = 'force-dynamic';
 
 export default async function ResetPasswordPage({ params, searchParams }: { params: { locale: string }; searchParams: { token?: string } }) {

@@ -7,12 +7,6 @@ import { saveSupportSettings, saveTemplate, findAttachmentForOperator } from './
 import { allowedTransitions, asSupportRole, canTransition, supportAccess } from './model';
 import { createTestDb, seedOperator, seedUser, type TestDb } from './testing/pg';
 
-/**
- * Права support_operator проверяются НА УРОВНЕ ЗАПРОСОВ: контекст клиента
- * для этой роли собирается запросами без денежных колонок (смотрим и в
- * ответ, и в текст выполненного SQL), а не прячется в интерфейсе.
- */
-
 const S = { ...DEFAULT_SUPPORT_SETTINGS, hours: { ...DEFAULT_SUPPORT_SETTINGS.hours, alwaysOpen: true } };
 let db: TestDb;
 let userId: string;
@@ -20,7 +14,6 @@ let userId: string;
 beforeEach(async () => {
   db = await createTestDb();
   userId = await seedUser(db, { email: 'rich@client.test', name: 'Богдан Богатов' });
-  // Деньги клиента: реальный счёт, депозит и вывод с суммами/адресами/хэшами, KYC-документ.
   await db.query(`INSERT INTO real_accounts (user_id, balance_cents, currency) VALUES ($1, 4825013, 'USDT')`, [userId]);
   await db.query(
     `INSERT INTO crypto_deposits (user_id, tx_hash, status, amount_minor, from_address) VALUES ($1, $2, 'credited', 100000, 'TFromAddr')`,
@@ -117,7 +110,6 @@ describe('finance_operator — только назначенные ему', () =
     expect(await getTicketForOperator(db, fin, String(t1.number))).toBeNull();
     expect(await operatorReply(db, S, fin, { ticketId: t1.ticketId, body: 'x' })).toEqual({ ok: false, reason: 'forbidden' });
 
-    // Эскалация «в финансы» — назначение.
     expect(await assignTicket(db, sup, { ticketId: t1.ticketId, assigneeId: fin.operatorId })).toEqual({ ok: true });
     expect((await listQueue(db, fin, { filter: 'all' })).total).toBe(1);
     expect(await getTicketForOperator(db, fin, String(t1.number))).not.toBeNull();

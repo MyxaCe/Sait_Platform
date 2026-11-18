@@ -23,7 +23,6 @@ export default async function RegisterPage({ params }: PageProps) {
 
   return (
     <div className="grid w-full max-w-5xl gap-10 lg:grid-cols-[1fr_480px] lg:gap-16">
-      {/* Левая колонка — только desktop: снимает возражения, не мешает на mobile */}
       <div className="hidden lg:block">
         <h1 className="text-4xl font-semibold leading-tight tracking-tight text-primary">
           {t.rich('registerTitle', {

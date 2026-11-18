@@ -1,7 +1,5 @@
 import { moneyPool } from './runtime';
 
-/** Чтения раздела «Деньги» (депозиты, неопознанные, выводы). Только чтение. */
-
 export interface DepositRowView {
   id: string;
   userId: string | null;
@@ -95,7 +93,6 @@ function mapWithdrawal(r: Record<string, unknown>): WithdrawalRowView {
   };
 }
 
-/** Выводы: сперва требующие действия (requested/approved/needs_review), потом прочие. */
 export async function listWithdrawals(): Promise<WithdrawalRowView[]> {
   const r = await moneyPool().query(
     `SELECT w.*, u.full_name, u.email
@@ -126,7 +123,6 @@ export async function listClientWithdrawals(userId: string): Promise<WithdrawalR
   return r.rows.map(mapWithdrawal);
 }
 
-/** Поиск клиента для привязки неопознанного: точный email, UID или UUID. */
 export async function findClientForBinding(query: string): Promise<string | null> {
   const q = query.trim();
   if (!q) return null;

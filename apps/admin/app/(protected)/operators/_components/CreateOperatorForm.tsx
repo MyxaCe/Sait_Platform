@@ -9,22 +9,12 @@ import { Field, ReasonField, SubmitButton } from '@/components/control/forms';
 import { operatorErrorText } from './messages';
 import { ROLES, ROLE_LABEL, ROLE_SCOPE } from './roles';
 
-/**
- * Форма завода оператора (ADM-04). Создание — «разрешающее» действие: его
- * можно событием, без второго шага подтверждения (асимметрия Р-394). Но
- * основание обязательно (форма-с-основанием): оно уходит в журнал.
- *
- * Личность автора форма НЕ передаёт — её берёт server action из сессии (Р-451).
- * Пароль хешируется argon2id на сервере; новый оператор при первом входе будет
- * принудительно проведён на TOTP-enroll существующим флоу.
- */
 export function CreateOperatorForm() {
   const [state, action] = useFormState<OperatorActionState, FormData>(createOperatorAction, {});
   const formRef = useRef<HTMLFormElement>(null);
   const [role, setRole] = useState<OperatorRole>('operator');
   const [reason, setReason] = useState('');
 
-  // Успех — чистим форму (иначе логин/пароль остались бы в полях).
   useEffect(() => {
     if (state.ok) {
       formRef.current?.reset();

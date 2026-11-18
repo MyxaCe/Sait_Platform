@@ -1,13 +1,3 @@
-/**
- * Тексты уведомлений клиенту о правке учётных данных менеджером
- * (`outbound_mail.purpose = 'credentials_notice'`). Уходят на ПРЕЖНИЙ канал:
- * если правку провёл не тот человек, настоящий клиент узнает об этом первым.
- *
- * Тексты пока в коде, а не в настройках поддержки: юридически значимую
- * формулировку ещё утверждают юристы (вопрос Ю10 в ADR); после — переезд в
- * `support_settings.texts` без смены механизма.
- */
-
 type Locale = 'ru' | 'en';
 
 export interface Notice {
@@ -37,7 +27,6 @@ function footer(locale: Locale, ticket: string | null): string {
     .join('\n');
 }
 
-/** На СТАРЫЙ email: «ваш email изменён менеджером». */
 export function emailChangedNotice(input: {
   locale: string;
   firstName: string;
@@ -71,7 +60,6 @@ export function emailChangedNotice(input: {
   };
 }
 
-/** На текущий email: «выдан временный пароль, все сессии завершены». */
 export function tempPasswordNotice(input: { locale: string; firstName: string; ticket: string | null }): Notice {
   const l: Locale = input.locale === 'en' ? 'en' : 'ru';
   if (l === 'en') {

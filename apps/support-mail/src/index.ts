@@ -20,18 +20,6 @@ import { drainInbox, ensureFolders, imapClient, resolveSentFolder } from './imap
 import { handleRawMessage, type ObjectStore } from './inbound';
 import { sendTick, type RawTransport, type SentCopy } from './sender';
 
-/**
- * Почтовый воркер поддержки (support-mail): свой контейнер, свой failure
- * domain — как наблюдатель сети. Делает:
- *  - отправку очереди `outbound_mail` через SMTP хостинга (+ копия в Sent);
- *  - приём ящика по IMAP (IDLE + страховочный опрос) → тикеты;
- *  - восстановление потерянных обращений из `leads` и автозакрытие решённых;
- *  - отметку состояния в `support_mail_status` (админка: «почта не настроена»).
- *
- * Без почтовых env НЕ падает: почта выключена (fail-closed), остальное
- * работает. Без базы, слага тенанта или с отстающей схемой — не стартует.
- */
-
 const log = (m: string) => console.info(`[support-mail] ${m}`);
 const warn = (m: string) => console.error(`[support-mail] ${m}`);
 function fatal(m: string): never {
@@ -82,8 +70,6 @@ async function housekeeping(): Promise<void> {
     warn(`housekeeping: ${(e as Error).message}`);
   }
 }
-
-/* ─── исходящие ─────────────────────────────────────────────────────── */
 
 let sentCopy: SentCopy | null = null;
 
@@ -143,8 +129,6 @@ function startSender(): void {
   void loop();
 }
 
-/* ─── входящие ──────────────────────────────────────────────────────── */
-
 function startReceiver(): void {
   const imapCfg = cfg.imap!;
   const own = [cfg.address!];
@@ -165,7 +149,7 @@ function startReceiver(): void {
         do {
           again = false;
           const settings = await loadSupportSettings(pool);
-          if (!settings.channels.email) return; // канал выключен — письма ждут в INBOX, ничего не теряется
+          if (!settings.channels.email) return;
           const r = await drainInbox(client, imapCfg, async (m, uidValidity) => {
             const res = await handleRawMessage(db, m.source, { mailbox: imapCfg.inbox, uid: m.uid, uidValidity, tenant }, {
               settings,

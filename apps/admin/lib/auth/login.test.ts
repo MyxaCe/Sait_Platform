@@ -1,16 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-/**
- * ADM-01 · вход оператора: успех / провал / отключённый (Р-451).
- *
- * База замокана; argon2id настоящий (дешёвые параметры). Проверяется:
- *  - верный логин+пароль живого оператора → сессия;
- *  - неверный пароль, несуществующий логин, NULL-хеш → общий отказ `{ok:false}`
- *    (форма не оракул: по ответу не узнать, что именно не так);
- *  - отключённый оператор (`disabled_at`) с верным паролем → отказ;
- *  - прозрачный перехеш: отставшие параметры хеша → UPDATE при успехе.
- */
-
 const calls: { sql: string; params: unknown[] }[] = [];
 let operatorRow: Record<string, unknown> | undefined;
 
@@ -132,7 +121,6 @@ describe('вход · второй фактор в результате паро
 
 describe('вход · прозрачный перехеш (Р-451)', () => {
   it('параметры хеша отстали → при успехе идёт UPDATE password_hash', async () => {
-    // Храним хеш на m=1024, затем ужесточаем конфиг — хеш отстал.
     operatorRow = await makeRow('correct horse');
     process.env.ADMIN_ARGON_MEMORY_KIB = '2048';
     const { verifyOperatorCredentials } = await import('./login');
@@ -141,7 +129,6 @@ describe('вход · прозрачный перехеш (Р-451)', () => {
     expect(result.ok).toBe(true);
     const update = calls.find((c) => /UPDATE operators SET password_hash/i.test(c.sql));
     expect(update, 'перехеш должен обновить password_hash').toBeTruthy();
-    // Новый хеш — на усиленных параметрах.
     expect(String(update!.params[0])).toMatch(/m=2048,t=1,p=1/);
   });
 

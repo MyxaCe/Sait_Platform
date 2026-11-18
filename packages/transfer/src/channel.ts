@@ -24,23 +24,6 @@ import {
 } from './source';
 import { receivePackageWithinTx, receiveRevokeWithinTx } from './target';
 
-/**
- * Межплатформенный канал: доставка из outbox и приём.
- *
- * Отправка: сообщение берётся из `platform_transfer_outbox` (`FOR UPDATE SKIP
- * LOCKED` — две реплики не возьмут одно), подписывается ключом платформы
- * со свежими `nonce`/`issuedAt` и уходит POST на внутренний адрес цели из
- * реестра. 2xx — доставлено; 4xx (кроме 409/429) — окончательный отказ
- * (неверная подпись, запрещённое направление); сеть/5xx — повтор с
- * нарастающей паузой (15 с · 2^n, не больше 30 мин), после 20 попыток —
- * `failed` (видно в «Переводах клиентов», есть «Повторить доставку»).
- *
- * Приём: строгая форма → получатель = мы → отправитель в реестре с ключом →
- * подпись → окно времени → одноразовый nonce → обработка, всё в одной
- * транзакции. Повтор того же факта (новый nonce, тот же transferId+тип+
- * событие) — «дубликат», 200.
- */
-
 export const MAX_DELIVERY_ATTEMPTS = 20;
 
 export function deliveryBackoffMs(attempts: number): number {
@@ -139,7 +122,7 @@ async function settle(
 export async function deliverDue(pool: PoolLike, deps: DeliveryDeps): Promise<{ delivered: number; refused: number; retry: number }> {
   const out = { delivered: 0, refused: 0, retry: 0 };
   const now = deps.now ?? (() => new Date());
-  if (!deps.signingKey) return out; // ключа нет — не подписать; сообщения ждут (видно в админке)
+  if (!deps.signingKey) return out;
   const batch = await claimDue(pool, deps.limit ?? 20, now());
   for (const m of batch) {
     const target = await getGroupPlatform(pool, m.to);
@@ -177,7 +160,6 @@ export async function deliverDue(pool: PoolLike, deps: DeliveryDeps): Promise<{ 
         const j = JSON.parse(text) as { result?: string; code?: string };
         code = j.code ?? j.result ?? code;
       } catch {
-        /* тело не JSON — код HTTP */
       }
       if (res.status >= 200 && res.status < 300) {
         await settle(pool, m, { kind: 'delivered', code }, now());
@@ -197,8 +179,6 @@ export async function deliverDue(pool: PoolLike, deps: DeliveryDeps): Promise<{ 
   }
   return out;
 }
-
-/* ── Приём ──────────────────────────────────────────────────────────────── */
 
 export interface IncomingResponse {
   status: number;
@@ -256,7 +236,6 @@ export async function handleIncoming(
       return { status: 200, body: { ok: true, result: out.result } };
     }
 
-    // Статус и возврат — идемпотентны по факту (inbox).
     const event = e.kind === 'transfer.status' ? (e.data as StatusData).event : undefined;
     if (e.kind === 'transfer.status' && !validStatusData(e.data)) return fail(refuse(400, 'malformed'));
     if (e.kind === 'transfer.revoke' && typeof (e.data as RevokeData).basis !== 'string') return fail(refuse(400, 'malformed'));
@@ -291,7 +270,6 @@ export async function handleIncoming(
   });
 }
 
-/** Уборка: nonce старше суток не нужны (окно времени — 5 минут). */
 export async function pruneNonces(db: Queryable, now = new Date()): Promise<void> {
   await db.query(`DELETE FROM platform_transfer_nonces WHERE received_at < $1`, [new Date(now.getTime() - 86_400_000)]);
 }

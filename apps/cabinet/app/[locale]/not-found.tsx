@@ -2,7 +2,6 @@ import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import { Button } from '@broker/ui';
 
-/** Свой not-found под [locale] обязателен (урок B-006). */
 export default function NotFound() {
   const t = useTranslations('common');
   return (

@@ -1,6 +1,5 @@
 import { DataTable, KpiTile, PageHeader, Panel } from '@broker/ui';
 
-/** Загрузка рабочего списка AML: тот же каркас, строки-скелеты. */
 const COLS = ['Клиент', 'AML', 'Последняя сверка', 'Списки', 'Доступ', ''].map((h, i) => ({
   key: String(i),
   header: h,

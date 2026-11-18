@@ -15,7 +15,6 @@ function SubmitButton({ label }: { label: string }) {
   );
 }
 
-/** Предзаполнение по приглашению перевода с другой платформы группы (ветка client-transfer). */
 export interface RegisterPrefill {
   invite: string;
   firstName: string;
@@ -35,7 +34,6 @@ export function RegisterForm({ prefill }: { prefill?: RegisterPrefill } = {}) {
       <FormMessage error={state.error} />
       <input type="hidden" name="locale" value={locale} />
       {prefill ? <input type="hidden" name="invite" value={prefill.invite} /> : null}
-      {/* honeypot */}
       <input type="text" name="website" tabIndex={-1} autoComplete="off" className="hidden" aria-hidden />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">

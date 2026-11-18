@@ -16,12 +16,6 @@ import {
 import { countClientUnread, getClientChat, getTicketForOperator, listQueue, queueStats } from './queries';
 import { createTestDb, seedOperator, seedUser, type TestDb } from './testing/pg';
 
-/**
- * Жизненный цикл тикета на настоящей схеме (PGlite + все миграции):
- * чат клиента → ответ оператора → ответ клиента → решено → оценка →
- * автозакрытие; журнал без текста; неизменяемость сообщений.
- */
-
 const ALWAYS: SupportSettings = {
   ...DEFAULT_SUPPORT_SETTINGS,
   hours: { ...DEFAULT_SUPPORT_SETTINGS.hours, alwaysOpen: true },
@@ -125,7 +119,6 @@ describe('жизненный цикл тикета', () => {
     expect(await changeTicketStatus(db, op, { ticketId: a.ticketId, to: 'spam', reason: 'реклама', blockSender: true })).toEqual({ ok: true });
     expect((await journal('support.ticket.marked_spam'))[0]!.payload).toMatchObject({ basis: 'реклама', from: 'new' });
     expect((await db.query(`SELECT kind, value FROM support_blocklist`)).rows).toEqual([{ kind: 'email', value: 'anna@client.test' }]);
-    // Ответить в спам нельзя.
     expect(await operatorReply(db, ALWAYS, op, { ticketId: a.ticketId, body: 'x' })).toEqual({ ok: false, reason: 'invalidTransition' });
   });
 
@@ -162,7 +155,6 @@ describe('жизненный цикл тикета', () => {
       ...DEFAULT_SUPPORT_SETTINGS,
       hours: { ...DEFAULT_SUPPORT_SETTINGS.hours, timezone: 'UTC', alwaysOpen: false },
     };
-    // Воскресенье — выходной по умолчанию.
     await postClientChatMessage(db, closed, { userId, body: 'Ночной вопрос', now: new Date('2026-11-15T03:00:00Z') });
     const chat = await getClientChat(db, userId);
     expect(chat.messages.map((m) => m.authorKind)).toEqual(['client', 'autoreply']);

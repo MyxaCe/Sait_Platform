@@ -9,13 +9,6 @@ import { KYC_DOC_KINDS } from '@/lib/kyc-kinds';
 import type { ActionState } from '@/lib/actions';
 import { FormMessage, useFieldError } from '@/features/auth/FormMessage';
 
-/**
- * Форма подачи KYC-документа клиентом (CAB-KYC). Стиль повторяет
- * `features/documents/UploadForm`, но экшен кладёт файл в объектное хранилище
- * и ставит клиента в очередь проверки (`pending`). Виды документа — закрытый
- * перечень схемы (`KYC_DOC_KINDS`).
- */
-
 function SubmitButton({ label }: { label: string }) {
   const { pending } = useFormStatus();
   return (

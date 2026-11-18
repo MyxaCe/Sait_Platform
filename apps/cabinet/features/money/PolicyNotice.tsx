@@ -3,14 +3,6 @@ import { Callout } from '@broker/ui';
 import { Link } from '@/i18n/navigation';
 import type { MoneyPolicyReason } from '@broker/money';
 
-/**
- * Почему ввод/вывод недоступен — ЧЕЛОВЕЧЕСКИМ текстом и с действием
- * (аудит К6/К7): никаких машинных кодов на экране клиента. Код остаётся
- * только в `data-reasons` — для тестов и поддержки.
- *
- * Тон: «нужно пройти верификацию» — `info` (клиент может это исправить сам,
- * рядом кнопка), любые ограничения оператора — `negative`.
- */
 export async function PolicyNotice({
   op,
   reasons,
@@ -20,10 +12,8 @@ export async function PolicyNotice({
 }: {
   op: 'deposit' | 'withdraw';
   reasons: readonly MoneyPolicyReason[];
-  /** Без заголовка — под кнопкой на главной. */
   compact?: boolean;
   className?: string;
-  /** Срок «Запрета вывода» (заморозка после смены учётных данных) — «до …». */
   banUntil?: string | null;
 }) {
   if (reasons.length === 0) return null;

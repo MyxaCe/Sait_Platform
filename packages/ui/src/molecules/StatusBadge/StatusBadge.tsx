@@ -1,53 +1,25 @@
 import type { ReactNode } from 'react';
 import { cn } from '../../lib/cn';
 
-/**
- * Тон статуса — ЕДИНАЯ семантика цвета для всех доменов (концепция §5):
- *
- *  - `positive` — завершено успешно / в норме: KYC подтверждён, AML чисто,
- *    депозит зачислен, вывод исполнен.
- *  - `warning`  — ждёт решения ОПЕРАТОРА: KYC на проверке, вывод подан или на
- *    ручной проверке, AML не сверялся, неопознанное поступление.
- *  - `info`     — в процессе у ДРУГОЙ стороны (клиент, сеть, терминал):
- *    переподача запрошена, депозит ждёт сети, вывод одобрен/отправлен.
- *  - `negative` — отказ/риск/ограничение: отклонён, эскалация AML, блокировка,
- *    заморозка, запрет вывода.
- *  - `neutral`  — инертное/завершено без результата: не подавал, черновик, отменено.
- *
- * Цвет никогда не единственный носитель смысла: у бейджа всегда есть подпись,
- * а у тона — форма маркера (DOT) для различимости без цвета.
- */
 export type StatusTone = 'neutral' | 'info' | 'positive' | 'warning' | 'negative';
 
-/**
- * Единый словарь состояний → тон/подпись. ОДИН источник соответствия статуса и
- * цвета для всех операторских экранов. Добавлять состояние — здесь, в одной
- * строке. Ключи без префикса — исторические (KYC и денежные команды Р-452),
- * остальные — с префиксом домена, чтобы одинаковые слова разных доменов не
- * склеивались (`rejected` KYC ≠ `deposit_rejected`).
- */
 export const STATUS_DICTIONARY = {
-  // Верификация (client_verification.state)
   unverified: { tone: 'neutral', label: 'Не подавал' },
   pending: { tone: 'warning', label: 'На проверке' },
   verified: { tone: 'positive', label: 'Подтверждён' },
   rejected: { tone: 'negative', label: 'Отклонён' },
   resubmit_requested: { tone: 'info', label: 'Переподача' },
-  // AML-скрининг (client_aml_screening.status)
   aml_unscreened: { tone: 'warning', label: 'AML: не сверялся' },
   aml_clear: { tone: 'positive', label: 'AML: чисто' },
   aml_escalated: { tone: 'negative', label: 'AML: эскалация' },
-  // Доступ клиента
   active: { tone: 'positive', label: 'Активен' },
   blocked: { tone: 'negative', label: 'Заблокирован' },
   frozen: { tone: 'negative', label: 'Счёт заморожен' },
   withdraw_banned: { tone: 'negative', label: 'Вывод запрещён' },
-  // Депозит USDT (crypto_deposits.status)
   deposit_claimed: { tone: 'info', label: 'Ждёт сети' },
   deposit_credited: { tone: 'positive', label: 'Зачислен' },
   deposit_rejected: { tone: 'negative', label: 'Отклонён' },
   deposit_unidentified: { tone: 'warning', label: 'Неопознанный' },
-  // Вывод USDT (crypto_withdrawals.status)
   withdrawal_requested: { tone: 'warning', label: 'Подана' },
   withdrawal_needs_review: { tone: 'warning', label: 'На проверке' },
   withdrawal_approved: { tone: 'info', label: 'Одобрена' },
@@ -55,13 +27,11 @@ export const STATUS_DICTIONARY = {
   withdrawal_settled: { tone: 'positive', label: 'Исполнена' },
   withdrawal_rejected: { tone: 'negative', label: 'Отклонена' },
   withdrawal_cancelled: { tone: 'neutral', label: 'Отменена' },
-  // Денежная операция (Р-452)
   draft: { tone: 'neutral', label: 'Черновик' },
   awaiting_second: { tone: 'warning', label: 'Ждёт 2-го' },
   executed: { tone: 'positive', label: 'Исполнено' },
   money_rejected: { tone: 'negative', label: 'Отклонено' },
   break_glass: { tone: 'negative', label: 'Break-glass' },
-  // ── Обращение в поддержку (support_tickets.status, ветка demo-support) ──
   support_new: { tone: 'warning', label: 'Новое' },
   support_open: { tone: 'warning', label: 'В работе' },
   support_waiting_client: { tone: 'info', label: 'Ждём клиента' },
@@ -69,7 +39,6 @@ export const STATUS_DICTIONARY = {
   support_resolved: { tone: 'positive', label: 'Решено' },
   support_closed: { tone: 'neutral', label: 'Закрыто' },
   support_spam: { tone: 'negative', label: 'Спам' },
-  // Доставка письма (outbound_mail.status)
   mail_queued: { tone: 'info', label: 'В очереди' },
   mail_sending: { tone: 'info', label: 'Отправляется' },
   mail_sent: { tone: 'positive', label: 'Отправлено' },
@@ -79,7 +48,6 @@ export const STATUS_DICTIONARY = {
 
 export type StatusKey = keyof typeof STATUS_DICTIONARY;
 
-/** Безопасный доступ по строке из БД: неизвестный статус → `undefined`. */
 export function statusKeyOf(value: string): StatusKey | undefined {
   return Object.prototype.hasOwnProperty.call(STATUS_DICTIONARY, value)
     ? (value as StatusKey)
@@ -94,7 +62,6 @@ const TONE: Record<StatusTone, string> = {
   negative: 'bg-negative/10 text-negative ring-negative/25',
 };
 
-/** Форма маркера: различимость без цвета (дальтонизм, ч/б печать). */
 const DOT: Record<StatusTone, string> = {
   neutral: 'rounded-full border border-current bg-transparent',
   info: 'rounded-full bg-current',
@@ -106,12 +73,10 @@ const DOT: Record<StatusTone, string> = {
 export interface ToneBadgeProps {
   tone: StatusTone;
   children: ReactNode;
-  /** Без маркера (в плотных местах, где тон и так ясен). */
   plain?: boolean;
   className?: string;
 }
 
-/** Бейдж произвольного текста в одном из тонов (для меток вне словаря). */
 export function ToneBadge({ tone, children, plain = false, className }: ToneBadgeProps) {
   return (
     <span
@@ -129,13 +94,11 @@ export function ToneBadge({ tone, children, plain = false, className }: ToneBadg
 
 export interface StatusBadgeProps {
   status: StatusKey;
-  /** Переопределить подпись из словаря (тон остаётся из словаря). */
   label?: string;
   plain?: boolean;
   className?: string;
 }
 
-/** Статус-бейдж: фиксированная карта состояний → тон/подпись. */
 export function StatusBadge({ status, label, plain, className }: StatusBadgeProps) {
   const entry = STATUS_DICTIONARY[status];
   return (

@@ -2,18 +2,11 @@ import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { TickerTape } from './TickerTape';
 
-/**
- * B-018: синтетические цены не имеют права выглядеть рыночными.
- * Требование штаба — разница видна без чтения кода, поэтому проверяется
- * именно ВИДИМЫЙ текст, а не только цвет точки и тултип: тултипа нет на
- * тач-устройствах, а цвет ничего не объясняет тому, кто не знает легенды.
- */
 const ITEMS = [{ symbol: 'EURUSD', price: '1.0842', changePercent: 0.12 }];
 
 describe('TickerTape · признак ненастоящих данных', () => {
   it('simulated — подпись видна текстом, а не только тултипом', () => {
     render(<TickerTape items={ITEMS} status="simulated" connectionLabel="Демо-данные" />);
-    // getByText ищет по видимому тексту; title/aria-label сюда не попадают
     expect(screen.getByText('Демо-данные')).toBeTruthy();
   });
 
@@ -40,11 +33,6 @@ describe('TickerTape · признак ненастоящих данных', () 
 
 describe('TickerTape · данных нет', () => {
   it('unavailable с настоящим чтением — цена ГАСИТСЯ и помечается, а не стирается', () => {
-    // PKG-06, Р-127. Прежняя редакция стирала число и писала «нет данных».
-    // Это заменяло одно правдоподобное утверждение другим: пустая полоса
-    // читается как «котировок нет». Прежняя цена была верна на момент
-    // последнего успешного чтения — неправдой было бы показать её как
-    // ТЕКУЩУЮ, а не показать вовсе (Р-070).
     render(
       <TickerTape
         items={[{ symbol: 'EURUSD', price: '1.0842', changePercent: 0.12, state: 'unavailable' }]}
@@ -56,18 +44,11 @@ describe('TickerTape · данных нет', () => {
 
     const price = screen.getAllByText('1.0842')[0];
     expect(price).toBeTruthy();
-    // Погашено: число на экране, но видно, что оно не текущее.
     expect(price?.className).toContain('opacity-50');
-    // И помечено словами, а не только прозрачностью: подпись читается и
-    // там, где тултипа нет, — это урок B-018.
     expect(screen.getAllByText('последняя известная').length).toBeGreaterThan(0);
   });
 
   it('unavailable без чтения — прочерк: гасить нечего, фикстуру не выдаём', () => {
-    // Граница правила. `price: null` означает, что настоящего чтения ещё не
-    // было: в сторе лежит зашитая базовая цена справочника. Погасить её как
-    // «последнюю известную» значило бы выдать фикстуру за котировку —
-    // ровно тот дефект, который §5г нашёл внутри себя.
     render(
       <TickerTape
         items={[{ symbol: 'EURUSD', price: null, changePercent: null, state: 'unavailable' }]}
@@ -83,8 +64,6 @@ describe('TickerTape · данных нет', () => {
   });
 
   it('погашенная цена отличима от живой — иначе гашение бессмысленно', () => {
-    // Растяжка: если бы отказ рисовался так же, как норма, единственным
-    // различием осталась бы подпись, а её легко не заметить боковым зрением.
     const dimmed = render(
       <TickerTape
         items={[{ symbol: 'EURUSD', price: '1.0842', changePercent: null, state: 'unavailable' }]}

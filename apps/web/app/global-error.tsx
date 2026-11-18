@@ -3,14 +3,6 @@
 import * as Sentry from '@sentry/nextjs';
 import { useEffect } from 'react';
 
-/**
- * Верхняя граница ошибок App Router: репортит render-ошибки React в
- * GlitchTip (рекомендация @sentry/nextjs). Скраббинг — в beforeSend.
- *
- * Сюда же попадает отказ корневого layout: без бренда из CMS (и без
- * сохранённой версии) у страницы нет даже шапки. Тексты — UI, без бренда
- * и без контента: честное «временно недоступно» (решение 10.11).
- */
 export default function GlobalError({ error }: { error: Error & { digest?: string } }) {
   useEffect(() => {
     Sentry.captureException(error);

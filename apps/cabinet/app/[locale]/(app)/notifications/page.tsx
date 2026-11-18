@@ -39,13 +39,6 @@ export default async function NotificationsPage({ params }: { params: { locale: 
                   n.readAt ? 'border-border bg-elevated opacity-70' : 'border-accent/40 bg-elevated',
                 )}
               >
-                {/*
-                  Параметры готовятся ДО подстановки (CAB-08): негодные
-                  превращают предложение в разметку со скобками, и человек
-                  видит поломку вместо сообщения. `null` означает «этим
-                  шаблоном показать нечего» — тогда показываем тип, как и
-                  для незнакомых типов.
-                */}
                 <p className="text-sm">
                   {(() => {
                     const params = displayParams(n.type, n.params);

@@ -2,18 +2,6 @@ import { existsSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-/**
- * WEB-31 · у схемы ОДИН источник.
- *
- * `db/init` монтируется в `docker-entrypoint-initdb.d` и выполняется
- * при создании базы. Оставить там `.sql` и завести миграции значило бы
- * получить два источника: на свежей базе схема накатилась бы дважды, а
- * расходиться они начали бы молча — и первым это заметил бы прод.
- *
- * Вернуть файл туда легко и выглядит безобидно, поэтому запрет
- * проверяется, а не подразумевается.
- */
-
 const ROOT = path.resolve(__dirname, '../../..');
 
 describe('WEB-31 · схема не живёт в двух местах', () => {
@@ -21,7 +9,6 @@ describe('WEB-31 · схема не живёт в двух местах', () => 
     const dir = path.join(ROOT, 'db', 'init');
     if (!existsSync(dir)) return;
 
-    // Postgres исполняет оттуда именно эти расширения.
     const executable = readdirSync(dir).filter(
       (f) => f.endsWith('.sql') || f.endsWith('.sql.gz') || f.endsWith('.sh'),
     );

@@ -1,4 +1,3 @@
-/** Экспоненциальный backoff с потолком: 5s, 25s, 125s, ... максимум 1 час. */
 export const BASE_DELAY_MS = 5_000;
 export const MAX_DELAY_MS = 3_600_000;
 

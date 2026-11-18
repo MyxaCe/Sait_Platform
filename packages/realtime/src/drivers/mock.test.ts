@@ -4,7 +4,6 @@ import type { ConnStatus, Quote } from '../types';
 
 beforeEach(() => {
   vi.useFakeTimers();
-  // Убираем случайность: 0.5 → тик обновляет каждый подписанный символ
   vi.spyOn(Math, 'random').mockReturnValue(0.5);
 });
 
@@ -27,8 +26,7 @@ describe('mock driver', () => {
 
     expect(statuses).toEqual(['connecting']);
 
-    vi.advanceTimersByTime(500); // CONNECT_DELAY_MS = 400
-    // НЕ 'connected': синтетические цены не выдаются за рыночные (B-018)
+    vi.advanceTimersByTime(500);
     expect(statuses).toEqual(['connecting', 'simulated']);
     expect(statuses).not.toContain('connected');
     expect(batches).toHaveLength(1);
@@ -45,13 +43,12 @@ describe('mock driver', () => {
       () => {},
     );
 
-    vi.advanceTimersByTime(500); // снапшот
+    vi.advanceTimersByTime(500);
     const initial = batches[0]![0]!.price;
 
-    vi.advanceTimersByTime(800); // один тик
+    vi.advanceTimersByTime(800);
     expect(batches.length).toBeGreaterThanOrEqual(2);
     const updated = batches.at(-1)![0]!.price;
-    // random=0.5 — цена не должна улететь: отклонение в пределах 1%
     expect(Math.abs(updated - initial) / initial).toBeLessThan(0.01);
   });
 

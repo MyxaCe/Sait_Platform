@@ -14,24 +14,8 @@ import { describeNotice } from './markets-notice';
 type MarketsConfig = Extract<CabinetHomeModule, { type: 'markets' }>;
 type TabKey = 'assets' | 'popular' | 'newListing' | 'favorites' | 'gainers' | 'volume';
 
-/** Стабильная ссылка: иначе `useMemo` пересчитывался бы на каждый рендер. */
 const NO_INSTRUMENTS: MarketInstrument[] = [];
 
-/**
- * Модуль «Рынки»: живые котировки MDS, табы — по конфигу CMS.
- * «Объём 24ч» и «Избранное» появятся в Ф3 (расширение MDS / per-user данные) —
- * до этого табы скрываются, даже если включены в CMS.
- *
- * **Модуль, включённый редактором, со страницы не исчезает ни при каком
- * состоянии данных (Р-025, п. 3).** Раньше здесь стояло
- * `if (instruments.length === 0 || tabs.length === 0) return null` — пять
- * разных причин (граница пуста · граница недоступна · MDS не настроен ·
- * MDS не ответил · ни одна вкладка не включена) давали один и тот же
- * беззвучный исход, и отказ выглядел как отсутствие функции. Теперь
- * каждая причина называет себя: `marketsNotice` ниже — исчерпывающий
- * разбор `MarketsData`, и компилятор перечислит ветки за нас, если в
- * union добавится состояние.
- */
 export function MarketsModule({ config, data }: { config: MarketsConfig; data: MarketsData }) {
   const t = useTranslations('home');
   const instruments = data.state === 'ok' ? data.instruments : NO_INSTRUMENTS;
@@ -49,7 +33,6 @@ export function MarketsModule({ config, data }: { config: MarketsConfig; data: M
     if (config.tabs.newListing && config.newListingSymbols.length > 0)
       list.push({ key: 'newListing', label: t('tabNewListing') });
     if (config.tabs.gainers) list.push({ key: 'gainers', label: t('tabGainers') });
-    // favorites/volume — Ф3 (per-user данные / volume24h в MDS)
     return list;
   }, [config, t]);
 
@@ -71,13 +54,10 @@ export function MarketsModule({ config, data }: { config: MarketsConfig; data: M
     return byTab();
   }, [active, quotes, config.newListingSymbols]);
 
-  // Состояние, которое мешает показать таблицу, объясняется, а не прячется.
   const notice = describeNotice(data, tabs.length);
   if (notice) {
     return (
       <MarketsShell title={t('marketsTitle')}>
-        {/* Машинная причина — только в атрибуте (поддержке и тестам), не в тексте
-            клиенту (аудит К7). */}
         <div
           className="mt-4 rounded-xl border border-border bg-primary/[0.03] px-4 py-5 text-sm"
           data-reason={notice.reason}
@@ -176,7 +156,6 @@ export function MarketsModule({ config, data }: { config: MarketsConfig; data: M
   );
 }
 
-/** Карточка модуля без содержимого — общая рамка для таблицы и объяснения. */
 function MarketsShell({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="rounded-2xl border border-border bg-elevated p-5">

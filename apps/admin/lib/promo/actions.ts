@@ -29,12 +29,6 @@ import { moneyPool, terminalMoney } from '../crypto/runtime';
 import { countriesField, intField, percentField, promotionFromForm, usdtField } from './form';
 import { canManagePromo, canViewPromo } from './runtime';
 
-/**
- * Серверные экшены зоны «Акции и партнёры». Автор — из сессии (Р-451), роль —
- * fail-closed на сервере (формы у чужой роли и так не отрисованы — это второй
- * рубеж): очередь начислений — admin и finance_operator; всё остальное — admin.
- */
-
 export interface PromoActionState {
   ok?: boolean;
   error?: string;
@@ -53,8 +47,6 @@ function fail(r: { reason: string; issues?: string[]; code?: string }): PromoAct
   const detail = r.issues?.length ? r.issues.slice(0, 3).join('; ') : r.code;
   return { error: r.reason, ...(detail ? { detail } : {}) };
 }
-
-/* ── Акции ────────────────────────────────────────────────────────────── */
 
 export async function savePromotionAction(_prev: PromoActionState, fd: FormData): Promise<PromoActionState> {
   const op = await operatorWith(canManagePromo);
@@ -86,11 +78,6 @@ export async function setPromotionStatusAction(_prev: PromoActionState, fd: Form
   return { ok: true };
 }
 
-/**
- * «Пересчитать очередь»: движок оценивает участников и ставит выполнивших
- * условия в очередь (денег не двигает). Запуск журналируется от оператора,
- * сами постановки — от системного автора движка.
- */
 export async function syncQueueAction(_prev: PromoActionState, fd: FormData): Promise<PromoActionState> {
   const op = await operatorWith(canViewPromo);
   if (!op) return { error: 'forbidden' };
@@ -137,8 +124,6 @@ export async function accrueCashbackAction(_prev: PromoActionState, fd: FormData
   return { ok: true, detail: `в очередь ${r.queued}, без начисления ${r.zero}` };
 }
 
-/* ── Очередь начислений (admin + finance_operator) ────────────────────── */
-
 function creditDetail(c: CreditOutcome): string | undefined {
   if (c.state === 'pending') return `терминал не ответил (${c.reason}) — исход неизвестен, повторите зачисление`;
   if (c.state === 'needs_review') return `терминал отказал: ${c.code}`;
@@ -169,8 +154,6 @@ export async function rewardDecisionAction(_prev: PromoActionState, fd: FormData
   return out;
 }
 
-/* ── Конкурс ──────────────────────────────────────────────────────────── */
-
 export async function finalizeContestAction(_prev: PromoActionState, fd: FormData): Promise<PromoActionState> {
   const op = await operatorWith(canManagePromo);
   if (!op) return { error: 'forbidden' };
@@ -179,8 +162,6 @@ export async function finalizeContestAction(_prev: PromoActionState, fd: FormDat
   revalidatePath('/promo', 'layout');
   return { ok: true, detail: `призов в очередь: ${r.queued}` };
 }
-
-/* ── Рефералы ─────────────────────────────────────────────────────────── */
 
 export async function reassignReferralAction(_prev: PromoActionState, fd: FormData): Promise<PromoActionState> {
   const op = await operatorWith(canManagePromo);
@@ -196,8 +177,6 @@ export async function reassignReferralAction(_prev: PromoActionState, fd: FormDa
   revalidatePath('/promo/referrals');
   return { ok: true };
 }
-
-/* ── IB-партнёры ──────────────────────────────────────────────────────── */
 
 function partnerFromForm(fd: FormData) {
   const model = str(fd, 'model') === 'revshare' ? 'revshare' : 'cpa';
@@ -248,8 +227,6 @@ export async function accrueRevshareAction(_prev: PromoActionState, fd: FormData
   return { ok: true, detail: r.queued ? 'начисление поставлено в очередь' : 'доля за период — 0, начислять нечего' };
 }
 
-/* ── Настройки платформы (admin) ──────────────────────────────────────── */
-
 export async function updatePromoSettingsAction(_prev: PromoActionState, fd: FormData): Promise<PromoActionState> {
   const op = await operatorWith(canManagePromo);
   if (!op) return { error: 'forbidden' };
@@ -257,7 +234,6 @@ export async function updatePromoSettingsAction(_prev: PromoActionState, fd: For
     operatorId: op.operatorId,
     reason: str(fd, 'reason'),
     next: {
-      // Галочка формы — «акции ВЫКЛЮЧЕНЫ» (так её называет владелец).
       promotionsEnabled: fd.get('promotionsDisabled') !== 'on',
       attributionWindowDays: intField(fd, 'attributionWindowDays'),
       blockedCountries: countriesField(fd, 'blockedCountries'),

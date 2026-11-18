@@ -4,17 +4,6 @@ import { PGlite } from '@electric-sql/pglite';
 import { pgcrypto } from '@electric-sql/pglite/contrib/pgcrypto';
 import type { PoolLike, Queryable, TxClient } from '@broker/money';
 
-/**
- * Настоящий Postgres в процессе теста (PGlite, WASM): применяются ВСЕ
- * миграции `packages/db/migrations` по порядку — тест видит ту же схему,
- * те же CHECK, триггеры неизменяемости и уникальности, что прод. Подделка
- * SQL-ответов здесь не годится: проверяем именно запросы (роль без денег —
- * «на уровне запросов, а не UI»).
- *
- * Одно соединение: транзакции тестов идут последовательно, `connect()`
- * отдаёт ту же базу. Каждый запрос пишется в `log` — тест может проверить,
- * какие колонки читались.
- */
 const MIGRATIONS = path.resolve(__dirname, '../../../db/migrations');
 
 export interface TestDb extends PoolLike {
@@ -57,7 +46,6 @@ export async function createTestDb(): Promise<TestDb> {
   };
 }
 
-/** Клиент + оператор для тестов. */
 export async function seedUser(
   db: Queryable,
   opts: { id?: string; email?: string; name?: string; locale?: string } = {},

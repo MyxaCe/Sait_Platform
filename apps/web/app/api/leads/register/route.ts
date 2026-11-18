@@ -3,17 +3,10 @@ import { registerLeadSchema } from '@/features/registration/schema';
 import { getLeadStore } from '@/lib/leads/store';
 import { clientIp, isRateLimited } from '@/lib/rate-limit';
 
-/**
- * Заявка на открытие счёта (ADR-018): пишется ЛОКАЛЬНО (лид + outbox
- * в одной транзакции), клиент получает 201 немедленно. CRM узнаёт о лиде
- * асинхронно через событие lead.submitted — синхронных вызовов CRM
- * на пути клиента нет (золотое правило платформы).
- */
 export async function POST(request: Request) {
   const ip = clientIp(request);
 
   if (isRateLimited(`register:${ip}`)) {
-    // error — ключ из namespace `validation`, клиент переводит при отображении
     return NextResponse.json({ ok: false, error: 'rateLimited' }, { status: 429 });
   }
 
@@ -24,8 +17,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, error: 'invalidRequest' }, { status: 400 });
   }
 
-  // Honeypot: скрытое поле "website" заполняют только боты.
-  // Отвечаем «успехом», чтобы бот не понял, что отфильтрован.
   if (typeof body === 'object' && body !== null && (body as Record<string, unknown>).website) {
     return NextResponse.json({ ok: true, leadId: 'accepted' }, { status: 201 });
   }
@@ -55,7 +46,6 @@ export async function POST(request: Request) {
   });
 
   if (!result.ok) {
-    // Дубликат — по НАШЕЙ БД (сайт — source of truth по клиентам брокера)
     return NextResponse.json(
       { ok: false, fieldErrors: { email: 'emailExists' } },
       { status: 409 },

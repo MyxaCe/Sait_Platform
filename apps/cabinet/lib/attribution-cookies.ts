@@ -1,14 +1,6 @@
 import type { NextRequest, NextResponse } from 'next/server';
 import { ATTRIBUTION_COOKIES, cookiesForClick } from '@broker/promo/attribution';
 
-/**
- * First-click cookie атрибуции по `?ref=` / `?promo=` (edge, без базы).
- * Срок кабинет здесь не знает — cookie сессионная, а действующий срок
- * (настройки платформы) проверяет регистрация по метке времени в значении.
- * Действующую cookie (например, поставленную витриной на общий домен) не
- * перезаписываем. Домен — `ATTRIBUTION_COOKIE_DOMAIN` (напр. `.wholesalefy.com`),
- * не задан — cookie хоста.
- */
 export function applyAttributionCookies(request: NextRequest, response: NextResponse): NextResponse {
   const params = request.nextUrl.searchParams;
   const ref = params.get('ref');

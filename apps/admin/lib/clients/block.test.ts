@@ -2,16 +2,6 @@ import { describe, expect, it } from 'vitest';
 import type { PoolClient } from 'pg';
 import { revokeClientSessions, setClientBlock } from './block';
 
-/**
- * ADM-02 · блокировка/разблокировка клиента (Р-049, Р-394).
- *
- * База не поднимается — её роль играет in-memory фейк-клиент, ведущий себя как
- * `client_blocks` + `admin_action_journal` в одной транзакции: гард «клиент
- * существует», переход только содержательный, append в журнал, привязка
- * last_journal_seq. Проверяем разрешённые/запрещённые переходы и что КАЖДОЕ
- * успешное решение попадает в журнал с основанием.
- */
-
 const USER = '22222222-2222-2222-2222-222222222222';
 const OP = '11111111-1111-1111-1111-111111111111';
 const OTHER = '33333333-3333-3333-3333-333333333333';
@@ -27,7 +17,6 @@ interface JournalRow {
 
 function fakePool(opts: { exists?: boolean; blocked?: boolean | null; sessions?: string[] }) {
   const exists = opts.exists ?? true;
-  // Строки `sessions` (id → user_id): гашение должно трогать только этого клиента.
   const sessions = new Map<string, string>((opts.sessions ?? []).map((id) => [id, USER]));
   sessions.set('other-client-session', OTHER);
   const block = { value: opts.blocked ?? null as boolean | null, lastJournalSeq: null as number | null };

@@ -2,20 +2,6 @@ import { describe, expect, it } from 'vitest';
 import en from '../messages/en.json';
 import ru from '../messages/ru.json';
 
-/**
- * CAB-04, сторона витрины. Подпись, привязанная к состоянию `connected`,
- * не имеет права обещать данные: состояние знает только «сокет открыт».
- *
- * Проверяются ОБЕ подписи, которые рисуются по одному и тому же признаку:
- *  - `connection.connected` — подпись точки;
- *  - `instruments.statusLive` — строка рядом с ней, она выводится ровно по
- *    `status === 'connected'` (`features/instruments/InstrumentsBrowser.tsx`).
- * Вторая — тот же дефект во втором месте: починить одну и оставить другую
- * значит убрать ложное утверждение с точки и оставить его текстом.
- *
- * Каталог проверяется целиком, а не через компонент: правит эти строки
- * переводчик в JSON, и покраснеть должно там же, где вносится правка.
- */
 const DATA_CLAIMS = [/реальн/i, /real[-\s]?time/i, /\bлайв\b/i, /\blive\b/i];
 
 const CAPTIONS: Array<[string, string]> = [

@@ -3,8 +3,6 @@ import { iso } from './common';
 import { managerAlert } from './policy';
 import type { TransferStatus } from './source';
 
-/** Чтение для экранов: «Переводы клиентов», карточка клиента, дашборд, «Операторы». */
-
 export interface OutgoingTransferRow {
   id: string;
   number: string;
@@ -135,7 +133,6 @@ export interface ChannelMessageRow {
   event: string | null;
 }
 
-/** Сообщения канала по переводу: исходящие (outbox) и принятые (inbox), по времени. */
 export async function listTransferMessages(db: Queryable, transferId: string): Promise<ChannelMessageRow[]> {
   const r = await db.query(
     `SELECT id::text AS id, kind, to_platform, state, attempts, last_error, response_code, next_attempt_at, delivered_at, created_at, data
@@ -240,7 +237,6 @@ export async function getInboundForUser(db: Queryable, userId: string): Promise<
   return list.find((x) => x.transferId === String(all.rows[0]!.transfer_id)) ?? null;
 }
 
-/** Уведомление admin: непросмотренные исходящие и входящие. */
 export async function unseenTransferCounts(db: Queryable): Promise<{ outgoing: number; inbound: number; refundTasks: number }> {
   const r = await db.query(
     `SELECT (SELECT count(*)::int FROM platform_transfers WHERE admin_seen_at IS NULL) AS outgoing,
@@ -260,7 +256,6 @@ export interface ManagerReportRow {
   alert: 'absolute' | 'aboveMedian' | null;
 }
 
-/** Отчёт по менеджерам за 30 дней + алерт на аномалию (информационно). */
 export async function managerTransferReport(db: Queryable, now = new Date()): Promise<ManagerReportRow[]> {
   const since = new Date(now.getTime() - 30 * 86_400_000);
   const r = await db.query(
@@ -286,7 +281,6 @@ export async function managerTransferReport(db: Queryable, now = new Date()): Pr
   }));
 }
 
-/** Счётчик возвращённых переводов по операторам (экран «Операторы»). */
 export async function revokedCountsByInitiator(db: Queryable): Promise<Map<string, number>> {
   const r = await db.query(
     `SELECT initiator_id, count(*)::int AS n FROM platform_transfers WHERE status = 'revoked' GROUP BY initiator_id`,

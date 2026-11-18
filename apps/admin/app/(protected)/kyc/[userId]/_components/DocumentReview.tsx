@@ -4,26 +4,12 @@ import { useState, useTransition } from 'react';
 import { Button, Callout, ToneBadge, cn } from '@broker/ui';
 import { issueDocumentViewUrlAction } from '@/lib/kyc/documents';
 
-/**
- * Документы заявки KYC с просмотром рядом (концепция §7.4) — локальный
- * компонент, кандидат в @broker/ui (как «DocumentViewer»).
- *
- * Слева — список поданных документов (вид, тип файла, когда подан, флаги
- * свежести); справа — область просмотра. Байты по-прежнему выдаёт СУЩЕСТВУЮЩИЙ
- * server action `issueDocumentViewUrlAction`: короткоживущая подписанная ссылка
- * и запись `client.document.viewed` в журнал ДО выдачи (fail-closed). Ссылку не
- * рендерим заранее — только по нажатию «Просмотреть»; каждый просмотр виден в
- * журнале, и об этом сказано у кнопки.
- */
-
 export interface ReviewDocument {
   id: string;
   label: string;
   contentType: string | null;
   submittedAt: string;
-  /** Дата подачи, уже отформатированная на сервере (единый формат §4.4). */
   submittedText: string;
-  /** Предупреждение о документе («старше 3 мес»). */
   flag?: string | null;
 }
 

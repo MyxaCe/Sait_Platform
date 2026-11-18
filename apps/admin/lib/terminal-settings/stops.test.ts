@@ -3,11 +3,6 @@ import type { StopsOutcome, TerminalStopsClient } from '@broker/money';
 import { createTestDb, seedOperator, type TestDb } from '@broker/support/testing';
 import { updateMinStop } from './stops';
 
-/**
- * Минимальная дистанция SL/TP: сохранение = вызов терминала + журнал одной
- * транзакцией (PGlite, все миграции). Терминал не принял — журнала нет.
- */
-
 class FakeStops implements TerminalStopsClient {
   value = 0;
   next: StopsOutcome | null = null;

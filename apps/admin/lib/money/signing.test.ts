@@ -10,12 +10,6 @@ import {
 } from './signing';
 import type { MoneyCommandPayload } from './types';
 
-/**
- * Р-452 · подпись Ed25519 и проверка приёма. Крипто — node:crypto, без нативных
- * аддонов (Р-453). Эти тесты — заодно и ВЕКТОРЫ для терминальной зоны (Rust):
- * та же каноническая нагрузка должна дать ту же подпись/вердикт.
- */
-
 const { privateKey, publicKey } = generateEd25519KeyPair();
 const provider = new StaticEd25519KeyProvider(privateKey, publicKey, 'v1');
 

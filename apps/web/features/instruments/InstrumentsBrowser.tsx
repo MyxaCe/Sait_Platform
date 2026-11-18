@@ -18,16 +18,8 @@ import { usePriceFlash } from './usePriceFlash';
 type CategoryFilter = InstrumentCategory | 'all';
 
 export interface InstrumentsBrowserProps {
-  /** Allow-list символов из CMS — отображаются и подписываются только они */
   symbols: string[];
-  /** Символ → URL иконки (CMS-загрузка приоритетнее, иначе монета из MDS) */
   icons?: Record<string, string>;
-  /**
-   * Символ → машинная причина, по которой у него нет цены (WEB-39).
-   *
-   * Обычный объект, а не `Map`: проп пересекает границу
-   * сервер/клиент, и `Map` приехал бы пустым.
-   */
   unavailableReasons?: Record<string, string>;
 }
 
@@ -45,8 +37,6 @@ export function InstrumentsBrowser({
   const [category, setCategory] = useState<CategoryFilter>('all');
   const [query, setQuery] = useState('');
 
-  // Начальный фильтр из ?category= (читаем на клиенте, чтобы страница
-  // оставалась статической и не требовала Suspense для useSearchParams)
   useEffect(() => {
     const fromUrl = new URLSearchParams(window.location.search).get('category');
     if (fromUrl && (CATEGORY_ORDER as string[]).includes(fromUrl)) {
@@ -57,12 +47,6 @@ export function InstrumentsBrowser({
   const quotes = useRealtimeQuotes(symbols);
   const status = useConnectionStatus();
 
-  /*
-    Объяснение ставится ТОЛЬКО когда источник назвал причину. Нет
-    причины — `undefined`, и строка показывает прежнее общее «нет
-    данных»: текст, появившийся там, где объяснять нечего, был бы
-    таким же утверждением о незнаемом, как подставленное число.
-  */
   const whyFor = (symbol: string): { short: string; full: string } | undefined => {
     const reason = unavailableReasons[symbol];
     if (reason === undefined) return undefined;
@@ -84,7 +68,6 @@ export function InstrumentsBrowser({
 
   return (
     <div>
-      {/* Панель фильтров: поиск + категории. На mobile категории скроллятся горизонтально */}
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 lg:mx-0 lg:flex-wrap lg:px-0 lg:pb-0"
              style={{ scrollbarWidth: 'none' }}>
@@ -126,7 +109,6 @@ export function InstrumentsBrowser({
         </span>
       </div>
 
-      {/* Mobile: список карточек-строк */}
       <ul className="mt-4 divide-y divide-border overflow-hidden rounded-2xl border border-border md:hidden">
         {filtered.map((q) => (
           <MobileRow
@@ -139,7 +121,6 @@ export function InstrumentsBrowser({
         ))}
       </ul>
 
-      {/* Desktop: полная таблица */}
       <div className="mt-4 hidden overflow-hidden rounded-2xl border border-border md:block">
         <table className="w-full text-sm">
           <thead className="bg-elevated text-left text-secondary">
@@ -183,7 +164,6 @@ const FLASH_CLASSES = {
   down: 'bg-negative/10',
 } as const;
 
-/** Иконка инструмента; без URL — буквенный бейдж (деградация без MDS/CMS). */
 function InstrumentIcon({ symbol, iconUrl }: { symbol: string; iconUrl?: string }) {
   if (iconUrl) {
     return (
@@ -208,7 +188,6 @@ function InstrumentIcon({ symbol, iconUrl }: { symbol: string; iconUrl?: string 
   );
 }
 
-/** Короткая видимая подпись и полная фраза при наведении (WEB-38/39). */
 interface UnavailableWhy {
   short: string;
   full: string;
@@ -287,11 +266,6 @@ function DesktopRow({
       <td className="px-6 py-3.5 text-secondary">{categoryLabel}</td>
       <td className="px-6 py-3.5 text-right tabular-nums text-primary">
         <QuotePrice quote={quote} noDataLabel={why?.full ?? noDataLabel} />
-        {/*
-          Видимой строкой, а не только тултипом: тултипа нет на
-          сенсорных экранах, и здесь это важнее, чем в ленте, — список
-          читают именно с телефона.
-        */}
         {why && (
           <span className="block text-[11px] font-normal text-secondary" title={why.full}>
             {why.short}

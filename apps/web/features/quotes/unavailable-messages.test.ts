@@ -4,18 +4,6 @@ import { describe, expect, it } from 'vitest';
 import { SYMBOL_UNAVAILABLE_REASONS } from '@broker/realtime';
 import { explainUnavailable, MISSING, UNKNOWN_REASON } from './unavailable-text';
 
-/**
- * WEB-38 · у каждого объяснения есть перевод в каждой локали.
- *
- * **Что ловится.** `next-intl` на отсутствующем ключе показывает сам
- * ключ. То есть вместо «источник отключён» человек увидел бы
- * `instrumentUnavailable.sourceDisabled` — и это худший исход из всех:
- * инструмент не просто молчит, он отвечает внутренним именем.
- *
- * Разойтись словари могут молча: разбор причин живёт в коде, подписи —
- * в JSON, и компилятор между ними ничего не проверяет.
- */
-
 const ROOT = path.resolve(__dirname, '../..');
 const LOCALES = ['ru', 'en'];
 const NAMESPACE = 'instrumentUnavailable';
@@ -26,7 +14,6 @@ function messages(locale: string): Record<string, string> {
   return parsed[NAMESPACE] ?? {};
 }
 
-/** Все ключи, которые код может запросить. */
 const usedKeys = [
   ...SYMBOL_UNAVAILABLE_REASONS.map((r) => explainUnavailable(r).key),
   MISSING.key,

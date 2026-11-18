@@ -10,13 +10,6 @@ import {
   verifySignature,
 } from '@/lib/revalidate';
 
-/**
- * Вебхук инвалидации контента: CMS → сайт (спецификация §6).
- * HMAC-подпись (X-Signature: sha256=<hex>), идемпотентность по event_id,
- * cooldown на тег против шторма. Отвечаем 202 — инвалидация мгновенная,
- * пересборка страниц ленивая (при следующем запросе, stale-while-revalidate).
- */
-
 const bodySchema = z.object({
   event_id: z.string().uuid(),
   occurred_at: z.string().optional(),
@@ -53,9 +46,6 @@ export async function POST(request: Request) {
       applied.push(tag);
       continue;
     }
-    // B-011: внутри cooldown инвалидация не теряется — этот запрос дожидается
-    // конца окна (≤2 с) и инвалидирует сам: revalidateTag() живёт только
-    // в контексте запроса. Параллельные события того же тега коалесцируются.
     const delay = claimDeferredInvalidate(tag);
     if (delay !== null) {
       await new Promise((resolve) => setTimeout(resolve, delay));

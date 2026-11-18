@@ -4,12 +4,6 @@ import type { OperatorRole } from '../auth/session';
 import { readCredentialSettings } from './core';
 import { CREDENTIAL_ACTION_PREFIX, EDITABLE_WITHDRAWAL_STATUSES, RISKY_CREDENTIAL_ACTIONS, type CredentialSettings } from './policy';
 
-/**
- * Чтения вкладки «Учётные данные» и сигналов службе безопасности (ТОЛЬКО
- * чтение, не журналируются). История изменений — из журнала карточки
- * (`client.credentials.*`), здесь — текущее состояние и права зрителя.
- */
-
 const iso = (v: unknown): string | null => (v === null || v === undefined ? null : new Date(v as string).toISOString());
 
 export interface EditableWithdrawal {
@@ -21,7 +15,6 @@ export interface EditableWithdrawal {
 }
 
 export interface CredentialsView {
-  /** Может ли зритель править (admin или менеджер этого клиента). */
   canEdit: boolean;
   editorAs: 'admin' | 'manager' | null;
   passwordMustChange: boolean;
@@ -76,19 +69,12 @@ export interface CredentialsAlertRow {
 }
 
 export interface CredentialsAlerts {
-  /** Все правки учётных данных за 24 ч (включая заморозки). */
   total24h: number;
-  /** Рискованные правки за 24 ч (email, пароль, адрес, снятие заморозки). */
   risky24h: number;
   threshold: number;
-  /** Операторы, превысившие порог рискованных правок за 24 ч. */
   unusual: CredentialsAlertRow[];
 }
 
-/**
- * Счётчик необычной активности (информационно, НЕ блокирует): больше N
- * рискованных правок одним оператором за сутки, N — настройка платформы.
- */
 export async function getCredentialsAlerts(db: Queryable, now: Date = new Date()): Promise<CredentialsAlerts> {
   const since = new Date(now.getTime() - 86_400_000);
   const settings = await readCredentialSettings(db);

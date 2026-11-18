@@ -40,11 +40,6 @@ export * from './events';
 export * from './terminal-events';
 export * from './leads';
 
-/**
- * Реестр «эндпоинт контракта → схема ответа».
- * Используется генератором JSON Schema (артефакт для команды CRM)
- * и контрактными тестами mock-CRM.
- */
 export const CMS_RESPONSE_SCHEMAS = {
   brand: brandSchema,
   navigation: navigationSchema,

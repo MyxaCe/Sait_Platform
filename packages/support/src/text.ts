@@ -1,14 +1,8 @@
 import { createHash } from 'node:crypto';
 
-/** Текстовые утилиты поддержки: шаблоны, тема письма, цитаты, нормализация. */
-
 export const MAX_BODY = 10_000;
 export const MAX_SUBJECT = 200;
 
-/**
- * Подстановка `{{путь.к.значению}}`. Неизвестная переменная остаётся как
- * есть — оператор увидит её в предпросмотре, а не пустое место.
- */
 export function renderTemplate(body: string, vars: Record<string, unknown>): string {
   return body.replace(/\{\{\s*([a-zA-Z0-9_.]+)\s*\}\}/g, (whole, path: string) => {
     let v: unknown = vars;
@@ -20,7 +14,6 @@ export function renderTemplate(body: string, vars: Record<string, unknown>): str
   });
 }
 
-/** Текст сообщения: только текст, без управляющих символов, обрезан по лимиту. */
 export function sanitizeBody(raw: string): string {
   return raw
     .replace(/\r\n?/g, '\n')
@@ -51,25 +44,21 @@ export function domainOf(email: string): string {
   return normalizeEmail(email).split('@')[1] ?? '';
 }
 
-/** Метка номера в теме: «Тема [#1042]». */
 export function subjectWithTag(subject: string, number: number): string {
   const clean = sanitizeSubject(subject).replace(/\s*\[#\d+\]\s*/g, ' ').trim();
   return `${clean} [#${number}]`.trim();
 }
 
-/** «Re: …» без накопления «Re: Re: Re:». */
 export function replySubject(subject: string, number: number): string {
   const base = sanitizeSubject(subject).replace(/^((re|fwd?|ответ|отв)\s*:\s*)+/i, '');
   return `Re: ${subjectWithTag(base, number)}`;
 }
 
-/** Номер тикета из метки `[#1042]` в теме письма. */
 export function ticketNumberFromSubject(subject: string | null | undefined): number | null {
   const m = /\[#(\d{1,12})\]/.exec(subject ?? '');
   return m ? Number(m[1]) : null;
 }
 
-/** Токен цепочки из plus-адреса `support+<token>@домен`. */
 export function threadTokenFromAddress(addresses: readonly string[], mailbox: string): string | null {
   const [local, domain] = normalizeEmail(mailbox).split('@');
   if (!local || !domain) return null;
@@ -84,7 +73,6 @@ function escapeRe(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-/** `<id@host>` — с угловыми скобками, без пробелов; пусто → null. */
 export function normalizeMessageId(raw: string | null | undefined): string | null {
   const t = (raw ?? '').trim();
   if (!t) return null;
@@ -92,12 +80,6 @@ export function normalizeMessageId(raw: string | null | undefined): string | nul
   return inner ? `<${inner}>` : null;
 }
 
-/**
- * Ответ клиента без цитаты: обрезаем на первой строке-маркере цитирования
- * («On … wrote:», «… пишет:», «-----Original Message-----», «From:» блока
- * пересылки) и хвост из строк «>». Если обрезка съела всё — оставляем
- * исходный текст (лучше длинно, чем пусто).
- */
 export function stripQuotedReply(text: string): string {
   const lines = sanitizeBody(text).split('\n');
   const markers = [
@@ -121,7 +103,6 @@ export function stripQuotedReply(text: string): string {
   return out || sanitizeBody(text);
 }
 
-/** Первое имя для обращения в шаблонах («Анна Клиентова» → «Анна»). */
 export function firstNameOf(fullName: string | null | undefined): string {
   return (fullName ?? '').trim().split(/\s+/)[0] ?? '';
 }

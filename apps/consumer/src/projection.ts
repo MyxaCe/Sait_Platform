@@ -7,24 +7,12 @@ import {
 } from '@broker/api-client';
 import { applyDemoResetToContests } from './contest-reset';
 
-/**
- * Проекция событий терминала в БД кабинета (demo_accounts + позиции +
- * сделки + уведомления). Чистая и тестируемая: работает поверх минимального
- * `Querier` (в проде — pg-клиент внутри транзакции, в тестах — фейк).
- *
- * Идемпотентность: event_id пишется в processed_events в ТОЙ ЖЕ транзакции;
- * повтор (доставка at-least-once) отбрасывается по ON CONFLICT. Тенант чужого
- * сайта пропускается — консюмер обслуживает свой SITE_SLUG.
- */
-
 export interface Querier {
   query(sql: string, params?: unknown[]): Promise<{ rows: unknown[]; rowCount?: number | null }>;
 }
 
 export interface ProjectionConfig {
-  /** Наш тенант (SITE_SLUG): события чужих сайтов пропускаем. */
   tenant: string;
-  /** Генератор UUID (инъекция ради детерминизма в тестах). */
   newId: () => string;
 }
 
@@ -33,20 +21,8 @@ export type ProjectionOutcome =
   | 'skipped-duplicate'
   | 'skipped-tenant'
   | 'skipped-unknown'
-  /**
-   * Событие о балансе устарело: его `accountSeq` не больше уже применённого.
-   * Отброшено ПРАВИЛЬНО (КОНТРАКТЫ §5, строго больший) — это не ошибка, а
-   * штатный исход гонки проекций. Заявка дедупа остаётся: событие не вернём.
-   */
   | 'skipped-stale';
 
-/**
- * Баланс пришёл на счёт, которого у нас нет (WEB-29).
- *
- * Это не «нечего делать», а «сделать не удалось»: деньги есть, а строки
- * нет. Бросаем, чтобы транзакция откатилась вместе с заявкой на дедуп и
- * событие можно было доставить ещё раз.
- */
 export class BalanceAccountMissingError extends Error {
   constructor(userId: string, eventId: string) {
     super(
@@ -57,18 +33,6 @@ export class BalanceAccountMissingError extends Error {
   }
 }
 
-/**
- * Итог разбора сообщения. ТРИ разных исхода там, где раньше был один `null`
- * (баг B-020): «чужое» и «наше сломанное» требуют противоположных действий, а
- * молчаливый пропуск обоих терял наши же события без следа.
- */
-/**
- * Счёт события (решение владельца 09.11: демо и реальный счёт разделены).
- * Поле `accountKind` аддитивное: событие БЕЗ него — старое или от старого
- * терминала — это ДЕМО, ровно прежним путём. Реальный счёт — параллельные
- * таблицы `real_*` (миграция 1794700000000): у него свой accountSeq, и
- * смешать его со строкой демо нельзя. Имена таблиц — из закрытого набора.
- */
 export type ProjectionAccountKind = 'demo' | 'real';
 
 const TABLES: Record<
@@ -84,36 +48,17 @@ export function accountKindOf(data: { accountKind?: string | null }): Projection
 }
 
 export type MessageClassification =
-  /** Наше событие, разобрано. */
   | { kind: 'terminal-event'; eventId: string; event: ParsedTerminalEvent }
-  /**
-   * Не наш тип события. Пропускать ПРАВИЛЬНО: без этого нельзя выкатывать
-   * части платформы порознь — сосед выкатит новый тип раньше нас.
-   */
   | { kind: 'foreign'; eventId: string; event: string }
-  /**
-   * Конверт наш или тип наш, а разбор не прошёл. Это дефект: либо продюсер
-   * шлёт не то, либо схемы разъехались. Тишина здесь — потеря нашего события.
-   */
   | { kind: 'malformed'; eventId: string | null; reason: string };
 
-/** Известные нам типы событий терминала — реестр контракта, не локальный список. */
 function isOurEvent(name: string): boolean {
   return Object.prototype.hasOwnProperty.call(TERMINAL_EVENT_SCHEMAS, name);
 }
 
-/**
- * Разобрать сырое сообщение шины, СОХРАНИВ причину неудачи.
- *
- * Мягкий разбор означает «не падает», а не «исчезает без следа»: неизвестный
- * тип отбрасывается молча и это норма, а вот наш тип со сломанным payload
- * обязан оставить след.
- */
 export function classifyMessage(raw: unknown): MessageClassification {
   const envelope = incomingEnvelopeSchema.safeParse(raw);
   if (!envelope.success) {
-    // Лишние поля Zod срезает, а не отвергает, поэтому сюда попадает именно
-    // сломанный конверт, а не более новая версия от соседа
     const issue = envelope.error.issues[0];
     const at = issue?.path.join('.') || '(root)';
     return {
@@ -135,10 +80,6 @@ export function classifyMessage(raw: unknown): MessageClassification {
   return { kind: 'terminal-event', eventId, event: parsed };
 }
 
-/**
- * Применить одно событие. Вызывать ВНУТРИ транзакции (BEGIN/COMMIT — на
- * стороне вызывающего, чтобы дедуп и проекция были атомарны).
- */
 export async function applyTerminalEvent(
   db: Querier,
   eventId: string,
@@ -147,7 +88,6 @@ export async function applyTerminalEvent(
 ): Promise<ProjectionOutcome> {
   if (event.data.tenant !== cfg.tenant) return 'skipped-tenant';
 
-  // Дедуп: первым делом «застолбить» event_id. Уже был → выходим.
   const claim = await db.query(
     `INSERT INTO processed_events (event_id, event) VALUES ($1, $2)
        ON CONFLICT (event_id) DO NOTHING`,
@@ -162,7 +102,6 @@ export async function applyTerminalEvent(
     case 'terminal.account.opened': {
       const d = event.data;
       if (kind === 'real') {
-        // Реальный счёт: стартует с нуля, заводится первым deposit у терминала.
         await db.query(
           `INSERT INTO real_accounts (user_id, account_uuid, balance_cents, currency, account_seq)
                 VALUES ($1, $2, $3, $4, $5)
@@ -189,8 +128,6 @@ export async function applyTerminalEvent(
         `INSERT INTO demo_accounts (user_id, balance_cents, currency) VALUES ($1, $2, $3)
            ON CONFLICT (user_id) DO UPDATE SET balance_cents = EXCLUDED.balance_cents,
                                                currency = EXCLUDED.currency`,
-        // Тройка предпочитается старому полю (шаг 2). Разошлись —
-        // отказ, а не выбор молча: см. `moneyFromEvent`.
         [
           d.userId,
           moneyFromEvent({
@@ -207,22 +144,6 @@ export async function applyTerminalEvent(
     }
     case 'terminal.balance.changed': {
       const d = event.data;
-      /*
-       * Ноль обновлённых строк — ОТКАЗ, а не успех (WEB-29).
-       *
-       * Строки может не быть: событие обогнало `account.opened`, или
-       * регистрация шла другим путём. Прежде `rowCount` здесь не
-       * смотрели, функция возвращала `applied`, а `event_id` оставался в
-       * `processed_events` — и повторная доставка гасилась дедупом.
-       * Событие о ДЕНЬГАХ терялось окончательно, при зелёном консюмере и
-       * чистом логе. Отказ, неотличимый от успеха, с ценой в деньгах.
-       *
-       * Почему достаточно бросить. Вся проекция идёт внутри транзакции
-       * (`BEGIN` … `COMMIT` в `index.ts`), и откат уносит вместе с собой
-       * заявку на дедуп. Значит сообщение уйдёт в DLX, а его повторная
-       * доставка уже НЕ будет отброшена: гасить её станет нечему.
-       * Отдельно удалять заявку не нужно — и не нужно её переживать.
-       */
       const applied =
         moneyFromEvent({
           field: 'balance',
@@ -232,36 +153,8 @@ export async function applyTerminalEvent(
           currencyMinorUnits: d.currencyMinorUnits,
         })?.minor ?? d.balanceCents;
 
-      /*
-       * Перезапись остатка — ТОЛЬКО при строго большем accountSeq (WEB-43,
-       * КОНТРАКТЫ §5, Р-441). Свидетель поймал тринадцать копеек: два события
-       * о балансе применились за ~4 мс в порядке, обратном журналу. prefetch(16)
-       * и необёрнутый обработчик означают, что до шестнадцати проекций идут
-       * ОДНОВРЕМЕННО и остаток пишет та, чей UPDATE закончил последним. Слепой
-       * `UPDATE ... WHERE user_id` — last-writer-wins, и старое 10 000.00
-       * затирало свежее 9 999.87.
-       *
-       * Условие стоит В САМОМ UPDATE, а не проверкой перед ним: «прочитать
-       * номер, сравнить, записать» проигрывает гонку в окне между чтением и
-       * записью — ровно то, что мы ловим. «Записать ПРИ условии» атомарно, окна
-       * нет. Строго больший (`<`), не `≤`: при равных номерах (события одной
-       * пачки несут один номер) отбрасывание съело бы соседей по операции.
-       *
-       * accountSeq пока опционален (Р-277, выкат в два шага). Его отсутствие —
-       * NULL в $2: `$2 IS NULL` пропускает guard (упорядочить нечем, применяем
-       * как раньше), а `COALESCE($2, account_seq)` не затирает уже сохранённый
-       * номер. Guard начнёт КУСАТЬСЯ, когда терминал сошлёт номер на всех
-       * событиях (TRM-60); до тех пор гонка на непомеченных событиях остаётся,
-       * и свидетель остаётся звенящим — причина ещё не закрыта.
-       */
       const accountSeq = d.accountSeq ?? null;
       if (kind === 'real') {
-        /*
-         * Реальный счёт заводится первым ДЕПОЗИТОМ у терминала, и событие
-         * `account.opened` для него не гарантировано — поэтому upsert, а не
-         * «нет строки → повтор доставки» (иначе вечный DLX-круг). Гард
-         * accountSeq тот же (строго больший), он стоит в `WHERE` конфликта.
-         */
         const up = await db.query(
           `INSERT INTO real_accounts (user_id, account_uuid, balance_cents, currency, account_seq)
                 VALUES ($1, $2, $3, COALESCE($4, 'USD'), $5)
@@ -285,19 +178,6 @@ export async function applyTerminalEvent(
           [applied, accountSeq, d.userId],
         );
         if ((updated.rowCount ?? 0) === 0) {
-          /*
-           * Ноль строк — ДВЕ противоположные причины, смешивать нельзя:
-           *  (а) строки нет вовсе → деньги есть, счёта нет (WEB-29): бросаем,
-           *      откат уносит заявку дедупа, сообщение доставят снова;
-           *  (б) строка есть, но её accountSeq не меньше нашего → мы ПРАВИЛЬНО
-           *      отбросили устаревшее. Это не ошибка: заявка остаётся, событие
-           *      не повторяем. Иначе устаревшее ушло бы в DLX и возвращалось бы
-           *      вечно (poison).
-           *
-           * Проба существования идёт ПОСЛЕ атомарного UPDATE и денежного значения
-           * уже не касается — UPDATE сам решил не перезаписывать; проба лишь
-           * различает «нет строки» и «строка есть, но старше».
-           */
           const exists = await db.query(`SELECT 1 FROM demo_accounts WHERE user_id = $1`, [
             d.userId,
           ]);
@@ -307,30 +187,11 @@ export async function applyTerminalEvent(
           return 'skipped-stale';
         }
       }
-      /*
-        Сброс человек замечает только по изменившемуся числу (WEB-42).
-
-        Кабинет нажатие подтверждает, но подтверждает ровно «принято»:
-        применится ли сброс, он в тот момент не знает. Знаем мы —
-        здесь, когда событие приехало. Поэтому уведомление рождается
-        **из события**, а не из нашей отправки, и несёт сумму, которую
-        применил источник, а не ту, которую кто-то собирался применить.
-
-        Прежде кабинет писал это уведомление сам, беря число из своей
-        копии стартовой суммы, — сообщал человеку величину, которой не
-        наблюдал.
-
-        **Почему только на `reset`.** Обычное изменение баланса —
-        следствие сделки, и о ней уведомление уже есть. Сообщать о
-        каждом тике значило бы завести шум, в котором утонет
-        настоящее.
-      */
       if (d.reason === 'reset' && kind === 'demo') {
         await db.query(
           `INSERT INTO notifications (id, user_id, type, params) VALUES ($1, $2, 'demoReset', $3)`,
           [cfg.newId(), d.userId, JSON.stringify({ balanceCents: applied })],
         );
-        // Конкурс на демо-счетах: сброс ставит участнику базу (contest-reset.ts).
         await applyDemoResetToContests(db, {
           userId: d.userId,
           balanceMinor: Number(applied),
@@ -338,7 +199,6 @@ export async function applyTerminalEvent(
         });
       }
 
-      // Снапшот позиций (если пришёл) заменяем целиком — проекция идемпотентна
       if (d.positions) {
         await db.query(`DELETE FROM ${T.positions} WHERE user_id = $1`, [d.userId]);
         for (const p of d.positions) {
@@ -368,7 +228,6 @@ export async function applyTerminalEvent(
           d.side,
           d.volume,
           d.price,
-          // `null` здесь — «результата нет», а не «ноль заработано».
           moneyFromEvent({
             field: 'realizedPnl',
             cents: d.realizedPnlCents,
@@ -377,8 +236,6 @@ export async function applyTerminalEvent(
             currencyMinorUnits: d.currencyMinorUnits,
           })?.minor ?? null,
           d.executedAt,
-          // Доход платформы со сделки (аддитивно, demo-fees): нет поля — NULL
-          // («не знаем»), а не ноль — кешбэк и IB от NULL дают 0 явно.
           d.commissionMinor ?? null,
           d.markupMinor ?? null,
           d.marketPrice ?? null,
@@ -389,26 +246,11 @@ export async function applyTerminalEvent(
         [
           cfg.newId(),
           d.userId,
-          /*
-           * Цена кладётся в уведомление (CAB-08). Без неё сообщение
-           * «Сделка исполнена: buy 0.1 EURUSD» не говорит, что произошло
-           * с деньгами: человеку показывали факт сделки и умалчивали её
-           * суть.
-           *
-           * Уровень и признак разрыва (Р-193) сюда ещё НЕ кладутся: поля
-           * согласованы по смыслу, но имён у них пока нет — имя признака
-           * называет терминал (§4г). Появятся имена — встанут здесь же,
-           * рядом с ценой.
-           */
           JSON.stringify({
             symbol: d.symbol,
             side: d.side,
             volume: d.volume,
             price: d.price,
-            // Уровень и разрыв (WEB-20, Р-193). Отсутствие — `null`, а не
-            // ноль и не `false`: у рыночного закрытия уровня нет вовсе, а
-            // про разрыв у старых сделок мы не знаем. Подставить сюда
-            // значение значило бы ответить за то, чего не видели.
             level: d.level ?? null,
             acrossGap: d.acrossGap ?? null,
           }),
@@ -418,20 +260,6 @@ export async function applyTerminalEvent(
     }
     case 'terminal.margin.called': {
       const d = event.data;
-      /*
-       * Маржин-колл — предупреждение ДО принудительного закрытия.
-       *
-       * Уровней два, и это не избыточность: «ваш уровень 97 %» ничего не
-       * говорит человеку, который не помнит порог. Из предупреждения
-       * должно быть видно, СКОЛЬКО ОСТАЛОСЬ.
-       *
-       * Порог опционален, и его отсутствие — НЕ ноль: ноль означал бы
-       * «закроют при нулевой марже», конкретную и очень плохую новость.
-       * Поэтому кладём `null`, а не подставляем число (Р-118).
-       *
-       * Центы и проценты уходят целыми, как пришли: преобразование —
-       * забота показа, у него есть точность и локаль.
-       */
       await db.query(
         `INSERT INTO notifications (id, user_id, type, params) VALUES ($1, $2, 'marginCalled', $3)`,
         [
