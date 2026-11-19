@@ -1,3 +1,4 @@
+import { pageLocale } from '@/lib/locale';
 import type { Metadata } from 'next';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { Badge, Container, Section } from '@broker/ui';
@@ -21,7 +22,7 @@ export default async function CareersPage({ params }: PageProps) {
   const t = await getTranslations('careers');
   // Вакансии и бенефиты из CMS (тег cms:careers)
   const { benefits, vacancies } = await getCms('careers', {
-    locale: params.locale === 'en' ? 'en' : 'ru',
+    locale: pageLocale(params.locale),
   });
   // Адрес для резюме — только из CMS (вакансии); в коде адреса нет
   const hrEmail = vacancies[0]?.applyEmail ?? null;

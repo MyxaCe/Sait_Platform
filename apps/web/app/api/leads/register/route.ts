@@ -1,3 +1,4 @@
+import { leadLocale } from '@/lib/locale';
 import { NextResponse } from 'next/server';
 import { registerLeadSchema } from '@/features/registration/schema';
 import { getLeadStore } from '@/lib/leads/store';
@@ -51,7 +52,7 @@ export async function POST(request: Request) {
     phone: lead.phone,
     country: lead.country,
     accountType: lead.accountType,
-    locale: rawLocale === 'en' ? 'en' : 'ru',
+    locale: leadLocale(rawLocale),
   });
 
   if (!result.ok) {

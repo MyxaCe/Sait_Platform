@@ -110,7 +110,7 @@ describe('контентных ключей в словарях интерфей
     return true;
   }
 
-  it.each(['ru', 'en'])('messages/%s.json', (locale) => {
+  it.each(['ru', 'en', 'de', 'fr', 'es'])('messages/%s.json', (locale) => {
     const messages = JSON.parse(readFileSync(path.join(WEB, `messages/${locale}.json`), 'utf8'));
     expect(CONTENT_KEYS.filter((k) => has(messages, k))).toEqual([]);
   });

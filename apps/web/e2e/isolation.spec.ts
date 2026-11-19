@@ -15,7 +15,7 @@ import { expect, test } from '@playwright/test';
 
 const STUB = `http://127.0.0.1:${process.env.CMS_STUB_PORT || '55493'}`;
 
-test('контент — из CMS, а граница доступа закрыта без карточки сайта', async ({ page }) => {
+test('контент — из CMS, а граница доступа закрыта без списка инструментов', async ({ page }) => {
   await page.goto('/');
   await expect(page.getByRole('heading', { level: 1 })).toContainText(
     'Торгуйте на мировых рынках',

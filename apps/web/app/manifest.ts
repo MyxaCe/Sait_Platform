@@ -1,6 +1,7 @@
 import type { MetadataRoute } from 'next';
 import { getTranslations } from 'next-intl/server';
 import { getCms } from '@/lib/cms';
+import { getSiteLanguages } from '@/lib/site-languages';
 
 /**
  * PWA-манифест. Имя — из CMS (`cms:brand`), в коде бренда нет (10.11);
@@ -13,7 +14,7 @@ import { getCms } from '@/lib/cms';
 export const dynamic = 'force-dynamic';
 
 export default async function manifest(): Promise<MetadataRoute.Manifest> {
-  const locale = 'ru';
+  const locale = (await getSiteLanguages()).defaultLanguage;
   const brand = await getCms('brand', { locale });
   const tMeta = await getTranslations({ locale, namespace: 'meta' });
   const tShortcuts = await getTranslations({ locale, namespace: 'pwaShortcuts' });

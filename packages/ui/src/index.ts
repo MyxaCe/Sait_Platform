@@ -40,6 +40,11 @@ export { Callout, type CalloutProps, type CalloutTone } from './molecules/Callou
 export { EmptyState, type EmptyStateProps } from './molecules/EmptyState/EmptyState';
 export { Breadcrumbs, type BreadcrumbsProps, type Crumb } from './molecules/Breadcrumbs/Breadcrumbs';
 export { Tabs, type TabsProps, type TabItem } from './molecules/Tabs/Tabs';
+export {
+  LanguageSwitcher,
+  type LanguageSwitcherProps,
+  type LanguageOption,
+} from './molecules/LanguageSwitcher/LanguageSwitcher';
 
 // Organisms
 export { TickerTape, type TickerTapeProps, type TickerItem } from './organisms/TickerTape/TickerTape';

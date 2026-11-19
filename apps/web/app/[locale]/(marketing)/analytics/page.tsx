@@ -1,5 +1,5 @@
-import { redirect } from '@/i18n/navigation';
+import { redirect } from '@/i18n/redirect';
 
-export default function AnalyticsIndexPage({ params }: { params: { locale: string } }) {
-  redirect({ href: '/analytics/news', locale: params.locale });
+export default async function AnalyticsIndexPage({ params }: { params: { locale: string } }) {
+  await redirect({ href: '/analytics/news', locale: params.locale });
 }

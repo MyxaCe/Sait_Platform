@@ -1,3 +1,4 @@
+import { pageLocale } from '@/lib/locale';
 import type { Metadata } from 'next';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { Badge, Button, Container, Section } from '@broker/ui';
@@ -19,7 +20,7 @@ export default async function PartnersPage({ params }: PageProps) {
   // Модели, уровни и шаги — из CMS (`/cms/partners`, теги cms:partners[:<сайт>]).
   // Прежде страница брала их из messages, хотя коллекция в CMS была (аудит 10.11).
   const { models, tiers, steps } = await getCms('partners', {
-    locale: params.locale === 'en' ? 'en' : 'ru',
+    locale: pageLocale(params.locale),
   });
 
   return (

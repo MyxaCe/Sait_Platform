@@ -1,3 +1,4 @@
+import { pageLocale } from '@/lib/locale';
 import type { Metadata } from 'next';
 import { useTranslations } from 'next-intl';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
@@ -51,7 +52,7 @@ export default async function InstrumentsPage({ params }: PageProps) {
   // рядом с уверенным числом читается как «это неизвестно, а
   // остальное известно».
   const [{ items: pageItems }, access, quotes] = await Promise.all([
-    getCms('instruments', { locale: params.locale === 'en' ? 'en' : 'ru' }),
+    getCms('instruments', { locale: pageLocale(params.locale) }),
     getTenantAccess(),
     getMdsQuotesState(),
   ]);

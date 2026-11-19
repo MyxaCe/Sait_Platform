@@ -1,3 +1,4 @@
+import { intlTag, pageLocale } from '@/lib/locale';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
@@ -15,7 +16,7 @@ interface PageParams {
 /** Одна выборка для страницы и метаданных: Next дедуплицирует одинаковый fetch. */
 async function findNews(locale: string, slug: string) {
   const { items } = await getCms('articles', {
-    locale: locale === 'en' ? 'en' : 'ru',
+    locale: pageLocale(locale),
     revalidate: 60,
     params: { pageSize: '50' },
   });
@@ -26,7 +27,7 @@ async function findNews(locale: string, slug: string) {
 export function generateStaticParams({ params }: { params: { locale: string } }) {
   return staticParamsFromCms(async () => {
     const { items } = await getCms('articles', {
-      locale: params.locale === 'en' ? 'en' : 'ru',
+      locale: pageLocale(params.locale),
       revalidate: 60,
       params: { pageSize: '50' },
     });
@@ -51,7 +52,7 @@ export async function generateMetadata({ params }: PageParams): Promise<Metadata
 
 export default async function NewsArticlePage({ params }: PageParams) {
   setRequestLocale(params.locale);
-  const locale = params.locale === 'en' ? 'en' : 'ru';
+  const locale = pageLocale(params.locale);
 
   // Статья из CMS (теги cms:articles, cms:articles:<сайт>)
   const article = await findNews(locale, params.slug);
@@ -59,7 +60,7 @@ export default async function NewsArticlePage({ params }: PageParams) {
   const publisher = await brandName(locale);
   const t = await getTranslations('analytics');
   const tCommon = await getTranslations('common');
-  const intlLocale = params.locale === 'en' ? 'en-US' : 'ru-RU';
+  const intlLocale = intlTag(params.locale);
   const categoryLabel = t.has(`categories.${article.category}`)
     ? t(`categories.${article.category}`)
     : article.category;

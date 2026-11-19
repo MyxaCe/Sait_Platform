@@ -13,8 +13,9 @@
  * Отказ точечный, по ресурсу: параллельные сценарии на других ресурсах
  * его не замечают.
  *
- * Карточки сайта (`/v1/cms/sites/{slug}`) у стаба нет — граница доступа к
- * инструментам закрыта (fail-closed, причина `http-error`).
+ * Карточка сайта (`/v1/cms/sites/{slug}`) несёт только языки сайта (ru, en, de;
+ * по умолчанию ru) и не несёт `instruments[]` — граница доступа к инструментам
+ * закрыта (fail-closed, причина `malformed`).
  *
  * Запуск: node e2e/support/cms-stub.mjs  (порт — CMS_STUB_PORT, по умолчанию 55493)
  */
@@ -22,6 +23,7 @@ import http from 'node:http';
 
 const PORT = Number(process.env.CMS_STUB_PORT || 55493);
 const down = new Set();
+const SITE_LANGUAGES = (process.env.CMS_STUB_LANGUAGES || 'ru,en,de').split(',');
 
 const link = (label, href) => ({ label, href });
 
@@ -120,12 +122,16 @@ const server = http.createServer((req, res) => {
     return send(200, { down: [...down] });
   }
   if (url.pathname === '/health') return send(200, { ok: true });
+  if (/^\/v1\/cms\/sites\/[a-z0-9-]+$/.test(url.pathname)) {
+    return send(200, { languages: SITE_LANGUAGES, defaultLanguage: 'ru' });
+  }
 
   const match = /^\/v1\/cms\/([a-z-]+)$/.exec(url.pathname);
   const build = match ? DATA[match[1]] : undefined;
   if (!build) return send(404, { error: 'not_found' });
   if (down.has(match[1])) return send(503, { error: 'stub_down' });
-  return send(200, build(url.searchParams.get('locale') === 'en' ? 'en' : 'ru'));
+  const locale = url.searchParams.get('locale');
+  return send(200, build(!locale || locale === 'ru' ? 'ru' : 'en'));
 });
 
 server.listen(PORT, '127.0.0.1', () => {

@@ -574,5 +574,22 @@
     "quotes": "Quotes",
     "news": "Market news",
     "register": "Open account"
+  },
+  "notFound": {
+    "title": "Page not found",
+    "text": "The page may have been moved or never existed. Check the address or start from the home page.",
+    "back": "Back to home"
+  },
+  "theme": {
+    "toggle": "Toggle theme",
+    "toLight": "Switch to light theme",
+    "toDark": "Switch to dark theme"
+  },
+  "preview": {
+    "mode": "Preview mode",
+    "exit": "Exit"
+  },
+  "language": {
+    "label": "Language"
   }
 }

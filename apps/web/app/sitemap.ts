@@ -1,6 +1,8 @@
 import type { MetadataRoute } from 'next';
 import { SYMBOL_UNIVERSE } from '@broker/realtime';
 import { getCms } from '@/lib/cms';
+import { localizedPath } from '@broker/utils/locales';
+import { getSiteLanguages } from '@/lib/site-languages';
 import { SITE_URL } from '@/lib/site';
 
 /**
@@ -16,11 +18,13 @@ export const dynamic = 'force-dynamic';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
+  const site = await getSiteLanguages();
+  const locale = site.defaultLanguage;
 
   const [articles, academy, legal] = await Promise.all([
-    getCms('articles', { locale: 'ru', revalidate: 60, params: { pageSize: '50' } }),
-    getCms('academy', { locale: 'ru' }),
-    getCms('legal', { locale: 'ru' }),
+    getCms('articles', { locale, revalidate: 60, params: { pageSize: '50' } }),
+    getCms('academy', { locale }),
+    getCms('legal', { locale }),
   ]);
 
   const staticRoutes: MetadataRoute.Sitemap = [
@@ -76,5 +80,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     };
   });
 
-  return [...staticRoutes, ...instruments, ...news, ...education, ...legalDocs];
+  const withAlternates = (entry: MetadataRoute.Sitemap[number]): MetadataRoute.Sitemap[number] => {
+    if (site.languages.length < 2) return entry;
+    const path = entry.url.slice(SITE_URL.length) || '/';
+    return {
+      ...entry,
+      alternates: {
+        languages: Object.fromEntries(
+          site.languages.map((l) => [l, `${SITE_URL}${localizedPath(path, l, site.defaultLanguage)}`]),
+        ),
+      },
+    };
+  };
+
+  return [...staticRoutes, ...instruments, ...news, ...education, ...legalDocs].map(withAlternates);
 }

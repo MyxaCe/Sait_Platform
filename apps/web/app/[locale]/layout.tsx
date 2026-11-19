@@ -1,15 +1,18 @@
+import { pageLocale } from '@/lib/locale';
 import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
 import { draftMode } from 'next/headers';
 import { notFound } from 'next/navigation';
-import { hasLocale, NextIntlClientProvider } from 'next-intl';
+import { NextIntlClientProvider } from 'next-intl';
 import { getMessages, getTranslations, setRequestLocale } from 'next-intl/server';
 import { ContentAutoRefresh } from '@/components/ContentAutoRefresh';
 import { PreviewBanner } from '@/components/PreviewBanner';
 import { OrganizationJsonLd } from '@/components/seo/OrganizationJsonLd';
-import { routing } from '@/i18n/routing';
+import { OPEN_GRAPH_LOCALES, type PlatformLocale } from '@broker/utils/locales';
+import { SiteLanguagesProvider } from '@/i18n/site-languages-context';
 import { hexToRgbChannels, resolvePrimaryColor } from '@/lib/brand';
 import { getCms, isCmsConfigured } from '@/lib/cms';
+import { getSiteLanguages } from '@/lib/site-languages';
 import { SITE_URL } from '@/lib/site';
 import { Providers } from './providers';
 import '../globals.css';
@@ -34,8 +37,10 @@ interface LayoutProps {
  * при первом запросе (on-demand ISR, `dynamicParams` по умолчанию true)
  * из CMS или из последней сохранённой версии её ответа.
  */
-export function generateStaticParams() {
-  return isCmsConfigured() ? routing.locales.map((locale) => ({ locale })) : [];
+export async function generateStaticParams() {
+  if (!isCmsConfigured()) return [];
+  const { languages } = await getSiteLanguages();
+  return languages.map((locale) => ({ locale }));
 }
 
 export async function generateMetadata({
@@ -55,9 +60,7 @@ export async function generateMetadata({
 
   // Бренд из CMS (White Label): имя — в title/OG/applicationName,
   // favicon — если загружен, переопределяет статический. Имени в коде нет.
-  const brand = await getCms('brand', {
-    locale: params.locale === 'en' ? 'en' : 'ru',
-  });
+  const brand = await getCms('brand', { locale: pageLocale(params.locale) });
   const title = t('title', { brand: brand.name });
 
   return {
@@ -84,7 +87,7 @@ export async function generateMetadata({
     openGraph: {
       type: 'website',
       siteName: brand.name,
-      locale: params.locale === 'en' ? 'en_US' : 'ru_RU',
+      locale: OPEN_GRAPH_LOCALES[pageLocale(params.locale)],
       url: SITE_URL,
       title,
       description: t('description'),
@@ -120,7 +123,8 @@ export const viewport: Viewport = {
 
 export default async function RootLayout({ children, params }: LayoutProps) {
   const { locale } = params;
-  if (!hasLocale(routing.locales, locale)) notFound();
+  const site = await getSiteLanguages();
+  if (!(site.languages as readonly string[]).includes(locale)) notFound();
 
   // Обязательно для статического рендеринга страниц с переводами
   setRequestLocale(locale);
@@ -129,7 +133,7 @@ export default async function RootLayout({ children, params }: LayoutProps) {
   // Бренд из CMS (тег cms:brand): акцентный цвет инжектируется поверх
   // токенов. Цвета в CMS нет (`null` в v2) — действует токен `--accent`:
   // запасного цвета бренда в коде нет (10.11).
-  const brand = await getCms('brand', { locale: locale as 'ru' | 'en' });
+  const brand = await getCms('brand', { locale: locale as PlatformLocale });
   const primary = resolvePrimaryColor(brand.primaryColor);
   const accentChannels = primary.color ? hexToRgbChannels(primary.color) : null;
   const tMeta = await getTranslations({ locale, namespace: 'meta' });
@@ -156,7 +160,9 @@ export default async function RootLayout({ children, params }: LayoutProps) {
           logoUrl={brand.logo?.url ?? null}
         />
         <NextIntlClientProvider messages={messages}>
-          <Providers>{children}</Providers>
+          <SiteLanguagesProvider value={site}>
+            <Providers>{children}</Providers>
+          </SiteLanguagesProvider>
         </NextIntlClientProvider>
         <ContentAutoRefresh disabled={isDraft} />
         <PreviewBanner locale={locale} />

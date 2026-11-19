@@ -1,0 +1,595 @@
+{
+  "meta": {
+    "title": "{brand} — Opere en los mercados globales",
+    "description": "Plataforma de trading para Forex, acciones, criptomonedas, índices y metales. Cotizaciones en tiempo real, terminal web y un Área de cliente única."
+  },
+  "common": {
+    "openAccount": "Abrir cuenta",
+    "login": "Iniciar sesión",
+    "freeDemo": "Cuenta demo gratuita",
+    "tryDemo": "Probar demo",
+    "read": "Leer →",
+    "minRead": "{minutes} min de lectura",
+    "backHome": "Volver al inicio",
+    "trade": "Operar",
+    "cmsUnavailableTitle": "Contenido no disponible temporalmente",
+    "cmsUnavailableText": "No hemos podido cargar esta página. Vuelva a intentarlo en un par de minutos.",
+    "retry": "Reintentar"
+  },
+  "validation": {
+    "nameMin": "Mínimo 2 caracteres",
+    "nameMax": "El valor es demasiado largo",
+    "invalidEmail": "Dirección de email no válida",
+    "phoneFormat": "Formato: +34 612 345 678",
+    "selectCountry": "Seleccione su país",
+    "selectAccountType": "Seleccione un tipo de cuenta",
+    "acceptTerms": "Debe aceptar las condiciones",
+    "selectTopic": "Seleccione un tema",
+    "messageMin": "Describa su consulta (mínimo 10 caracteres)",
+    "messageMax": "Máximo 2000 caracteres",
+    "rateLimited": "Demasiadas solicitudes. Vuelva a intentarlo en un minuto.",
+    "invalidRequest": "Solicitud no válida",
+    "emailExists": "Este email ya está registrado. Inicie sesión.",
+    "generic": "No se ha podido enviar. Vuelva a intentarlo.",
+    "channelDisabled": "El formulario de solicitudes está desactivado temporalmente. Escriba al email de soporte."
+  },
+  "connection": {
+    "connected": "Conexión establecida",
+    "connecting": "Conectando…",
+    "reconnecting": "Reconectando…",
+    "offline": "Sin conexión",
+    "tickerAria": "Cotizaciones en tiempo real",
+    "simulated": "Datos de demostración: no son precios de mercado reales",
+    "noData": "sin datos",
+    "lastKnown": "último conocido"
+  },
+  "categories": {
+    "all": "Todos",
+    "forex": "Forex",
+    "metals": "Metales",
+    "crypto": "Criptomonedas",
+    "indices": "Índices",
+    "stocks": "Acciones",
+    "energy": "Energía"
+  },
+  "nav": {
+    "mainNav": "Navegación principal",
+    "mobileNav": "Navegación móvil",
+    "openMenu": "Abrir menú",
+    "closeMenu": "Cerrar menú"
+  },
+  "footer": {
+    "copyright": "© {year} {brand}. Todos los derechos reservados."
+  },
+  "home": {
+    "hero": {
+      "badge": "Plataforma web · Área de cliente · terminal",
+      "title": "Opere en los mercados globales <accent>con confianza</accent>",
+      "subtitle": "Forex, acciones, criptomonedas, índices y metales en un solo terminal. Cotizaciones en tiempo real y condiciones de ejecución transparentes.",
+      "facts": [
+        {
+          "value": "24/7",
+          "label": "Cotizaciones de criptomonedas"
+        },
+        {
+          "value": "USDT",
+          "label": "Depósitos y retiros en TRC20"
+        },
+        {
+          "value": "SSO",
+          "label": "Acceso único al Área de cliente y al terminal"
+        }
+      ]
+    },
+    "advantages": {
+      "title": "Por qué nos eligen los traders",
+      "subtitle": "Tecnología, transparencia y control en cada paso.",
+      "items": [
+        {
+          "title": "Cotizaciones en tiempo real",
+          "text": "Los precios llegan en streaming por WebSocket, y una cotización desactualizada nunca se presenta como la actual."
+        },
+        {
+          "title": "Spreads justos",
+          "text": "Desde 0.0 pips en cuentas ECN. Sin comisiones ocultas ni recotizaciones: los cálculos son totalmente transparentes."
+        },
+        {
+          "title": "Seguridad de los fondos",
+          "text": "Verificación de identidad antes de operar en real, conciliación de los depósitos con la blockchain y protección contra saldo negativo."
+        },
+        {
+          "title": "Todos los mercados en un terminal",
+          "text": "Forex, CFD sobre acciones, criptomonedas, índices, metales y energías: todo en un solo terminal."
+        },
+        {
+          "title": "Un Área de cliente única",
+          "text": "Cuentas, documentos, depósitos y retiros en una única Área de cliente con acceso único al terminal."
+        },
+        {
+          "title": "Retiros transparentes",
+          "text": "Retiros en USDT (TRC20) mediante solicitud desde el Área de cliente; el hash de cada pago se concilia con la blockchain."
+        }
+      ]
+    },
+    "download": {
+      "title": "Los mercados en su bolsillo",
+      "subtitle": "Instale {brand} como aplicación: icono en la pantalla de inicio, pantalla completa sin barras del navegador y acceso inmediato a los mercados.",
+      "features": [
+        "Cotizaciones y noticias del mercado en tiempo real",
+        "Funciona sin conexión: sus últimos datos siempre a mano",
+        "Se instala con un clic, sin tiendas de aplicaciones",
+        "Menos de 1 MB y arranque inmediato desde la pantalla de inicio"
+      ]
+    },
+    "cta": {
+      "title": "Empiece a operar en 5 minutos",
+      "subtitle": "Registro, verificación y primer depósito, todo online. O practique en una cuenta demo con fondos virtuales."
+    }
+  },
+  "pwa": {
+    "install": "Instalar aplicación",
+    "installed": "Aplicación instalada",
+    "iosHint": "En iPhone/iPad: pulse «Compartir» (el cuadrado con una flecha) en Safari y, después, «Añadir a pantalla de inicio».",
+    "manualHint": "Abra el menú del navegador y elija «Instalar aplicación» (Chrome, Edge) o «Añadir a pantalla de inicio»."
+  },
+  "instruments": {
+    "title": "Instrumentos de trading",
+    "subtitle": "Cotizaciones en vivo de todas las clases de activos. Haga clic en un instrumento para ver los detalles y las condiciones de trading.",
+    "metaDescription": "Cotizaciones en tiempo real: Forex, metales, criptomonedas, índices, acciones y energías. Spreads desde 0.0 pips.",
+    "searchPlaceholder": "Buscar: EURUSD, Apple, Gold…",
+    "searchAria": "Buscar instrumentos",
+    "statusLive": "Conexión con el feed establecida",
+    "statusConnecting": "Conectando con el feed…",
+    "counter": "{filtered} de {total} instrumentos",
+    "colInstrument": "Instrumento",
+    "colCategory": "Categoría",
+    "colPrice": "Precio",
+    "colChange": "Variación diaria",
+    "notFound": "No se ha encontrado nada. Pruebe con otra búsqueda o categoría.",
+    "breadcrumbs": "Ruta de navegación",
+    "breadcrumbRoot": "Instrumentos",
+    "detailSubtitle": "Opere {name} en el terminal web: cotizaciones en tiempo real, cuentas demo y reales y protección contra saldo negativo.",
+    "metaDetail": "Cotización en vivo de {name}: precio, spread y condiciones de trading de CFD. Categoría: {category}.",
+    "metaDetailTitle": "{name} ({symbol}) — Cotización en vivo y condiciones de trading",
+    "specMinLot": "Lote mín.",
+    "specLeverage": "Apalancamiento hasta",
+    "specCommission": "Comisión",
+    "specCommissionValue": "desde $0",
+    "specHours": "Horario de trading",
+    "specHours247": "24/7",
+    "specHoursWeekdays": "Lun–Vie, 24 h",
+    "specPrecision": "Precisión",
+    "specPrecisionValue": "{digits} decimales",
+    "specSwapFree": "Sin swap",
+    "specAvailable": "Disponible",
+    "panelLive": "Tiempo real",
+    "panelConnecting": "Conectando…",
+    "tradeSymbol": "Operar {symbol}",
+    "tryOnDemo": "Probar en demo",
+    "accessEmptyTitle": "Aún no se han seleccionado instrumentos",
+    "accessEmptyText": "La lista de instrumentos permitidos para este sitio está vacía: hasta que se añada algo, no se muestran instrumentos de trading. Es un ajuste del sitio, no un fallo: la selección la hace el propietario en el CMS.",
+    "accessEmptyStrip": "Aún no se han seleccionado instrumentos para este sitio: no se muestran cotizaciones",
+    "accessUnavailableTitle": "Lista de instrumentos permitidos no disponible",
+    "accessUnavailableText": "No se han podido obtener los ajustes del sitio, por lo que no se muestran instrumentos. El acceso permanece cerrado hasta recibir la lista, en lugar de abrirse a todo: de lo contrario, un fallo en un servicio vecino se convertiría en un permiso. Se trata de un fallo y se corrige en la plataforma.",
+    "accessUnavailableStrip": "Lista de instrumentos permitidos no disponible: no se muestran cotizaciones",
+    "quotesUnavailableStrip": "Fuente de cotizaciones no disponible: no se muestran precios",
+    "quotesEmptyStrip": "Ahora mismo no se transmite ninguno de los instrumentos permitidos: no se muestran precios",
+    "accessReason": "motivo: {reason}"
+  },
+  "accounts": {
+    "title": "Tipos de cuenta",
+    "subtitle": "Apalancamiento, coste de operación e instrumentos de cada tipo de cuenta. La plataforma publica estas condiciones y aquí se muestran sin cambios.",
+    "metaDescription": "Compare los tipos de cuenta: apalancamiento, margen comercial o comisión e instrumentos, según los datos de la plataforma.",
+    "unavailableTitle": "Condiciones no disponibles temporalmente",
+    "unavailable": "No hemos podido obtener las condiciones actuales de las cuentas. Mientras no podamos confirmarlas, no mostramos cifras: vuelva a consultar en breve.",
+    "empty": "Aún no se ha publicado ningún tipo de cuenta.",
+    "default": "Se abre por defecto",
+    "leverage": "Apalancamiento",
+    "leverageValue": "hasta 1:{n}",
+    "leverageBase": "base 1:{n}",
+    "classLeverage": "{class}: hasta 1:{n}",
+    "classes": {
+      "crypto": "Criptomonedas"
+    },
+    "cost": "Coste de operación",
+    "fee": {
+      "none": "Sin recargo ni comisión",
+      "markup": "Spread + {markup}",
+      "commission": "Comisión del {commission} del importe de la operación",
+      "both": "Spread + {markup} y comisión del {commission} del importe de la operación"
+    },
+    "instruments": "Instrumentos",
+    "notSpecified": "no especificado",
+    "openCta": "Abrir una cuenta"
+  },
+  "analytics": {
+    "title": "Análisis de mercado",
+    "subtitle": "Noticias, datos macroeconómicos y los eventos que mueven los precios.",
+    "tabsAria": "Secciones de análisis",
+    "tabNews": "Noticias del mercado",
+    "tabCalendar": "Calendario económico",
+    "newsMetaTitle": "Noticias del mercado",
+    "newsMetaDescription": "Las últimas noticias de los mercados financieros: Forex, acciones, criptomonedas y macroeconomía, los eventos que mueven los precios.",
+    "calendarMetaTitle": "Calendario económico",
+    "calendarMetaDescription": "Calendario de eventos macroeconómicos: decisiones de bancos centrales, inflación, empleo. Previsiones y valores reales en tiempo real.",
+    "readFull": "Leer la noticia completa →",
+    "backAll": "← Todas las noticias",
+    "source": "Fuente: {source}",
+    "articleCta": "Opere con las noticias en el terminal web",
+    "calendar": {
+      "filterAll": "Todos los eventos",
+      "filterHigh": "Impacto alto",
+      "filterMedium": "Medio",
+      "filterLow": "Bajo",
+      "importanceHigh": "Impacto alto",
+      "importanceMedium": "Impacto medio",
+      "importanceLow": "Impacto bajo",
+      "colTime": "Hora",
+      "colCurrency": "Divisa",
+      "colImportance": "Impacto",
+      "colEvent": "Evento",
+      "colPrevious": "Ant.",
+      "colForecast": "Previsión",
+      "colActual": "Real",
+      "noEvents": "No hay eventos con el nivel de impacto seleccionado.",
+      "noSourceTitle": "El calendario aún no está conectado",
+      "noSourceText": "La fuente de eventos económicos aún no está conectada. No mostramos eventos que no podamos verificar."
+    },
+    "categories": {
+      "forex": "Forex",
+      "stocks": "Acciones",
+      "crypto": "Criptomonedas",
+      "economy": "Economía"
+    },
+    "noNews": "Aún no hay noticias."
+  },
+  "education": {
+    "title": "Formación en trading",
+    "subtitle": "Artículos, webinars con analistas y materiales de referencia: desde su primera operación hasta la gestión avanzada del capital.",
+    "tabsAria": "Secciones de formación",
+    "tabArticles": "Artículos",
+    "tabWebinars": "Webinars",
+    "tabGlossary": "Glosario",
+    "tabFaq": "Preguntas frecuentes",
+    "articlesMetaTitle": "Artículos formativos",
+    "articlesMetaDescription": "Aprenda trading desde cero: cómo funciona el mercado Forex, el apalancamiento, el análisis técnico y la psicología del trading.",
+    "levelBeginner": "Principiante",
+    "levelIntermediate": "Intermedio",
+    "backArticles": "← Todos los artículos",
+    "articleCta": "Practique lo aprendido en una cuenta demo con fondos virtuales",
+    "articleCtaButton": "Abrir cuenta demo",
+    "webinarsMetaTitle": "Webinars",
+    "webinarsMetaDescription": "Webinars de trading gratuitos: sesiones en directo con analistas, análisis del mercado y grabaciones de clases anteriores.",
+    "upcoming": "Próximas sesiones",
+    "past": "Grabaciones anteriores",
+    "liveBadge": "En directo",
+    "recordBadge": "Grabación",
+    "webinarMeta": "{time} MSK · {duration} min",
+    "seat": "Reserve su plaza gratis",
+    "recordSoon": "La grabación aparecerá en su Área de cliente",
+    "glossaryMetaTitle": "Glosario del trader",
+    "glossaryMetaDescription": "Diccionario del trader: spread, margen, apalancamiento, Stop Loss y otros términos explicados de forma sencilla.",
+    "glossaryPlaceholder": "Buscar un término: spread, margen, lote…",
+    "glossaryAria": "Buscar en el glosario",
+    "glossaryLetterAria": "Términos que empiezan por {letter}",
+    "glossaryNotFound": "Término no encontrado. Escríbanos y lo añadiremos al glosario.",
+    "faqMetaTitle": "Preguntas frecuentes",
+    "faqMetaDescription": "Respuestas a las preguntas más habituales: apertura de cuenta, verificación, apalancamiento, depósitos y retiros.",
+    "faqNotFoundTitle": "¿No ha encontrado su respuesta?",
+    "faqNotFoundText": "Escríbanos mediante el formulario de contacto: le responderemos al email que indique.",
+    "faqContact": "Contactar con soporte"
+  },
+  "auth": {
+    "backHome": "← Volver al inicio",
+    "footerRisk": "Operar con productos apalancados conlleva un alto nivel de riesgo. © {year} {brand}",
+    "loginMetaTitle": "Acceso al Área de cliente",
+    "loginTitle": "Área de cliente",
+    "loginText": "El Área de cliente del trader se lanza junto con la plataforma de trading: estará en el subdominio my.* con acceso único (SSO). Mientras tanto, puede solicitar la apertura de una cuenta: usted recibirá la invitación entre los primeros.",
+    "registerMetaTitle": "Abrir una cuenta",
+    "registerMetaDescription": "Abra una cuenta de trading en 5 minutos: registro online, depósitos desde $100, cuenta demo y terminal web.",
+    "registerTitle": "Abra una cuenta <accent>en 5 minutos</accent>",
+    "registerTitleShort": "Abrir una cuenta",
+    "registerSubtitle": "Un solo usuario para el Área de cliente, la cuenta demo y el terminal web.",
+    "steps": [
+      {
+        "title": "Solicitud",
+        "text": "2 minutos para el formulario, sin documentos en este paso"
+      },
+      {
+        "title": "Verificación",
+        "text": "Confirme su email y suba un documento en el Área de cliente"
+      },
+      {
+        "title": "Trading",
+        "text": "Deposite fondos en su cuenta y abra su primera operación"
+      }
+    ],
+    "trust": "La cuenta real se abre tras la verificación de identidad, y cada depósito se concilia con los datos de la blockchain."
+  },
+  "registerForm": {
+    "firstName": "Nombre",
+    "lastName": "Apellidos",
+    "email": "Email",
+    "phone": "Teléfono",
+    "phoneHint": "Formato internacional: +34 612 345 678",
+    "country": "País de residencia",
+    "countryPlaceholder": "Seleccione su país",
+    "accountType": "Tipo de cuenta",
+    "accountHints": {
+      "standard": "Depósito desde $100",
+      "pro": "Depósito desde $1000",
+      "ecn": "Depósito desde $5000"
+    },
+    "agree": "Acepto las <terms>condiciones de uso</terms> y la <risk>advertencia de riesgos</risk>, y confirmo que soy mayor de 18 años.",
+    "submit": "Abrir cuenta",
+    "successTitle": "Solicitud recibida",
+    "successText": "Hemos enviado un email a {email}. Confirme su dirección para continuar con la apertura de su cuenta en el Área de cliente.",
+    "haveAccount": "¿Ya tiene una cuenta?",
+    "countries": [
+      {
+        "code": "RU",
+        "label": "Rusia"
+      },
+      {
+        "code": "KZ",
+        "label": "Kazajistán"
+      },
+      {
+        "code": "BY",
+        "label": "Bielorrusia"
+      },
+      {
+        "code": "UZ",
+        "label": "Uzbekistán"
+      },
+      {
+        "code": "AZ",
+        "label": "Azerbaiyán"
+      },
+      {
+        "code": "AM",
+        "label": "Armenia"
+      },
+      {
+        "code": "GE",
+        "label": "Georgia"
+      },
+      {
+        "code": "TR",
+        "label": "Turquía"
+      },
+      {
+        "code": "AE",
+        "label": "EAU"
+      },
+      {
+        "code": "OTHER",
+        "label": "Otro país"
+      }
+    ]
+  },
+  "contacts": {
+    "metaTitle": "Contacto y soporte",
+    "metaDescription": "Contacte con soporte: formulario de contacto y email. Respondemos a la dirección que nos indique.",
+    "title": "Contacto y soporte",
+    "subtitle": "Elija el canal que prefiera o escríbanos mediante el formulario.",
+    "writeUs": "Escríbanos",
+    "writeUsText": "Le responderemos por email en un plazo de un día hábil.",
+    "offices": "Oficinas",
+    "form": {
+      "name": "Nombre",
+      "email": "Email",
+      "topic": "Tema",
+      "topics": [
+        {
+          "value": "general",
+          "label": "Consulta general"
+        },
+        {
+          "value": "account",
+          "label": "Cuenta y verificación"
+        },
+        {
+          "value": "payments",
+          "label": "Depósitos y retiros"
+        },
+        {
+          "value": "partnership",
+          "label": "Colaboración"
+        }
+      ],
+      "message": "Mensaje",
+      "messagePlaceholder": "Describa su consulta…",
+      "submit": "Enviar mensaje",
+      "successTitle": "Mensaje enviado",
+      "successText": "Le responderemos al email indicado en un plazo de un día hábil.",
+      "writeAgain": "Escribir otro",
+      "ticketNumber": "Número de solicitud: #{number}"
+    }
+  },
+  "about": {
+    "metaTitle": "Sobre nosotros",
+    "metaDescription": "{brand} es una plataforma de trading: terminal web, un Área de cliente única, verificación de identidad y depósitos en USDT conciliados en la blockchain.",
+    "badge": "Tecnología · transparencia · control",
+    "title": "Una plataforma de trading <accent>transparente en cada operación</accent>",
+    "subtitle": "Construimos nuestra propia infraestructura de trading y la hacemos comprensible para los traders minoristas: cotizaciones en tiempo real, un Área de cliente única y movimientos de fondos verificables.",
+    "historyTitle": "Cómo funciona la plataforma",
+    "timeline": [
+      {
+        "year": "01",
+        "text": "Registro y acceso único: un solo usuario para el sitio web, el Área de cliente y el terminal web."
+      },
+      {
+        "year": "02",
+        "text": "Verificación de identidad: los documentos se suben en el Área de cliente y el trading real se habilita tras la comprobación."
+      },
+      {
+        "year": "03",
+        "text": "Depósitos en USDT (TRC20): cada transferencia se concilia con los datos de la blockchain mediante el hash de la transacción."
+      },
+      {
+        "year": "04",
+        "text": "Trading en el terminal web: cotizaciones en tiempo real, cuentas demo y reales en una sola interfaz."
+      },
+      {
+        "year": "05",
+        "text": "Retiros mediante solicitud desde el Área de cliente: el hash del pago se concilia con la blockchain y el cliente ve el estado."
+      }
+    ],
+    "valuesTitle": "Nuestros principios",
+    "values": [
+      {
+        "title": "Transparencia",
+        "text": "Las condiciones de las cuentas, los documentos legales y la advertencia de riesgos están publicados en el sitio y disponibles antes del registro."
+      },
+      {
+        "title": "Fiabilidad",
+        "text": "Verificación de identidad, protección contra saldo negativo y conciliación de los movimientos de fondos con la blockchain."
+      },
+      {
+        "title": "Tecnología",
+        "text": "Plataforma propia: sitio web, Área de cliente y terminal web sobre una base tecnológica común."
+      }
+    ],
+    "riskCta": "Advertencia de riesgos",
+    "facts": [
+      {
+        "value": "SSO",
+        "label": "Acceso único"
+      },
+      {
+        "value": "KYC",
+        "label": "Verificación de identidad"
+      },
+      {
+        "value": "TRC20",
+        "label": "Conciliación en blockchain"
+      },
+      {
+        "value": "PWA",
+        "label": "El sitio como aplicación"
+      }
+    ],
+    "safetyTitle": "Seguridad e información legal",
+    "safetyText": "Las condiciones del servicio, la política de privacidad y la advertencia de riesgos están publicadas en la sección legal. Léalas antes de abrir una cuenta.",
+    "safeguards": [
+      {
+        "title": "Verificación de identidad",
+        "text": "La cuenta real se abre tras la comprobación de los documentos en el Área de cliente"
+      },
+      {
+        "title": "Conciliación en blockchain",
+        "text": "Los depósitos y pagos en USDT (TRC20) se cotejan por el hash de la transacción"
+      },
+      {
+        "title": "Protección contra saldo negativo",
+        "text": "El saldo de la cuenta de trading nunca baja de cero"
+      }
+    ]
+  },
+  "partners": {
+    "metaTitle": "Programa de socios",
+    "metaDescription": "Programa IB con hasta el 40% del spread y White Label: su propio bróker con su marca. Pagos diarios y estadísticas transparentes.",
+    "badge": "Hasta el 40% del spread · pagos diarios",
+    "title": "Programa de socios",
+    "subtitle": "Gane dinero atrayendo traders o lance un bróker con su propia marca en nuestra plataforma.",
+    "tiersTitle": "Niveles de remuneración IB",
+    "tiersSubtitle": "Su parte del spread crece con su cartera de clientes. Los niveles se revisan cada mes; durante los primeros 6 meses solo pueden subir.",
+    "tierMax": "Máximo",
+    "fromSpread": "del spread",
+    "howTitle": "Cómo empezar",
+    "ctaTitle": "¿Listo para ser socio?",
+    "ctaText": "Envíe una solicitud con el tema «Colaboración»: un gestor preparará condiciones personalizadas y estimará sus ingresos potenciales según su audiencia.",
+    "ctaButton": "Hágase socio"
+  },
+  "promotions": {
+    "metaTitle": "Promociones y bonos",
+    "metaDescription": "Ofertas vigentes de {brand}: bono de bienvenida del 30%, cashback del spread, concurso de trading demo y el programa «Invite a un amigo».",
+    "title": "Promociones y bonos",
+    "subtitle": "Ofertas vigentes para traders nuevos y activos. Todas las condiciones, de forma transparente, en la propia tarjeta.",
+    "disclaimer": "Las condiciones completas de cada promoción están disponibles en el reglamento correspondiente. La empresa puede modificar las condiciones de las promociones notificándolo a los participantes. Operar con productos apalancados conlleva riesgo: los fondos de bonificación no eximen de la necesidad de gestionarlo."
+  },
+  "blog": {
+    "metaTitle": "Blog y sala de prensa",
+    "metaDescription": "Noticias de {brand}: productos, resultados, eventos del sector y anuncios.",
+    "title": "Blog y sala de prensa",
+    "subtitle": "Novedades del producto, de la empresa y del sector, de primera mano.",
+    "empty": "Aún no hay publicaciones."
+  },
+  "careers": {
+    "metaTitle": "Empleo",
+    "metaDescription": "Empleo en {brand}: desarrollo, análisis, soporte. Trabajo en remoto.",
+    "badge": "FinTech · en remoto",
+    "title": "Construya con nosotros la fintech del futuro",
+    "subtitle": "Desarrollamos una plataforma de trading: sitio web, Área de cliente y terminal web. Buscamos personas a las que les importen la velocidad, la fiabilidad y un producto honesto.",
+    "vacanciesTitle": "Vacantes abiertas",
+    "apply": "Postularse →",
+    "applySubject": "Candidatura: {title}",
+    "notFound": "¿No ha encontrado un puesto adecuado? Escríbanos a <email></email>: para los buenos candidatos encontramos un hueco más allá de las vacantes abiertas."
+  },
+  "legal": {
+    "navTitle": "Información legal",
+    "navAria": "Documentos legales",
+    "updated": "Actualizado: {date}",
+    "questions": "¿Tiene preguntas sobre este documento? Utilice el <link>formulario de contacto</link>: nuestro departamento jurídico responde en un plazo de tres días hábiles."
+  },
+  "status": {
+    "metaTitle": "Estado de los servicios",
+    "metaDescription": "Estado actual de los servicios de {brand}: API de trading, cotizaciones, Área de cliente, pagos.",
+    "title": "Estado de los servicios",
+    "subtitle": "El estado de cada subsistema en tiempo real. La fila «Cotizaciones» refleja su conexión WebSocket real.",
+    "bannerOk": "Todos los sistemas funcionan con normalidad",
+    "bannerIssues": "Algunos servicios presentan ralentizaciones",
+    "stateOperational": "Operativo",
+    "stateDegraded": "Ralentizado",
+    "stateOutage": "Caída",
+    "stateMaintenance": "Mantenimiento",
+    "uptime": "Disponibilidad a 90 días: {value}",
+    "incidentsTitle": "Historial de incidencias"
+  },
+  "offline": {
+    "metaTitle": "Sin conexión",
+    "title": "Sin conexión a internet",
+    "text": "Parece que no tiene conexión. Las cotizaciones y noticias necesitan conexión: compruebe su red y vuelva a intentarlo.",
+    "retry": "Reintentar"
+  },
+  "instrumentUnavailable": {
+    "sourceDisabled": "La fuente de precios de este instrumento está desactivada",
+    "noSource": "Este instrumento no tiene asignada ninguna fuente de precios",
+    "notInCatalog": "Nuestra fuente de precios no ofrece este instrumento",
+    "sourceSilent": "La fuente está conectada, pero no envía precio para este instrumento",
+    "stale": "El último precio es más antiguo de lo permitido: mostrarlo como actual sería incorrecto",
+    "registryUnreadable": "No se ha podido leer el registro de instrumentos",
+    "thresholdUnset": "No hay umbral de actualidad definido: no se puede valorar la antigüedad del precio",
+    "notMentioned": "La fuente no ha informado nada sobre este instrumento",
+    "technical": "El instrumento no está disponible por un motivo técnico",
+    "shortLimited": "aún no disponible",
+    "shortFault": "sin precio"
+  },
+  "supportFab": {
+    "label": "Soporte",
+    "aria": "Contactar con soporte"
+  },
+  "pwaShortcuts": {
+    "quotes": "Cotizaciones",
+    "news": "Noticias del mercado",
+    "register": "Abrir cuenta"
+  },
+  "notFound": {
+    "title": "Página no encontrada",
+    "text": "Es posible que la página se haya movido o que nunca haya existido. Compruebe la dirección o empiece desde la página de inicio.",
+    "back": "Volver al inicio"
+  },
+  "theme": {
+    "toggle": "Cambiar tema",
+    "toLight": "Cambiar a tema claro",
+    "toDark": "Cambiar a tema oscuro"
+  },
+  "preview": {
+    "mode": "Modo de vista previa",
+    "exit": "Salir"
+  },
+  "language": {
+    "label": "Idioma"
+  }
+}

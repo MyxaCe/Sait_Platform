@@ -17,7 +17,7 @@ import { explainUnavailable, MISSING, UNKNOWN_REASON } from './unavailable-text'
  */
 
 const ROOT = path.resolve(__dirname, '../..');
-const LOCALES = ['ru', 'en'];
+const LOCALES = ['ru', 'en', 'de', 'fr', 'es'];
 const NAMESPACE = 'instrumentUnavailable';
 
 function messages(locale: string): Record<string, string> {

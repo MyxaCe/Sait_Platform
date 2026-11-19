@@ -1,3 +1,4 @@
+import { intlTag, pageLocale } from '@/lib/locale';
 import type { Metadata } from 'next';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { Badge } from '@broker/ui';
@@ -19,14 +20,14 @@ export default async function NewsPage({ params }: PageProps) {
   const t = await getTranslations('analytics');
   const tCommon = await getTranslations('common');
   const locale = params.locale;
-  const intlLocale = locale === 'en' ? 'en-US' : 'ru-RU';
+  const intlLocale = intlTag(locale);
   // Подпись рубрики — UI-словарь; незнакомая рубрика из CMS показывается как есть
   const categoryLabel = (category: string) =>
     t.has(`categories.${category}`) ? t(`categories.${category}`) : category;
 
   // Новости из CMS (тег cms:articles, условно-динамические → revalidate 60 c)
   const { items } = await getCms('articles', {
-    locale: locale === 'en' ? 'en' : 'ru',
+    locale: pageLocale(locale),
     revalidate: 60,
   });
   const [featured, ...rest] = items;

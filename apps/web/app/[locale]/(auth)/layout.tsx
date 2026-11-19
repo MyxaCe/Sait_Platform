@@ -1,3 +1,4 @@
+import { pageLocale } from '@/lib/locale';
 import { useTranslations } from 'next-intl';
 import { setRequestLocale } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
@@ -14,7 +15,7 @@ interface LayoutProps {
  */
 export default async function AuthLayout({ children, params }: LayoutProps) {
   setRequestLocale(params.locale);
-  const brand = await getCms('brand', { locale: params.locale === 'en' ? 'en' : 'ru' });
+  const brand = await getCms('brand', { locale: pageLocale(params.locale) });
   return <LayoutContent brandName={brand.name}>{children}</LayoutContent>;
 }
 

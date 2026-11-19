@@ -1,3 +1,4 @@
+import { pageLocale } from '@/lib/locale';
 import type { Metadata } from 'next';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { Container, Section } from '@broker/ui';
@@ -24,7 +25,7 @@ export default async function StatusPage({ params }: PageProps) {
   // Статусы из CMS/status-сервиса (тег cms:system-status, revalidate 60 c);
   // строка quotes-ws подменяется live-состоянием на клиенте
   const { services, incidents } = await getCms('system-status', {
-    locale: params.locale === 'en' ? 'en' : 'ru',
+    locale: pageLocale(params.locale),
     revalidate: 60,
   });
 

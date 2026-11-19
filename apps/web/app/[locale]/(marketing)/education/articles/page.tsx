@@ -1,3 +1,4 @@
+import { pageLocale } from '@/lib/locale';
 import type { Metadata } from 'next';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
@@ -18,7 +19,7 @@ export default async function EducationArticlesPage({ params }: PageProps) {
   const tCommon = await getTranslations('common');
   // Обучение из CMS (тег cms:academy)
   const { articles } = await getCms('academy', {
-    locale: params.locale === 'en' ? 'en' : 'ru',
+    locale: pageLocale(params.locale),
   });
 
   return (

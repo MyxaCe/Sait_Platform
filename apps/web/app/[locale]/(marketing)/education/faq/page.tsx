@@ -1,3 +1,4 @@
+import { pageLocale } from '@/lib/locale';
 import type { Metadata } from 'next';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { Button } from '@broker/ui';
@@ -18,7 +19,7 @@ export default async function FaqPage({ params }: PageProps) {
   const t = await getTranslations('education');
   // Контент из CMS-слоя (тег cms:faq, вебхук-инвалидация)
   const { sections } = await getCms('faq', {
-    locale: params.locale === 'en' ? 'en' : 'ru',
+    locale: pageLocale(params.locale),
   });
 
   // Микроразметка FAQPage: вопросы попадают в расширенные сниппеты поиска
