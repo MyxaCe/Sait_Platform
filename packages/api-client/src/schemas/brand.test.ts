@@ -255,3 +255,32 @@ describe('читаются обе формы: legacy и public-brand.v1', () => 
     expect(brandSchema.safeParse(broken).success).toBe(false);
   });
 });
+
+describe('heroBackground — необязательное поле бренда', () => {
+  it.each([
+    ['legacy', (v: unknown) => legacy({ heroBackground: v })],
+    ['v2', (v: unknown) => v2({ heroBackground: v })],
+  ])('%s: "off" и "quotes" доходят как есть', (_name, make) => {
+    expect(brandSchema.parse(make('off')).heroBackground).toBe('off');
+    expect(brandSchema.parse(make('quotes')).heroBackground).toBe('quotes');
+  });
+
+  it.each([
+    ['legacy', (v: unknown) => legacy({ heroBackground: v })],
+    ['v2', (v: unknown) => v2({ heroBackground: v })],
+  ])('%s: мусор не роняет бренд, поле просто не задано', (_name, make) => {
+    for (const junk of ['video', 1, null, {}]) {
+      const parsed = brandSchema.parse(make(junk));
+      expect(parsed.name).toBe('Apex Capital');
+      expect(parsed.heroBackground).toBeUndefined();
+    }
+  });
+
+  it('старые ответы без поля по-прежнему валидны', () => {
+    for (const raw of [legacy(), v2()]) {
+      const parsed = brandSchema.parse(raw);
+      expect(parsed.name).toBe('Apex Capital');
+      expect(parsed.heroBackground).toBeUndefined();
+    }
+  });
+});
