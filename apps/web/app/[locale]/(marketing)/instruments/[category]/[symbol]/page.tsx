@@ -1,3 +1,4 @@
+import { pageLocale } from '@/lib/locale';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
@@ -5,7 +6,6 @@ import { findSymbol, SYMBOL_UNIVERSE } from '@broker/realtime';
 import { Badge, Container, Section } from '@broker/ui';
 import { Link } from '@/i18n/navigation';
 import { AccessNotice } from '@/features/instruments/AccessNotice';
-import { CATEGORY_LABELS_STATIC } from '@/features/instruments/categories';
 import { LiveQuotePanel } from '@/features/instruments/LiveQuotePanel';
 import { getCms } from '@/lib/cms';
 import { getMdsIcons } from '@/lib/mds';
@@ -43,8 +43,7 @@ export async function generateMetadata({ params }: PageParams): Promise<Metadata
   const def = findSymbol(params.symbol);
   if (!def) return {};
   const t = await getTranslations({ locale: params.locale, namespace: 'instruments' });
-  const category =
-    CATEGORY_LABELS_STATIC[params.locale === 'en' ? 'en' : 'ru']![def.category];
+  const category = (await getTranslations({ locale: params.locale, namespace: 'categories' }))(def.category);
   return {
     title: t('metaDetailTitle', { name: def.name, symbol: def.symbol }),
     description: t('metaDetail', { name: def.name, category }),
@@ -55,7 +54,7 @@ export default async function InstrumentPage({ params }: PageParams) {
   // setRequestLocale строго до notFound(): иначе рендер 404-границы
   // уходит в динамический режим (DYNAMIC_SERVER_USAGE)
   setRequestLocale(params.locale);
-  const locale = params.locale === 'en' ? 'en' : 'ru';
+  const locale = pageLocale(params.locale);
 
   const def = findSymbol(params.symbol);
   if (!def || def.category !== params.category) notFound();
@@ -108,7 +107,7 @@ export default async function InstrumentPage({ params }: PageParams) {
   // Иконка: загруженная в CMS приоритетнее, иначе — монета из MDS
   const iconUrl = meta.icon?.url ?? (await getMdsIcons())[def.symbol];
 
-  const categoryLabel = CATEGORY_LABELS_STATIC[locale]![def.category];
+  const categoryLabel = (await getTranslations({ locale, namespace: 'categories' }))(def.category);
 
   // Микроразметка хлебных крошек — дублирует видимую навигацию для поисковиков
   const breadcrumbJsonLd = {

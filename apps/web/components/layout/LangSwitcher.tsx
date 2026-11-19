@@ -1,26 +1,26 @@
 'use client';
 
-import { useLocale } from 'next-intl';
-import { Link, usePathname } from '@/i18n/navigation';
+import { useLocale, useTranslations } from 'next-intl';
+import { LanguageSwitcher } from '@broker/ui';
+import { LOCALE_AUTONYMS, localizedPath } from '@broker/utils/locales';
+import { usePathname } from '@/i18n/navigation';
+import { useSiteLanguages } from '@/i18n/site-languages-context';
 
-/**
- * Переключатель языка: ведёт на текущую страницу в другой локали.
- * usePathname из i18n-навигации возвращает путь без префикса локали,
- * поэтому ссылка всегда корректна.
- */
 export function LangSwitcher() {
   const locale = useLocale();
   const pathname = usePathname();
-  const target = locale === 'ru' ? 'en' : 'ru';
+  const t = useTranslations('language');
+  const { languages, defaultLanguage } = useSiteLanguages();
 
   return (
-    <Link
-      href={pathname}
-      locale={target}
-      aria-label={target === 'en' ? 'Switch to English' : 'Переключить на русский'}
-      className="grid h-11 min-w-11 place-items-center rounded-lg px-2 text-sm font-semibold text-secondary transition-colors hover:bg-primary/5 hover:text-primary"
-    >
-      {target.toUpperCase()}
-    </Link>
+    <LanguageSwitcher
+      current={locale}
+      label={t('label')}
+      options={languages.map((l) => ({
+        locale: l,
+        label: LOCALE_AUTONYMS[l],
+        href: localizedPath(pathname, l, defaultLanguage),
+      }))}
+    />
   );
 }

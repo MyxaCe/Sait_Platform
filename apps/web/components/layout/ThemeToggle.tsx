@@ -1,6 +1,6 @@
 'use client';
 
-import { useLocale } from 'next-intl';
+import { useTranslations } from 'next-intl';
 import { useTheme } from 'next-themes';
 import { useEffect, useState } from 'react';
 import { cn } from '@broker/ui';
@@ -11,18 +11,13 @@ import { cn } from '@broker/ui';
  */
 export function ThemeToggle({ className }: { className?: string }) {
   const { theme, setTheme } = useTheme();
-  const locale = useLocale();
+  const t = useTranslations('theme');
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => setMounted(true), []);
 
   const isDark = theme !== 'light';
-  const en = locale === 'en';
-  const label = !mounted
-    ? en ? 'Toggle theme' : 'Сменить тему'
-    : isDark
-      ? en ? 'Switch to light theme' : 'Включить светлую тему'
-      : en ? 'Switch to dark theme' : 'Включить тёмную тему';
+  const label = !mounted ? t('toggle') : isDark ? t('toLight') : t('toDark');
 
   return (
     <button

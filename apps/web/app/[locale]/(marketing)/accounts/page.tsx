@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { Callout, Container, Section, cn } from '@broker/ui';
 import { CtaBand } from '@/components/home/CtaBand';
-import { cabinetRegisterHref } from '@/lib/cabinet-links';
+import { CabinetRegisterLink } from '@/components/layout/CabinetRegisterLink';
 import { bpsPercent, fetchAccountTypes, type PublicAccountType } from '@/lib/platform-terms';
 
 interface PageProps {
@@ -110,12 +110,11 @@ async function AccountCard({ a, locale }: { a: PublicAccountType; locale: string
           </dd>
         </div>
       </dl>
-      <a
-        href={cabinetRegisterHref('/register', locale)}
+      <CabinetRegisterLink href="/register"
         className="mt-6 inline-flex min-h-[44px] items-center justify-center rounded-xl bg-accent px-4 text-sm font-medium text-on-accent transition-colors hover:bg-accent-hover"
       >
         {t('openCta')}
-      </a>
+      </CabinetRegisterLink>
     </article>
   );
 }

@@ -1,3 +1,4 @@
+import { pageLocale } from '@/lib/locale';
 import { getTranslations } from 'next-intl/server';
 import { SiteFooter } from '@/components/layout/SiteFooter';
 import { SiteHeader } from '@/components/layout/SiteHeader';
@@ -11,7 +12,7 @@ interface LayoutProps {
 }
 
 export default async function MarketingLayout({ children, params }: LayoutProps) {
-  const locale = params.locale === 'en' ? 'en' : 'ru';
+  const locale = pageLocale(params.locale);
   // Навигация, бренд и allow-list инструментов — из CMS,
   // инвалидация вебхуком POST /api/revalidate
   const [brand, navigation, instruments] = await Promise.all([

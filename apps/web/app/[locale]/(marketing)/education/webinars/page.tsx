@@ -1,3 +1,4 @@
+import { intlTag, pageLocale } from '@/lib/locale';
 import type { Metadata } from 'next';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { Badge, Button } from '@broker/ui';
@@ -89,8 +90,8 @@ function WebinarCard({ webinar, labels }: { webinar: WebinarView; labels: CardLa
 export default async function WebinarsPage({ params }: PageProps) {
   setRequestLocale(params.locale);
   const t = await getTranslations('education');
-  const locale = params.locale === 'en' ? 'en' : 'ru';
-  const intlLocale = locale === 'en' ? 'en-US' : 'ru-RU';
+  const locale = pageLocale(params.locale);
+  const intlLocale = intlTag(locale);
 
   // Вебинары и стримы из CMS (теги cms:academy / cms:streams)
   const [{ webinars }, streams] = await Promise.all([

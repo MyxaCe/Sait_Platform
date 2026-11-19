@@ -1,3 +1,4 @@
+import { intlTag, pageLocale } from '@/lib/locale';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
@@ -11,7 +12,7 @@ interface PageParams {
 }
 
 async function legalDocuments(locale: string) {
-  const { items } = await getCms('legal', { locale: locale === 'en' ? 'en' : 'ru' });
+  const { items } = await getCms('legal', { locale: pageLocale(locale) });
   return items;
 }
 
@@ -37,7 +38,7 @@ export default async function LegalDocumentPage({ params }: PageParams) {
   if (!doc) notFound();
 
   const t = await getTranslations('legal');
-  const intlLocale = params.locale === 'en' ? 'en-US' : 'ru-RU';
+  const intlLocale = intlTag(params.locale);
 
   return (
     <Section className="py-10 md:py-14">

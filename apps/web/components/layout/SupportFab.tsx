@@ -6,7 +6,7 @@ import { Link } from '@/i18n/navigation';
  * форма обращения → тикет, ответ на почту. Чат — только в кабинете (для
  * вошедших). Ведёт к форме на странице контактов.
  */
-export async function SupportFab({ locale }: { locale: 'ru' | 'en' }) {
+export async function SupportFab({ locale }: { locale: string }) {
   const t = await getTranslations({ locale, namespace: 'supportFab' });
   return (
     <Link

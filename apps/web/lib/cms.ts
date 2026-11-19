@@ -1,6 +1,6 @@
 import { draftMode } from 'next/headers';
 import type { z } from 'zod';
-import { CMS_RESPONSE_SCHEMAS, cmsFetch, type Locale } from '@broker/api-client';
+import { CMS_RESPONSE_SCHEMAS, cmsFetch, type ContentLocale } from '@broker/api-client';
 import { readTenantSlug } from '@broker/tenant';
 import { lastGoodKey, loadLastGood, saveLastGood } from './cms-last-good';
 import { markCmsOutage } from './cms-outage';
@@ -51,7 +51,7 @@ export type CmsResource = (typeof CMS_RESOURCES)[number];
 type CmsData<K extends CmsResource> = z.infer<(typeof CMS_RESPONSE_SCHEMAS)[K]>;
 
 interface GetCmsOptions {
-  locale: Locale;
+  locale: ContentLocale;
   /** Страховочный интервал ревалидации, сек (медленные данные — 3600) */
   revalidate?: number;
   params?: Record<string, string>;

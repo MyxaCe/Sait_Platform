@@ -1,5 +1,6 @@
 'use client';
 
+import { intlTag } from '@/lib/locale';
 import { useLocale, useTranslations } from 'next-intl';
 import { useMemo, useState } from 'react';
 import { cn } from '@broker/ui';
@@ -27,7 +28,7 @@ export interface EconomicEvent {
 export function EconomicCalendar({ events }: { events: EconomicEvent[] }) {
   const t = useTranslations('analytics.calendar');
   const locale = useLocale();
-  const intlLocale = locale === 'en' ? 'en-US' : 'ru-RU';
+  const intlLocale = intlTag(locale);
   const [minImportance, setMinImportance] = useState<EventImportance | 0>(0);
 
   const filters: { value: EventImportance | 0; label: string }[] = [

@@ -1,3 +1,4 @@
+import { pageLocale } from '@/lib/locale';
 import { getCms } from './cms';
 
 /**
@@ -14,7 +15,7 @@ export { hexToRgbChannels } from '@broker/utils';
 
 /** Имя бренда из CMS. Нет ни CMS, ни сохранённой версии — бросает (см. `getCms`). */
 export async function brandName(locale: string): Promise<string> {
-  const brand = await getCms('brand', { locale: locale === 'en' ? 'en' : 'ru' });
+  const brand = await getCms('brand', { locale: pageLocale(locale) });
   return brand.name;
 }
 

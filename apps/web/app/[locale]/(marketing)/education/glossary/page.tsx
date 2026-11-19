@@ -1,3 +1,4 @@
+import { pageLocale } from '@/lib/locale';
 import type { Metadata } from 'next';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { GlossaryList } from '@/features/education/GlossaryList';
@@ -16,7 +17,7 @@ export default async function GlossaryPage({ params }: PageProps) {
   setRequestLocale(params.locale);
   // Глоссарий из CMS (тег cms:academy)
   const { glossary } = await getCms('academy', {
-    locale: params.locale === 'en' ? 'en' : 'ru',
+    locale: pageLocale(params.locale),
   });
   return <GlossaryList terms={glossary} />;
 }

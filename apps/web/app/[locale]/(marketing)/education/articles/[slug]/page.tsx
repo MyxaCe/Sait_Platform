@@ -1,3 +1,4 @@
+import { pageLocale } from '@/lib/locale';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
@@ -12,14 +13,14 @@ interface PageParams {
 }
 
 async function findArticle(locale: string, slug: string) {
-  const { articles } = await getCms('academy', { locale: locale === 'en' ? 'en' : 'ru' });
+  const { articles } = await getCms('academy', { locale: pageLocale(locale) });
   return articles.find((a) => a.slug === slug) ?? null;
 }
 
 // Список статей — из CMS; нет CMS на сборке → пусто, страницы по первому запросу
 export function generateStaticParams({ params }: { params: { locale: string } }) {
   return staticParamsFromCms(async () => {
-    const { articles } = await getCms('academy', { locale: params.locale === 'en' ? 'en' : 'ru' });
+    const { articles } = await getCms('academy', { locale: pageLocale(params.locale) });
     return articles.map((a) => ({ slug: a.slug }));
   });
 }

@@ -1,4 +1,5 @@
 import { envOr } from '@broker/utils';
+import { localizedPath } from '@broker/utils/locales';
 
 /**
  * Открытие счёта живёт в КАБИНЕТЕ (ADR-022): регистрация там открывает счёт.
@@ -11,9 +12,9 @@ import { envOr } from '@broker/utils';
  */
 const CABINET_URL = envOr(process.env.NEXT_PUBLIC_CABINET_URL, 'http://localhost:3002').replace(/\/$/, '');
 
-export function cabinetRegisterHref(href: string, locale: string): string {
+export function cabinetRegisterHref(href: string, locale: string, defaultLanguage = 'ru'): string {
   if (!href.startsWith('/register')) return href;
   const rest = href.slice('/register'.length);
   if (rest !== '' && !rest.startsWith('?') && !rest.startsWith('#')) return href;
-  return `${CABINET_URL}${locale === 'en' ? '/en' : ''}/register${rest}`;
+  return `${CABINET_URL}${localizedPath(`/register${rest}`, locale, defaultLanguage)}`;
 }

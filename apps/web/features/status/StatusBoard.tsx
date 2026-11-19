@@ -1,5 +1,6 @@
 'use client';
 
+import { intlTag } from '@/lib/locale';
 import { useLocale, useTranslations } from 'next-intl';
 import { useConnectionStatus } from '@broker/realtime';
 import { cn } from '@broker/ui';
@@ -36,7 +37,7 @@ export interface StatusBoardProps {
 export function StatusBoard({ services: cmsServices, incidents }: StatusBoardProps) {
   const t = useTranslations('status');
   const locale = useLocale();
-  const intlLocale = locale === 'en' ? 'en-US' : 'ru-RU';
+  const intlLocale = intlTag(locale);
 
   const wsStatus = useConnectionStatus();
   // 'connecting' — нормальное состояние первой загрузки, не тревожим пользователя

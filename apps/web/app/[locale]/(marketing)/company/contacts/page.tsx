@@ -1,3 +1,4 @@
+import { pageLocale } from '@/lib/locale';
 import type { Metadata } from 'next';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { Container, Section } from '@broker/ui';
@@ -18,7 +19,7 @@ export default async function ContactsPage({ params }: PageProps) {
   const t = await getTranslations('contacts');
   // Каналы и офисы из CMS-слоя (тег cms:contacts, вебхук-инвалидация)
   const { channels, offices } = await getCms('contacts', {
-    locale: params.locale === 'en' ? 'en' : 'ru',
+    locale: pageLocale(params.locale),
   });
 
   return (

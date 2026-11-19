@@ -40,7 +40,8 @@ test('английская локаль: /en отдаёт переведённы
   await expect(page.locator('html')).toHaveAttribute('lang', 'en');
   await expect(page.getByRole('heading', { level: 1 })).toContainText('Trade global markets');
   // Переключатель предлагает вернуться на русский
-  await expect(page.getByRole('link', { name: /русск/i })).toBeVisible();
+  await page.getByRole('button', { name: 'Language' }).filter({ visible: true }).click();
+  await expect(page.getByRole('link', { name: /русск/i }).filter({ visible: true })).toBeVisible();
 });
 
 test('мобильное меню открывается и содержит навигацию', async ({ page, isMobile }) => {

@@ -1,4 +1,5 @@
 import { envOr } from '@broker/utils';
+import { intlTag } from '@broker/utils/locales';
 
 /**
  * Условия типов счетов для `/accounts` — ТОЛЬКО из админки (решение
@@ -88,6 +89,6 @@ export async function fetchAccountTypes(fetchImpl: typeof fetch = fetch): Promis
 
 /** Б.п. → «0,15 %» / «0.15%». */
 export function bpsPercent(bps: number, locale: string): string {
-  const n = new Intl.NumberFormat(locale === 'en' ? 'en-US' : 'ru-RU', { maximumFractionDigits: 2 }).format(bps / 100);
+  const n = new Intl.NumberFormat(intlTag(locale), { maximumFractionDigits: 2 }).format(bps / 100);
   return locale === 'en' ? `${n}%` : `${n} %`;
 }

@@ -1,5 +1,5 @@
-import { useLocale, useTranslations } from 'next-intl';
-import { cabinetRegisterHref } from '@/lib/cabinet-links';
+import { useTranslations } from 'next-intl';
+import { CabinetRegisterLink } from '@/components/layout/CabinetRegisterLink';
 import { Badge, Button, Container } from '@broker/ui';
 
 interface HeroFact {
@@ -10,7 +10,6 @@ interface HeroFact {
 export function Hero() {
   const t = useTranslations('home.hero');
   const tCommon = useTranslations('common');
-  const locale = useLocale();
   const facts = t.raw('facts') as HeroFact[];
 
   return (
@@ -49,16 +48,16 @@ export function Hero() {
           </p>
 
           <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:gap-4">
-            <a href={cabinetRegisterHref('/register', locale)} className="w-full sm:w-auto">
+            <CabinetRegisterLink href="/register" className="w-full sm:w-auto">
               <Button size="lg" className="w-full sm:px-10" tabIndex={-1}>
                 {tCommon('openAccount')}
               </Button>
-            </a>
-            <a href={cabinetRegisterHref('/register?demo=1', locale)} className="w-full sm:w-auto">
+            </CabinetRegisterLink>
+            <CabinetRegisterLink href="/register?demo=1" className="w-full sm:w-auto">
               <Button variant="secondary" size="lg" className="w-full" tabIndex={-1}>
                 {tCommon('freeDemo')}
               </Button>
-            </a>
+            </CabinetRegisterLink>
           </div>
 
           {/*

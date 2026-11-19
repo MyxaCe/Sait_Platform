@@ -1,3 +1,4 @@
+import { pageLocale } from '@/lib/locale';
 import type { Metadata } from 'next';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { Badge, Button, Container, Section } from '@broker/ui';
@@ -5,6 +6,7 @@ import { Link } from '@/i18n/navigation';
 import { getCms } from '@/lib/cms';
 import { brandName } from '@/lib/brand';
 import { cabinetRegisterHref } from '@/lib/cabinet-links';
+import { getSiteLanguages } from '@/lib/site-languages';
 
 interface PageProps {
   params: { locale: string };
@@ -21,10 +23,11 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 export default async function PromotionsPage({ params }: PageProps) {
   setRequestLocale(params.locale);
   const t = await getTranslations('promotions');
+  const { defaultLanguage } = await getSiteLanguages();
   // Акции из CMS (тег cms:promotions, страховочный revalidate 60 c —
   // условно-динамические данные из классификации §1 задания)
   const { items: promos } = await getCms('promotions', {
-    locale: params.locale === 'en' ? 'en' : 'ru',
+    locale: pageLocale(params.locale),
     revalidate: 60,
   });
 
@@ -57,7 +60,7 @@ export default async function PromotionsPage({ params }: PageProps) {
                 {promo.terms}
               </p>
               {/* CTA акции → регистрация КАБИНЕТА с ?promo= (атрибуция), не форма лида. */}
-              <Link href={cabinetRegisterHref(promo.ctaHref, params.locale)} className="mt-5 block">
+              <Link href={cabinetRegisterHref(promo.ctaHref, params.locale, defaultLanguage)} className="mt-5 block">
                 <Button
                   variant={promo.featured ? 'primary' : 'secondary'}
                   className="w-full"

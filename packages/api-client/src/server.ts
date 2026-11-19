@@ -1,4 +1,5 @@
 import type { z } from 'zod';
+import type { ContentLocale } from './schemas/common';
 
 /**
  * Серверный клиент CMS-контракта (используется ТОЛЬКО в RSC/route handlers).
@@ -25,7 +26,7 @@ export interface CmsFetchOptions<T> {
    * соседа к своей, не солгав компилятору.
    */
   schema: z.ZodType<T, z.ZodTypeDef, unknown>;
-  locale?: 'ru' | 'en';
+  locale?: ContentLocale;
   /** Теги для revalidateTag() из вебхука /api/revalidate */
   tags?: string[];
   /** Страховочный интервал ревалидации, сек */
