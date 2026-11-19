@@ -30,6 +30,7 @@ export interface MoneyActionState {
   error?: string;
   detail?: string;
   ok?: boolean;
+  message?: string;
 }
 
 async function requireMoneyOperator() {

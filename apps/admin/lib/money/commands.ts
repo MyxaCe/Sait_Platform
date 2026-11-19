@@ -93,7 +93,7 @@ const SUBJECT = 'money_command';
 /** Пост-фактум ревью break-glass ≤24ч (Р-452/Р-455 R-5). */
 const BREAK_GLASS_REVIEW_MS = 24 * 60 * 60 * 1000;
 
-async function journal(
+export async function journal(
   client: PoolClient,
   operatorId: string,
   action: string,
@@ -441,6 +441,7 @@ export async function secondApprove(
   commandId: string,
   approverId: string,
   deps: CommandDeps = {},
+  note?: string,
 ): Promise<StepResult> {
   const pool = deps.pool ?? getPool();
   const keyProvider = deps.keyProvider ?? new EnvEd25519KeyProvider();
@@ -478,6 +479,7 @@ export async function secondApprove(
     const seq = await journal(client, approverId, 'money.command.second_approved', commandId, {
       initiatorId: cmd.initiator_id,
       keyVersion: keyProvider.keyVersion(),
+      ...(note?.trim() ? { basis: note.trim() } : {}),
     });
     await client.query(`UPDATE money_commands SET last_journal_seq = $2 WHERE id = $1`, [commandId, seq]);
     await client.query('COMMIT');

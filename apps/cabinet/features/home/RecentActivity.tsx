@@ -112,7 +112,7 @@ export async function RecentActivity({
                   <NavIcon name={dep ? 'deposit' : 'withdraw'} className="size-4" />
                 </span>
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate text-sm font-medium">{tm(dep ? 'opDeposit' : 'opWithdrawal')}</span>
+                  <span className="block truncate text-sm font-medium">{tm(it.kind === 'deposit' ? (it.item.source === 'admin' ? 'opAdminCredit' : 'opDeposit') : 'opWithdrawal')}</span>
                   <span className="block text-xs tabular-nums text-muted">{when(it.at)}</span>
                 </span>
                 <span className="flex shrink-0 flex-col items-end gap-0.5 text-right">

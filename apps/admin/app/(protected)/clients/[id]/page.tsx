@@ -67,6 +67,9 @@ import { TransferPanel } from './_components/TransferPanel';
 // ── Лимит вывода без верификации (ветка demo-withdraw-limits) ──
 import { WithdrawLimitPanel } from './_components/WithdrawLimitPanel';
 import { formatBpsPercent } from '@/lib/crypto/withdraw-limit';
+import { listManualCredits } from '@/lib/money/credit-queries';
+import { ManualCreditForm } from '../../_money/ManualCreditForms';
+import { ManualCreditsTable, PendingCreditCard, needsRetry } from '../../_money/ManualCredits';
 
 /**
  * Карточка клиента `/clients/[id]` (ADM-02, §3.2) — ЭТАЛОННЫЙ экран редизайна
@@ -335,6 +338,8 @@ export default async function ClientCardPage({
       : computeKycAllowance({ bps: policy.unverifiedWithdraw.bps, balanceMinor: allowanceBalance, usage: kycUsage });
   const pctText = (bps: number) => (bps / 100).toFixed(2).replace(/\.?0+$/, '');
   const supportTickets = await listClientTickets(getPool(), card.userId, card.email);
+  const manualCredits = await listManualCredits({ userId: card.userId, limit: 50 });
+  const creditsOpen = manualCredits.filter((c) => c.state === 'awaiting_second_approval' || needsRetry(c));
   const supportAwaiting = supportTickets.filter((t) => t.status === 'new' || t.status === 'open').length;
   // ── Менеджер клиента: видят все роли карточки, меняет только admin. ──
   const canAssignManager = canAssignManagers(operator?.role);
@@ -500,8 +505,8 @@ export default async function ClientCardPage({
             key: 'money',
             label: 'Деньги',
             href: tabHref('money'),
-            count: moneyRows.length,
-            countTone: moneyPending ? 'warning' : 'default',
+            count: moneyRows.length + manualCredits.length,
+            countTone: moneyPending || creditsOpen.length ? 'warning' : 'default',
           },
           {
             key: 'compliance',
@@ -704,10 +709,43 @@ export default async function ClientCardPage({
               empty={<EmptyState size="compact" title="Заявок на ввод и вывод не было" />}
             />
           </Panel>
+          <Panel
+            title="Ручные зачисления"
+            count={manualCredits.length}
+            description="Зачисления администрацией на реальный счёт — денежные команды с подписью, каждая в журнале."
+            actions={
+              canMoney ? (
+                <Link href="/money?tab=credits" className="text-[13px] font-medium text-accent hover:underline">
+                  Все ручные зачисления →
+                </Link>
+              ) : undefined
+            }
+            flush
+          >
+            <ManualCreditsTable rows={manualCredits} withClient={false} label="Ручные зачисления клиента" />
+          </Panel>
+          {canMoney && creditsOpen.length > 0 ? (
+            <Panel title="Ждут действия" count={creditsOpen.length} description="Второе подтверждение или повтор отправки в терминал.">
+              <div className="space-y-3">
+                {creditsOpen.map((c) => (
+                  <PendingCreditCard key={c.id} row={c} operatorId={operator?.operatorId ?? null} canAct />
+                ))}
+              </div>
+            </Panel>
+          ) : null}
           <div className="grid gap-5 xl:grid-cols-2">
             <Panel title="Правила ввода и вывода" description="Итог настроек платформы и флагов клиента" className="self-start">
               <PolicySummary policy={policy} allowance={kycAllowance} />
             </Panel>
+            {canMoney ? (
+              <Panel
+                title="Зачислить вручную"
+                description="Если клиент не может пополнить счёт через USDT TRC20: зачисление на реальный счёт с основанием, через денежную команду."
+                className="self-start"
+              >
+                <ManualCreditForm userId={card.userId} clientName={card.fullName} clientEmail={card.email} />
+              </Panel>
+            ) : null}
             {canMoney ? (
               <Panel
                 title="Денежные флаги клиента"

@@ -530,6 +530,7 @@
     "walletLead": "Пополнение и вывод реального счёта — USDT в сети TRON (TRC20).",
     "walletTabs": "Операция",
     "opDeposit": "Пополнение",
+    "opAdminCredit": "Зачисление администрацией",
     "opWithdrawal": "Вывод",
     "historyOperations": "История операций",
     "historyEmptyOps": "Операций пока не было",

@@ -105,6 +105,14 @@ describe('переходы', () => {
     expect(transition('dispatched', { kind: 'reject' })).toEqual({ ok: true, state: 'rejected' });
   });
 
+  it('awaiting_second_approval + decline → rejected; из других состояний decline запрещён', () => {
+    expect(transition('awaiting_second_approval', { kind: 'decline' })).toEqual({ ok: true, state: 'rejected' });
+    expect(transition('draft', { kind: 'decline' }).ok).toBe(false);
+    expect(transition('signed', { kind: 'decline' }).ok).toBe(false);
+    expect(transition('dispatched', { kind: 'decline' }).ok).toBe(false);
+    expect(transition('executed', { kind: 'decline' }).ok).toBe(false);
+  });
+
   it('терминальные состояния никуда не двигаются', () => {
     expect(transition('executed', { kind: 'dispatch' }).ok).toBe(false);
     expect(transition('rejected', { kind: 'execute' }).ok).toBe(false);

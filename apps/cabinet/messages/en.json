@@ -530,6 +530,7 @@
     "walletLead": "Deposits and withdrawals for your live account — USDT on TRON (TRC20).",
     "walletTabs": "Operation",
     "opDeposit": "Deposit",
+    "opAdminCredit": "Credit by administration",
     "opWithdrawal": "Withdrawal",
     "historyOperations": "Operations history",
     "historyEmptyOps": "No operations yet",
