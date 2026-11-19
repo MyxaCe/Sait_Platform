@@ -94,6 +94,7 @@ describe('configFingerprint · отпечаток, а не значения', ()
     expect(keys).toEqual(
       [
         'ALLOW_SENTRY_TEST',
+        'CALENDAR_API_URL',
         'CMS_API_KEY',
         'CMS_API_URL',
         'CMS_WEBHOOK_SECRET',

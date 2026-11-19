@@ -2,16 +2,9 @@
 
 import { intlTag } from '@/lib/locale';
 import { useLocale, useTranslations } from 'next-intl';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { cn } from '@broker/ui';
-import { formatTime, formatWeekday } from '@broker/utils';
 
-/**
- * Форма события календаря. Источника событий пока нет: синтетический
- * календарь из кода удалён (10.11) — он выдавал выдуманные «факт» и
- * «прогноз» за реальные макроданные. Компонент ждёт провайдера (или
- * коллекцию CMS v2, блок `economic-calendar`).
- */
 export type EventImportance = 1 | 2 | 3;
 
 export interface EconomicEvent {
@@ -23,13 +16,58 @@ export interface EconomicEvent {
   previous: string | null;
   forecast: string | null;
   actual: string | null;
+  allDay?: boolean;
 }
 
-export function EconomicCalendar({ events }: { events: EconomicEvent[] }) {
+function dayKey(event: EconomicEvent, timeZone: string): string {
+  if (event.allDay) return event.datetime.slice(0, 10);
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(new Date(event.datetime));
+}
+
+function zoneLabel(timeZone: string, intlLocale: string): string {
+  const offset = new Intl.DateTimeFormat(intlLocale, { timeZone, timeZoneName: 'shortOffset' })
+    .formatToParts(new Date())
+    .find((p) => p.type === 'timeZoneName')?.value;
+  return offset && timeZone !== 'UTC' ? `${timeZone}, ${offset}` : 'UTC';
+}
+
+export function EconomicCalendar({
+  events,
+  titleLang,
+}: {
+  events: EconomicEvent[];
+  titleLang?: string;
+}) {
   const t = useTranslations('analytics.calendar');
   const locale = useLocale();
   const intlLocale = intlTag(locale);
   const [minImportance, setMinImportance] = useState<EventImportance | 0>(0);
+  const [timeZone, setTimeZone] = useState('UTC');
+
+  useEffect(() => {
+    const zone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    if (zone) setTimeZone(zone);
+  }, []);
+
+  const formatTime = (e: EconomicEvent) =>
+    e.allDay
+      ? t('allDay')
+      : new Intl.DateTimeFormat(intlLocale, { timeZone, hour: '2-digit', minute: '2-digit' }).format(
+          new Date(e.datetime),
+        );
+
+  const formatWeekday = (day: string) =>
+    new Intl.DateTimeFormat(intlLocale, {
+      timeZone: 'UTC',
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+    }).format(new Date(`${day}T12:00:00Z`));
 
   const filters: { value: EventImportance | 0; label: string }[] = [
     { value: 0, label: t('filterAll') },
@@ -47,13 +85,13 @@ export function EconomicCalendar({ events }: { events: EconomicEvent[] }) {
     );
     const byDay = new Map<string, EconomicEvent[]>();
     for (const event of filtered) {
-      const day = event.datetime.slice(0, 10);
+      const day = dayKey(event, timeZone);
       const list = byDay.get(day) ?? [];
       list.push(event);
       byDay.set(day, list);
     }
-    return [...byDay.entries()];
-  }, [events, minImportance]);
+    return [...byDay.entries()].sort(([a], [b]) => a.localeCompare(b));
+  }, [events, minImportance, timeZone]);
 
   function ImportanceDots({ level }: { level: EventImportance }) {
     const color =
@@ -92,25 +130,30 @@ export function EconomicCalendar({ events }: { events: EconomicEvent[] }) {
         ))}
       </div>
 
+      <p className="mt-4 text-xs text-secondary" data-testid="calendar-timezone">
+        {t('timeZoneNote', { zone: zoneLabel(timeZone, intlLocale) })}
+      </p>
+
       <div className="mt-6 space-y-8">
         {groups.map(([day, dayEvents]) => (
-          <section key={day} aria-label={formatWeekday(day, intlLocale)}>
+          <section key={day} aria-label={formatWeekday(day)}>
             <h2 className="text-sm font-semibold capitalize text-primary">
-              {formatWeekday(day, intlLocale)}
+              {formatWeekday(day)}
             </h2>
 
-            {/* Mobile: карточки */}
             <ul className="mt-3 divide-y divide-border overflow-hidden rounded-2xl border border-border md:hidden">
               {dayEvents.map((e) => (
                 <li key={e.id} className="p-4">
                   <div className="flex items-center gap-3 text-xs text-secondary">
-                    <span className="tabular-nums">{formatTime(e.datetime, intlLocale)}</span>
+                    <span className="tabular-nums">{formatTime(e)}</span>
                     <span className="rounded bg-elevated px-1.5 py-0.5 font-medium text-primary">
                       {e.currency}
                     </span>
                     <ImportanceDots level={e.importance} />
                   </div>
-                  <p className="mt-2 text-sm font-medium text-primary">{e.title}</p>
+                  <p lang={titleLang} className="mt-2 text-sm font-medium text-primary">
+                    {e.title}
+                  </p>
                   <dl className="mt-3 grid grid-cols-3 gap-2 text-xs">
                     <div>
                       <dt className="text-secondary">{t('colPrevious')}</dt>
@@ -131,7 +174,6 @@ export function EconomicCalendar({ events }: { events: EconomicEvent[] }) {
               ))}
             </ul>
 
-            {/* Desktop: таблица */}
             <div className="mt-3 hidden overflow-hidden rounded-2xl border border-border md:block">
               <table className="w-full text-sm">
                 <thead className="bg-elevated text-left text-secondary">
@@ -149,13 +191,15 @@ export function EconomicCalendar({ events }: { events: EconomicEvent[] }) {
                   {dayEvents.map((e) => (
                     <tr key={e.id} className="transition-colors hover:bg-elevated/50">
                       <td className="px-5 py-3.5 tabular-nums text-secondary">
-                        {formatTime(e.datetime, intlLocale)}
+                        {formatTime(e)}
                       </td>
                       <td className="px-5 py-3.5 font-medium text-primary">{e.currency}</td>
                       <td className="px-5 py-3.5">
                         <ImportanceDots level={e.importance} />
                       </td>
-                      <td className="px-5 py-3.5 text-primary">{e.title}</td>
+                      <td lang={titleLang} className="px-5 py-3.5 text-primary">
+                        {e.title}
+                      </td>
                       <td className="px-5 py-3.5 text-right tabular-nums text-secondary">
                         {e.previous ?? '—'}
                       </td>
