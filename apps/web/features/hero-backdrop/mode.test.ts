@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { brandSchema } from '@broker/api-client/schemas';
 import type { ConnStatus } from '@broker/realtime';
 import {
   backdropMode,
@@ -62,5 +63,42 @@ describe('профиль устройства', () => {
     expect(MOBILE_PROFILE.maxLines).toBeLessThan(DESKTOP_PROFILE.maxLines);
     expect(MOBILE_PROFILE.fps).toBeLessThan(DESKTOP_PROFILE.fps);
     expect(DESKTOP_PROFILE.fps).toBeLessThanOrEqual(30);
+  });
+});
+
+describe('heroBackground из ответа CMS через схему бренда', () => {
+  const live = { feedStatus: 'connected' as ConnStatus, symbols: ['BTCUSD'], reducedMotion: false };
+  const legacy = (extra: Record<string, unknown>) => ({
+    name: 'B',
+    logo: null,
+    favicon: null,
+    primaryColor: null,
+    socials: [],
+    ...extra,
+  });
+  const v2 = (extra: Record<string, unknown>) => ({
+    contract: 'v1',
+    site: { name: 'B' },
+    brand: { logoLight: null, favicon: null, primaryColor: null, socials: [], ...extra },
+  });
+
+  it.each([
+    ['legacy', legacy],
+    ['v2', v2],
+  ])('%s: "off" → фона нет', (_name, make) => {
+    const setting = readHeroBackground(brandSchema.parse(make({ heroBackground: 'off' })));
+    expect(setting).toBe('off');
+    expect(backdropMode({ ...live, setting })).toBe('off');
+  });
+
+  it.each([
+    ['legacy без поля', legacy({})],
+    ['v2 без поля', v2({})],
+    ['legacy с мусором', legacy({ heroBackground: 'video' })],
+    ['v2 с мусором', v2({ heroBackground: 42 })],
+  ])('%s → quotes', (_name, raw) => {
+    const setting = readHeroBackground(brandSchema.parse(raw));
+    expect(setting).toBe('quotes');
+    expect(backdropMode({ ...live, setting })).toBe('flow');
   });
 });

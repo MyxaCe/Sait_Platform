@@ -43,6 +43,8 @@ const brandMediaSlot = mediaSchema.nullable().catch(null);
 /** Цвет: негодный — значит не задан. Запасной держит потребитель. */
 const brandColorSlot = hexColorSchema.nullable().catch(null);
 
+const heroBackgroundSlot = z.enum(['quotes', 'off']).optional().catch(undefined);
+
 const socialLinkSchema = z.object({ name: z.string().min(1), url: z.string().url() });
 
 /**
@@ -67,6 +69,7 @@ const brandLegacySchema = z.object({
   favicon: brandMediaSlot,
   primaryColor: brandColorSlot,
   socials: brandSocialsSchema,
+  heroBackground: heroBackgroundSlot,
 });
 
 /**
@@ -87,6 +90,7 @@ const brandV2Schema = z
       favicon: brandMediaSlot,
       primaryColor: brandColorSlot,
       socials: brandSocialsSchema,
+      heroBackground: heroBackgroundSlot,
     }),
   })
   .transform((response) => ({
@@ -95,6 +99,7 @@ const brandV2Schema = z
     favicon: response.brand.favicon,
     primaryColor: response.brand.primaryColor,
     socials: response.brand.socials,
+    heroBackground: response.brand.heroBackground,
   }));
 
 /**
