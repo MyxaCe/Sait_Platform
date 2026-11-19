@@ -1,5 +1,7 @@
 import { useTranslations } from 'next-intl';
 import { CabinetRegisterLink } from '@/components/layout/CabinetRegisterLink';
+import { HeroBackdrop } from '@/features/hero-backdrop/HeroBackdrop';
+import type { HeroBackgroundSetting } from '@/features/hero-backdrop/mode';
 import { Badge, Button, Container } from '@broker/ui';
 
 interface HeroFact {
@@ -7,7 +9,12 @@ interface HeroFact {
   label: string;
 }
 
-export function Hero() {
+interface HeroProps {
+  background?: HeroBackgroundSetting;
+  symbols?: string[];
+}
+
+export function Hero({ background = 'off', symbols = [] }: HeroProps) {
   const t = useTranslations('home.hero');
   const tCommon = useTranslations('common');
   const facts = t.raw('facts') as HeroFact[];
@@ -20,7 +27,7 @@ export function Hero() {
         className="pointer-events-none absolute inset-0"
         style={{
           background:
-            'radial-gradient(ellipse 80% 50% at 70% 20%, rgb(31 58 109 / 0.35), transparent), radial-gradient(ellipse 60% 40% at 20% 80%, rgb(212 164 55 / 0.08), transparent)',
+            'radial-gradient(ellipse 80% 50% at 70% 20%, rgb(var(--royal) / 0.35), transparent), radial-gradient(ellipse 60% 40% at 20% 80%, rgb(var(--accent) / 0.08), transparent)',
         }}
       />
       <div
@@ -28,10 +35,11 @@ export function Hero() {
         className="pointer-events-none absolute inset-0 opacity-[0.03]"
         style={{
           backgroundImage:
-            'linear-gradient(rgb(255 255 255) 1px, transparent 1px), linear-gradient(90deg, rgb(255 255 255) 1px, transparent 1px)',
+            'linear-gradient(rgb(var(--text-primary)) 1px, transparent 1px), linear-gradient(90deg, rgb(var(--text-primary)) 1px, transparent 1px)',
           backgroundSize: '56px 56px',
         }}
       />
+      {background === 'quotes' && <HeroBackdrop candidates={symbols} />}
 
       <Container className="relative py-20 lg:py-28">
         <div className="max-w-xl animate-fade-up lg:max-w-2xl">
