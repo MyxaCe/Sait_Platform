@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { Callout, KpiTile, Money, PageHeader, Tabs } from '@broker/ui';
+import { Callout, EmptyState, KpiTile, Money, PageHeader, Panel, Tabs } from '@broker/ui';
 import { getOperatorSession } from '@/lib/auth/current';
 import { canOperateMoney, exchangeTronAddress } from '@/lib/crypto/runtime';
 import { listDeposits, listUnidentified, listWithdrawals } from '@/lib/crypto/queries';
@@ -11,6 +11,8 @@ import { awaitsOperator, isOpenWithdrawal, moneyHref, sumMinor, type MoneyTab } 
 import { WithdrawalsView } from './WithdrawalsView';
 import { DepositsView } from './DepositsView';
 import { UnidentifiedView } from './UnidentifiedView';
+import { listManualCredits } from '@/lib/money/credit-queries';
+import { ManualCreditsTable, PendingCreditCard, needsRetry } from '../_money/ManualCredits';
 
 /**
  * Раздел «Деньги» (дизайн §4, концепция §7.1/§7.4): очередь выводов (таблица
@@ -25,7 +27,7 @@ import { UnidentifiedView } from './UnidentifiedView';
  */
 export const dynamic = 'force-dynamic';
 
-const TAB_KEYS: MoneyTab[] = ['withdrawals', 'deposits', 'unidentified'];
+const TAB_KEYS: MoneyTab[] = ['withdrawals', 'deposits', 'unidentified', 'credits'];
 
 function OpenLink({ href, children = 'Открыть →' }: { href: string; children?: React.ReactNode }) {
   return (
@@ -47,11 +49,14 @@ export default async function MoneyPage({
     : 'withdrawals';
   const address = exchangeTronAddress();
 
-  const [withdrawals, deposits, unidentified] = await Promise.all([
+  const [withdrawals, deposits, unidentified, credits] = await Promise.all([
     listWithdrawals(),
     listDeposits(),
     listUnidentified(),
+    listManualCredits({ limit: 200 }),
   ]);
+  const creditsAwaiting = credits.filter((c) => c.state === 'awaiting_second_approval');
+  const creditsRetry = credits.filter(needsRetry);
 
   const waiting = withdrawals.filter((w) => awaitsOperator(w.status));
   const oldestWaiting = waiting.reduce<string | null>(
@@ -175,11 +180,57 @@ export default async function MoneyPage({
             count: unidentified.length,
             countTone: unidentified.length > 0 ? 'warning' : 'default',
           },
+          {
+            key: 'credits',
+            label: 'Ручные зачисления',
+            href: moneyHref({ tab: 'credits' }),
+            count: creditsAwaiting.length + creditsRetry.length,
+            countTone: creditsAwaiting.length + creditsRetry.length > 0 ? 'warning' : 'default',
+          },
         ]}
       />
 
       {tab === 'withdrawals' ? (
         <WithdrawalsView rows={withdrawals} filterParam={searchParams.f} selectedId={searchParams.w} />
+      ) : tab === 'credits' ? (
+        <div className="space-y-5">
+          <Panel
+            title="Ожидают подтверждения"
+            count={creditsAwaiting.length}
+            description="Ручные зачисления, которым нужно второе подтверждение другим оператором с правом на деньги."
+          >
+            {creditsAwaiting.length === 0 ? (
+              <EmptyState size="compact" title="Подтверждать нечего" />
+            ) : (
+              <div className="space-y-3">
+                {creditsAwaiting.map((c) => (
+                  <PendingCreditCard key={c.id} row={c} operatorId={operator?.operatorId ?? null} canAct />
+                ))}
+              </div>
+            )}
+          </Panel>
+          {creditsRetry.length > 0 ? (
+            <Panel
+              title="Терминал не подтвердил"
+              count={creditsRetry.length}
+              description="Терминал не ответил на зачисление — исход неизвестен. Повтор идёт с тем же ключом команды и не зачислит дважды."
+            >
+              <div className="space-y-3">
+                {creditsRetry.map((c) => (
+                  <PendingCreditCard key={c.id} row={c} operatorId={operator?.operatorId ?? null} canAct />
+                ))}
+              </div>
+            </Panel>
+          ) : null}
+          <Panel
+            title="История ручных зачислений"
+            count={credits.length}
+            description="Создаются из карточки клиента: вкладка «Деньги» → «Зачислить вручную»."
+            flush
+          >
+            <ManualCreditsTable rows={credits} withClient label="История ручных зачислений" />
+          </Panel>
+        </div>
       ) : tab === 'deposits' ? (
         <DepositsView rows={deposits} filterParam={searchParams.ds} />
       ) : (

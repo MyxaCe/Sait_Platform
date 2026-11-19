@@ -2,7 +2,9 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useEffect, useRef, useState } from 'react';
 import { cn } from '@broker/ui';
+import { ATTENTION_POLL_SECONDS, attentionBadgeText } from '@/lib/support/attention-badge';
 import { NavIcon } from './NavIcon';
 import { NAV_GROUPS, type NavItem } from './nav-registry';
 
@@ -16,8 +18,54 @@ import { NAV_GROUPS, type NavItem } from './nav-registry';
  * Пункты уже отфильтрованы по роли на сервере (fail-closed, Р-394): клиентский
  * рельс не знает о скрытых разделах вовсе; пустая для роли группа не рисуется.
  */
-export function NavRail({ items }: { items: NavItem[] }) {
+function useSupportAttention(enabled: boolean, initial: number | null, pathname: string): number | null {
+  const [count, setCount] = useState(initial);
+  const mounted = useRef(false);
+  useEffect(() => setCount(initial), [initial]);
+  useEffect(() => {
+    if (!enabled) return;
+    let alive = true;
+    const load = async () => {
+      try {
+        const res = await fetch('/api/support/attention', { cache: 'no-store' });
+        if (!res.ok) return;
+        const body = (await res.json()) as { count?: unknown };
+        if (alive && typeof body.count === 'number') setCount(body.count);
+      } catch {
+        return;
+      }
+    };
+    if (mounted.current) void load();
+    mounted.current = true;
+    const t = setInterval(() => {
+      if (document.visibilityState === 'visible') void load();
+    }, ATTENTION_POLL_SECONDS * 1000);
+    return () => {
+      alive = false;
+      clearInterval(t);
+    };
+  }, [enabled, pathname]);
+  return count;
+}
+
+export function CountBadge({ value, label }: { value: number | null; label: string }) {
+  const text = attentionBadgeText(value);
+  if (!text) return null;
+  return (
+    <span
+      aria-label={label}
+      title={label}
+      className="bg-accent text-on-accent ml-auto grid h-5 min-w-5 shrink-0 place-items-center rounded-full px-1.5 text-[11px] font-semibold tabular-nums"
+    >
+      {text}
+    </span>
+  );
+}
+
+export function NavRail({ items, supportAttention = null }: { items: NavItem[]; supportAttention?: number | null }) {
   const pathname = usePathname();
+  const hasSupport = items.some((i) => i.key === 'support');
+  const attention = useSupportAttention(hasSupport, supportAttention, pathname);
 
   function isActive(item: NavItem): boolean {
     if (item.exact) return pathname === item.href;
@@ -82,6 +130,9 @@ export function NavRail({ items }: { items: NavItem[] }) {
                             )}
                           />
                           <span className="truncate">{item.label}</span>
+                          {item.key === 'support' ? (
+                            <CountBadge value={attention} label={`Ждут ответа оператора: ${attention ?? 0}`} />
+                          ) : null}
                         </Link>
                       </li>
                     );

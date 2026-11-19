@@ -61,9 +61,9 @@ export async function moneyOpRenderer() {
           <NavIcon name={isDep ? 'deposit' : 'withdraw'} className="size-4" />
         </span>
         <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-          <span className="text-sm font-medium">{t(isDep ? 'opDeposit' : 'opWithdrawal')}</span>
+          <span className="text-sm font-medium">{t(op.kind === 'deposit' ? (op.item.source === 'admin' ? 'opAdminCredit' : 'opDeposit') : 'opWithdrawal')}</span>
           <span className="text-xs tabular-nums text-secondary">{when(op.at)}</span>
-          {op.kind === 'deposit' ? (
+          {op.kind === 'deposit' && op.item.source === 'admin' ? null : op.kind === 'deposit' ? (
             <>
               <MachineValue
                 value={op.item.txHash}

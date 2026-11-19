@@ -67,8 +67,21 @@ function filterSql(filter: QueueFilter, actor: Actor, params: unknown[]): string
   }
 }
 
+export type QueueSort = 'newest' | 'sla';
+export const QUEUE_SORTS: readonly QueueSort[] = ['newest', 'sla'];
+
+export const NEWEST_FIRST_SQL = `COALESCE(t.last_client_message_at, t.created_at) DESC, t.created_at DESC, t.number DESC`;
+
+export function queueOrderSql(sort: QueueSort | null | undefined, filter: QueueFilter): string {
+  if (sort === 'sla' && (filter === 'awaiting' || filter === 'unassigned' || filter === 'mine')) {
+    return `CASE WHEN t.status IN ('new','open') THEN 0 ELSE 1 END, t.first_response_due_at NULLS LAST, t.created_at`;
+  }
+  return NEWEST_FIRST_SQL;
+}
+
 export interface QueueQuery {
   filter: QueueFilter;
+  sort?: QueueSort | null;
   channel?: Channel | null;
   q?: string | null;
   page?: number;
@@ -101,11 +114,7 @@ export async function listQueue(db: Queryable, actor: Actor, query: QueueQuery):
   const now = query.now ?? new Date();
   params.push(now);
   const nowP = `$${params.length}`;
-  // Порядок: ждущие оператора — по сроку SLA (что горит — сверху), прочие — свежие сверху.
-  const order =
-    query.filter === 'awaiting' || query.filter === 'unassigned' || query.filter === 'mine'
-      ? `CASE WHEN t.status IN ('new','open') THEN 0 ELSE 1 END, t.first_response_due_at NULLS LAST, t.created_at`
-      : `t.updated_at DESC`;
+  const order = queueOrderSql(query.sort, query.filter);
   const sqlWhere = where.join(' AND ');
   const total = await db.query(
     `SELECT count(*)::int AS n FROM support_tickets t LEFT JOIN users u ON u.id = t.user_id WHERE ${sqlWhere}`,
@@ -151,6 +160,16 @@ export async function listQueue(db: Queryable, actor: Actor, query: QueueQuery):
       messageCount: Number(x.message_count),
     })),
   };
+}
+
+export async function countAwaitingOperator(db: Queryable, actor: Actor): Promise<number> {
+  const params: unknown[] = [];
+  const scope = scopeSql(actor, params);
+  const r = await db.query(
+    `SELECT count(*)::int AS n FROM support_tickets t WHERE ${scope} AND t.status IN ('new', 'open')`,
+    params,
+  );
+  return Number(r.rows[0]?.n ?? 0);
 }
 
 export interface QueueStats {
@@ -370,7 +389,7 @@ export async function listClientTickets(db: Queryable, userId: string, email?: s
             (SELECT count(*)::int FROM support_messages m WHERE m.ticket_id = t.id) AS message_count
        FROM support_tickets t LEFT JOIN operators o ON o.id = t.assignee_operator_id
       WHERE t.user_id = $1 OR (t.user_id IS NULL AND $2::text IS NOT NULL AND lower(t.contact_email) = lower($2))
-      ORDER BY t.created_at DESC LIMIT 100`,
+      ORDER BY ${NEWEST_FIRST_SQL} LIMIT 100`,
     [userId, email ?? null],
   );
   return r.rows.map((x) => ({

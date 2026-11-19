@@ -46,6 +46,7 @@ export function initialStateFor(
 export type MoneyCommandEvent =
   | { kind: 'sign'; role: MoneyInitiatorRole; amountMinor: string; bootstrapMode: boolean; breakGlass?: boolean }
   | { kind: 'secondApprove'; initiatorId: string; approverId: string }
+  | { kind: 'decline' }
   | { kind: 'dispatch' }
   | { kind: 'execute' }
   | { kind: 'reject' };
@@ -100,6 +101,7 @@ export function transition(
         }
         return ok('signed');
       }
+      if (event.kind === 'decline') return ok('rejected');
       return illegal();
 
     case 'signed':

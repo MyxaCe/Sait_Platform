@@ -101,6 +101,7 @@ export async function getRealAccount(userId: string): Promise<RealAccountView | 
 
 export interface DepositView {
   id: string;
+  source: 'chain' | 'admin';
   txHash: string;
   status: string;
   amountMinor: number | null;
@@ -119,19 +120,42 @@ export interface WithdrawalView {
 }
 
 export async function listMyDeposits(userId: string): Promise<DepositView[]> {
-  const r = await getPool().query(
-    `SELECT id, tx_hash, status, amount_minor, reject_reason, claimed_at
-       FROM crypto_deposits WHERE user_id = $1 ORDER BY claimed_at DESC LIMIT 50`,
-    [userId],
-  );
-  return r.rows.map((d) => ({
-    id: d.id,
-    txHash: d.tx_hash,
-    status: d.status,
-    amountMinor: d.amount_minor === null ? null : Number(d.amount_minor),
-    rejectReason: d.reject_reason,
-    claimedAt: d.claimed_at,
-  }));
+  const [chain, admin] = await Promise.all([
+    getPool().query(
+      `SELECT id, tx_hash, status, amount_minor, reject_reason, claimed_at
+         FROM crypto_deposits WHERE user_id = $1 ORDER BY claimed_at DESC LIMIT 50`,
+      [userId],
+    ),
+    getPool().query(
+      `SELECT id, amount_minor, executed_at
+         FROM money_commands
+        WHERE account_id = $1 AND type = 'credit' AND state = 'executed' AND executed_at IS NOT NULL
+        ORDER BY executed_at DESC LIMIT 50`,
+      [userId],
+    ),
+  ]);
+  return [
+    ...chain.rows.map((d) => ({
+      id: d.id,
+      source: 'chain' as const,
+      txHash: d.tx_hash,
+      status: d.status,
+      amountMinor: d.amount_minor === null ? null : Number(d.amount_minor),
+      rejectReason: d.reject_reason,
+      claimedAt: d.claimed_at,
+    })),
+    ...admin.rows.map((c) => ({
+      id: c.id,
+      source: 'admin' as const,
+      txHash: '',
+      status: 'credited',
+      amountMinor: Number(c.amount_minor),
+      rejectReason: null,
+      claimedAt: c.executed_at,
+    })),
+  ]
+    .sort((a, b) => new Date(b.claimedAt).getTime() - new Date(a.claimedAt).getTime())
+    .slice(0, 50);
 }
 
 export async function listMyWithdrawals(userId: string): Promise<WithdrawalView[]> {

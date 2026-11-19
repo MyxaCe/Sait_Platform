@@ -7,6 +7,7 @@ import { NavRail } from '@/components/shell/NavRail';
 import { navForRole } from '@/components/shell/nav-registry';
 import { enrollmentGate } from '@/lib/auth/enrollment-gate';
 import { ServiceUnavailable } from '@/components/shell/ServiceUnavailable';
+import { supportAttentionForSession } from '@/lib/support/attention';
 
 /**
  * Защищённая зона. Авторитетный гейт — middleware (Р-395): он уже не пустил
@@ -32,10 +33,11 @@ export default async function ProtectedLayout({ children }: { children: React.Re
   // Роль-гейт рельса — на сервере (fail-closed, Р-394): клиент не получает
   // пунктов, скрытых для роли.
   const navItems = navForRole(operator.role);
+  const supportAttention = navItems.some((i) => i.key === 'support') ? await supportAttentionForSession() : null;
 
   return (
     <div className="flex min-h-svh">
-      <NavRail items={navItems} />
+      <NavRail items={navItems} supportAttention={supportAttention} />
       <div className="flex min-w-0 flex-1 flex-col">
         <TopBar operator={operator} />
         <main className="flex-1 px-6 py-6 xl:px-8">

@@ -130,7 +130,8 @@ export function ActionForm({
   const reported = useCallback(
     async (prev: MoneyActionState, fd: FormData) => {
       const r = await action(prev, fd);
-      if (r.ok) reportRef.current?.(r.detail ? `${okText} (${r.detail})` : okText);
+      const text = r.message ?? okText;
+      if (r.ok) reportRef.current?.(r.detail ? `${text} (${r.detail})` : text);
       return r;
     },
     [action, okText],
@@ -166,7 +167,7 @@ export function ActionForm({
         <Callout tone="negative">{errorText(state.error, state.detail)}</Callout>
       ) : state.ok && !report ? (
         <Callout tone="positive">
-          {okText}
+          {state.message ?? okText}
           {state.detail ? ` (${state.detail})` : null}
         </Callout>
       ) : null}

@@ -294,6 +294,26 @@ export const ACTION_LABELS: Record<string, ActionMeta> = {
     tone: 'info',
     group: 'money_command',
   },
+  'money.command.executed': {
+    label: 'Ручное зачисление проведено терминалом',
+    tone: 'positive',
+    group: 'money_command',
+  },
+  'money.command.terminal_refused': {
+    label: 'Ручное зачисление: терминал отказал',
+    tone: 'negative',
+    group: 'money_command',
+  },
+  'money.command.terminal_unavailable': {
+    label: 'Ручное зачисление: терминал не ответил',
+    tone: 'warning',
+    group: 'money_command',
+  },
+  'money.command.declined': {
+    label: 'Денежная команда отклонена',
+    tone: 'negative',
+    group: 'money_command',
+  },
 
   // Операторы
   'operator.bootstrap': {

@@ -64,4 +64,5 @@ export const EXPECTED_MIGRATIONS: readonly string[] = [
   // ── Вывод без верификации до X % (ветка demo-withdraw-limits, 11.11) ──
   // Доля в б.п.: платформа (по умолчанию 500 = 5 %) + переопределение у клиента.
   '1795830000000_withdraw_kyc_allowance',
+  '1795910000000_money_command_execution',
 ];

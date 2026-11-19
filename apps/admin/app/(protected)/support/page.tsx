@@ -13,6 +13,7 @@ import {
 } from '@broker/ui';
 import {
   QUEUE_FILTERS,
+  QUEUE_SORTS,
   listQueue,
   loadSupportSettings,
   queueStats,
@@ -21,6 +22,7 @@ import {
   type Channel,
   type QueueFilter,
   type QueueRow,
+  type QueueSort,
 } from '@broker/support';
 import { LOGIN_PATH } from '@/lib/auth/constants';
 import { getPool } from '@/lib/db';
@@ -34,8 +36,8 @@ import { SupportNav } from './_components/SupportNav';
 
 /**
  * Очередь «Поддержка» (концепция §7.1: очередь — «что старейшее / что горит»).
- * Ждущие ответа сортируются по сроку SLA первого ответа (рабочие часы из
- * настроек); просроченные — полоска `warning` и возраст `text-warning`.
+ * По умолчанию сверху новые (последнее сообщение клиента); переключатель —
+ * по сроку SLA первого ответа. Просроченные — полоска `warning`.
  * Видимость — по роли в самом запросе (finance_operator — только своё).
  * Обновляется опросом раз в 10 с.
  */
@@ -48,11 +50,16 @@ function asFilter(v: string | undefined): QueueFilter {
   return QUEUE_FILTERS.includes(v as QueueFilter) ? (v as QueueFilter) : 'awaiting';
 }
 
-function href(p: { f?: QueueFilter; ch?: string; q?: string; page?: number }): string {
+function asSort(v: string | undefined): QueueSort {
+  return QUEUE_SORTS.includes(v as QueueSort) ? (v as QueueSort) : 'newest';
+}
+
+function href(p: { f?: QueueFilter; ch?: string; q?: string; page?: number; sort?: QueueSort }): string {
   const sp = new URLSearchParams();
   if (p.f && p.f !== 'awaiting') sp.set('f', p.f);
   if (p.ch) sp.set('ch', p.ch);
   if (p.q) sp.set('q', p.q);
+  if (p.sort && p.sort !== 'newest') sp.set('sort', p.sort);
   if (p.page && p.page > 1) sp.set('page', String(p.page));
   const s = sp.toString();
   return s ? `/support?${s}` : '/support';
@@ -111,30 +118,32 @@ const COLUMNS: DataTableColumn<QueueRow>[] = [
   },
 ];
 
-export default async function SupportQueuePage({ searchParams }: { searchParams: { f?: string; ch?: string; q?: string; page?: string } }) {
+export default async function SupportQueuePage({ searchParams }: { searchParams: { f?: string; ch?: string; q?: string; page?: string; sort?: string } }) {
   const actor = await supportActor();
   if (!actor) redirect(LOGIN_PATH);
   const filter = asFilter(searchParams.f);
   const channel = (['chat', 'email', 'web_form'] as const).includes(searchParams.ch as Channel) ? (searchParams.ch as Channel) : null;
   const q = (searchParams.q ?? '').trim().slice(0, 100);
   const page = Math.max(1, Number(searchParams.page) || 1);
+  const sort = asSort(searchParams.sort);
   const db = getPool();
 
   const [stats, list, mail, settings] = await Promise.all([
     queueStats(db, actor),
-    listQueue(db, actor, { filter, channel, q, page, pageSize: PAGE_SIZE }),
+    listQueue(db, actor, { filter, channel, q, page, pageSize: PAGE_SIZE, sort }),
     readMailChannelState(db),
     loadSupportSettings(db),
   ]);
   const isAdmin = supportAccess.managesSettings(actor.role);
   const filtered = Boolean(channel || q);
+  const slaSortApplies = filter === 'awaiting' || filter === 'unassigned' || filter === 'mine';
 
   return (
     <div className="space-y-6">
       <AutoRefresh seconds={10} />
       <PageHeader
         title="Поддержка"
-        description="Обращения клиентов из чата кабинета, почты и формы сайта. Сверху — то, что горит по SLA первого ответа."
+        description="Обращения клиентов из чата кабинета, почты и формы сайта. Сверху — новые: по времени последнего сообщения клиента."
         meta={
           <span className="tabular-nums">
             Срез на {fmtDateTime(new Date())} · обновляется каждые 10 с
@@ -191,7 +200,7 @@ export default async function SupportQueuePage({ searchParams }: { searchParams:
         items={TABS.map((f) => ({
           key: f,
           label: QUEUE_FILTER_LABEL[f],
-          href: href({ f, ch: channel ?? undefined, q }),
+          href: href({ f, ch: channel ?? undefined, q, sort }),
           count: f === 'awaiting' ? stats.awaiting : f === 'mine' ? stats.mine : f === 'unassigned' ? stats.unassigned : f === 'waiting' ? stats.waiting : undefined,
           countTone: f === 'awaiting' && stats.overdue > 0 ? 'warning' : 'default',
         }))}
@@ -220,8 +229,21 @@ export default async function SupportQueuePage({ searchParams }: { searchParams:
                     ...(['chat', 'email', 'web_form'] as const).map((c) => ({ value: c, label: CHANNEL_LABEL[c] })),
                   ],
                 },
+                ...(slaSortApplies
+                  ? [
+                      {
+                        name: 'sort',
+                        label: 'Порядок',
+                        value: sort,
+                        options: [
+                          { value: 'newest', label: 'Сначала новые' },
+                          { value: 'sla', label: 'Сначала горящие по SLA' },
+                        ],
+                      },
+                    ]
+                  : []),
               ]}
-              resetHref={filtered ? href({ f: filter }) : null}
+              resetHref={filtered || sort !== 'newest' ? href({ f: filter }) : null}
               aside={<span className="text-muted text-xs tabular-nums">Найдено: {list.total}</span>}
             />
           }
@@ -255,7 +277,7 @@ export default async function SupportQueuePage({ searchParams }: { searchParams:
                 page={page}
                 pageSize={PAGE_SIZE}
                 total={list.total}
-                hrefFor={(p) => href({ f: filter, ch: channel ?? undefined, q, page: p })}
+                hrefFor={(p) => href({ f: filter, ch: channel ?? undefined, q, page: p, sort })}
                 linkComponent={Link}
               />
             ) : undefined

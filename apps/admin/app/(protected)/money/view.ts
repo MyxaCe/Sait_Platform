@@ -6,7 +6,7 @@ import type { DepositRowView, WithdrawalRowView } from '@/lib/crypto/queries';
  * прочитанных строк для показа.
  */
 
-export type MoneyTab = 'withdrawals' | 'deposits' | 'unidentified';
+export type MoneyTab = 'withdrawals' | 'deposits' | 'unidentified' | 'credits';
 
 /** Подана дольше — «просрочена» (подсветка возраста в очереди). */
 export const WITHDRAWAL_SLA_HOURS = 24;

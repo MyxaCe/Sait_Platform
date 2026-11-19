@@ -199,7 +199,7 @@ export default async function HistoryPage({
         <td className="px-3 py-2.5">
           <span className="inline-flex items-center gap-1.5">
             <NavIcon name={dep ? 'deposit' : 'withdraw'} className={cn('size-4', dep ? 'text-positive' : 'text-secondary')} />
-            {tm(dep ? 'opDeposit' : 'opWithdrawal')}
+            {tm(op.kind === 'deposit' ? (op.item.source === 'admin' ? 'opAdminCredit' : 'opDeposit') : 'opWithdrawal')}
           </span>
         </td>
         <td className="max-w-[18rem] px-3 py-1.5">
