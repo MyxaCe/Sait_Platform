@@ -78,11 +78,6 @@
     "phone": "Phone",
     "country": "Country",
     "accountType": "Account type",
-    "accountTypes": {
-      "standard": "Standard",
-      "pro": "Pro",
-      "ecn": "ECN Prime"
-    },
     "loginButton": "Sign in",
     "registerButton": "Open account",
     "noAccount": "Don't have an account yet?",
@@ -328,7 +323,8 @@
     "bot": "Submission error",
     "startBalanceUnset": "The account cannot be opened right now: the demo starting amount has not been set. We do not substitute one — please contact support, it is fixed in the site settings.",
     "startBalanceUnavailable": "The account cannot be opened right now: the site settings could not be retrieved. Please try again later — your form data is not lost.",
-    "tempPasswordExpired": "Your temporary password has expired. Ask your manager for a new one or use “Forgot password?”."
+    "tempPasswordExpired": "Your temporary password has expired. Ask your manager for a new one or use “Forgot password?”.",
+    "accountTypeUnavailable": "This account type is not available right now. Please choose another one."
   },
   "history": {
     "title": "History",
@@ -983,5 +979,8 @@
       "kyc_passed": "verification passed",
       "source_closed": "account here closed"
     }
+  },
+  "liveParams": {
+    "supportAlwaysOpen": "24/7"
   }
 }

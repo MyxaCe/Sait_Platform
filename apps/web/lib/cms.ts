@@ -4,6 +4,7 @@ import { CMS_RESPONSE_SCHEMAS, cmsFetch, type ContentLocale } from '@broker/api-
 import { readTenantSlug } from '@broker/tenant';
 import { lastGoodKey, loadLastGood, saveLastGood } from './cms-last-good';
 import { markCmsOutage } from './cms-outage';
+import { withLiveParams } from './live-params';
 
 /**
  * Единая точка чтения CMS-контента страницами.
@@ -129,7 +130,7 @@ export async function getCms<K extends CmsResource>(
       });
       // Черновик — не «последняя версия сайта»
       if (!draft && key) await saveLastGood(key, data);
-      return data;
+      return withLiveParams(data, locale);
     } catch (error) {
       failure = error;
     }
@@ -142,7 +143,7 @@ export async function getCms<K extends CmsResource>(
       console.error(
         `[cms] CMS недоступна — ${resource} (${locale}) показан из последней версии от ${saved.savedAt}: ${describeFailure(failure)}`,
       );
-      return parsed.data;
+      return withLiveParams(parsed.data, locale);
     }
   }
 

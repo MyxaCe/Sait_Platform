@@ -31,6 +31,7 @@ function answer(sql: string, params: unknown[]): { rows: Record<string, unknown>
   if (s.includes('SELECT 1 FROM users WHERE id::text = $1 AND registration_ip = $2')) {
     return params[1] === state.referrerIp ? { rows: [{ '?column?': 1 }] } : { rows: [] };
   }
+  if (s.includes('FROM leverage_portfolios')) return { rows: [{ key: params[0] ?? 'standard', title: 'Standard' }] };
   if (s.includes('SELECT entry_hash FROM admin_action_journal')) return { rows: [] };
   if (s.includes('SELECT seq FROM admin_action_journal')) return { rows: [{ seq: 1 }] };
   return { rows: [] };

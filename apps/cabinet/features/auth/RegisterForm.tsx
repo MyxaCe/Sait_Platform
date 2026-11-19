@@ -2,9 +2,10 @@
 
 import { useFormState, useFormStatus } from 'react-dom';
 import { useLocale, useTranslations } from 'next-intl';
-import { Button, FormField, Input, Select } from '@broker/ui';
+import { Button, FormField, Input } from '@broker/ui';
 import { registerAction, type ActionState } from '@/lib/actions';
 import { FormMessage, useFieldError } from './FormMessage';
+import { PlanPicker, type RegisterPlan } from './PlanPicker';
 
 function SubmitButton({ label }: { label: string }) {
   const { pending } = useFormStatus();
@@ -24,7 +25,11 @@ export interface RegisterPrefill {
   country: string;
 }
 
-export function RegisterForm({ prefill }: { prefill?: RegisterPrefill } = {}) {
+export function RegisterForm({
+  prefill,
+  plans = [],
+  selectedPlan,
+}: { prefill?: RegisterPrefill; plans?: RegisterPlan[]; selectedPlan?: string } = {}) {
   const t = useTranslations('auth');
   const locale = useLocale();
   const fieldError = useFieldError();
@@ -55,18 +60,11 @@ export function RegisterForm({ prefill }: { prefill?: RegisterPrefill } = {}) {
         <Input id="phone" name="phone" type="tel" autoComplete="tel" placeholder="+357 25 000 000" invalid={!!state.fieldErrors?.phone} />
       </FormField>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <FormField label={t('country')} htmlFor="country" required error={fieldError(state.fieldErrors?.country)}>
-          <Input id="country" name="country" autoComplete="country-name" defaultValue={prefill?.country} invalid={!!state.fieldErrors?.country} />
-        </FormField>
-        <FormField label={t('accountType')} htmlFor="accountType" required>
-          <Select id="accountType" name="accountType" defaultValue="standard">
-            <option value="standard">{t('accountTypes.standard')}</option>
-            <option value="pro">{t('accountTypes.pro')}</option>
-            <option value="ecn">{t('accountTypes.ecn')}</option>
-          </Select>
-        </FormField>
-      </div>
+      <FormField label={t('country')} htmlFor="country" required error={fieldError(state.fieldErrors?.country)}>
+        <Input id="country" name="country" autoComplete="country-name" defaultValue={prefill?.country} invalid={!!state.fieldErrors?.country} />
+      </FormField>
+
+      {plans.length > 0 ? <PlanPicker plans={plans} selected={selectedPlan ?? plans[0]!.key} /> : null}
 
       <FormField label={t('password')} htmlFor="password" required error={fieldError(state.fieldErrors?.password)}>
         <Input id="password" name="password" type="password" autoComplete="new-password" invalid={!!state.fieldErrors?.password} />

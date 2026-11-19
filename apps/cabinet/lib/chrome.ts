@@ -9,6 +9,7 @@
 import { readTenantSlug } from '@broker/tenant';
 import { envOr, readEnv } from '@broker/utils';
 import { isPlatformLocale, localizedPath } from '@broker/utils/locales';
+import { withLiveParams } from './live-params';
 
 export interface ChromeBrand {
   name: string;
@@ -57,6 +58,7 @@ export async function cmsGet(resource: string, locale: string): Promise<unknown 
     return null;
   }
 
+  let data: unknown;
   try {
     const res = await fetch(
       `${base}/cms/${resource}?site=${encodeURIComponent(slug)}&locale=${isPlatformLocale(locale) ? locale : 'ru'}`,
@@ -67,10 +69,11 @@ export async function cmsGet(resource: string, locale: string): Promise<unknown 
       },
     );
     if (!res.ok) return null;
-    return await res.json();
+    data = await res.json();
   } catch {
     return null;
   }
+  return withLiveParams(data, isPlatformLocale(locale) ? locale : 'ru');
 }
 
 export async function getChromeBrand(locale: string): Promise<ChromeBrand | null> {

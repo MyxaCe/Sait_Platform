@@ -7,7 +7,9 @@ import { Badge, Container, Section } from '@broker/ui';
 import { Link } from '@/i18n/navigation';
 import { AccessNotice } from '@/features/instruments/AccessNotice';
 import { LiveQuotePanel } from '@/features/instruments/LiveQuotePanel';
+import { defaultPortfolio, formatBpsPercent, formatLeverage, MISSING_VALUE, portfolioLeverage } from '@broker/live-params';
 import { getCms } from '@/lib/cms';
+import { fetchLiveSnapshot } from '@/lib/platform-terms';
 import { getMdsIcons } from '@/lib/mds';
 import { SITE_URL } from '@/lib/site';
 import { accessNotice, getTenantAccess, isSymbolAllowed } from '@/lib/tenant';
@@ -106,6 +108,9 @@ export default async function InstrumentPage({ params }: PageParams) {
 
   // Иконка: загруженная в CMS приоритетнее, иначе — монета из MDS
   const iconUrl = meta.icon?.url ?? (await getMdsIcons())[def.symbol];
+  const portfolio = defaultPortfolio(await fetchLiveSnapshot());
+  const leverage = portfolio ? formatLeverage(portfolioLeverage(portfolio, def.category)) : MISSING_VALUE;
+  const commission = portfolio ? formatBpsPercent(portfolio.commissionBps, locale) : MISSING_VALUE;
 
   const categoryLabel = (await getTranslations({ locale, namespace: 'categories' }))(def.category);
 
@@ -182,11 +187,13 @@ export default async function InstrumentPage({ params }: PageParams) {
               </div>
               <div>
                 <dt className="text-sm text-secondary">{t('specLeverage')}</dt>
-                <dd className="mt-1 font-medium text-primary">{meta.leverageMax}</dd>
+                <dd className="mt-1 font-medium text-primary" data-testid="instrument-leverage">
+                  {leverage}
+                </dd>
               </div>
               <div>
                 <dt className="text-sm text-secondary">{t('specCommission')}</dt>
-                <dd className="mt-1 font-medium text-primary">{t('specCommissionValue')}</dd>
+                <dd className="mt-1 font-medium text-primary">{commission}</dd>
               </div>
               <div>
                 <dt className="text-sm text-secondary">{t('specHours')}</dt>

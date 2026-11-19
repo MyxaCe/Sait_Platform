@@ -154,7 +154,6 @@
     "specMinLot": "Min. lot",
     "specLeverage": "Leverage up to",
     "specCommission": "Commission",
-    "specCommissionValue": "from $0",
     "specHours": "Trading hours",
     "specHours247": "24/7",
     "specHoursWeekdays": "Mon–Fri, 24h",
@@ -504,10 +503,14 @@
   },
   "promotions": {
     "metaTitle": "Promotions & Bonuses",
-    "metaDescription": "Current {brand} offers: 30% welcome bonus, spread cashback, demo trading contest and the refer-a-friend program.",
+    "metaDescription": "Current {brand} promotions and bonuses: the terms of each promotion are right on its card.",
     "title": "Promotions & Bonuses",
     "subtitle": "Current offers for new and active traders. All conditions — transparent, right on the card.",
-    "disclaimer": "Full terms of each promotion are available in the corresponding regulations. The company may change promotion terms with notice to participants. Trading leveraged products involves risk — bonus funds do not remove the need to manage it."
+    "disclaimer": "Full terms of each promotion are available in the corresponding regulations. The company may change promotion terms with notice to participants. Trading leveraged products involves risk — bonus funds do not remove the need to manage it.",
+    "unavailableTitle": "Promotions are temporarily unavailable",
+    "unavailable": "We could not load the current list of promotions. Until we can confirm it, we do not show them — please check back a little later.",
+    "empty": "There are no active promotions right now.",
+    "cta": "Take part"
   },
   "blog": {
     "metaTitle": "Blog & Press Center",
@@ -591,5 +594,8 @@
   },
   "language": {
     "label": "Language"
+  },
+  "liveParams": {
+    "supportAlwaysOpen": "24/7"
   }
 }

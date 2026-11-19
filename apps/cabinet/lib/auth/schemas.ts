@@ -9,7 +9,11 @@ export const registerSchema = z.object({
   email: z.string().email('invalidEmail'),
   phone: z.string().min(10, 'invalidPhone').max(20, 'invalidPhone'),
   country: z.string().min(2, 'required'),
-  accountType: z.enum(['standard', 'pro', 'ecn']),
+  accountType: z
+    .string()
+    .regex(/^[a-z0-9_-]{1,64}$/, 'required')
+    .optional()
+    .or(z.literal('').transform(() => undefined)),
   password: z.string().min(8, 'passwordTooShort').max(200, 'tooLong'),
   locale: z.enum(PLATFORM_LOCALES),
   /** honeypot: заполнено — бот */

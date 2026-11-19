@@ -89,6 +89,7 @@ const nextConfig = {
   // локальный `next start` работает в обычном режиме
   output: process.env.BUILD_STANDALONE ? 'standalone' : undefined,
   transpilePackages: [
+    '@broker/live-params',
     '@broker/promo',
     '@broker/money',
     '@broker/ui',

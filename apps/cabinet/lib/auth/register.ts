@@ -41,7 +41,7 @@ export interface RegisterInput {
   email: string;
   phone: string;
   country: string;
-  accountType: 'standard' | 'pro' | 'ecn';
+  accountType?: string | null;
   password: string;
   locale: PlatformLocale;
 }
@@ -55,6 +55,7 @@ export interface RegisterInput {
 export type RegisterRefusal =
   /** Такой email уже зарегистрирован. */
   | { ok: false; reason: 'emailExists' }
+  | { ok: false; reason: 'accountTypeUnavailable' }
   /** CMS ответила `demoStartBalanceCents: null` — владелец сумму не
    *  назначал. Чинится одним полем карточки сайта. */
   | { ok: false; reason: 'startBalanceUnset' }
@@ -117,6 +118,13 @@ const iso2 = (v: string | null | undefined): string | null => {
 
 const PG_UNIQUE_VIOLATION = '23505';
 
+export function leadAccountType(portfolioKey: string | null): 'standard' | 'pro' | 'ecn' {
+  const key = (portfolioKey ?? '').toLowerCase();
+  if (key === 'pro') return 'pro';
+  if (key.includes('ecn') || key.includes('enc')) return 'ecn';
+  return 'standard';
+}
+
 export async function registerUser(input: RegisterInput, ctx: RegisterContext = {}): Promise<RegisterResult> {
   const userId = randomUUID();
   const leadId = randomUUID();
@@ -176,7 +184,7 @@ export async function registerUser(input: RegisterInput, ctx: RegisterContext = 
     email: input.email,
     phone: input.phone,
     country: input.country,
-    accountType: input.accountType,
+    accountType: leadAccountType(input.accountType ?? null),
     locale: legacyLocale(input.locale),
     // Источник: слаг акции из ссылки (`?promo=`), иначе — прежняя метка.
     source: { promo: attribution?.promo?.value ?? 'cabinet-registration' },
@@ -186,6 +194,20 @@ export async function registerUser(input: RegisterInput, ctx: RegisterContext = 
   const client = await getPool().connect();
   try {
     await client.query('BEGIN');
+    const found = await client.query(
+      `SELECT key, title FROM leverage_portfolios
+        WHERE ($1::text IS NULL AND is_default) OR (key = $1::text AND is_public)
+        LIMIT 1`,
+      [input.accountType ?? null],
+    );
+    const row = found.rows[0] as { key?: unknown; title?: unknown } | undefined;
+    const portfolio =
+      row && typeof row.key === 'string' ? { key: row.key, title: typeof row.title === 'string' ? row.title : row.key } : null;
+    if (input.accountType && !portfolio) {
+      await client.query('ROLLBACK');
+      console.error(`[register] отказ: тип счёта ${input.accountType} не опубликован`);
+      return { ok: false, reason: 'accountTypeUnavailable' };
+    }
     await client.query(
       `INSERT INTO users (id, email, password_hash, full_name, locale, country, registration_ip, registration_ip_country)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
@@ -225,9 +247,12 @@ export async function registerUser(input: RegisterInput, ctx: RegisterContext = 
       так. Показать здесь сумму значило бы открыть счёт от чужого
       имени и назвать баланс, которого никто не заводил.
     */
+    if (portfolio && input.accountType) {
+      await client.query(`INSERT INTO client_leverage (user_id, portfolio_key) VALUES ($1, $2)`, [userId, portfolio.key]);
+    }
     await client.query(
       `INSERT INTO notifications (id, user_id, type, params) VALUES ($1, $2, $3, $4)`,
-      [randomUUID(), userId, 'welcome', JSON.stringify({ accountType: input.accountType })],
+      [randomUUID(), userId, 'welcome', JSON.stringify({ accountType: portfolio?.title ?? '' })],
     );
     /*
       Атрибуция — той же транзакцией: клиент без своей записи «кто привёл»

@@ -3,7 +3,7 @@ import { PROMO_ACTIONS, type RewardKind } from './actions';
 import { ensureReferralCode } from './attribution-db';
 import { maskName, type ContestStanding } from './contest';
 import { contestPhase, readContestStandings, type ContestPhase } from './contest-db';
-import { platformAllowsPromotions, promoAvailability, type Unavailability } from './eligibility';
+import { platformAllowsPromotions, promoAvailability, type PlatformPromoSettings, type Unavailability } from './eligibility';
 import {
   computeCashback,
   evaluateDepositBonus,
@@ -101,6 +101,18 @@ export function publicRules(promo: PromotionRow): PublicRules | null {
 }
 
 /* ── «Акции»: доступные / участвую / начислено ────────────────────────── */
+
+export function isShowcasePromotion(
+  promo: PromotionRow,
+  settings: PlatformPromoSettings,
+  clientCountry: string | null,
+  now: Date,
+): boolean {
+  if (promo.type === 'referral' || !promo.parsed) return false;
+  const a = promoAvailability({ settings, promo, clientCountry, now });
+  if (a.available) return true;
+  return promo.type === 'contest' && a.reason === 'not_started';
+}
 
 export interface PromoCardView {
   id: string;
@@ -264,13 +276,9 @@ export async function getClientPromotions(
   const available: PromoCardView[] = [];
   if (gate.allowed) {
     for (const promo of promos) {
-      if (enrolledIds.has(promo.id) || promo.type === 'referral') continue;
+      if (enrolledIds.has(promo.id)) continue;
       const rules = publicRules(promo);
-      if (!rules) continue;
-      const a = promoAvailability({ settings, promo, clientCountry: country, now });
-      // Конкурс показывается и до старта (вступить можно заранее).
-      const contestUpcoming = promo.type === 'contest' && !a.available && a.reason === 'not_started';
-      if (!a.available && !contestUpcoming) continue;
+      if (!rules || !isShowcasePromotion(promo, settings, country, now)) continue;
       available.push({
         id: promo.id,
         slug: promo.slug,

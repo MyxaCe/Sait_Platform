@@ -154,7 +154,6 @@
     "specMinLot": "Lote mín.",
     "specLeverage": "Apalancamiento hasta",
     "specCommission": "Comisión",
-    "specCommissionValue": "desde $0",
     "specHours": "Horario de trading",
     "specHours247": "24/7",
     "specHoursWeekdays": "Lun–Vie, 24 h",
@@ -504,10 +503,14 @@
   },
   "promotions": {
     "metaTitle": "Promociones y bonos",
-    "metaDescription": "Ofertas vigentes de {brand}: bono de bienvenida del 30%, cashback del spread, concurso de trading demo y el programa «Invite a un amigo».",
+    "metaDescription": "Promociones y bonos vigentes de {brand}: las condiciones de cada promoción están en su tarjeta.",
     "title": "Promociones y bonos",
     "subtitle": "Ofertas vigentes para traders nuevos y activos. Todas las condiciones, de forma transparente, en la propia tarjeta.",
-    "disclaimer": "Las condiciones completas de cada promoción están disponibles en el reglamento correspondiente. La empresa puede modificar las condiciones de las promociones notificándolo a los participantes. Operar con productos apalancados conlleva riesgo: los fondos de bonificación no eximen de la necesidad de gestionarlo."
+    "disclaimer": "Las condiciones completas de cada promoción están disponibles en el reglamento correspondiente. La empresa puede modificar las condiciones de las promociones notificándolo a los participantes. Operar con productos apalancados conlleva riesgo: los fondos de bonificación no eximen de la necesidad de gestionarlo.",
+    "unavailableTitle": "Promociones no disponibles temporalmente",
+    "unavailable": "No se pudo cargar la lista actual de promociones. Mientras no podamos confirmarla, no las mostramos; vuelva a consultar un poco más tarde.",
+    "empty": "Ahora mismo no hay promociones activas.",
+    "cta": "Participar"
   },
   "blog": {
     "metaTitle": "Blog y sala de prensa",
@@ -591,5 +594,8 @@
   },
   "language": {
     "label": "Idioma"
+  },
+  "liveParams": {
+    "supportAlwaysOpen": "las 24 horas"
   }
 }

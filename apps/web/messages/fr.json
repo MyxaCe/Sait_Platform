@@ -154,7 +154,6 @@
     "specMinLot": "Lot min.",
     "specLeverage": "Effet de levier jusqu’à",
     "specCommission": "Commission",
-    "specCommissionValue": "à partir de 0 $",
     "specHours": "Heures de trading",
     "specHours247": "24/7",
     "specHoursWeekdays": "Lun–Ven, 24 h/24",
@@ -504,10 +503,14 @@
   },
   "promotions": {
     "metaTitle": "Promotions et bonus",
-    "metaDescription": "Offres actuelles de {brand} : bonus de bienvenue de 30 %, cashback sur le spread, concours de trading en démo et programme de parrainage.",
+    "metaDescription": "Promotions et bonus en cours chez {brand} : les conditions de chaque promotion figurent directement sur sa carte.",
     "title": "Promotions et bonus",
     "subtitle": "Offres actuelles pour les traders nouveaux et actifs. Toutes les conditions sont transparentes, directement sur la fiche.",
-    "disclaimer": "Les conditions complètes de chaque promotion figurent dans le règlement correspondant. La société peut modifier les conditions des promotions en informant les participants. Le trading de produits à effet de levier comporte des risques — les fonds de bonus ne dispensent pas de les gérer."
+    "disclaimer": "Les conditions complètes de chaque promotion figurent dans le règlement correspondant. La société peut modifier les conditions des promotions en informant les participants. Le trading de produits à effet de levier comporte des risques — les fonds de bonus ne dispensent pas de les gérer.",
+    "unavailableTitle": "Promotions temporairement indisponibles",
+    "unavailable": "Impossible de charger la liste actuelle des promotions. Tant que nous ne pouvons pas la confirmer, nous ne les affichons pas — revenez un peu plus tard.",
+    "empty": "Aucune promotion en cours pour le moment.",
+    "cta": "Participer"
   },
   "blog": {
     "metaTitle": "Blog et espace presse",
@@ -591,5 +594,8 @@
   },
   "language": {
     "label": "Langue"
+  },
+  "liveParams": {
+    "supportAlwaysOpen": "24 h/24, 7 j/7"
   }
 }

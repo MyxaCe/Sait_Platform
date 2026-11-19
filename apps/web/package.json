@@ -14,6 +14,7 @@
   },
   "dependencies": {
     "@broker/api-client": "workspace:*",
+    "@broker/live-params": "workspace:*",
     "@broker/money": "workspace:*",
     "@broker/promo": "workspace:*",
     "@broker/realtime": "workspace:*",

@@ -120,6 +120,9 @@ importers:
       '@broker/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@broker/live-params':
+        specifier: workspace:*
+        version: link:../../packages/live-params
       '@broker/money':
         specifier: workspace:*
         version: link:../../packages/money
@@ -428,6 +431,9 @@ importers:
       '@broker/api-client':
         specifier: workspace:*
         version: link:../../packages/api-client
+      '@broker/live-params':
+        specifier: workspace:*
+        version: link:../../packages/live-params
       '@broker/money':
         specifier: workspace:*
         version: link:../../packages/money
@@ -596,6 +602,34 @@ importers:
       tsx:
         specifier: ^4.16.2
         version: 4.23.1
+      typescript:
+        specifier: ^5.5.4
+        version: 5.9.3
+      vitest:
+        specifier: ^2.0.5
+        version: 2.1.9(@types/node@20.19.43)(jsdom@24.1.3)(terser@5.49.0)
+
+  packages/live-params:
+    dependencies:
+      '@broker/money':
+        specifier: workspace:*
+        version: link:../money
+      '@broker/promo':
+        specifier: workspace:*
+        version: link:../promo
+      '@broker/support':
+        specifier: workspace:*
+        version: link:../support
+      '@broker/utils':
+        specifier: workspace:*
+        version: link:../utils
+    devDependencies:
+      '@broker/config':
+        specifier: workspace:*
+        version: link:../config
+      '@types/node':
+        specifier: ^20.14.12
+        version: 20.19.43
       typescript:
         specifier: ^5.5.4
         version: 5.9.3

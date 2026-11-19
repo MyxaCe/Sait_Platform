@@ -78,11 +78,6 @@
     "phone": "Teléfono",
     "country": "País",
     "accountType": "Tipo de cuenta",
-    "accountTypes": {
-      "standard": "Standard",
-      "pro": "Pro",
-      "ecn": "ECN Prime"
-    },
     "loginButton": "Iniciar sesión",
     "registerButton": "Abrir cuenta",
     "noAccount": "¿Aún no tiene cuenta?",
@@ -328,7 +323,8 @@
     "bot": "Error de envío",
     "startBalanceUnset": "Ahora mismo no se puede abrir la cuenta: el importe inicial de la cuenta demo no está definido. No lo sustituimos por otro; contacte con Soporte, se corrige en la configuración del sitio.",
     "startBalanceUnavailable": "Ahora mismo no se puede abrir la cuenta: no se ha podido obtener la configuración del sitio. Inténtelo más tarde; los datos del formulario no se han perdido.",
-    "tempPasswordExpired": "Su contraseña temporal ha caducado. Pida una nueva a su gestor o use «¿Olvidó su contraseña?»."
+    "tempPasswordExpired": "Su contraseña temporal ha caducado. Pida una nueva a su gestor o use «¿Olvidó su contraseña?».",
+    "accountTypeUnavailable": "Este tipo de cuenta no está disponible en este momento. Elija otro."
   },
   "history": {
     "title": "Historial",
@@ -983,5 +979,8 @@
       "kyc_passed": "verificación superada",
       "source_closed": "cuenta cerrada aquí"
     }
+  },
+  "liveParams": {
+    "supportAlwaysOpen": "las 24 horas"
   }
 }

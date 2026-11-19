@@ -195,6 +195,7 @@ export const promotionSchema = z.object({
   featured: z.boolean(),
   activeFrom: isoDateTimeSchema.nullable(),
   activeTo: isoDateTimeSchema.nullable(),
+  image: mediaSchema.nullable().optional().catch(null),
 });
 export const promotionsResponseSchema = z.object({ items: z.array(promotionSchema) });
 

@@ -53,6 +53,7 @@ export default defineConfig({
       env: {
         CMS_API_URL: `http://127.0.0.1:${STUB_PORT}/v1`,
         SITE_SLUG: 'e2e',
+        CABINET_INTERNAL_URL: `http://127.0.0.1:${STUB_PORT}`,
         // Последняя версия ответов CMS — во временном каталоге прогона
         CMS_LAST_GOOD_DIR: path.join(tmpdir(), `web-e2e-cms-last-good-${PORT}`),
       },

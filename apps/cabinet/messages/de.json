@@ -78,11 +78,6 @@
     "phone": "Telefon",
     "country": "Land",
     "accountType": "Kontotyp",
-    "accountTypes": {
-      "standard": "Standard",
-      "pro": "Pro",
-      "ecn": "ECN Prime"
-    },
     "loginButton": "Anmelden",
     "registerButton": "Konto eröffnen",
     "noAccount": "Noch kein Konto?",
@@ -328,7 +323,8 @@
     "bot": "Fehler beim Senden",
     "startBalanceUnset": "Das Konto kann derzeit nicht eröffnet werden: Der Startbetrag des Demokontos ist nicht festgelegt. Wir setzen keinen eigenen ein — bitte wenden Sie sich an den Support, das wird in den Website-Einstellungen behoben.",
     "startBalanceUnavailable": "Das Konto kann derzeit nicht eröffnet werden: Die Website-Einstellungen konnten nicht abgerufen werden. Bitte versuchen Sie es später erneut — Ihre Formulardaten gehen nicht verloren.",
-    "tempPasswordExpired": "Ihr temporäres Passwort ist abgelaufen. Fordern Sie bei Ihrem Manager ein neues an oder nutzen Sie „Passwort vergessen?“."
+    "tempPasswordExpired": "Ihr temporäres Passwort ist abgelaufen. Fordern Sie bei Ihrem Manager ein neues an oder nutzen Sie „Passwort vergessen?“.",
+    "accountTypeUnavailable": "Dieser Kontotyp ist derzeit nicht verfügbar. Bitte wählen Sie einen anderen."
   },
   "history": {
     "title": "Verlauf",
@@ -983,5 +979,8 @@
       "kyc_passed": "Verifizierung abgeschlossen",
       "source_closed": "Konto hier geschlossen"
     }
+  },
+  "liveParams": {
+    "supportAlwaysOpen": "rund um die Uhr"
   }
 }

@@ -26,7 +26,7 @@ vi.mock('../db', () => ({
     connect: async () => ({
       query: async (sql: string, params: unknown[] = []) => {
         queries.push({ sql, params });
-        return { rows: [] };
+        return sql.includes('FROM leverage_portfolios') ? { rows: [{ key: params[0] ?? 'standard', title: 'Standard' }] } : { rows: [] };
       },
       release: () => {
         released.count += 1;

@@ -1,0 +1,25 @@
+{
+  "name": "@broker/live-params",
+  "version": "0.0.1",
+  "private": true,
+  "exports": {
+    ".": "./src/index.ts",
+    "./server": "./src/server.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@broker/money": "workspace:*",
+    "@broker/promo": "workspace:*",
+    "@broker/support": "workspace:*",
+    "@broker/utils": "workspace:*"
+  },
+  "devDependencies": {
+    "@broker/config": "workspace:*",
+    "@types/node": "^20.14.12",
+    "typescript": "^5.5.4",
+    "vitest": "^2.0.5"
+  }
+}

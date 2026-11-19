@@ -154,7 +154,6 @@
     "specMinLot": "Min. Lot",
     "specLeverage": "Hebel bis",
     "specCommission": "Kommission",
-    "specCommissionValue": "ab $0",
     "specHours": "Handelszeiten",
     "specHours247": "24/7",
     "specHoursWeekdays": "Mo–Fr, 24 Std.",
@@ -504,10 +503,14 @@
   },
   "promotions": {
     "metaTitle": "Aktionen & Boni",
-    "metaDescription": "Aktuelle Angebote von {brand}: 30 % Willkommensbonus, Spread-Cashback, Demo-Trading-Wettbewerb und das Programm „Freunde werben“.",
+    "metaDescription": "Aktuelle Aktionen und Boni von {brand}: Die Bedingungen jeder Aktion stehen direkt auf ihrer Karte.",
     "title": "Aktionen & Boni",
     "subtitle": "Aktuelle Angebote für neue und aktive Trader. Alle Bedingungen transparent direkt auf der Karte.",
-    "disclaimer": "Die vollständigen Bedingungen jeder Aktion finden Sie in den jeweiligen Teilnahmebedingungen. Das Unternehmen kann die Bedingungen der Aktionen nach Benachrichtigung der Teilnehmer ändern. Der Handel mit gehebelten Produkten ist mit Risiken verbunden — Bonusguthaben entbindet nicht von der Notwendigkeit, diese zu steuern."
+    "disclaimer": "Die vollständigen Bedingungen jeder Aktion finden Sie in den jeweiligen Teilnahmebedingungen. Das Unternehmen kann die Bedingungen der Aktionen nach Benachrichtigung der Teilnehmer ändern. Der Handel mit gehebelten Produkten ist mit Risiken verbunden — Bonusguthaben entbindet nicht von der Notwendigkeit, diese zu steuern.",
+    "unavailableTitle": "Aktionen vorübergehend nicht verfügbar",
+    "unavailable": "Die aktuelle Liste der Aktionen konnte nicht geladen werden. Solange wir sie nicht bestätigen können, zeigen wir keine Aktionen an — bitte schauen Sie etwas später wieder vorbei.",
+    "empty": "Derzeit gibt es keine aktiven Aktionen.",
+    "cta": "Teilnehmen"
   },
   "blog": {
     "metaTitle": "Blog & Pressebereich",
@@ -591,5 +594,8 @@
   },
   "language": {
     "label": "Sprache"
+  },
+  "liveParams": {
+    "supportAlwaysOpen": "rund um die Uhr"
   }
 }

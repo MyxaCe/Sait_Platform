@@ -21,6 +21,7 @@ const nextConfig = {
   // standalone — только для Docker-сборки (docker/cabinet.Dockerfile)
   output: process.env.BUILD_STANDALONE ? 'standalone' : undefined,
   transpilePackages: [
+    '@broker/live-params',
     '@broker/promo',
     '@broker/ui',
     '@broker/utils',

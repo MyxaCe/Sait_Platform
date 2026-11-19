@@ -78,11 +78,6 @@
     "phone": "Téléphone",
     "country": "Pays",
     "accountType": "Type de compte",
-    "accountTypes": {
-      "standard": "Standard",
-      "pro": "Pro",
-      "ecn": "ECN Prime"
-    },
     "loginButton": "Se connecter",
     "registerButton": "Ouvrir un compte",
     "noAccount": "Pas encore de compte ?",
@@ -328,7 +323,8 @@
     "bot": "Erreur d’envoi",
     "startBalanceUnset": "Le compte ne peut pas être ouvert pour le moment : le montant de départ du compte démo n’est pas défini. Nous ne le remplaçons pas nous-mêmes — veuillez contacter l’assistance, cela se corrige dans les paramètres du site.",
     "startBalanceUnavailable": "Le compte ne peut pas être ouvert pour le moment : impossible de récupérer les paramètres du site. Réessayez plus tard — les données de votre formulaire ne sont pas perdues.",
-    "tempPasswordExpired": "Votre mot de passe temporaire a expiré. Demandez-en un nouveau à votre gestionnaire ou utilisez « Mot de passe oublié ? »."
+    "tempPasswordExpired": "Votre mot de passe temporaire a expiré. Demandez-en un nouveau à votre gestionnaire ou utilisez « Mot de passe oublié ? ».",
+    "accountTypeUnavailable": "Ce type de compte n’est pas disponible pour le moment. Veuillez en choisir un autre."
   },
   "history": {
     "title": "Historique",
@@ -983,5 +979,8 @@
       "kyc_passed": "vérification réussie",
       "source_closed": "compte fermé ici"
     }
+  },
+  "liveParams": {
+    "supportAlwaysOpen": "24 h/24, 7 j/7"
   }
 }

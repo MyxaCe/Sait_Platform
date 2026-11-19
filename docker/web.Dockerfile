@@ -17,6 +17,7 @@ COPY packages/utils/package.json packages/utils/
 COPY packages/money/package.json packages/money/
 COPY packages/promo/package.json packages/promo/
 COPY packages/support/package.json packages/support/
+COPY packages/live-params/package.json packages/live-params/
 RUN pnpm install --frozen-lockfile
 
 FROM deps AS build
