@@ -132,7 +132,7 @@ export function PendingCreditCard({ row, operatorId, canAct }: { row: ManualCred
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-primary text-sm font-semibold">
-            <Money minor={row.amountMinor} currency="USDT" className="text-base" /> →{' '}
+            <Money minor={row.amountMinor} currency="USDT" className="text-[15px]" /> →{' '}
             <Link href={`/clients/${row.userId}?tab=money`} className="text-accent hover:underline">
               {facts.clientName}
             </Link>
