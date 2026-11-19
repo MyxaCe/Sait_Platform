@@ -2,6 +2,7 @@ import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { redirect } from 'next/navigation';
 import { ForcedPasswordForm } from '@/features/auth/AuthMailForms';
 import { getSessionUser } from '@/lib/auth/session';
+import { localeHref } from '@/i18n/redirect';
 
 /**
  * Обязательная смена временного пароля, выданного менеджером (функция 3,
@@ -13,9 +14,8 @@ export const dynamic = 'force-dynamic';
 export default async function ChangePasswordPage({ params }: { params: { locale: string } }) {
   setRequestLocale(params.locale);
   const user = await getSessionUser();
-  const prefix = params.locale === 'en' ? '/en' : '';
-  if (!user) redirect(`${prefix}/login`);
-  if (!user.mustChangePassword) redirect(prefix || '/');
+  if (!user) redirect(await localeHref('/login', params.locale));
+  if (!user.mustChangePassword) redirect(await localeHref('/', params.locale));
   const t = await getTranslations('authMail');
   return (
     <>

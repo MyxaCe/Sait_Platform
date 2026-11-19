@@ -1,7 +1,7 @@
 import { readTenantSlug } from '@broker/tenant';
 import { readSiteLanguages, type SiteLanguages } from '@broker/utils/locales';
 import { lastGoodKey, loadLastGood, saveLastGood } from './cms-last-good';
-import { fetchSiteLanguages, settle } from './site-languages-source';
+import { fetchSiteLanguages, settle } from '@broker/utils/site-languages';
 
 export const SITE_LANGUAGES_REVALIDATE_SECONDS = 60;
 

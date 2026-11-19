@@ -1,4 +1,4 @@
-import { COMPAT_SITE_LANGUAGES, readSiteLanguages, type SiteLanguages } from '@broker/utils/locales';
+import { COMPAT_SITE_LANGUAGES, readSiteLanguages, type SiteLanguages } from './locales';
 
 export type SiteLanguagesResult =
   | { readonly state: 'ok'; readonly value: SiteLanguages }

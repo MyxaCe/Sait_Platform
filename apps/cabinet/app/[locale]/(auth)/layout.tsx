@@ -1,6 +1,7 @@
 import { getLocale, getTranslations } from 'next-intl/server';
-import { getChromeBrand, resolveBrandName } from '@/lib/chrome';
-import { envOr } from '@broker/utils';
+import { getChromeBrand, resolveBrandName, siteHref } from '@/lib/chrome';
+import { getSiteLanguages } from '@/lib/site-languages';
+import { LangSwitcher } from '@/features/shell/LangSwitcher';
 
 /** Публичная зона: центрированная карточка; бренд — из CMS (ADR-025). */
 export default async function AuthLayout({ children }: { children: React.ReactNode }) {
@@ -8,9 +9,11 @@ export default async function AuthLayout({ children }: { children: React.ReactNo
   const t = await getTranslations('common');
   const brand = await getChromeBrand(locale);
   const brandName = resolveBrandName(brand, t('cabinet'));
+  const site = await getSiteLanguages();
 
   return (
-    <main className="flex min-h-svh flex-col items-center justify-center px-4 py-10">
+    <main className="relative flex min-h-svh flex-col items-center justify-center px-4 py-10">
+      <LangSwitcher className="absolute right-4 top-4" />
       <div className="mb-8 flex items-center gap-2 text-xl font-semibold">
         {brand?.logo ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -26,7 +29,7 @@ export default async function AuthLayout({ children }: { children: React.ReactNo
         {children}
       </div>
       <a
-        href={envOr(process.env.NEXT_PUBLIC_SITE_URL, 'http://localhost:3000')}
+        href={siteHref('/', locale, site.defaultLanguage)}
         className="mt-6 text-sm text-secondary hover:text-primary"
       >
         ← {t('backToSite')}

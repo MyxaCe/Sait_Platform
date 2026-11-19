@@ -4,6 +4,7 @@ import {
   getClientChat,
   isWithinHours,
   loadSupportSettings,
+  mailLocale,
   renderTemplate,
   type ClientChat,
 } from '@broker/support';
@@ -31,12 +32,12 @@ export function supportPool(): PoolLike {
 }
 
 export async function loadWidgetState(
-  user: { id: string; fullName: string; locale: 'ru' | 'en' },
+  user: { id: string; fullName: string; locale: string },
   ticketId?: string | null,
 ): Promise<SupportWidgetState> {
   const db = getPool();
   const [s, chat] = await Promise.all([loadSupportSettings(db), getClientChat(db, user.id, ticketId)]);
-  const loc = user.locale;
+  const loc = mailLocale(user.locale);
   const hours = describeHours(s, loc);
   const vars = {
     client: { firstName: user.fullName.split(/\s+/)[0] ?? '' },

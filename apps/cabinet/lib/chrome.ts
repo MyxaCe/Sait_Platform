@@ -8,6 +8,7 @@
 
 import { readTenantSlug } from '@broker/tenant';
 import { envOr, readEnv } from '@broker/utils';
+import { isPlatformLocale, localizedPath } from '@broker/utils/locales';
 
 export interface ChromeBrand {
   name: string;
@@ -58,7 +59,7 @@ export async function cmsGet(resource: string, locale: string): Promise<unknown 
 
   try {
     const res = await fetch(
-      `${base}/cms/${resource}?site=${encodeURIComponent(slug)}&locale=${locale === 'en' ? 'en' : 'ru'}`,
+      `${base}/cms/${resource}?site=${encodeURIComponent(slug)}&locale=${isPlatformLocale(locale) ? locale : 'ru'}`,
       {
         headers: process.env.CMS_API_KEY ? { 'X-API-Key': process.env.CMS_API_KEY } : {},
         next: { revalidate: 300 },
@@ -106,9 +107,9 @@ export async function getChromeFooter(locale: string): Promise<ChromeFooter | nu
 }
 
 /** Абсолютная ссылка футера кабинета на страницу САЙТА (с учётом локали). */
-export function siteHref(href: string, locale: string): string {
+export function siteHref(href: string, locale: string, defaultLanguage: string): string {
   // Пустая строка — не отсутствие (WEB-21).
   const site = envOr(process.env.NEXT_PUBLIC_SITE_URL, 'http://localhost:3000').replace(/\/$/, '');
-  const localized = locale === 'en' ? `/en${href === '/' ? '' : href}` : href;
-  return `${site}${localized || '/'}`;
+  if (/^[a-z][a-z0-9+.-]*:/i.test(href) || href.startsWith('//')) return href;
+  return `${site}${localizedPath(href || '/', locale, defaultLanguage)}`;
 }

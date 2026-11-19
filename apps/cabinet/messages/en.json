@@ -17,7 +17,8 @@
     "errorText": "This looks like a temporary connection issue. Your funds and requests are safe — please try again.",
     "retry": "Try again",
     "copy": "Copy",
-    "copied": "Copied"
+    "copied": "Copied",
+    "language": "Language"
   },
   "nav": {
     "dashboard": "Overview",

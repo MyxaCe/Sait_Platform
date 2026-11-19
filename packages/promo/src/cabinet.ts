@@ -38,7 +38,8 @@ export interface PromoTextView {
 }
 
 function textsFor(promo: PromotionRow, locale: string): PromoTextView {
-  const t = promo.texts[locale] ?? promo.texts.ru ?? promo.texts.en ?? Object.values(promo.texts)[0];
+  const fallback = locale === 'ru' || locale === 'en' ? [promo.texts.ru, promo.texts.en] : [promo.texts.en, promo.texts.ru];
+  const t = promo.texts[locale] ?? fallback[0] ?? fallback[1] ?? Object.values(promo.texts)[0];
   return { title: t?.title ?? promo.title, summary: t?.summary ?? '', terms: t?.terms ?? '' };
 }
 

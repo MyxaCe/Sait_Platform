@@ -1,5 +1,6 @@
 import { getFormatter, getTranslations } from 'next-intl/server';
-import { EmptyState, Money, StatusBadge, ToneBadge, cn, statusKeyOf } from '@broker/ui';
+import { EmptyState, StatusBadge, ToneBadge, cn, statusKeyOf } from '@broker/ui';
+import { Money } from '@/features/ui/Money';
 import type { DepositView, WithdrawalView } from '@/lib/money';
 import { NavIcon } from '@/features/shell/NavIcon';
 import { REAL_ACCOUNT_CURRENCY } from '@broker/money/display-currency';

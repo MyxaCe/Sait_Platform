@@ -1,3 +1,4 @@
+import { isPlatformLocale, type PlatformLocale } from '@broker/utils/locales';
 import type { AccountKind } from './jwt';
 
 /**
@@ -13,8 +14,6 @@ import type { AccountKind } from './jwt';
  *    отправлял его на чужой адрес);
  *  - продолжение после логина — только на сам launch (внутренний путь).
  */
-
-const LANGS = new Set(['ru', 'en']);
 
 function originOf(raw: string): string | null {
   try {
@@ -61,12 +60,12 @@ export function checkReturnUrl(raw: string | null | undefined, origins: readonly
   return u.toString();
 }
 
-export function parseLang(raw: string | null | undefined): 'ru' | 'en' | null {
-  return raw && LANGS.has(raw) ? (raw as 'ru' | 'en') : null;
+export function parseLang(raw: string | null | undefined): PlatformLocale | null {
+  return isPlatformLocale(raw) ? raw : null;
 }
 
 /** `<return>#handoff=<jwt>&account=<kind>[&lang=…]` — токен только во фрагменте. */
-export function launchLocation(returnUrl: string, token: string, account: AccountKind, lang: 'ru' | 'en' | null): string {
+export function launchLocation(returnUrl: string, token: string, account: AccountKind, lang: PlatformLocale | null): string {
   const frag = new URLSearchParams({ handoff: token, account });
   if (lang) frag.set('lang', lang);
   return `${returnUrl}#${frag.toString()}`;

@@ -1,5 +1,6 @@
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { cookies, headers } from 'next/headers';
+import { isPlatformLocale, type PlatformLocale } from '@broker/utils/locales';
 import { getPool } from '../db';
 import { SESSION_COOKIE, SESSION_TTL_DAYS } from './constants';
 
@@ -23,7 +24,7 @@ export interface SessionUser {
   uid: number | null;
   email: string;
   fullName: string;
-  locale: 'ru' | 'en';
+  locale: PlatformLocale;
   vipLevel: number;
   createdAt: Date;
   /**
@@ -108,7 +109,7 @@ export async function getSessionUser(): Promise<SessionUser | null> {
     uid: row.uid === null || row.uid === undefined ? null : Number(row.uid),
     email: row.email,
     fullName: row.full_name,
-    locale: row.locale === 'en' ? 'en' : 'ru',
+    locale: isPlatformLocale(row.locale) ? row.locale : 'ru',
     // `vip_level` — `INT NOT NULL DEFAULT 0`, и ноль здесь НАСТОЯЩЕЕ
     // значение: «уровня нет». Это не подстановка, и прочерк был бы здесь
     // неправдой наоборот. Приведение оставлено осознанно.

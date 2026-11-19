@@ -84,3 +84,7 @@ export function localeCookieDomain(...candidates: (string | undefined)[]): strin
   }
   return undefined;
 }
+
+export function legacyLocale(value: unknown): 'ru' | 'en' {
+  return value !== 'ru' && isPlatformLocale(value) ? 'en' : 'ru';
+}

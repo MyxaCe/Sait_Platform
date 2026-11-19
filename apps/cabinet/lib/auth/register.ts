@@ -12,6 +12,7 @@ import {
   type ResolvedAttribution,
 } from '@broker/promo';
 import { bindInviteWithinTx } from '@broker/transfer';
+import { legacyLocale, type PlatformLocale } from '@broker/utils/locales';
 import { getPool } from '../db';
 import { getTenantStartBalance } from '../tenant';
 import { hashPassword } from './password';
@@ -42,7 +43,7 @@ export interface RegisterInput {
   country: string;
   accountType: 'standard' | 'pro' | 'ecn';
   password: string;
-  locale: 'ru' | 'en';
+  locale: PlatformLocale;
 }
 
 /**
@@ -176,7 +177,7 @@ export async function registerUser(input: RegisterInput, ctx: RegisterContext = 
     phone: input.phone,
     country: input.country,
     accountType: input.accountType,
-    locale: input.locale,
+    locale: legacyLocale(input.locale),
     // Источник: слаг акции из ссылки (`?promo=`), иначе — прежняя метка.
     source: { promo: attribution?.promo?.value ?? 'cabinet-registration' },
   };
@@ -202,7 +203,7 @@ export async function registerUser(input: RegisterInput, ctx: RegisterContext = 
     );
     await client.query(
       `INSERT INTO leads (id, kind, email, locale, payload) VALUES ($1, $2, $3, $4, $5)`,
-      [leadId, 'account-opening', input.email, input.locale, JSON.stringify(leadData)],
+      [leadId, 'account-opening', input.email, leadData.locale, JSON.stringify(leadData)],
     );
     await client.query(
       `INSERT INTO outbox (event_id, routing_key, payload, occurred_at) VALUES ($1, $2, $3, $4)`,

@@ -1,5 +1,6 @@
 import type { ClientPromotionsView, ContestSummary, ParticipationView, PromoCardView } from '@broker/promo';
 import { REAL_ACCOUNT_CURRENCY } from '@broker/money/display-currency';
+import { intlTag } from '@broker/utils/locales';
 
 /**
  * Чистые помощники экранов «Акции», «Пригласи друга», «Конкурс», «Условия
@@ -15,7 +16,7 @@ export const PROMO_CURRENCY = REAL_ACCOUNT_CURRENCY;
 /** Б.п. → «30 %», «0,15 %», «0,05 %» (до двух знаков, без хвостовых нулей). */
 export function bpsPercent(bps: number, locale: string): string {
   const value = bps / 100;
-  const n = new Intl.NumberFormat(locale === 'en' ? 'en-US' : 'ru-RU', {
+  const n = new Intl.NumberFormat(intlTag(locale), {
     minimumFractionDigits: 0,
     maximumFractionDigits: 2,
   }).format(value);
@@ -52,7 +53,7 @@ export function formatDate(iso: string | null, locale: string): string | null {
   if (!iso) return null;
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return null;
-  return new Intl.DateTimeFormat(locale === 'en' ? 'en-GB' : 'ru-RU', {
+  return new Intl.DateTimeFormat(intlTag(locale), {
     day: 'numeric',
     month: 'long',
     year: 'numeric',
@@ -64,7 +65,7 @@ export function formatShortDate(iso: string | null, locale: string): string | nu
   if (!iso) return null;
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return null;
-  return new Intl.DateTimeFormat(locale === 'en' ? 'en-GB' : 'ru-RU', {
+  return new Intl.DateTimeFormat(intlTag(locale), {
     day: 'numeric',
     month: 'short',
     timeZone: 'UTC',
@@ -75,7 +76,7 @@ export function formatShortDate(iso: string | null, locale: string): string | nu
 export function formatPeriod(period: string | null, locale: string): string | null {
   if (!period || !/^\d{4}-\d{2}$/.test(period)) return null;
   const [y, m] = period.split('-').map(Number) as [number, number];
-  return new Intl.DateTimeFormat(locale === 'en' ? 'en-GB' : 'ru-RU', {
+  return new Intl.DateTimeFormat(intlTag(locale), {
     month: 'long',
     year: 'numeric',
     timeZone: 'UTC',

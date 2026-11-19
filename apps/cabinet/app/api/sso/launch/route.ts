@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getSessionUser } from '@/lib/auth/session';
+import { localeHref } from '@/i18n/redirect';
 import { isRateLimited } from '@/lib/rate-limit';
 import { terminalLeverageFor } from '@/lib/leverage';
 import { terminalFeesFor } from '@/lib/fees';
@@ -63,14 +64,14 @@ export async function GET(request: Request) {
     const next = new URLSearchParams({ next: `${url.pathname}${url.search}` });
     return new Response(null, {
       status: 302,
-      headers: { ...NO_STORE, Location: `${lang === 'en' ? '/en/login' : '/login'}?${next.toString()}` },
+      headers: { ...NO_STORE, Location: `${await localeHref('/login', lang ?? '')}?${next.toString()}` },
     });
   }
   // Временный пароль от менеджера — сначала смена пароля в кабинете.
   if (user.mustChangePassword) {
     return new Response(null, {
       status: 302,
-      headers: { ...NO_STORE, Location: `${lang === 'en' ? '/en' : ''}/change-password` },
+      headers: { ...NO_STORE, Location: await localeHref('/change-password', lang ?? '') },
     });
   }
   if (isRateLimited(`sso:${user.id}`, 30, 60_000)) return deny('rateLimited', 429);

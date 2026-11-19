@@ -1,4 +1,5 @@
 import { formatCurrency } from '@broker/utils';
+import { intlTag } from '@broker/utils/locales';
 import type { TenantStartBalance } from '@/lib/tenant';
 
 /**
@@ -43,7 +44,7 @@ export function registerSubtitle(
     amount: formatCurrency(
       startBalance.cents / 100,
       ASSUMED_CURRENCY,
-      locale === 'en' ? 'en-US' : 'ru-RU',
+      intlTag(locale),
     ),
   };
 }

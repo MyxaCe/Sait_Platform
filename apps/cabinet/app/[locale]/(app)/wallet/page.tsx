@@ -1,5 +1,6 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server';
-import { Callout, Money, cn } from '@broker/ui';
+import { Callout, cn } from '@broker/ui';
+import { Money } from '@/features/ui/Money';
 import { requireSessionUser } from '@/lib/auth/require';
 import {
   exchangeAddress,

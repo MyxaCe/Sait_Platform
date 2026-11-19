@@ -1,6 +1,7 @@
 import { PAGE } from '@/features/ui/page';
 import { useLocale, useTranslations } from 'next-intl';
-import { Callout, cn, EmptyState, formatMoney, Money, ToneBadge, type StatusTone } from '@broker/ui';
+import { Callout, cn, EmptyState, ToneBadge, type StatusTone } from '@broker/ui';
+import { Money } from '@/features/ui/Money';
 import type { InviteeStage, InviteeView, MyPartnerView, MyReferralView } from '@broker/promo';
 import { CARD } from './PromoCards';
 import { SectionTitle } from './PromotionsScreen';
@@ -8,6 +9,7 @@ import { REWARD_TONE } from './RewardList';
 import { FullTerms } from './RulesSummary';
 import { CopyRow, ShareButton } from './ShareLink';
 import { bpsPercent, formatDate, formatPeriod, holdParts, PROMO_CURRENCY } from './format';
+import { moneyFormat } from '@/features/ui/money-format';
 
 /**
  * «Пригласи друга» (дизайн §4.1). Ссылка и код, «Поделиться» (Web Share на
@@ -153,6 +155,7 @@ function InviteCard({ r, qrSvg, brand }: { r: MyReferralView; qrSvg: string | nu
 }
 
 function ProgramTerms({ r }: { r: MyReferralView }) {
+  const fmt = moneyFormat(useLocale());
   const t = useTranslations('referrals');
   const tp = useTranslations('promo');
   const p = r.program;
@@ -167,7 +170,7 @@ function ProgramTerms({ r }: { r: MyReferralView }) {
     );
   }
   const rules = p.rules;
-  const usdt = (m: number) => formatMoney(m, PROMO_CURRENCY);
+  const usdt = (m: number) => fmt.money(m, PROMO_CURRENCY);
   const must: string[] = [];
   if (rules.kycRequired) must.push(t('cond.kyc'));
   if (rules.minDepositMinor > 0) must.push(t('cond.deposit', { amount: usdt(rules.minDepositMinor) }));
@@ -221,6 +224,7 @@ function ProgramTerms({ r }: { r: MyReferralView }) {
 }
 
 function PartnerTerms({ partner }: { partner: MyPartnerView | null }) {
+  const fmt = moneyFormat(useLocale());
   const t = useTranslations('referrals');
   const locale = useLocale();
   if (!partner) {
@@ -231,7 +235,7 @@ function PartnerTerms({ partner }: { partner: MyPartnerView | null }) {
       </section>
     );
   }
-  const usdt = (m: number) => formatMoney(m, PROMO_CURRENCY);
+  const usdt = (m: number) => fmt.money(m, PROMO_CURRENCY);
   const q = partner.cpaRules;
   const must: string[] = [];
   if (q?.kycRequired) must.push(t('cond.kyc'));

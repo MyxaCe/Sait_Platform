@@ -1,6 +1,8 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server';
-import { Callout, Money, ToneBadge } from '@broker/ui';
-import { Link, redirect } from '@/i18n/navigation';
+import { Callout, ToneBadge } from '@broker/ui';
+import { Money } from '@/features/ui/Money';
+import { Link } from '@/i18n/navigation';
+import { redirect } from '@/i18n/redirect';
 import { linkButton } from '@/features/ui/link-button';
 import { requireSessionUser } from '@/lib/auth/require';
 import { getDemoAccount } from '@/lib/data';
@@ -27,7 +29,7 @@ export default async function TradePage({
 }) {
   setRequestLocale(params.locale);
   if (searchParams.account === 'real' || searchParams.account === 'demo') {
-    redirect({ href: `/terminal?account=${searchParams.account}`, locale: params.locale });
+    await redirect({ href: `/terminal?account=${searchParams.account}`, locale: params.locale });
   }
   const user = await requireSessionUser(params.locale);
   const t = await getTranslations('trade');

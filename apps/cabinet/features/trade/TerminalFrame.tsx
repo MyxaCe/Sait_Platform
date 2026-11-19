@@ -25,7 +25,7 @@ interface TerminalFrameProps {
 export function TerminalFrame({ terminalUrl, site, title, accountKind = 'demo', className }: TerminalFrameProps) {
   const frameRef = useRef<HTMLIFrameElement>(null);
   const locale = useLocale();
-  const src = `${terminalUrl}?site=${encodeURIComponent(site)}&locale=${locale}`;
+  const src = `${terminalUrl}?site=${encodeURIComponent(site)}&lang=${locale}&locale=${locale}`;
   const terminalOrigin = new URL(terminalUrl).origin;
 
   const sendToken = useCallback(async () => {

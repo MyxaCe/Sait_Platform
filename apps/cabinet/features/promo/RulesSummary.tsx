@@ -1,7 +1,8 @@
 import { useLocale, useTranslations } from 'next-intl';
-import { cn, formatMoney } from '@broker/ui';
+import { cn } from '@broker/ui';
 import type { PublicRules } from '@broker/promo';
 import { bpsPercent, holdParts, PROMO_CURRENCY } from './format';
+import { moneyFormat } from '@/features/ui/money-format';
 
 /**
  * Числа правил человеческими словами: ВСЁ — из `PublicRules` (админка).
@@ -9,10 +10,11 @@ import { bpsPercent, holdParts, PROMO_CURRENCY } from './format';
  * — первые строки) и для раскрывающихся полных условий.
  */
 export function useRuleLines(rules: PublicRules | null): string[] {
+  const fmt = moneyFormat(useLocale());
   const t = useTranslations('promo.rules');
   const locale = useLocale();
   if (!rules) return [];
-  const usdt = (m: number) => formatMoney(m, PROMO_CURRENCY);
+  const usdt = (m: number) => fmt.money(m, PROMO_CURRENCY);
   switch (rules.type) {
     case 'deposit_bonus': {
       const out = [t('bonus', { percent: bpsPercent(rules.percentBps, locale), cap: usdt(rules.capMinor) })];

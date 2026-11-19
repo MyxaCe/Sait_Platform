@@ -1,5 +1,6 @@
 import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/server';
-import { EmptyState, Money, StatusBadge, ToneBadge, cn, statusKeyOf } from '@broker/ui';
+import { EmptyState, StatusBadge, ToneBadge, cn, statusKeyOf } from '@broker/ui';
+import { Money } from '@/features/ui/Money';
 import { Link } from '@/i18n/navigation';
 import { TerminalLink } from '@/features/trade/TerminalLink';
 import { requireSessionUser } from '@/lib/auth/require';

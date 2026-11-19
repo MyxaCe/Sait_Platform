@@ -1,5 +1,5 @@
 import { getTranslations } from 'next-intl/server';
-import { Money } from '@broker/ui';
+import { Money } from '@/features/ui/Money';
 import { describeSlippage } from '@/lib/slippage';
 import type { ClosedDealsOutcome } from '@/lib/terminal/client';
 

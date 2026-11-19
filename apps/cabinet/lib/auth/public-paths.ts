@@ -1,17 +1,23 @@
-import { routing, type Locale } from '@/i18n/routing';
+import {
+  COMPAT_SITE_LANGUAGES,
+  PLATFORM_LOCALES,
+  localizedPath,
+  stripLocalePrefix,
+  type PlatformLocale,
+  type SiteLanguages,
+} from '@broker/utils/locales';
 
 /**
  * Классификация путей кабинета для middleware (edge, без node-зависимостей).
  *
- * Путь может прийти с префиксом ЛЮБОЙ локали: `localePrefix: 'as-needed'`
- * прячет префикс языка по умолчанию, но `/ru/…` — валидный адрес (ссылки из
+ * Путь может прийти с префиксом ЛЮБОЙ локали платформы: язык сайта по
+ * умолчанию идёт без префикса, но `/ru/…` — тоже валидный адрес (ссылки из
  * писем, ручной ввод, переключатель языка), next-intl сам сведёт его к `/…`.
  * Раньше регулярка знала только `/en`: `/ru/forgot-password` без сессии
  * уводил на /login — восстановить пароль по такой ссылке было нельзя.
+ * Включён ли язык для сайта, решает middleware (невключённый — 404) до гейта.
  */
-const LOCALES: readonly Locale[] = routing.locales;
-const DEFAULT_LOCALE: Locale = routing.defaultLocale;
-const PREFIX = `(?:(?:${LOCALES.join('|')})/)?`;
+const PREFIX = `(?:(?:${PLATFORM_LOCALES.join('|')})/)?`;
 
 /** Вход/регистрация/восстановление: гостю — можно, вошедшему — уводим внутрь. */
 const PUBLIC_PATH = new RegExp(`^/${PREFIX}(?:login|register|forgot-password)(?:/|$)`);
@@ -26,22 +32,17 @@ export function isMailLinkPath(pathname: string): boolean {
   return MAIL_LINK_PATH.test(pathname);
 }
 
-/** Локаль из префикса пути (`/en`, `/en/…`, `/ru/…`); без префикса — по умолчанию. */
-export function localeOfPath(pathname: string): Locale {
-  for (const l of LOCALES) {
-    if (pathname === `/${l}` || pathname.startsWith(`/${l}/`)) return l;
-  }
-  return DEFAULT_LOCALE;
+/** Локаль из префикса пути (`/en`, `/de/…`, `/ru/…`); без префикса — язык сайта по умолчанию. */
+export function localeOfPath(pathname: string, site: SiteLanguages = COMPAT_SITE_LANGUAGES): PlatformLocale {
+  return stripLocalePrefix(pathname).locale ?? site.defaultLanguage;
 }
 
 /** Куда вести гостя: вход на языке пути (язык по умолчанию — без префикса). */
-export function loginPathFor(pathname: string): string {
-  const l = localeOfPath(pathname);
-  return l === DEFAULT_LOCALE ? '/login' : `/${l}/login`;
+export function loginPathFor(pathname: string, site: SiteLanguages = COMPAT_SITE_LANGUAGES): string {
+  return localizedPath('/login', localeOfPath(pathname, site), site.defaultLanguage);
 }
 
 /** Куда вести вошедшего со страницы входа: главная на языке пути. */
-export function homePathFor(pathname: string): string {
-  const l = localeOfPath(pathname);
-  return l === DEFAULT_LOCALE ? '/' : `/${l}`;
+export function homePathFor(pathname: string, site: SiteLanguages = COMPAT_SITE_LANGUAGES): string {
+  return localizedPath('/', localeOfPath(pathname, site), site.defaultLanguage);
 }

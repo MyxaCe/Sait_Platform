@@ -2,8 +2,8 @@
 
 import { useEffect, useId, useState } from 'react';
 import { useFormState, useFormStatus } from 'react-dom';
-import { useTranslations } from 'next-intl';
-import { Button, Callout, cn, formatMoney } from '@broker/ui';
+import { useLocale, useTranslations } from 'next-intl';
+import { Button, Callout, cn } from '@broker/ui';
 import {
   claimDepositAction,
   requestWithdrawalAction,
@@ -12,6 +12,7 @@ import {
 import { parseAmount } from './amount';
 import { REAL_ACCOUNT_CURRENCY } from '@broker/money/display-currency';
 import { looksLikeTronAddress, looksLikeTxHash } from './tronscan';
+import { moneyFormat } from '@/features/ui/money-format';
 
 /**
  * Формы ввода/вывода USDT. Исход действия виден человеку всегда (успех,
@@ -36,6 +37,7 @@ function Submit({ label, disabled }: { label: string; disabled?: boolean }) {
 }
 
 function Outcome({ state, okKey, op }: { state: MoneyFormState; okKey: string; op: 'deposit' | 'withdraw' }) {
+  const fmt = moneyFormat(useLocale());
   const t = useTranslations('money');
   if (state.ok) {
     return <Callout tone="positive">{t(state.pending ? 'withdrawPending' : okKey)}</Callout>;
@@ -54,8 +56,8 @@ function Outcome({ state, okKey, op }: { state: MoneyFormState; okKey: string; o
     return (
       <Callout tone="negative">
         {t('errors.kycLimitExceeded', {
-          remaining: formatMoney(state.kycLimit.remainingMinor, REAL_ACCOUNT_CURRENCY),
-          limit: formatMoney(state.kycLimit.limitMinor, REAL_ACCOUNT_CURRENCY),
+          remaining: fmt.money(state.kycLimit.remainingMinor, REAL_ACCOUNT_CURRENCY),
+          limit: fmt.money(state.kycLimit.limitMinor, REAL_ACCOUNT_CURRENCY),
         })}
       </Callout>
     );
@@ -132,6 +134,7 @@ export function WithdrawForm({
   availableMinor: number | null;
   minMinor: number;
 }) {
+  const fmt = moneyFormat(useLocale());
   const t = useTranslations('money');
   const [state, action] = useFormState<MoneyFormState, FormData>(requestWithdrawalAction, {});
   const [address, setAddress] = useState('');
@@ -148,9 +151,9 @@ export function WithdrawForm({
       ? null
       : t(`errors.amount_${parsed.reason}`)
     : parsed.cents < minMinor
-      ? t('amountBelowMin', { min: formatMoney(minMinor, REAL_ACCOUNT_CURRENCY) })
+      ? t('amountBelowMin', { min: fmt.money(minMinor, REAL_ACCOUNT_CURRENCY) })
       : availableMinor !== null && parsed.cents > availableMinor
-        ? t('amountAboveAvailable', { available: formatMoney(availableMinor, REAL_ACCOUNT_CURRENCY) })
+        ? t('amountAboveAvailable', { available: fmt.money(availableMinor, REAL_ACCOUNT_CURRENCY) })
         : null;
   const ready = addrOk && cents !== null && amountError === null;
   const showAddrErr = touched.address && address.trim() !== '' && !addrOk;
@@ -233,7 +236,7 @@ export function WithdrawForm({
             </div>
             <FieldError id={ids.amtErr}>{showAmtErr ? amountError : null}</FieldError>
             <p id={ids.amtHint} className="text-xs text-muted">
-              {t('minWithdraw', { min: formatMoney(minMinor, REAL_ACCOUNT_CURRENCY) })}
+              {t('minWithdraw', { min: fmt.money(minMinor, REAL_ACCOUNT_CURRENCY) })}
             </p>
           </div>
 
@@ -259,7 +262,7 @@ export function WithdrawForm({
               <div>
                 <dt className="text-xs text-muted">{t('confirmAmount')}</dt>
                 <dd className="mt-0.5 text-lg font-semibold tabular-nums">
-                  {cents !== null ? formatMoney(cents, REAL_ACCOUNT_CURRENCY) : '—'}
+                  {cents !== null ? fmt.money(cents, REAL_ACCOUNT_CURRENCY) : '—'}
                 </dd>
               </div>
               <div>

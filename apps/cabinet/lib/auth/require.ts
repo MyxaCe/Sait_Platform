@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation';
+import { localeHref } from '@/i18n/redirect';
 import { getSessionUser, type SessionUser } from './session';
 
 /**
@@ -12,6 +13,6 @@ import { getSessionUser, type SessionUser } from './session';
  */
 export async function requireSessionUser(locale: string): Promise<SessionUser> {
   const user = await getSessionUser();
-  if (!user) redirect(locale === 'en' ? '/en/login' : '/login');
+  if (!user) redirect(await localeHref('/login', locale));
   return user;
 }

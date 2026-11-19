@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cabinetRegisterHref } from './cabinet-links';
 import { resetSiteLanguagesCache, siteLanguagesForMiddleware } from './site-languages-edge';
-import { fetchSiteLanguages } from './site-languages-source';
+import { fetchSiteLanguages } from '@broker/utils/site-languages';
 
 const json = (body: unknown, status = 200) =>
   vi.fn(async () => new Response(JSON.stringify(body), { status })) as unknown as typeof fetch;

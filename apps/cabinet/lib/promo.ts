@@ -13,6 +13,7 @@ import {
 } from '@broker/promo';
 import { envOr } from '@broker/utils';
 import { getPool } from './db';
+import { getSiteLanguages } from './site-languages';
 
 /**
  * Данные экранов «Акции», «Пригласи друга», «Конкурс», «Условия счетов».
@@ -45,12 +46,12 @@ export function loadClientPromotions(userId: string, locale: string): Promise<Lo
  * не на главную сайта), иначе публичный адрес сайта — его middleware
  * ставит first-click cookie и ведёт на регистрацию кабинета.
  */
-export function referralLinkBase(locale: string): string | null {
+export function referralLinkBase(locale: string, defaultLanguage: string): string | null {
   const explicit = envOr(process.env.REFERRAL_LINK_BASE, '');
   const site = explicit || envOr(process.env.NEXT_PUBLIC_SITE_URL, '');
   if (!site) return null;
   const base = site.replace(/\/$/, '');
-  return locale === 'en' && !explicit ? `${base}/en` : `${base}/`;
+  return explicit || locale === defaultLanguage ? `${base}/` : `${base}/${locale}`;
 }
 
 export interface ReferralScreen {
@@ -60,7 +61,7 @@ export interface ReferralScreen {
 
 export function loadMyReferral(userId: string, locale: string): Promise<Loaded<ReferralScreen>> {
   return load('рефералы', async () => {
-    const referral = await getMyReferral(pool(), userId, { locale, linkBase: referralLinkBase(locale) });
+    const referral = await getMyReferral(pool(), userId, { locale, linkBase: referralLinkBase(locale, (await getSiteLanguages()).defaultLanguage) });
     const partner = referral.isPartner ? await getMyPartner(db(), userId) : null;
     return { referral, partner };
   });

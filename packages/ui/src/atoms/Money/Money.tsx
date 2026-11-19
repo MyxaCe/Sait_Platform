@@ -24,24 +24,35 @@ export interface MoneyProps {
   tone?: 'auto' | 'none';
   /** Скрыть код валюты (ТОЛЬКО когда валюта указана в заголовке колонки). */
   hideCurrency?: boolean;
+  intlLocale?: string;
   className?: string;
 }
 
 const NBSP_NARROW = ' ';
 
 /** Форматирует минорные единицы: 482501 → «4 825,01» (без валюты, без знака). */
-export function formatMinor(minor: number): string {
+export function formatMinor(minor: number, intlLocale?: string): string {
+  const { group, decimal } = separators(intlLocale);
   const abs = Math.abs(Math.trunc(minor));
   const whole = Math.floor(abs / 100);
   const cents = abs % 100;
-  const grouped = whole.toString().replace(/\B(?=(\d{3})+(?!\d))/g, NBSP_NARROW);
-  return `${grouped},${cents.toString().padStart(2, '0')}`;
+  const grouped = whole.toString().replace(/\B(?=(\d{3})+(?!\d))/g, group);
+  return `${grouped}${decimal}${cents.toString().padStart(2, '0')}`;
+}
+
+function separators(intlLocale: string | undefined): { group: string; decimal: string } {
+  if (!intlLocale || intlLocale.startsWith('ru')) return { group: NBSP_NARROW, decimal: ',' };
+  const parts = new Intl.NumberFormat(intlLocale, { useGrouping: true }).formatToParts(1234567.5);
+  return {
+    group: parts.find((p) => p.type === 'group')?.value ?? NBSP_NARROW,
+    decimal: parts.find((p) => p.type === 'decimal')?.value ?? ',',
+  };
 }
 
 /** Полная строка: «−1 200,00 USDT» / «+820,17 USDT». */
-export function formatMoney(minor: number, currency: string, signed = false): string {
+export function formatMoney(minor: number, currency: string, signed = false, intlLocale?: string): string {
   const sign = minor < 0 ? '−' : signed && minor > 0 ? '+' : '';
-  return `${sign}${formatMinor(minor)}${NBSP_NARROW}${currency}`;
+  return `${sign}${formatMinor(minor, intlLocale)}${NBSP_NARROW}${currency}`;
 }
 
 export function Money({
@@ -50,6 +61,7 @@ export function Money({
   signed = false,
   tone = 'none',
   hideCurrency = false,
+  intlLocale,
   className,
 }: MoneyProps) {
   if (minor === null) {
@@ -67,7 +79,7 @@ export function Money({
   return (
     <span className={cn('whitespace-nowrap tabular-nums', color, className)}>
       {sign}
-      {formatMinor(minor)}
+      {formatMinor(minor, intlLocale)}
       {hideCurrency ? null : (
         <span className="text-secondary ml-1 text-[0.85em] font-normal">{currency}</span>
       )}

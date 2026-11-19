@@ -3,6 +3,8 @@
 import { useFormState, useFormStatus } from 'react-dom';
 import { useTranslations } from 'next-intl';
 import { Button, FormField, Input, Select } from '@broker/ui';
+import { isPlatformLocale, LOCALE_AUTONYMS } from '@broker/utils/locales';
+import { useSiteLanguages } from '@/i18n/site-languages-context';
 import { updateProfileAction, type ActionState } from '@/lib/actions';
 import { FormMessage, useFieldError } from '@/features/auth/FormMessage';
 
@@ -22,13 +24,15 @@ export function ProfileForm({
 }: {
   fullName: string;
   email: string;
-  locale: 'ru' | 'en';
+  locale: string;
 }) {
   const t = useTranslations('profile');
   const tCommon = useTranslations('common');
   const fieldError = useFieldError();
   const [state, formAction] = useFormState<ActionState, FormData>(updateProfileAction, {});
   const saved = state.ok === true;
+  const { languages } = useSiteLanguages();
+  const options = isPlatformLocale(locale) && !languages.includes(locale) ? [...languages, locale] : languages;
 
   return (
     <form action={formAction} className="flex flex-col gap-4" noValidate>
@@ -44,8 +48,11 @@ export function ProfileForm({
 
       <FormField label={t('language')} htmlFor="locale">
         <Select id="locale" name="locale" defaultValue={locale}>
-          <option value="ru">Русский</option>
-          <option value="en">English</option>
+          {options.map((l) => (
+            <option key={l} value={l}>
+              {LOCALE_AUTONYMS[l]}
+            </option>
+          ))}
         </Select>
       </FormField>
 

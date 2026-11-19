@@ -1,7 +1,9 @@
 import { useLocale, useTranslations } from 'next-intl';
-import { cn, formatMinor, formatMoney, Money } from '@broker/ui';
+import { cn } from '@broker/ui';
+import { Money } from '@/features/ui/Money';
 import type { ConditionView } from '@broker/promo';
 import { daysLeft, formatDate, PROMO_CURRENCY, progressRatio } from './format';
+import { moneyFormat } from '@/features/ui/money-format';
 
 /**
  * Прогресс по условиям участия: каждое условие — строка с отметкой; оборот —
@@ -19,6 +21,7 @@ export function ConditionList({
   now?: Date;
   compact?: boolean;
 }) {
+  const fmt = moneyFormat(useLocale());
   const t = useTranslations('promo');
   const locale = useLocale();
   const rows = conditions.filter((c) => c.key !== 'window');
@@ -38,7 +41,7 @@ export function ConditionList({
                 <span className={cn('text-sm', c.met ? 'text-primary' : 'text-secondary')}>
                   {c.key === 'deposit'
                     ? t('cond.deposit', {
-                        target: typeof c.target === 'number' ? formatMoney(c.target, PROMO_CURRENCY) : '—',
+                        target: typeof c.target === 'number' ? fmt.money(c.target, PROMO_CURRENCY) : '—',
                       })
                     : t(`cond.${c.key}`)}
                 </span>
@@ -64,6 +67,7 @@ export function ConditionList({
 }
 
 function Turnover({ c, compact }: { c: ConditionView; compact: boolean }) {
+  const fmt = moneyFormat(useLocale());
   const t = useTranslations('promo');
   const ratio = progressRatio(c.current, c.target, c.met);
   const pct = Math.round(ratio * 100);
@@ -74,8 +78,8 @@ function Turnover({ c, compact }: { c: ConditionView; compact: boolean }) {
         <span className="text-sm tabular-nums text-primary">
           {/* Нет числа от движка — «—», а не «0» (QA-05: охраняемая величина). */}
           {t('cond.turnoverValue', {
-            current: typeof c.current === 'number' ? formatMinor(c.current) : '—',
-            target: typeof c.target === 'number' ? formatMoney(c.target, PROMO_CURRENCY) : '—',
+            current: typeof c.current === 'number' ? fmt.minor(c.current) : '—',
+            target: typeof c.target === 'number' ? fmt.money(c.target, PROMO_CURRENCY) : '—',
           })}
         </span>
       </div>

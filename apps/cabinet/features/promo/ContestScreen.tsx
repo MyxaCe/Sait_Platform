@@ -1,6 +1,7 @@
 import { PAGE } from '@/features/ui/page';
 import { useLocale, useTranslations } from 'next-intl';
-import { Callout, cn, EmptyState, formatMoney, Money, ToneBadge, type StatusTone } from '@broker/ui';
+import { Callout, cn, EmptyState, ToneBadge, type StatusTone } from '@broker/ui';
+import { Money } from '@/features/ui/Money';
 import type { ContestLeaderboard, ContestSummary, LeaderboardRow } from '@broker/promo';
 import { FilterChips } from '@/features/history/FilterChips';
 import { TerminalLink } from '@/features/trade/TerminalLink';
@@ -9,6 +10,7 @@ import { JoinContestForm } from './JoinContestForm';
 import { CARD } from './PromoCards';
 import { SectionTitle } from './PromotionsScreen';
 import { contestTab, daysLeft, formatDate, formatShortDate, PROMO_CURRENCY, signedBpsPercent } from './format';
+import { moneyFormat } from '@/features/ui/money-format';
 
 const PHASE_TONE: Record<ContestSummary['phase'], StatusTone> = {
   draft: 'neutral',
@@ -126,12 +128,13 @@ export function ContestScreen({
 }
 
 function ContestHeader({ c, demoCurrency, now }: { c: ContestSummary; demoCurrency: string; now?: Date }) {
+  const fmt = moneyFormat(useLocale());
   const t = useTranslations('contest');
   const locale = useLocale();
   const startsIn = c.phase === 'upcoming' ? daysLeft(c.startsAt, now) : null;
   const endsIn = c.phase === 'running' ? daysLeft(c.endsAt, now) : null;
   const canJoin = (c.phase === 'running' || c.phase === 'upcoming') && (c.myStatus === null || c.myStatus === 'withdrawn');
-  const startBalance = formatMoney(c.rules.startBalanceMinor, demoCurrency);
+  const startBalance = fmt.money(c.rules.startBalanceMinor, demoCurrency);
 
   return (
     <section className={cn(CARD, 'space-y-4', c.myStatus === 'active' && 'border-accent/40')} data-contest={c.slug}>
@@ -339,10 +342,11 @@ function Prizes({ c }: { c: ContestSummary }) {
 }
 
 function Rules({ c, demoCurrency }: { c: ContestSummary; demoCurrency: string }) {
+  const fmt = moneyFormat(useLocale());
   const t = useTranslations('contest');
   const tr = useTranslations('promo.rules');
   const lines = [
-    tr('startBalance', { amount: formatMoney(c.rules.startBalanceMinor, demoCurrency) }),
+    tr('startBalance', { amount: fmt.money(c.rules.startBalanceMinor, demoCurrency) }),
     tr('minTrades', { n: c.rules.minTrades }),
     t('ranking'),
     ...(c.rules.prizeRequiresKyc ? [tr('prizeKyc')] : []),

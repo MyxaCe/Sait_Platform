@@ -7,6 +7,7 @@ import {
   setMoneyFlagsWithinTx,
   type TransferTerminalPort,
 } from './common';
+import { mailLocale } from '@broker/support';
 import { canonicalSha256 } from './envelope';
 import { CONSENT_TEXT_SHA256, CONSENT_TEXT_VERSION, verifyTicketEvidence, type EvidenceError } from './evidence';
 import { enqueueMessage, type PackageData, type RevokeData, type StatusData } from './messages';
@@ -148,7 +149,7 @@ export async function createTransfer(
         fullName: String(user.full_name),
         email: String(user.email),
         country: (user.country as string | null) ?? null,
-        locale: user.locale === 'en' ? 'en' : 'ru',
+        locale: mailLocale(user.locale),
       },
       sourceKyc: { state: kycState, at: user.kyc_at ? iso(user.kyc_at) : null },
       evidence: { kind: 'support_ticket', sha256: ev.value.evidenceSha256 },

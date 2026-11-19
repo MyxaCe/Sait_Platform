@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Button, cn } from '@broker/ui';
+import { intlTag } from '@broker/utils/locales';
 import type { SupportWidgetState } from '@/lib/support/state';
 
 /**
@@ -17,7 +18,7 @@ const ERR_KEYS = ['rateLimited', 'fileTooLarge', 'unsupportedFormat', 'attachmen
 function fmtTime(iso: string, locale: string): string {
   const d = new Date(iso);
   const sameDay = new Date().toDateString() === d.toDateString();
-  return d.toLocaleString(locale === 'en' ? 'en-GB' : 'ru-RU', sameDay ? { hour: '2-digit', minute: '2-digit' } : { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+  return d.toLocaleString(intlTag(locale), sameDay ? { hour: '2-digit', minute: '2-digit' } : { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
 }
 
 export function SupportWidget({ initialUnread, locale, enabled }: { initialUnread: number; locale: string; enabled: boolean }) {

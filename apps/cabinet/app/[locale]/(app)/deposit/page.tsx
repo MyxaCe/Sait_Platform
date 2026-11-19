@@ -1,6 +1,6 @@
-import { redirect } from '@/i18n/navigation';
+import { redirect } from '@/i18n/redirect';
 
 /** r2: пополнение — вкладка «Кошелька». Старая ссылка ведёт на новое место. */
-export default function LegacyDepositPage({ params }: { params: { locale: string } }) {
-  redirect({ href: '/wallet?tab=deposit', locale: params.locale });
+export default async function LegacyDepositPage({ params }: { params: { locale: string } }) {
+  await redirect({ href: '/wallet?tab=deposit', locale: params.locale });
 }

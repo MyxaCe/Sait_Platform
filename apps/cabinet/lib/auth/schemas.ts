@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { PLATFORM_LOCALES } from '@broker/utils/locales';
 
 /** Zod-сообщения — ключи namespace `validation` (ADR-011), перевод на рендере. */
 
@@ -10,7 +11,7 @@ export const registerSchema = z.object({
   country: z.string().min(2, 'required'),
   accountType: z.enum(['standard', 'pro', 'ecn']),
   password: z.string().min(8, 'passwordTooShort').max(200, 'tooLong'),
-  locale: z.enum(['ru', 'en']),
+  locale: z.enum(PLATFORM_LOCALES),
   /** honeypot: заполнено — бот */
   website: z.string().max(0, 'bot').optional().or(z.literal('')),
 });
@@ -34,5 +35,5 @@ export const changePasswordSchema = z
 
 export const profileSchema = z.object({
   fullName: z.string().min(2, 'tooShort').max(120, 'tooLong'),
-  locale: z.enum(['ru', 'en']),
+  locale: z.enum(PLATFORM_LOCALES),
 });

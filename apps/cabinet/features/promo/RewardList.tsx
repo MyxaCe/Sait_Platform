@@ -1,5 +1,6 @@
 import { useLocale, useTranslations } from 'next-intl';
-import { EmptyState, Money, ToneBadge, type StatusTone } from '@broker/ui';
+import { EmptyState, ToneBadge, type StatusTone } from '@broker/ui';
+import { Money } from '@/features/ui/Money';
 import type { ClientRewardStatus, RewardView } from '@broker/promo';
 import { realMoneyCurrency } from '@broker/money/display-currency';
 import { formatDate, formatPeriod } from './format';

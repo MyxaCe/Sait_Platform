@@ -3,7 +3,7 @@ import { appendJournalWithinTx, inTransaction, rollback, SYSTEM_OPERATORS, type 
 import { SUPPORT_ACTIONS } from './model';
 import { enqueueMail } from './outbound';
 import type { SupportSettings } from './settings';
-import { firstNameOf, isPlausibleEmail, normalizeEmail, renderTemplate } from './text';
+import { firstNameOf, isPlausibleEmail, mailLocale, normalizeEmail, renderTemplate } from './text';
 
 /**
  * Auth-письма через почту поддержки (решение владельца 10.11): сброс пароля
@@ -55,7 +55,7 @@ async function limited(tx: Queryable, purpose: string, email: string, ip: string
 }
 
 export interface LinkBuilder {
-  (path: string, token: string, locale: 'ru' | 'en'): string;
+  (path: string, token: string, locale: string): string;
 }
 
 /** Клиент, которому уходит auth-письмо (строка `users`). */
@@ -79,7 +79,7 @@ export async function issuePasswordResetMail(
   const { user, now } = input;
   const email = normalizeEmail(user.email);
   const token = newToken();
-  const locale = user.locale === 'en' ? 'en' : 'ru';
+  const locale = mailLocale(user.locale);
   const expiresAt = new Date(now.getTime() + RESET_TTL_MINUTES * 60_000);
   await tx.query(
     `INSERT INTO auth_mail_tokens (purpose, user_id, email, token_hash, request_ip, expires_at, created_at)
@@ -89,7 +89,7 @@ export async function issuePasswordResetMail(
   const t = settings.texts[locale];
   const vars = {
     client: { firstName: firstNameOf(user.fullName) },
-    link: input.link('/reset-password', token, locale),
+    link: input.link('/reset-password', token, user.locale),
     ttlMinutes: RESET_TTL_MINUTES,
   };
   await enqueueMail(tx, {
@@ -111,7 +111,7 @@ export async function issueEmailVerifyMail(
   const { user, now } = input;
   const email = normalizeEmail(user.email);
   const token = newToken();
-  const locale = user.locale === 'en' ? 'en' : 'ru';
+  const locale = mailLocale(user.locale);
   const expiresAt = new Date(now.getTime() + VERIFY_TTL_HOURS * 3_600_000);
   await tx.query(
     `INSERT INTO auth_mail_tokens (purpose, user_id, email, token_hash, request_ip, expires_at, created_at)
@@ -121,7 +121,7 @@ export async function issueEmailVerifyMail(
   const t = settings.texts[locale];
   const vars = {
     client: { firstName: firstNameOf(user.fullName) },
-    link: input.link('/verify-email', token, locale),
+    link: input.link('/verify-email', token, user.locale),
     ttlHours: VERIFY_TTL_HOURS,
   };
   await enqueueMail(tx, {

@@ -1,11 +1,13 @@
 import { defineRouting } from 'next-intl/routing';
+import { PLATFORM_LOCALES } from '@broker/utils/locales';
 
 export const routing = defineRouting({
-  locales: ['ru', 'en'],
+  locales: PLATFORM_LOCALES,
   defaultLocale: 'ru',
   localePrefix: 'as-needed',
-  // Как на сайте (B-005): язык только URL и переключателем
   localeDetection: false,
+  localeCookie: false,
+  alternateLinks: false,
 });
 
 export type Locale = (typeof routing.locales)[number];

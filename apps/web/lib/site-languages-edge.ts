@@ -1,6 +1,6 @@
 import { readTenantSlug } from '@broker/tenant';
 import type { SiteLanguages } from '@broker/utils/locales';
-import { fetchSiteLanguages, settle } from './site-languages-source';
+import { fetchSiteLanguages, settle } from '@broker/utils/site-languages';
 
 const TTL_MS = 30_000;
 

@@ -1,12 +1,13 @@
 import QRCode from 'qrcode';
-import { getTranslations } from 'next-intl/server';
-import { Callout, formatMoney } from '@broker/ui';
+import { getLocale, getTranslations } from 'next-intl/server';
+import { Callout } from '@broker/ui';
 import type { MoneyPolicy } from '@broker/money';
 import { DepositClaimForm } from './MoneyForms';
 import { CopyButtonLarge } from './CopyText';
 import { PolicyNotice } from './PolicyNotice';
 import { REAL_ACCOUNT_CURRENCY } from '@broker/money/display-currency';
 import { Step } from './Step';
+import { moneyFormat } from '@/features/ui/money-format';
 
 /**
  * Вкладка «Пополнить» кошелька (дизайн USDT §1):
@@ -17,6 +18,7 @@ import { Step } from './Step';
  * Адреса нет — реквизиты не показываются вовсе (аудит К8).
  */
 export async function DepositPanel({ policy, address }: { policy: MoneyPolicy; address: string | null }) {
+  const fmt = moneyFormat(await getLocale());
   const t = await getTranslations('money');
   const qr = address
     ? await QRCode.toString(address, { type: 'svg', margin: 1, errorCorrectionLevel: 'M' })
@@ -67,7 +69,7 @@ export async function DepositPanel({ policy, address }: { policy: MoneyPolicy; a
                 />
                 <p className="text-xs text-muted">{t('copyHint')}</p>
                 <p className="text-xs text-secondary">
-                  {t('minDeposit', { min: formatMoney(policy.minDepositMinor, REAL_ACCOUNT_CURRENCY) })}
+                  {t('minDeposit', { min: fmt.money(policy.minDepositMinor, REAL_ACCOUNT_CURRENCY) })}
                 </p>
               </div>
             </div>

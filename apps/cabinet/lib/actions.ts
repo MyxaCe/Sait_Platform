@@ -22,6 +22,7 @@ import {
   registerSchema,
 } from './auth/schemas';
 import { envOr } from '@broker/utils';
+import { localeHref } from '@/i18n/redirect';
 import { MAX_DOC_BYTES } from '@/upload-limits.mjs';
 import {
   createSession,
@@ -56,8 +57,8 @@ function zodFieldErrors(error: { issues: { path: PropertyKey[]; message: string 
   return fieldErrors;
 }
 
-function homePath(locale: string): string {
-  return locale === 'en' ? '/en' : '/';
+function homePath(locale: string): Promise<string> {
+  return localeHref('/', locale);
 }
 
 /* ------------------------------------------------------------------ */
@@ -109,7 +110,7 @@ export async function registerAction(_prev: ActionState, formData: FormData): Pr
     return { error: result.reason };
   }
   await createSession(result.userId);
-  redirect(homePath(parsed.data.locale));
+  redirect(await homePath(parsed.data.locale));
 }
 
 export async function loginAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
@@ -133,16 +134,16 @@ export async function loginAction(_prev: ActionState, formData: FormData): Promi
   await createSession(check.userId);
   // Временный пароль от менеджера — сначала свой пароль, потом всё остальное.
   if (check.mustChangePassword) {
-    redirect(`${String(formData.get('uiLocale') ?? check.locale) === 'en' ? '/en' : ''}/change-password`);
+    redirect(await localeHref('/change-password', String(formData.get('uiLocale') ?? check.locale)));
   }
   // Вход начался с launch терминала (sso-pack v1.1) — продолжаем его; иначе на главную.
   const next = safeLaunchNext(formData.get('next'));
-  redirect(next ?? homePath(String(formData.get('uiLocale') ?? check.locale)));
+  redirect(next ?? (await homePath(String(formData.get('uiLocale') ?? check.locale))));
 }
 
 export async function logoutAction(formData: FormData): Promise<void> {
   await destroyCurrentSession();
-  redirect(String(formData.get('uiLocale')) === 'en' ? '/en/login' : '/login');
+  redirect(await localeHref('/login', String(formData.get('uiLocale'))));
 }
 
 /* ------------------------------------------------------------------ */

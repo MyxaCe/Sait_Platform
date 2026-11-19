@@ -1,5 +1,6 @@
 import { getTranslations } from 'next-intl/server';
-import { Button, Callout, Money, ToneBadge } from '@broker/ui';
+import { Button, Callout, ToneBadge } from '@broker/ui';
+import { Money } from '@/features/ui/Money';
 import type { CabinetHomeModule } from '@broker/api-client';
 import type { MoneyPolicy, MoneyPolicyReason } from '@broker/money';
 import { Link } from '@/i18n/navigation';

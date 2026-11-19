@@ -1,10 +1,11 @@
 import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
 import { notFound } from 'next/navigation';
-import { hasLocale, NextIntlClientProvider } from 'next-intl';
+import { NextIntlClientProvider } from 'next-intl';
 import { getMessages, getTranslations, setRequestLocale } from 'next-intl/server';
 import { hexToRgbChannels } from '@broker/utils';
-import { routing } from '@/i18n/routing';
+import { SiteLanguagesProvider } from '@/i18n/site-languages-context';
+import { getSiteLanguages } from '@/lib/site-languages';
 import { getChromeBrand, resolveBrandName } from '@/lib/chrome';
 import { onAccentChannels } from '@/lib/on-accent';
 import '../globals.css';
@@ -49,7 +50,8 @@ export async function generateMetadata({
 
 export default async function RootLayout({ children, params }: LayoutProps) {
   const { locale } = params;
-  if (!hasLocale(routing.locales, locale)) notFound();
+  const site = await getSiteLanguages();
+  if (!(site.languages as readonly string[]).includes(locale)) notFound();
 
   // Первой строкой — до любых проверок (урок B-007)
   setRequestLocale(locale);
@@ -71,7 +73,9 @@ export default async function RootLayout({ children, params }: LayoutProps) {
         {accentChannels && (
           <style>{`:root{--accent:${accentChannels};--text-on-accent:${onAccent};}`}</style>
         )}
-        <NextIntlClientProvider messages={messages}>{children}</NextIntlClientProvider>
+        <NextIntlClientProvider messages={messages}>
+          <SiteLanguagesProvider value={site}>{children}</SiteLanguagesProvider>
+        </NextIntlClientProvider>
       </body>
     </html>
   );

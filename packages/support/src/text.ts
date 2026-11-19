@@ -9,6 +9,10 @@ export const MAX_SUBJECT = 200;
  * Подстановка `{{путь.к.значению}}`. Неизвестная переменная остаётся как
  * есть — оператор увидит её в предпросмотре, а не пустое место.
  */
+export function mailLocale(locale: unknown): 'ru' | 'en' {
+  return locale === 'en' || locale === 'de' || locale === 'fr' || locale === 'es' ? 'en' : 'ru';
+}
+
 export function renderTemplate(body: string, vars: Record<string, unknown>): string {
   return body.replace(/\{\{\s*([a-zA-Z0-9_.]+)\s*\}\}/g, (whole, path: string) => {
     let v: unknown = vars;

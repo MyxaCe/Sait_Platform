@@ -16,6 +16,7 @@ import { enqueueMail } from './outbound';
 import {
   firstNameOf,
   isPlausibleEmail,
+  mailLocale,
   normalizeEmail,
   renderTemplate,
   replySubject,
@@ -379,7 +380,7 @@ export async function postClientChatMessage(
     const u = await tx.query(`SELECT email, full_name, locale FROM users WHERE id = $1`, [input.userId]);
     const user = u.rows[0];
     if (!user) return rollback({ ok: false as const, reason: 'invalidClient' as const });
-    const locale = user.locale === 'en' ? 'en' : 'ru';
+    const locale = mailLocale(user.locale);
 
     const active = await tx.query(
       `SELECT ${TICKET_COLS} FROM support_tickets

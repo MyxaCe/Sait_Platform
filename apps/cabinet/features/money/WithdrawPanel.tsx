@@ -1,10 +1,11 @@
-import { getTranslations } from 'next-intl/server';
-import { Callout, formatMoney } from '@broker/ui';
+import { getLocale, getTranslations } from 'next-intl/server';
+import { Callout } from '@broker/ui';
 import type { KycAllowance, MoneyPolicy } from '@broker/money';
 import { REAL_ACCOUNT_CURRENCY } from '@broker/money/display-currency';
 import { Link } from '@/i18n/navigation';
 import { WithdrawForm } from './MoneyForms';
 import { PolicyNotice } from './PolicyNotice';
+import { moneyFormat } from '@/features/ui/money-format';
 
 /**
  * Вкладка «Вывести» кошелька (дизайн USDT §2): адрес TRON с проверкой формата,
@@ -23,6 +24,7 @@ export async function WithdrawPanel({
   /** Остаток лимита вывода без верификации; `null` — не действует или неизвестен. */
   kycAllowance?: KycAllowance | null;
 }) {
+  const fmt = moneyFormat(await getLocale());
   const t = await getTranslations('money');
   const reasons = policy.withdrawReasons.filter((r) => !(policy.frozen && r === 'frozen'));
   const notice = !policy.withdrawAllowed && reasons.length > 0;
@@ -33,7 +35,7 @@ export async function WithdrawPanel({
     limited && (kycAllowance === null || kycAllowance.remainingMinor < Math.max(1, policy.minWithdrawMinor));
   const formAvailable =
     limited && kycAllowance ? Math.min(availableMinor, kycAllowance.remainingMinor) : availableMinor;
-  const money = (minor: number) => formatMoney(minor, REAL_ACCOUNT_CURRENCY);
+  const money = (minor: number) => fmt.money(minor, REAL_ACCOUNT_CURRENCY);
   const limitText = !limited
     ? null
     : kycAllowance === null

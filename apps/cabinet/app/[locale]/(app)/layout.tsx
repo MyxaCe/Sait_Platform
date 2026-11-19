@@ -1,3 +1,6 @@
+import { localeHref } from '@/i18n/redirect';
+import { LangSwitcher } from '@/features/shell/LangSwitcher';
+import { getSiteLanguages } from '@/lib/site-languages';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { redirect } from 'next/navigation';
 import { SiteFooter } from '@broker/ui';
@@ -27,14 +30,14 @@ export default async function AppLayout({ children, params }: LayoutProps) {
   setRequestLocale(params.locale);
   const user = await getSessionUser();
   if (!user) {
-    redirect(params.locale === 'en' ? '/en/login' : '/login');
+    redirect(await localeHref('/login', params.locale));
   }
   // Временный пароль от менеджера: пока свой не задан — только смена пароля.
   if (user.mustChangePassword) {
-    redirect(params.locale === 'en' ? '/en/change-password' : '/change-password');
+    redirect(await localeHref('/change-password', params.locale));
   }
 
-  const [tNav, tCommon, unread, brand, footer, contests] = await Promise.all([
+  const [tNav, tCommon, unread, brand, footer, contests, site] = await Promise.all([
     getTranslations('nav'),
     getTranslations('common'),
     countUnread(user.id),
@@ -42,6 +45,7 @@ export default async function AppLayout({ children, params }: LayoutProps) {
     getChromeFooter(params.locale),
     // «Конкурс» в меню — только если есть идущий или будущий (сбой чтения — пункта нет).
     loadContests(user.id, params.locale),
+    getSiteLanguages(),
   ]);
   const brandName = resolveBrandName(brand, tCommon('cabinet'));
   // Поддержка: бейдж кнопки и вкл/выкл канала чата — из базы (настройки админки).
@@ -100,14 +104,17 @@ export default async function AppLayout({ children, params }: LayoutProps) {
           )}
           <span className="truncate">{tCommon('cabinet')}</span>
         </Link>
-        <Link
-          href="/notifications"
-          aria-label={tNav('notifications')}
-          className="relative -mr-2 grid size-11 place-items-center rounded-lg text-secondary hover:text-primary"
-        >
-          <NavIcon name="notifications" className="size-[22px]" />
-          {unread > 0 ? <CountBadge value={unread} className="absolute right-0.5 top-1 h-[18px] min-w-[18px] px-1 text-[10px]" /> : null}
-        </Link>
+        <div className="flex items-center">
+          <LangSwitcher />
+          <Link
+            href="/notifications"
+            aria-label={tNav('notifications')}
+            className="relative -mr-2 grid size-11 place-items-center rounded-lg text-secondary hover:text-primary"
+          >
+            <NavIcon name="notifications" className="size-[22px]" />
+            {unread > 0 ? <CountBadge value={unread} className="absolute right-0.5 top-1 h-[18px] min-w-[18px] px-1 text-[10px]" /> : null}
+          </Link>
+        </div>
       </header>
 
       <div className="flex min-h-0 flex-1">
@@ -130,7 +137,7 @@ export default async function AppLayout({ children, params }: LayoutProps) {
             ) : null}
           </nav>
           <a
-            href={siteHref('/', params.locale)}
+            href={siteHref('/', params.locale, site.defaultLanguage)}
             className="border-t border-border px-3 pt-4 text-sm text-secondary transition-colors hover:text-primary"
           >
             ← {tCommon('backToSite')}
@@ -146,7 +153,7 @@ export default async function AppLayout({ children, params }: LayoutProps) {
               <SiteFooter
                 columns={footer.columns.map((col) => ({
                   title: col.title,
-                  links: col.links.map((l) => ({ label: l.label, href: siteHref(l.href, params.locale) })),
+                  links: col.links.map((l) => ({ label: l.label, href: siteHref(l.href, params.locale, site.defaultLanguage) })),
                 }))}
                 riskWarning={footer.riskWarning}
                 brandName={brandName}
@@ -167,7 +174,7 @@ export default async function AppLayout({ children, params }: LayoutProps) {
         footer={
           <>
             <a
-              href={siteHref('/', params.locale)}
+              href={siteHref('/', params.locale, site.defaultLanguage)}
               className="flex h-12 items-center gap-3 rounded-lg px-3 text-[15px] text-secondary hover:bg-primary/5"
             >
               <NavIcon name="site" />

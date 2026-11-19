@@ -3,6 +3,7 @@
 import { cookies, headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { readEnv } from '@broker/utils';
+import { localizedPath } from '@broker/utils/locales';
 import {
   completeForcedPasswordChange,
   completePasswordReset,
@@ -18,6 +19,8 @@ import { getSessionUser, hashToken } from '../auth/session';
 import { SESSION_COOKIE } from '../auth/constants';
 import { isRateLimited } from '../rate-limit';
 import { supportPool } from './state';
+import { localeHref } from '@/i18n/redirect';
+import { getSiteLanguages } from '../site-languages';
 
 /**
  * Auth-письма кабинета: сброс пароля и подтверждение email (через почту
@@ -40,11 +43,15 @@ function clientIp(): string | null {
   return headers().get('x-forwarded-for')?.split(',')[0]?.trim() ?? null;
 }
 
-function linkBuilder(): LinkBuilder | null {
+async function linkBuilder(): Promise<LinkBuilder | null> {
   const base = readEnv(process.env.CABINET_PUBLIC_URL) ?? readEnv(process.env.NEXT_PUBLIC_SITE_URL);
   if (!base) return null;
   const root = base.replace(/\/+$/, '');
-  return (path, token, locale) => `${root}${locale === 'en' ? '/en' : ''}${path}?token=${encodeURIComponent(token)}`;
+  const site = await getSiteLanguages();
+  return (path, token, locale) => {
+    const target = (site.languages as readonly string[]).includes(locale) ? locale : site.defaultLanguage;
+    return `${root}${localizedPath(path, target, site.defaultLanguage)}?token=${encodeURIComponent(token)}`;
+  };
 }
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
@@ -55,7 +62,7 @@ export async function forgotPasswordAction(_prev: AuthMailState, fd: FormData): 
   if (String(fd.get('website') ?? '')) return { ok: true }; // honeypot
   if (!EMAIL.test(email)) return { fieldErrors: { email: 'invalidEmail' } };
   if (isRateLimited(`forgot:${clientIp() ?? 'local'}`, 10, 60_000)) return { error: 'rateLimited' };
-  const link = linkBuilder();
+  const link = await linkBuilder();
   if (!link) {
     console.error('[auth-mail] CABINET_PUBLIC_URL не задан — письмо сброса не поставлено (fail-closed)');
     return { ok: true };
@@ -77,13 +84,13 @@ export async function resetPasswordAction(_prev: AuthMailState, fd: FormData): P
   const r = await completePasswordReset(supportPool(), { token, passwordHash: await hashPassword(password) });
   if (!r.ok) return { error: r.reason };
   const locale = String(fd.get('uiLocale') ?? 'ru');
-  redirect(`${locale === 'en' ? '/en' : ''}/login?reset=1`);
+  redirect(await localeHref('/login?reset=1', locale));
 }
 
 export async function requestEmailVerifyAction(_prev: AuthMailState): Promise<AuthMailState> {
   const user = await getSessionUser();
   if (!user) return { error: 'unauthorized' };
-  const link = linkBuilder();
+  const link = await linkBuilder();
   if (!link) {
     console.error('[auth-mail] CABINET_PUBLIC_URL не задан — письмо подтверждения не поставлено (fail-closed)');
     return { error: 'mailNotConfigured' };
@@ -118,5 +125,5 @@ export async function forcedPasswordChangeAction(_prev: AuthMailState, fd: FormD
     passwordHash: await hashPassword(password),
     keepSessionTokenHash: token ? hashToken(token) : null,
   });
-  redirect(user.locale === 'en' ? '/en' : '/');
+  redirect(await localeHref('/', user.locale));
 }

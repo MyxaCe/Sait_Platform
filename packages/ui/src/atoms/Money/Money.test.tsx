@@ -44,3 +44,13 @@ describe('STATUS_DICTIONARY — единая семантика тонов', () 
     expect(statusKeyOf('toString')).toBeUndefined();
   });
 });
+
+describe('formatMinor: разделители языка', () => {
+  it('без тега и для ru-RU — как прежде; de, en, es — по Intl', () => {
+    expect(formatMinor(123456789)).toBe(formatMinor(123456789, 'ru-RU'));
+    expect(formatMinor(123456789, 'de-DE')).toBe('1.234.567,89');
+    expect(formatMinor(123456789, 'en-US')).toBe('1,234,567.89');
+    expect(formatMinor(123456789, 'es-ES')).toBe('1.234.567,89');
+    expect(formatMoney(-150, 'USDT', false, 'en-US')).toBe('−1.50 USDT');
+  });
+});

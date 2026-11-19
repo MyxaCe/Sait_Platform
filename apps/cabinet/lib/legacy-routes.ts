@@ -1,3 +1,5 @@
+import { PLATFORM_LOCALES } from '@broker/utils/locales';
+
 /**
  * Старые адреса (r2: кошелёк и профиль объединены, терминал — на весь экран)
  * → новое место, настоящим 307 до рендера (страницы-заглушки остаются
@@ -10,15 +12,17 @@ const LEGACY: Record<string, string> = {
   documents: '/profile?tab=documents',
   security: '/profile?tab=security',
 };
-const LEGACY_PATH = /^\/(en\/)?(deposit|withdraw|verification|documents|security)\/?$/;
+const PREFIX = `(?:/(${PLATFORM_LOCALES.join('|')}))?`;
+const LEGACY_PATH = new RegExp(`^${PREFIX}/(deposit|withdraw|verification|documents|security)/?$`);
+const TRADE_PATH = new RegExp(`^${PREFIX}/trade/?$`);
 
 export function legacyTarget(pathname: string, search: string): string | null {
   const m = LEGACY_PATH.exec(pathname);
-  if (m) return `${m[1] ? '/en' : ''}${LEGACY[m[2]!]}`;
-  const trade = /^\/(en\/)?trade\/?$/.exec(pathname);
+  if (m) return `${m[1] ? `/${m[1]}` : ''}${LEGACY[m[2]!]}`;
+  const trade = TRADE_PATH.exec(pathname);
   const account = new URLSearchParams(search).get('account');
   if (trade && (account === 'demo' || account === 'real')) {
-    return `${trade[1] ? '/en' : ''}/terminal?account=${account}`;
+    return `${trade[1] ? `/${trade[1]}` : ''}/terminal?account=${account}`;
   }
   return null;
 }

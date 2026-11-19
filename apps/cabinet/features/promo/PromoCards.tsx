@@ -1,5 +1,6 @@
 import { useLocale, useTranslations } from 'next-intl';
-import { cn, Money, ToneBadge, type StatusTone } from '@broker/ui';
+import { cn, ToneBadge, type StatusTone } from '@broker/ui';
+import { Money } from '@/features/ui/Money';
 import type { ParticipationView, PromoCardView } from '@broker/promo';
 import { Link } from '@/i18n/navigation';
 import { linkButton } from '@/features/ui/link-button';
