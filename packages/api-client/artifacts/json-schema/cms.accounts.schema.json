@@ -12,6 +12,12 @@
               "id": {
                 "type": "string"
               },
+              "portfolioKey": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
               "name": {
                 "type": "string"
               },
@@ -66,10 +72,8 @@
               "id",
               "name",
               "description",
-              "minDeposit",
               "featured",
-              "features",
-              "pricing"
+              "features"
             ],
             "additionalProperties": false
           }

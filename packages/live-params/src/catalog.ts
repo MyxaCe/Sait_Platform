@@ -2,6 +2,7 @@ import type { LivePortfolio, LivePromotion, LivePromotionText } from './snapshot
 
 export interface CmsAccountPlanLike {
   id: string;
+  portfolioKey?: string | null;
   description?: string | null;
   featured?: boolean;
   features?: readonly { label: string; value: string }[];
@@ -15,9 +16,11 @@ export interface AccountOffer {
 }
 
 export function accountOffers(portfolios: readonly LivePortfolio[], plans: readonly CmsAccountPlanLike[] | null): AccountOffer[] {
-  const byId = new Map((plans ?? []).map((p) => [p.id.trim(), p]));
+  const list = plans ?? [];
+  const byKey = new Map(list.flatMap((p) => (p.portfolioKey?.trim() ? [[p.portfolioKey.trim(), p] as const] : [])));
+  const byId = new Map(list.filter((p) => !p.portfolioKey?.trim()).map((p) => [p.id.trim(), p]));
   return portfolios.map((portfolio) => {
-    const plan = byId.get(portfolio.key);
+    const plan = byKey.get(portfolio.key) ?? byId.get(portfolio.key);
     return {
       portfolio,
       description: plan?.description?.trim() || null,
@@ -70,7 +73,7 @@ export function promotionOffers<Image>(
 ): PromotionOffer<Image>[] {
   const byId = new Map((cms ?? []).map((c) => [c.id.trim(), c]));
   return promotions.map((promo) => {
-    const item = [promo.cmsPromoId, promo.slug, promo.id].map((k) => (k ? byId.get(k) : undefined)).find(Boolean);
+    const item = promo.cmsPromoId ? byId.get(promo.cmsPromoId) : undefined;
     const text = engineText(promo, locale);
     return {
       id: promo.id,

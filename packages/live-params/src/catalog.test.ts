@@ -34,6 +34,14 @@ describe('тарифы: портфели + тексты CMS', () => {
     expect(accountOffers(portfolios, null).map((o) => o.description)).toEqual([null, null]);
   });
 
+  it('portfolioKey важнее id: тариф ecn сопоставлен с портфелем enc_prime', () => {
+    const out = accountOffers([portfolio('enc_prime', 'ECN Prime')], [
+      { id: 'ecn', portfolioKey: 'enc_prime', description: 'Для профи' },
+      { id: 'enc_prime', description: 'не тот' },
+    ]);
+    expect(out[0]!.description).toBe('Для профи');
+  });
+
   it('тариф CMS без портфеля не показывается', () => {
     expect(accountOffers(portfolios, plans).some((o) => o.portfolio.key === 'gold')).toBe(false);
   });
@@ -61,8 +69,15 @@ describe('акции: движок + тексты CMS', () => {
     expect(out[0]).toMatchObject({ title: 'Кешбэк из CMS', badge: 'Хит', featured: true, image: { url: '/a.png' } });
   });
 
-  it('сопоставление и по слагу акции', () => {
-    expect(promotionOffers([promo({ slug: 'cms-1' })], cms, 'ru')[0]!.title).toBe('Кешбэк из CMS');
+  it('связь только через cms_promo_id: совпадение слага или id не считается', () => {
+    const [o] = promotionOffers([promo({ slug: 'cms-1', id: 'cms-1' })], cms, 'ru');
+    expect(o).toMatchObject({ title: 'Кешбэк', image: null, badge: null });
+  });
+
+  it('cms_promo_id без элемента CMS — название из движка, без картинки, акция не скрыта', () => {
+    const out = promotionOffers([promo({ cmsPromoId: 'promo-404' })], cms, 'ru');
+    expect(out).toHaveLength(1);
+    expect(out[0]).toMatchObject({ title: 'Кешбэк', image: null });
   });
 
   it('без текста в CMS — тексты из админки на языке страницы, ссылка на регистрацию с акцией', () => {

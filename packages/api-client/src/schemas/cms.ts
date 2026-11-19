@@ -142,7 +142,7 @@ export const instrumentSchema = z.object({
   name: z.string().min(1),
   category: instrumentCategorySchema,
   digits: z.number().int().min(0).max(8),
-  leverageMax: z.string(),
+  leverageMax: z.string().optional(),
   spreadFrom: z.string(),
   swapFree: z.boolean(),
   icon: mediaSchema.nullable(),
@@ -155,15 +155,18 @@ export type Instrument = z.infer<typeof instrumentSchema>;
 /* ------------------------------------------------------------------ */
 export const accountPlanSchema = z.object({
   id: z.string(),
+  portfolioKey: z.string().nullable().optional(),
   name: z.string(),
   description: z.string(),
-  minDeposit: z.string(),
+  minDeposit: z.string().optional(),
   featured: z.boolean(),
   features: z.array(z.object({ label: z.string(), value: z.string() })),
-  pricing: z.object({
-    spreadPips: z.number().nonnegative(),
-    commissionPerLotRT: z.number().nonnegative(),
-  }),
+  pricing: z
+    .object({
+      spreadPips: z.number().nonnegative(),
+      commissionPerLotRT: z.number().nonnegative(),
+    })
+    .optional(),
 });
 export const accountsResponseSchema = z.object({ items: z.array(accountPlanSchema) });
 export type AccountPlanDto = z.infer<typeof accountPlanSchema>;

@@ -17,7 +17,8 @@ export function cmsAccountPlans(data: unknown): CmsAccountPlanLike[] | null {
           return x && typeof x.label === 'string' && typeof x.value === 'string' ? [{ label: x.label, value: x.value }] : [];
         })
       : [];
-    return [{ id: r.id, description: typeof r.description === 'string' ? r.description : null, featured: r.featured === true, features }];
+    const portfolioKey = typeof r.portfolioKey === 'string' && r.portfolioKey.trim() ? r.portfolioKey.trim() : null;
+    return [{ id: r.id, portfolioKey, description: typeof r.description === 'string' ? r.description : null, featured: r.featured === true, features }];
   });
 }
 

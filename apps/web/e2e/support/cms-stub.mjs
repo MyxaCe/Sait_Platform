@@ -161,7 +161,8 @@ const DATA = {
         pricing: { spreadPips: 1, commissionPerLotRT: 0 },
       },
       {
-        id: 'pro',
+        id: 'pro-plan',
+        portfolioKey: 'pro',
         name: 'Pro',
         description: 'E2E',
         minDeposit: '$1000',

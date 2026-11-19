@@ -86,7 +86,6 @@
               "name",
               "category",
               "digits",
-              "leverageMax",
               "spreadFrom",
               "swapFree",
               "icon"
