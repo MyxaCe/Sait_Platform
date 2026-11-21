@@ -8,10 +8,12 @@ import {
   useRealtimeQuotes,
   type InstrumentCategory,
   type Quote,
+  type QuoteMarket,
 } from '@broker/realtime';
 import { Button, ConnectionDot, Input, PriceChange, cn } from '@broker/ui';
 import { CATEGORY_ORDER } from './categories';
 import { QuotePrice, priceReading } from './QuotePrice';
+import { useMarketText } from '../quotes/market-text';
 import { explainUnavailable, shortKeyOf } from '../quotes/unavailable-text';
 import { usePriceFlash } from './usePriceFlash';
 
@@ -29,18 +31,21 @@ export interface InstrumentsBrowserProps {
    * сервер/клиент, и `Map` приехал бы пустым.
    */
   unavailableReasons?: Record<string, string>;
+  markets?: Record<string, QuoteMarket>;
 }
 
 export function InstrumentsBrowser({
   symbols,
   icons = {},
   unavailableReasons = {},
+  markets = {},
 }: InstrumentsBrowserProps) {
   const t = useTranslations('instruments');
   const tCat = useTranslations('categories');
   const tConn = useTranslations('connection');
   const tWhy = useTranslations('instrumentUnavailable');
   const tCommon = useTranslations('common');
+  const marketText = useMarketText();
 
   const [category, setCategory] = useState<CategoryFilter>('all');
   const [query, setQuery] = useState('');
@@ -63,7 +68,10 @@ export function InstrumentsBrowser({
     данных»: текст, появившийся там, где объяснять нечего, был бы
     таким же утверждением о незнаемом, как подставленное число.
   */
-  const whyFor = (symbol: string): { short: string; full: string } | undefined => {
+  const whyFor = (quote: Quote): { short: string; full: string } | undefined => {
+    const symbol = quote.symbol;
+    const market = marketText(quote.market ?? markets[symbol]);
+    if (market) return { short: market, full: market };
     const reason = unavailableReasons[symbol];
     if (reason === undefined) return undefined;
     const e = explainUnavailable(reason);
@@ -134,7 +142,7 @@ export function InstrumentsBrowser({
             quote={q}
             iconUrl={icons[q.symbol]}
             noDataLabel={tConn('noData')}
-            why={whyFor(q.symbol)}
+            why={whyFor(q)}
           />
         ))}
       </ul>
@@ -160,7 +168,7 @@ export function InstrumentsBrowser({
                 categoryLabel={tCat(q.category)}
                 tradeLabel={tCommon('trade')}
                 noDataLabel={tConn('noData')}
-                why={whyFor(q.symbol)}
+                why={whyFor(q)}
               />
             ))}
           </tbody>

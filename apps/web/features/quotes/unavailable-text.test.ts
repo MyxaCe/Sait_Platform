@@ -44,7 +44,7 @@ describe('два семейства: «пока не даём» и «у нас �
     const families = new Set(SYMBOL_UNAVAILABLE_REASONS.map((r) => explainUnavailable(r).family));
 
     // Иначе «отличать одно от другого» было бы словами без следствия.
-    expect(families).toEqual(new Set(['limited', 'fault']));
+    expect(families).toEqual(new Set(['limited', 'fault', 'market']));
   });
 });
 

@@ -55,7 +55,7 @@ vi.mock('@broker/realtime', async (importOriginal) => {
   };
 });
 
-vi.mock('next-intl', () => ({ useTranslations: () => (key: string) => key }));
+vi.mock('next-intl', () => ({ useLocale: () => 'ru', useTranslations: () => (key: string) => key }));
 vi.mock('@/i18n/navigation', () => ({
   Link: ({ children, ...rest }: { children: React.ReactNode }) => <a {...rest}>{children}</a>,
 }));

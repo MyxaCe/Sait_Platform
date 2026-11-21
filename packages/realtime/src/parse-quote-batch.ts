@@ -1,4 +1,12 @@
-import { INSTRUMENT_CATEGORIES, type InstrumentCategory, type Quote } from './types';
+import { parseNextOpen } from './quote-reasons';
+import {
+  INSTRUMENT_CATEGORIES,
+  MARKET_STATUSES,
+  type InstrumentCategory,
+  type MarketStatus,
+  type Quote,
+  type QuoteMarket,
+} from './types';
 
 /**
  * Разбор батча котировок с провода (WEB-35).
@@ -39,6 +47,7 @@ const MODELLED_FIELDS = [
   'bid',
   'ask',
   'ts',
+  'market',
 ] as const;
 
 /**
@@ -199,14 +208,35 @@ function parseQuote(
   */
   const bid = parseSideQuote(raw.bid, 'bid', symbol, rejected);
   const ask = parseSideQuote(raw.ask, 'ask', symbol, rejected);
+  const market = parseMarket(raw.market, symbol, rejected);
 
-  return { symbol, name, category, price, digits, changePercent, bid, ask, ts };
+  const quote: Quote = { symbol, name, category, price, digits, changePercent, bid, ask, ts };
+  if (market) quote.market = market;
+  return quote;
 }
 
 /**
  * Одна из двух сторон книги. Отсутствие и `null` равны: поставщик,
  * который их не даёт, не обязан слать пустые поля.
  */
+function parseMarket(value: unknown, symbol: string, rejected: RejectedQuote[]): QuoteMarket | null {
+  if (value === undefined || value === null) return null;
+  if (!isObject(value)) {
+    rejected.push({ symbol, field: 'market', reason: 'wrong-type' });
+    return null;
+  }
+  const status = value.status;
+  if (typeof status !== 'string' || !(MARKET_STATUSES as readonly string[]).includes(status)) {
+    rejected.push({ symbol, field: 'market', reason: typeof status === 'string' ? 'unknown-value' : 'wrong-type' });
+    return null;
+  }
+  return {
+    status: status as MarketStatus,
+    reason: typeof value.reason === 'string' && value.reason ? value.reason : null,
+    nextOpen: parseNextOpen(value.nextOpen),
+  };
+}
+
 function parseSideQuote(
   value: unknown,
   field: 'bid' | 'ask',

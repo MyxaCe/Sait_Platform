@@ -63,7 +63,10 @@
     "offline": "Нет соединения",
     "simulated": "Демо-данные: цены не рыночные",
     "noData": "нет данных",
-    "lastKnown": "последняя известная"
+    "lastKnown": "последняя известная",
+    "marketClosed": "Рынок закрыт",
+    "marketClosedUntil": "Рынок закрыт · откроется {time}",
+    "marketHalted": "Торги приостановлены"
   },
   "auth": {
     "loginTitle": "Вход в кабинет",

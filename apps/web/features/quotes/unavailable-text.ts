@@ -42,13 +42,8 @@ const BY_REASON: Record<SymbolUnavailableReason, UnavailableExplanation> = {
   stale: { key: 'stale', family: 'fault' },
   'registry-unreadable': { key: 'registryUnreadable', family: 'fault' },
   'threshold-unset': { key: 'thresholdUnset', family: 'fault' },
-};
-
-export const MARKET_REASONS: Readonly<Record<string, UnavailableExplanation>> = {
   'market-closed': { key: 'marketClosed', family: 'market' },
-  closed: { key: 'marketClosed', family: 'market' },
   'market-halted': { key: 'marketHalted', family: 'market' },
-  halted: { key: 'marketHalted', family: 'market' },
 };
 
 export function shortKeyOf(explanation: UnavailableExplanation): string {
@@ -76,7 +71,6 @@ export const UNKNOWN_REASON: UnavailableExplanation = { key: 'technical', family
 export function explainUnavailable(reason: string | null | undefined): UnavailableExplanation {
   if (reason === null || reason === undefined) return UNKNOWN_REASON;
   if (reason === 'missing') return MISSING;
-  if (Object.prototype.hasOwnProperty.call(MARKET_REASONS, reason)) return MARKET_REASONS[reason]!;
   if (!isSymbolUnavailableReason(reason)) return UNKNOWN_REASON;
   return BY_REASON[reason];
 }

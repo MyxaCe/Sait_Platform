@@ -10,6 +10,7 @@ import type { CabinetHomeModule } from '@broker/api-client';
 import type { MarketInstrument, MarketsData } from '@/lib/home';
 import { selectGainers } from './markets-gainers';
 import { describeNotice } from './markets-notice';
+import { useMarketText } from '../shell/market-text';
 
 type MarketsConfig = Extract<CabinetHomeModule, { type: 'markets' }>;
 type TabKey = 'assets' | 'popular' | 'newListing' | 'favorites' | 'gainers' | 'volume';
@@ -41,6 +42,7 @@ export function MarketsModule({ config, data }: { config: MarketsConfig; data: M
     [instruments],
   );
   const quotes = useRealtimeQuotes(symbols);
+  const marketText = useMarketText();
 
   const tabs = useMemo(() => {
     const list: { key: TabKey; label: string }[] = [];
@@ -151,7 +153,14 @@ export function MarketsModule({ config, data }: { config: MarketsConfig; data: M
                     </span>
                   </span>
                 </td>
-                <td className="py-3 tabular-nums">{formatPrice(q.price, q.digits)}</td>
+                <td className="py-3 tabular-nums">
+                  {formatPrice(q.price, q.digits)}
+                  {marketText(q.market) && (
+                    <span className="block text-[11px] text-secondary" data-market={q.market?.status}>
+                      {marketText(q.market)}
+                    </span>
+                  )}
+                </td>
                 <td className="py-3">
                   <PriceChange value={q.changePercent} />
                 </td>

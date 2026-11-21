@@ -1,5 +1,5 @@
-export type { ConnStatus, FeedDriver, InstrumentCategory, Quote } from './types';
-export { INSTRUMENT_CATEGORIES } from './types';
+export type { ConnStatus, FeedDriver, InstrumentCategory, MarketStatus, Quote, QuoteMarket } from './types';
+export { INSTRUMENT_CATEGORIES, MARKET_STATUSES } from './types';
 export {
   parseQuoteBatch,
   type QuoteBatchParse,
@@ -21,6 +21,10 @@ export {
   isSymbolUnavailableReason,
   parseQuotesState,
   displayPrice,
+  formatNextOpen,
+  marketsOf,
+  parseNextOpen,
+  pausedMarket,
   staleSymbolsOf,
   type SymbolUnavailableReason,
   type SymbolUnavailable,

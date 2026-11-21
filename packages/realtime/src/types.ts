@@ -28,6 +28,16 @@ export const INSTRUMENT_CATEGORIES = [
 
 export type InstrumentCategory = (typeof INSTRUMENT_CATEGORIES)[number];
 
+export const MARKET_STATUSES = ['open', 'closed', 'halted'] as const;
+
+export type MarketStatus = (typeof MARKET_STATUSES)[number];
+
+export interface QuoteMarket {
+  status: MarketStatus;
+  reason: string | null;
+  nextOpen: number | null;
+}
+
 export interface Quote {
   symbol: string;
   name: string;
@@ -66,6 +76,7 @@ export interface Quote {
    */
   bid: number | null;
   ask: number | null;
+  market?: QuoteMarket;
   /** Unix ms последнего обновления; 0 — статичный начальный снапшот */
   ts: number;
 }

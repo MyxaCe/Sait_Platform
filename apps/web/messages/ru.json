@@ -585,6 +585,7 @@
     "technical": "Инструмент недоступен по технической причине",
     "marketClosed": "Рынок закрыт",
     "marketHalted": "Торги приостановлены",
+    "marketClosedUntil": "Рынок закрыт · откроется {time}",
     "shortLimited": "пока не даём",
     "shortFault": "цены нет"
   },

@@ -585,6 +585,7 @@
     "technical": "Das Instrument ist aus technischen Gründen nicht verfügbar",
     "marketClosed": "Markt geschlossen",
     "marketHalted": "Handel ausgesetzt",
+    "marketClosedUntil": "Markt geschlossen · öffnet {time}",
     "shortLimited": "noch nicht angeboten",
     "shortFault": "kein Preis"
   },

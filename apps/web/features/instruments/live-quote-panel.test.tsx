@@ -14,7 +14,7 @@ vi.mock('@broker/realtime', async (importOriginal) => {
   };
 });
 
-vi.mock('next-intl', () => ({
+vi.mock('next-intl', () => ({ useLocale: () => 'ru',
   useTranslations: (ns: string) => (key: string, values?: Record<string, unknown>) =>
     values ? `${ns}.${key}:${JSON.stringify(values)}` : `${ns}.${key}`,
 }));
@@ -95,5 +95,23 @@ describe('панель инструмента · нет живой цены', ()
     expect(screen.queryByTestId('quote-unavailable')).toBeNull();
     expect(screen.getByTestId('quote-bid').textContent).toMatch(/1[.,]08405/);
     expect(screen.getByTestId('quote-ask').textContent).toMatch(/1[.,]08415/);
+  });
+});
+
+describe('панель инструмента · закрытый рынок из потока', () => {
+  it('котировка с market.closed и nextOpen → цена не погашена, «откроется …»', async () => {
+    feed.quotes = [quote({ ts: Date.now() - 3_600_000, market: { status: 'closed', reason: 'weekend', nextOpen: Date.UTC(2026, 10, 23, 22, 0) } })];
+    render(<LiveQuotePanel {...props} />);
+
+    const note = await screen.findByText(/instrumentUnavailable\.marketClosedUntil/);
+    expect(note.textContent).toContain('"time"');
+    expect(screen.getByTestId('quote-price').className).not.toContain('opacity-50');
+  });
+
+  it('сервер сказал «закрыт», а поток прислал market.open → пометки нет', () => {
+    feed.quotes = [quote({ ts: Date.now() - 3_600_000, market: { status: 'open', reason: null, nextOpen: null } })];
+    render(<LiveQuotePanel {...props} market={{ status: 'closed', reason: null, nextOpen: null }} />);
+
+    expect(screen.queryByTestId('quote-unavailable')).toBeNull();
   });
 });

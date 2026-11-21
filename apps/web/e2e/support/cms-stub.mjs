@@ -135,7 +135,7 @@ const MDS_QUOTES = {
   staleAfterMs: 20_000,
   missing: [],
   unavailable: [
-    { symbol: 'XAUUSD', reason: 'market-closed' },
+    { symbol: 'XAUUSD', reason: 'market-closed', nextOpen: Date.now() + 2 * 24 * 3_600_000 },
     { symbol: 'LTCUSD', reason: 'source-silent' },
   ],
 };

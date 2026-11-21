@@ -63,7 +63,10 @@
     "offline": "No connection",
     "simulated": "Demo data: not real market prices",
     "noData": "no data",
-    "lastKnown": "last known"
+    "lastKnown": "last known",
+    "marketClosed": "Market closed",
+    "marketClosedUntil": "Market closed · opens {time}",
+    "marketHalted": "Trading halted"
   },
   "auth": {
     "loginTitle": "Sign in",

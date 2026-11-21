@@ -1,4 +1,4 @@
-import { staleSymbolsOf, type QuotesState } from '@broker/realtime';
+import { marketsOf, staleSymbolsOf, type QuoteMarket, type QuotesState } from '@broker/realtime';
 import type { MdsQuotesOutcome } from '@/lib/mds';
 
 /**
@@ -30,6 +30,10 @@ export function unavailableReasonsOf(outcome: MdsQuotesOutcome): Record<string, 
   }
 
   return reasonsFromState(outcome.quotes);
+}
+
+export function marketsFromOutcome(outcome: MdsQuotesOutcome): Record<string, QuoteMarket> {
+  return outcome.state === 'available' ? Object.fromEntries(marketsOf(outcome.quotes)) : {};
 }
 
 export function reasonsFromState(state: QuotesState): Record<string, string> {

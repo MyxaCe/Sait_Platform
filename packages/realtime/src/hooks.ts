@@ -5,7 +5,7 @@ import { useShallow } from 'zustand/react/shallow';
 import { realtime } from './service';
 import { useQuotesStore } from './store';
 import { quoteState, type QuoteState } from './freshness';
-import type { ConnStatus, Quote } from './types';
+import type { ConnStatus, Quote, QuoteMarket } from './types';
 
 /**
  * Подписка на живые котировки. Автоматически подключает фид,
@@ -59,14 +59,15 @@ export interface QuoteView {
 export interface QuoteViewOptions {
   staleAfterMs?: number;
   staleSymbols?: ReadonlySet<string>;
+  markets?: ReadonlyMap<string, QuoteMarket>;
 }
 
 export function useQuoteViews(symbols: string[], options: QuoteViewOptions = {}): QuoteView[] {
   const quotes = useRealtimeQuotes(symbols);
   const feedStatus = useConnectionStatus();
-  const { staleAfterMs, staleSymbols } = options;
+  const { staleAfterMs, staleSymbols, markets } = options;
   return quotes.map((quote) => ({
     quote,
-    state: quoteState(quote, { feedStatus, staleAfterMs, staleSymbols }),
+    state: quoteState(quote, { feedStatus, staleAfterMs, staleSymbols, markets }),
   }));
 }

@@ -25,6 +25,8 @@ const CONTRACT_SYMBOL_AXIS = [
   'stale',
   'not-in-catalog',
   'threshold-unset',
+  'market-closed',
+  'market-halted',
 ];
 
 /** §4г, ось канала. Нужна, чтобы ловить совпадения имён между осями. */
@@ -59,7 +61,7 @@ describe('ось символа · перечень совпадает с кон
     // Перечисление, существующее лишь в типе, компилятор стирает — ни
     // стиль проверить, ни состав сверить (§4г).
     expect(Array.isArray(SYMBOL_UNAVAILABLE_REASONS)).toBe(true);
-    expect(SYMBOL_UNAVAILABLE_REASONS.length).toBe(7);
+    expect(SYMBOL_UNAVAILABLE_REASONS.length).toBe(9);
   });
 
   it('распознаёт только имена контракта', () => {

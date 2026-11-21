@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { SYMBOL_UNAVAILABLE_REASONS } from '@broker/realtime';
-import { explainUnavailable, MARKET_REASONS, MISSING, UNKNOWN_REASON } from './unavailable-text';
+import { explainUnavailable, MISSING, UNKNOWN_REASON } from './unavailable-text';
 
 /**
  * WEB-38 · у каждого объяснения есть перевод в каждой локали.
@@ -31,7 +31,7 @@ const usedKeys = [
   ...SYMBOL_UNAVAILABLE_REASONS.map((r) => explainUnavailable(r).key),
   MISSING.key,
   UNKNOWN_REASON.key,
-  ...Object.values(MARKET_REASONS).map((e) => e.key),
+  'marketClosedUntil',
   'shortLimited',
   'shortFault',
 ];

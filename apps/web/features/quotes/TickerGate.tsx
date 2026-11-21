@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { AccessNotice } from '@/features/instruments/AccessNotice';
 import { QuotesTicker } from '@/features/quotes/QuotesTicker';
+import { parseNextOpen, type QuoteMarket } from '@broker/realtime';
 import {
   decideTicker,
   type TickerAccess,
@@ -83,7 +84,7 @@ interface QuotesAnswer {
    * ответ соседа, и доверять его форме здесь нельзя. Проверяются при
    * раскладке в карту причин.
    */
-  unavailable: { symbol?: unknown; reason?: unknown; rawReason?: unknown }[];
+  unavailable: { symbol?: unknown; reason?: unknown; rawReason?: unknown; nextOpen?: unknown }[];
   missing: unknown[];
 }
 
@@ -177,12 +178,24 @@ export function TickerGate({
       }
     }
     const stale = new Set<string>(reasons.keys());
+    const markets = new Map<string, QuoteMarket>();
+    for (const u of gate.answers.quotes.unavailable) {
+      if (typeof u.symbol !== 'string') continue;
+      if (u.reason === 'market-closed' || u.reason === 'market-halted') {
+        markets.set(u.symbol, {
+          status: u.reason === 'market-halted' ? 'halted' : 'closed',
+          reason: null,
+          nextOpen: parseNextOpen(u.nextOpen),
+        });
+      }
+    }
 
     return (
       <QuotesTicker
         symbols={decision.symbols}
         staleSymbols={stale}
         unavailableReasons={reasons}
+        markets={markets}
       />
     );
   }

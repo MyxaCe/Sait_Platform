@@ -2,9 +2,10 @@
 
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { useConnectionStatus, useRealtimeQuotes } from '@broker/realtime';
+import { useConnectionStatus, useRealtimeQuotes, type QuoteMarket } from '@broker/realtime';
 import { Button, ConnectionDot, PriceChange, cn } from '@broker/ui';
 import { formatPrice } from '@broker/utils';
+import { useMarketText } from '../quotes/market-text';
 import { explainUnavailable } from '../quotes/unavailable-text';
 import { QuotePrice, priceReading } from './QuotePrice';
 import { usePriceFlash } from './usePriceFlash';
@@ -12,11 +13,12 @@ import { usePriceFlash } from './usePriceFlash';
 export interface LiveQuotePanelProps {
   symbol: string;
   unavailableReason?: string;
+  market?: QuoteMarket | null;
   tradeHref: string;
   demoHref: string;
 }
 
-export function LiveQuotePanel({ symbol, unavailableReason, tradeHref, demoHref }: LiveQuotePanelProps) {
+export function LiveQuotePanel({ symbol, unavailableReason, market = null, tradeHref, demoHref }: LiveQuotePanelProps) {
   const t = useTranslations('instruments');
   const tConn = useTranslations('connection');
   const tWhy = useTranslations('instrumentUnavailable');
@@ -27,10 +29,19 @@ export function LiveQuotePanel({ symbol, unavailableReason, tradeHref, demoHref 
   const reading = priceReading(quote);
   const flash = usePriceFlash(reading);
 
-  const why = unavailableReason === undefined ? null : explainUnavailable(unavailableReason);
+  const marketText = useMarketText();
   const tickedSinceOpen = quote !== undefined && reading !== null && quote.ts >= openedAt;
-  const showWhy = why !== null && (reading === null || (why.family === 'market' && !tickedSinceOpen));
-  const noPriceText = showWhy && why ? tWhy(why.key) : tConn('noData');
+  const why = unavailableReason === undefined ? null : explainUnavailable(unavailableReason);
+  const serverMarket: QuoteMarket | null =
+    market ??
+    (why?.family === 'market'
+      ? { status: unavailableReason === 'market-halted' ? 'halted' : 'closed', reason: null, nextOpen: null }
+      : null);
+  const marketNote = marketText(quote?.market ?? (tickedSinceOpen ? null : serverMarket));
+  const whyText = why && why.family !== 'market' && reading === null ? tWhy(why.key) : null;
+  const note = marketNote ?? whyText;
+  const showWhy = note !== null;
+  const noPriceText = note ?? tConn('noData');
 
   const side = (value: number | null | undefined) =>
     reading !== null && quote && typeof value === 'number' ? formatPrice(value, quote.digits) : null;
@@ -54,7 +65,6 @@ export function LiveQuotePanel({ symbol, unavailableReason, tradeHref, demoHref 
             'text-4xl font-semibold tabular-nums tracking-tight text-primary transition-colors duration-500 sm:text-5xl',
             flash === 'up' && 'text-positive',
             flash === 'down' && 'text-negative',
-            showWhy && reading !== null && 'opacity-50',
           )}
         >
           <QuotePrice quote={quote} noDataLabel={noPriceText} />
@@ -64,9 +74,9 @@ export function LiveQuotePanel({ symbol, unavailableReason, tradeHref, demoHref 
 
       {(showWhy || reading === null) && (
         <p
-          className={cn('mt-2 text-sm', why?.family === 'market' && showWhy ? 'text-primary' : 'text-secondary')}
+          className={cn('mt-2 text-sm', marketNote ? 'text-primary' : 'text-secondary')}
           data-testid="quote-unavailable"
-          data-reason={showWhy ? unavailableReason : undefined}
+          data-reason={showWhy ? (unavailableReason ?? (marketNote ? `market-${quote?.market?.status ?? serverMarket?.status}` : undefined)) : undefined}
         >
           {noPriceText}
         </p>

@@ -123,3 +123,23 @@ describe('TickerTape · данных нет', () => {
     expect(screen.getAllByText('1.0842').length).toBeGreaterThan(0);
   });
 });
+
+describe('TickerTape · закрытый рынок', () => {
+  it('последняя цена видна не погашенной, рядом пометка рынка', () => {
+    render(
+      <TickerTape
+        items={[{ symbol: 'EURUSD', price: '1.08412', changePercent: -0.1, state: 'closed', marketLabel: 'Рынок закрыт' }]}
+      />,
+    );
+    const price = screen.getAllByText('1.08412')[0]!;
+    expect(price.className).not.toContain('opacity-50');
+    expect(screen.getAllByText('Рынок закрыт')[0]!.getAttribute('data-market')).toBe('closed');
+  });
+
+  it('торги приостановлены — своя пометка', () => {
+    render(
+      <TickerTape items={[{ symbol: 'AAPL', price: '228.14', changePercent: null, state: 'halted', marketLabel: 'Торги приостановлены' }]} />,
+    );
+    expect(screen.getAllByText('Торги приостановлены').length).toBeGreaterThan(0);
+  });
+});

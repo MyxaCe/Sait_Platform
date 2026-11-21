@@ -1,4 +1,5 @@
-import type { ConnStatus, Quote } from './types';
+import { pausedMarket } from './quote-reasons';
+import type { ConnStatus, Quote, QuoteMarket } from './types';
 
 /**
  * Что именно видит посетитель на месте цены. Три РАЗНЫХ сообщения, и
@@ -16,7 +17,7 @@ import type { ConnStatus, Quote } from './types';
  * Отсутствие данных выбрано отсутствием цены, а не полем возраста рядом с
  * ценой: поле, которое потребитель может проигнорировать, он проигнорирует.
  */
-export type QuoteState = 'live' | 'simulated' | 'unavailable';
+export type QuoteState = 'live' | 'simulated' | 'unavailable' | 'closed' | 'halted';
 
 export interface FreshnessInput {
   /** Состояние фида целиком. */
@@ -27,6 +28,7 @@ export interface FreshnessInput {
    * нельзя, поэтому вердикт даёт только `staleAfterMs`.
    */
   staleSymbols?: ReadonlySet<string>;
+  markets?: ReadonlyMap<string, QuoteMarket>;
   /**
    * Порог возраста котировки, мс. Приходит СНАРУЖИ и намеренно не имеет
    * значения по умолчанию: у источника он свой, а выдуманный здесь порог
@@ -43,7 +45,7 @@ export interface FreshnessInput {
  * более слабому: чем данные являются, важнее того, сколько им лет.
  */
 export function quoteState(quote: Quote | undefined, input: FreshnessInput): QuoteState {
-  const { feedStatus, staleSymbols, staleAfterMs, now = Date.now() } = input;
+  const { feedStatus, staleSymbols, markets, staleAfterMs, now = Date.now() } = input;
 
   // Ненастоящие данные остаются ненастоящими независимо от свежести:
   // спрашивать «не протухло ли случайное блуждание» бессмысленно.
@@ -55,6 +57,9 @@ export function quoteState(quote: Quote | undefined, input: FreshnessInput): Quo
   // зашитая базовая цена, а не котировка. Раньше она рисовалась наравне
   // с живыми — тот же класс, что B-018, только до первого тика.
   if (quote.ts === 0) return 'unavailable';
+
+  const market = pausedMarket(quote.market ?? markets?.get(quote.symbol));
+  if (market && feedStatus !== 'offline') return market.status === 'halted' ? 'halted' : 'closed';
 
   if (staleSymbols?.has(quote.symbol)) return 'unavailable';
 

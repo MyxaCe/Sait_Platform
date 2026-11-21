@@ -57,7 +57,7 @@ vi.mock('@broker/realtime', async (importOriginal) => {
   };
 });
 
-vi.mock('next-intl', () => ({
+vi.mock('next-intl', () => ({ useLocale: () => 'ru',
   useTranslations: () => (key: string) => key,
 }));
 
@@ -175,5 +175,33 @@ describe('WEB-38 · молчащий инструмент называет се�
 
     expect(screen.getAllByText('noData').length).toBeGreaterThan(0);
     expect(screen.queryAllByText('shortLimited')).toEqual([]);
+  });
+});
+
+describe('QuotesTicker · закрытый рынок', () => {
+  it('последняя цена не гасится, рядом «Рынок закрыт»', () => {
+    views.current = [
+      { quote: quote({ symbol: 'EURUSD', price: 1.08412, digits: 5, market: { status: 'closed', reason: null, nextOpen: null } }), state: 'closed' },
+    ];
+
+    render(<QuotesTicker symbols={['EURUSD']} />);
+
+    const price = first(screen.getAllByText('1.08412'), 'цена');
+    expect(price.className).not.toContain('opacity-50');
+    expect(screen.getAllByText('marketClosed').length).toBeGreaterThan(0);
+  });
+
+  it('рынок закрыт по ответу /v1/quotes — пометка из карты рынков', () => {
+    views.current = [{ quote: quote({ symbol: 'AAPL', price: 228.14 }), state: 'halted' }];
+
+    render(
+      <QuotesTicker
+        symbols={['AAPL']}
+        markets={new Map([['AAPL', { status: 'halted' as const, reason: null, nextOpen: null }]])}
+        unavailableReasons={new Map([['AAPL', 'market-halted']])}
+      />,
+    );
+
+    expect(screen.getAllByText('marketHalted').length).toBeGreaterThan(0);
   });
 });

@@ -1,9 +1,10 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { displayPrice, useConnectionStatus, useQuoteViews } from '@broker/realtime';
+import { displayPrice, useConnectionStatus, useQuoteViews, type QuoteMarket } from '@broker/realtime';
 import { TickerTape } from '@broker/ui';
 import { formatPrice } from '@broker/utils';
+import { useMarketText } from './market-text';
 import { explainUnavailable, shortKeyOf } from './unavailable-text';
 
 /**
@@ -21,6 +22,7 @@ export function QuotesTicker({
   symbols,
   staleSymbols,
   unavailableReasons,
+  markets,
 }: {
   symbols: string[];
   /**
@@ -38,16 +40,19 @@ export function QuotesTicker({
    * выводится из неё, чтобы два списка не разошлись.
    */
   unavailableReasons?: ReadonlyMap<string, string | null>;
+  markets?: ReadonlyMap<string, QuoteMarket>;
 }) {
   const tConn = useTranslations('connection');
   const tWhy = useTranslations('instrumentUnavailable');
   // Порог свежести придёт от MDS (КОНТРАКТЫ.md §5б) — здесь не выдумываем
-  const views = useQuoteViews(symbols, { staleSymbols });
+  const views = useQuoteViews(symbols, { staleSymbols, markets });
+  const marketText = useMarketText();
   const status = useConnectionStatus();
 
   const items = views.map(({ quote: q, state }) => {
     const reason = unavailableReasons?.get(q.symbol);
     const why = reason === undefined ? null : explainUnavailable(reason);
+    const market = marketText(q.market ?? markets?.get(q.symbol));
     return {
       symbol: q.symbol,
       // Правило «настоящего чтения ещё не было» — общее для витрины и
@@ -61,7 +66,8 @@ export function QuotesTicker({
       // объяснение, появившееся там, где объяснять нечего, было бы
       // таким же утверждением о незнаемом, как подставленное число.
       unavailableLabel: why ? tWhy(why.key) : undefined,
-      unavailableShort: why ? tWhy(shortKeyOf(why)) : undefined,
+      unavailableShort: market ?? (why ? tWhy(shortKeyOf(why)) : undefined),
+      marketLabel: market ?? undefined,
     };
   });
 

@@ -8,7 +8,7 @@ import { Link } from '@/i18n/navigation';
 import { AccessNotice } from '@/features/instruments/AccessNotice';
 import { LiveQuotePanel } from '@/features/instruments/LiveQuotePanel';
 import { resolveInstrument } from '@/features/instruments/instrument-detail';
-import { unavailableReasonsOf } from '@/features/instruments/unavailable-map';
+import { marketsFromOutcome, unavailableReasonsOf } from '@/features/instruments/unavailable-map';
 import { defaultPortfolio, formatBpsPercent, formatLeverage, MISSING_VALUE, portfolioLeverage } from '@broker/live-params';
 import { cabinetTerminalHref } from '@/lib/cabinet-links';
 import { getCms } from '@/lib/cms';
@@ -104,6 +104,7 @@ export default async function InstrumentPage({ params }: PageParams) {
   const leverage = portfolio ? formatLeverage(portfolioLeverage(portfolio, def.category)) : MISSING_VALUE;
   const commission = portfolio ? formatBpsPercent(portfolio.commissionBps, locale) : MISSING_VALUE;
   const unavailableReason = unavailableReasonsOf(quotes)[def.symbol];
+  const market = marketsFromOutcome(quotes)[def.symbol] ?? null;
   const tradeHref = cabinetTerminalHref('real', def.symbol, locale, site.defaultLanguage);
   const demoHref = cabinetTerminalHref('demo', def.symbol, locale, site.defaultLanguage);
 
@@ -216,6 +217,7 @@ export default async function InstrumentPage({ params }: PageParams) {
           <LiveQuotePanel
             symbol={def.symbol}
             unavailableReason={unavailableReason}
+            market={market}
             tradeHref={tradeHref}
             demoHref={demoHref}
           />

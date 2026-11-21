@@ -13,12 +13,13 @@ interface FeedQuote {
   bid: number | null;
   ask: number | null;
   ageMs: number;
+  market?: { status: string; reason: string | null; nextOpen: number | null };
 }
 
 const FEED: Record<string, FeedQuote> = {
   BTCUSD: { symbol: 'BTCUSD', name: 'Bitcoin', category: 'crypto', price: 67250.5, digits: 2, changePercent: 1.25, bid: 67248.25, ask: 67252.75, ageMs: 0 },
   EURUSD: { symbol: 'EURUSD', name: 'Euro / US Dollar', category: 'forex', price: 1.08412, digits: 5, changePercent: -0.08, bid: 1.0841, ask: 1.08414, ageMs: 0 },
-  XAUUSD: { symbol: 'XAUUSD', name: 'Gold', category: 'metals', price: 2401.35, digits: 2, changePercent: 0.31, bid: 2401.1, ask: 2401.6, ageMs: 7_200_000 },
+  XAUUSD: { symbol: 'XAUUSD', name: 'Gold', category: 'metals', price: 2401.35, digits: 2, changePercent: 0.31, bid: 2401.1, ask: 2401.6, ageMs: 7_200_000, market: { status: 'closed', reason: 'weekend', nextOpen: Date.now() + 2 * 24 * 3_600_000 } },
 };
 
 const feedHost = new URL(E2E_FEED_URL).host.replace(/\./g, '\\.');
@@ -89,9 +90,18 @@ test.describe('Страница инструмента (сайт со списк
     await serveFeed(page);
     await page.goto('/instruments/metals/xauusd');
 
-    await expect(page.getByTestId('quote-unavailable')).toHaveText('Рынок закрыт');
+    await expect(page.getByTestId('quote-unavailable')).toHaveText(/^Рынок закрыт · откроется .*\d{2}:\d{2}/);
     await expect(page.getByTestId('quote-price')).toHaveText(/2,401\.35/);
+    await expect(page.getByTestId('quote-price')).not.toHaveClass(/opacity-50/);
     await expect(page.getByTestId('instrument-precision')).toHaveText('2 зн.');
+  });
+
+  test('список и бегущая строка: закрытый рынок с последней ценой и пометкой', async ({ page }) => {
+    await serveFeed(page);
+    await page.goto('/instruments');
+
+    await expect(page.getByText(/Рынок закрыт · откроется/).filter({ visible: true }).first()).toBeVisible();
+    await expect(page.locator('[data-market="closed"]').first()).toBeAttached();
   });
 
   for (const path of ['/instruments/crypto/ethusd', '/instruments/forex/btcusd', '/instruments/crypto/nosuchcoin']) {

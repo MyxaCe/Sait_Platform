@@ -1,4 +1,4 @@
-import type { Quote } from './types';
+import type { Quote, QuoteMarket } from './types';
 
 /**
  * Ось символа: почему у ЭТОГО инструмента нет цены.
@@ -38,6 +38,8 @@ export const SYMBOL_UNAVAILABLE_REASONS = [
   'not-in-catalog',
   /** Порог свежести не задан — судить о возрасте нечем (§5г, требование 1). */
   'threshold-unset',
+  'market-closed',
+  'market-halted',
 ] as const;
 
 export type SymbolUnavailableReason = (typeof SYMBOL_UNAVAILABLE_REASONS)[number];
@@ -66,6 +68,7 @@ export interface SymbolUnavailable {
   reason: SymbolUnavailableReason | null;
   /** Исходная строка — заполняется, когда имя не из контракта. */
   rawReason?: string;
+  nextOpen?: number | null;
 }
 
 /** Состояние котировок, прочитанное из ответа `/v1/quotes`. */
@@ -108,7 +111,9 @@ export function parseQuotesState(body: unknown): QuotesState {
     if (typeof symbol !== 'string' || symbol.length === 0) continue;
 
     const reason = item.reason;
-    if (isSymbolUnavailableReason(reason)) {
+    if (reason === 'market-closed' || reason === 'market-halted') {
+      unavailable.push({ symbol, reason, nextOpen: parseNextOpen(item.nextOpen) });
+    } else if (isSymbolUnavailableReason(reason)) {
       unavailable.push({ symbol, reason });
     } else {
       unavailable.push({
@@ -133,6 +138,34 @@ export function parseQuotesState(body: unknown): QuotesState {
  * символе ничего» — это тоже «цены нет», и показывать по нему последнюю
  * известную цену так же нельзя.
  */
+export function parseNextOpen(value: unknown): number | null {
+  return typeof value === 'number' && Number.isFinite(value) && value > 0 ? value : null;
+}
+
+export function marketsOf(state: QuotesState): Map<string, QuoteMarket> {
+  const out = new Map<string, QuoteMarket>();
+  for (const u of state.unavailable) {
+    if (u.reason === 'market-closed') out.set(u.symbol, { status: 'closed', reason: null, nextOpen: u.nextOpen ?? null });
+    if (u.reason === 'market-halted') out.set(u.symbol, { status: 'halted', reason: null, nextOpen: u.nextOpen ?? null });
+  }
+  return out;
+}
+
+export function pausedMarket(market: QuoteMarket | null | undefined): QuoteMarket | null {
+  return market && market.status !== 'open' ? market : null;
+}
+
+export function formatNextOpen(nextOpen: number, locale: string, timeZone?: string): string {
+  return new Intl.DateTimeFormat(locale, {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+    ...(timeZone ? { timeZone } : {}),
+  }).format(new Date(nextOpen));
+}
+
 export function staleSymbolsOf(state: QuotesState): ReadonlySet<string> {
   return new Set([...state.unavailable.map((u) => u.symbol), ...state.missing]);
 }

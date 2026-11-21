@@ -4,9 +4,7 @@ import { explainUnavailable, shortKeyOf } from './unavailable-text';
 describe('закрытый рынок · причина MDS понятна человеку', () => {
   it.each([
     ['market-closed', 'marketClosed'],
-    ['closed', 'marketClosed'],
     ['market-halted', 'marketHalted'],
-    ['halted', 'marketHalted'],
   ])('%s → %s, семейство market', (reason, key) => {
     expect(explainUnavailable(reason)).toEqual({ key, family: 'market' });
   });

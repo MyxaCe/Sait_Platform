@@ -11,7 +11,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
  * теперь проверка пути пишется вместе с правилом, а не после.
  */
 
-vi.mock('next-intl', () => ({
+vi.mock('next-intl', () => ({ useLocale: () => 'ru',
   useTranslations: () => (key: string) => key,
 }));
 vi.mock('next-intl/server', () => ({

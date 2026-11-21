@@ -9,7 +9,7 @@ import { cn } from '../../lib/cn';
  * значением). Дублирует QuoteState из @broker/realtime намеренно:
  * дизайн-система не зависит от источника данных.
  */
-export type QuoteDisplayState = 'live' | 'simulated' | 'unavailable';
+export type QuoteDisplayState = 'live' | 'simulated' | 'unavailable' | 'closed' | 'halted';
 
 export interface TickerItem {
   symbol: string;
@@ -55,6 +55,7 @@ export interface TickerItem {
    * видно без наведения; подробность — при наведении.
    */
   unavailableShort?: string;
+  marketLabel?: string;
 }
 
 export interface TickerTapeProps {
@@ -111,7 +112,16 @@ export function TickerTape({
        * `ts = 0` рисовался как котировки.
        */
       const unavailable = item.state === 'unavailable';
-      const content = unavailable ? (
+      const paused = (item.state === 'closed' || item.state === 'halted') && item.price !== null;
+      const content = paused ? (
+        <>
+          <span className="font-medium text-primary">{item.symbol}</span>
+          <span className="tabular-nums text-secondary">{item.price}</span>
+          <span className="text-[11px] uppercase tracking-wide text-secondary" data-market={item.state}>
+            {item.marketLabel ?? item.unavailableShort ?? lastKnownLabel}
+          </span>
+        </>
+      ) : unavailable || item.state === 'closed' || item.state === 'halted' ? (
         <>
           <span className="font-medium text-primary">{item.symbol}</span>
           {item.price === null ? (

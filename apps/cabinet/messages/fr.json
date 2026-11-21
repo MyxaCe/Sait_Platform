@@ -63,7 +63,10 @@
     "offline": "Pas de connexion",
     "simulated": "Données de démo : prix non issus du marché",
     "noData": "aucune donnée",
-    "lastKnown": "dernière connue"
+    "lastKnown": "dernière connue",
+    "marketClosed": "Marché fermé",
+    "marketClosedUntil": "Marché fermé · ouverture {time}",
+    "marketHalted": "Cotation suspendue"
   },
   "auth": {
     "loginTitle": "Connexion",

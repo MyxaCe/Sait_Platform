@@ -63,7 +63,10 @@
     "offline": "Sin conexión",
     "simulated": "Datos de demostración: no son precios de mercado reales",
     "noData": "sin datos",
-    "lastKnown": "último conocido"
+    "lastKnown": "último conocido",
+    "marketClosed": "Mercado cerrado",
+    "marketClosedUntil": "Mercado cerrado · abre {time}",
+    "marketHalted": "Negociación suspendida"
   },
   "auth": {
     "loginTitle": "Acceso al área de cliente",

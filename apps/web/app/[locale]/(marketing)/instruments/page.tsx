@@ -3,9 +3,10 @@ import type { Metadata } from 'next';
 import { useTranslations } from 'next-intl';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { Container, Section } from '@broker/ui';
+import type { QuoteMarket } from '@broker/realtime';
 import { AccessNotice } from '@/features/instruments/AccessNotice';
 import { InstrumentsBrowser } from '@/features/instruments/InstrumentsBrowser';
-import { unavailableReasonsOf } from '@/features/instruments/unavailable-map';
+import { marketsFromOutcome, unavailableReasonsOf } from '@/features/instruments/unavailable-map';
 import { getCms } from '@/lib/cms';
 import { getMdsIcons, getMdsQuotesState } from '@/lib/mds';
 import {
@@ -73,6 +74,7 @@ export default async function InstrumentsPage({ params }: PageProps) {
       icons={icons}
       notice={notice}
       unavailableReasons={unavailableReasonsOf(quotes)}
+      markets={marketsFromOutcome(quotes)}
     />
   );
 }
@@ -82,11 +84,13 @@ function PageContent({
   icons,
   notice,
   unavailableReasons,
+  markets,
 }: {
   symbols: string[];
   icons: Record<string, string>;
   notice: AccessNoticeSpec | null;
   unavailableReasons: Record<string, string>;
+  markets: Record<string, QuoteMarket>;
 }) {
   const t = useTranslations('instruments');
   return (
@@ -113,6 +117,7 @@ function PageContent({
               symbols={symbols}
               icons={icons}
               unavailableReasons={unavailableReasons}
+              markets={markets}
             />
           )}
         </div>
