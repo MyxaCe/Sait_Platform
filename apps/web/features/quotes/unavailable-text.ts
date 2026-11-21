@@ -26,7 +26,7 @@ import { isSymbolUnavailableReason, type SymbolUnavailableReason } from '@broker
  */
 
 /** Чего ждать человеку: так устроено пока — или у нас неполадка. */
-export type UnavailableFamily = 'limited' | 'fault';
+export type UnavailableFamily = 'limited' | 'fault' | 'market';
 
 export interface UnavailableExplanation {
   /** Ключ в словаре `instrumentUnavailable`. */
@@ -43,6 +43,18 @@ const BY_REASON: Record<SymbolUnavailableReason, UnavailableExplanation> = {
   'registry-unreadable': { key: 'registryUnreadable', family: 'fault' },
   'threshold-unset': { key: 'thresholdUnset', family: 'fault' },
 };
+
+export const MARKET_REASONS: Readonly<Record<string, UnavailableExplanation>> = {
+  'market-closed': { key: 'marketClosed', family: 'market' },
+  closed: { key: 'marketClosed', family: 'market' },
+  'market-halted': { key: 'marketHalted', family: 'market' },
+  halted: { key: 'marketHalted', family: 'market' },
+};
+
+export function shortKeyOf(explanation: UnavailableExplanation): string {
+  if (explanation.family === 'market') return explanation.key;
+  return explanation.family === 'limited' ? 'shortLimited' : 'shortFault';
+}
 
 /**
  * Источник не сказал о символе ничего (`missing[]`).
@@ -64,6 +76,7 @@ export const UNKNOWN_REASON: UnavailableExplanation = { key: 'technical', family
 export function explainUnavailable(reason: string | null | undefined): UnavailableExplanation {
   if (reason === null || reason === undefined) return UNKNOWN_REASON;
   if (reason === 'missing') return MISSING;
+  if (Object.prototype.hasOwnProperty.call(MARKET_REASONS, reason)) return MARKET_REASONS[reason]!;
   if (!isSymbolUnavailableReason(reason)) return UNKNOWN_REASON;
   return BY_REASON[reason];
 }

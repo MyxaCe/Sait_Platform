@@ -4,7 +4,7 @@ import { useTranslations } from 'next-intl';
 import { displayPrice, useConnectionStatus, useQuoteViews } from '@broker/realtime';
 import { TickerTape } from '@broker/ui';
 import { formatPrice } from '@broker/utils';
-import { explainUnavailable } from './unavailable-text';
+import { explainUnavailable, shortKeyOf } from './unavailable-text';
 
 /**
  * Контейнер бегущей строки: подписывается на живой фид
@@ -61,7 +61,7 @@ export function QuotesTicker({
       // объяснение, появившееся там, где объяснять нечего, было бы
       // таким же утверждением о незнаемом, как подставленное число.
       unavailableLabel: why ? tWhy(why.key) : undefined,
-      unavailableShort: why ? tWhy(why.family === 'limited' ? 'shortLimited' : 'shortFault') : undefined,
+      unavailableShort: why ? tWhy(shortKeyOf(why)) : undefined,
     };
   });
 

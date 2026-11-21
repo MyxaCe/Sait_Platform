@@ -583,6 +583,8 @@
     "thresholdUnset": "Kein Aktualitätsschwellenwert festgelegt — das Alter des Preises kann nicht beurteilt werden",
     "notMentioned": "Die Quelle hat zu diesem Instrument nichts gemeldet",
     "technical": "Das Instrument ist aus technischen Gründen nicht verfügbar",
+    "marketClosed": "Markt geschlossen",
+    "marketHalted": "Handel ausgesetzt",
     "shortLimited": "noch nicht angeboten",
     "shortFault": "kein Preis"
   },

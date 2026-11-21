@@ -18,3 +18,15 @@ export function cabinetRegisterHref(href: string, locale: string, defaultLanguag
   if (rest !== '' && !rest.startsWith('?') && !rest.startsWith('#')) return href;
   return `${CABINET_URL}${localizedPath(`/register${rest}`, locale, defaultLanguage)}`;
 }
+
+export type TerminalAccount = 'real' | 'demo';
+
+export function cabinetTerminalHref(
+  account: TerminalAccount,
+  symbol: string,
+  locale: string,
+  defaultLanguage = 'ru',
+): string {
+  const query = new URLSearchParams({ account, symbol: symbol.toUpperCase() });
+  return `${CABINET_URL}${localizedPath(`/terminal?${query.toString()}`, locale, defaultLanguage)}`;
+}

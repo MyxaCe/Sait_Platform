@@ -1,18 +1,22 @@
 import { pageLocale } from '@/lib/locale';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
+import { cache } from 'react';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
-import { findSymbol, SYMBOL_UNIVERSE } from '@broker/realtime';
 import { Badge, Container, Section } from '@broker/ui';
 import { Link } from '@/i18n/navigation';
 import { AccessNotice } from '@/features/instruments/AccessNotice';
 import { LiveQuotePanel } from '@/features/instruments/LiveQuotePanel';
+import { resolveInstrument } from '@/features/instruments/instrument-detail';
+import { unavailableReasonsOf } from '@/features/instruments/unavailable-map';
 import { defaultPortfolio, formatBpsPercent, formatLeverage, MISSING_VALUE, portfolioLeverage } from '@broker/live-params';
+import { cabinetTerminalHref } from '@/lib/cabinet-links';
 import { getCms } from '@/lib/cms';
 import { fetchLiveSnapshot } from '@/lib/platform-terms';
-import { getMdsIcons } from '@/lib/mds';
+import { getMdsCatalogEntries, getMdsIcons, getMdsQuotesState } from '@/lib/mds';
+import { getSiteLanguages } from '@/lib/site-languages';
 import { SITE_URL } from '@/lib/site';
-import { accessNotice, getTenantAccess, isSymbolAllowed } from '@/lib/tenant';
+import { getTenantAccess } from '@/lib/tenant';
 
 /**
  * Страница ДИНАМИЧЕСКАЯ, и это требование, а не настройка (WEB-07).
@@ -34,21 +38,24 @@ interface PageParams {
   params: { locale: string; category: string; symbol: string };
 }
 
-export function generateStaticParams() {
-  return SYMBOL_UNIVERSE.map((d) => ({
-    category: d.category,
-    symbol: d.symbol.toLowerCase(),
-  }));
-}
+const loadInstrument = cache(async (locale: string, category: string, symbol: string) => {
+  const [{ items }, access, catalog] = await Promise.all([
+    getCms('instruments', { locale: pageLocale(locale) }),
+    getTenantAccess(),
+    getMdsCatalogEntries(),
+  ]);
+  return resolveInstrument({ category, symbol, cmsItems: items, access, catalog });
+});
 
 export async function generateMetadata({ params }: PageParams): Promise<Metadata> {
-  const def = findSymbol(params.symbol);
-  if (!def) return {};
+  const detail = await loadInstrument(params.locale, params.category, params.symbol);
+  if (detail.kind !== 'ok') return {};
+  const { name, symbol, category: cat } = detail.instrument;
   const t = await getTranslations({ locale: params.locale, namespace: 'instruments' });
-  const category = (await getTranslations({ locale: params.locale, namespace: 'categories' }))(def.category);
+  const category = (await getTranslations({ locale: params.locale, namespace: 'categories' }))(cat);
   return {
-    title: t('metaDetailTitle', { name: def.name, symbol: def.symbol }),
-    description: t('metaDetail', { name: def.name, category }),
+    title: t('metaDetailTitle', { name, symbol }),
+    description: t('metaDetail', { name, category }),
   };
 }
 
@@ -58,39 +65,18 @@ export default async function InstrumentPage({ params }: PageParams) {
   setRequestLocale(params.locale);
   const locale = pageLocale(params.locale);
 
-  const def = findSymbol(params.symbol);
-  if (!def || def.category !== params.category) notFound();
-
-  // Контент из CMS + ДОСТУП сайта (allow-list карточки сайта, ADR-028):
-  // инструмент вне контента ИЛИ вне доступа недоступен,
-  // даже если есть в realtime-справочнике
-  const [{ items }, access] = await Promise.all([
-    getCms('instruments', { locale }),
-    getTenantAccess(),
-  ]);
-  const meta = items.find((i) => i.symbol === def.symbol);
-  if (!meta) notFound();
+  const detail = await loadInstrument(params.locale, params.category, params.symbol);
+  if (detail.kind === 'not-found') notFound();
 
   const t = await getTranslations('instruments');
-  const notice = accessNotice(access);
 
-  // Два РАЗНЫХ отказа, и 404 годится только для одного из них
-  // (КОНТРАКТЫ.md §4б: «403 — список говорит нет; 503 — списка нет вовсе»):
-  //
-  //  - список получен, символа в нём нет → `404`. Список высказался,
-  //    инструмент этим сайтом не предлагается, и это окончательно;
-  //  - списка нет или он пуст → страница с объяснением. `404` здесь
-  //    соврал бы: «такой страницы нет» вместо «мы не смогли узнать, что
-  //    можно показать». Отказ, выглядящий как отсутствие функции, —
-  //    ровно тот класс, который закрывает Р-025.
-  if (!notice && !isSymbolAllowed(access, def.symbol)) notFound();
-
-  if (notice) {
+  if (detail.kind === 'closed') {
+    const { notice } = detail;
     return (
       <Section className="py-10 md:py-14">
         <Container>
           <h1 className="text-3xl font-semibold tracking-tight text-primary sm:text-4xl">
-            {def.name} <span className="text-secondary">({def.symbol})</span>
+            {detail.name} <span className="text-secondary">({detail.symbol})</span>
           </h1>
           <div className="mt-6 max-w-2xl">
             <AccessNotice
@@ -106,11 +92,20 @@ export default async function InstrumentPage({ params }: PageParams) {
     );
   }
 
-  // Иконка: загруженная в CMS приоритетнее, иначе — монета из MDS
-  const iconUrl = meta.icon?.url ?? (await getMdsIcons())[def.symbol];
-  const portfolio = defaultPortfolio(await fetchLiveSnapshot());
+  const def = detail.instrument;
+  const [mdsIcons, snapshot, quotes, site] = await Promise.all([
+    def.cmsIconUrl ? Promise.resolve({} as Record<string, string>) : getMdsIcons(),
+    fetchLiveSnapshot(),
+    getMdsQuotesState(),
+    getSiteLanguages(),
+  ]);
+  const iconUrl = def.cmsIconUrl ?? mdsIcons[def.symbol];
+  const portfolio = defaultPortfolio(snapshot);
   const leverage = portfolio ? formatLeverage(portfolioLeverage(portfolio, def.category)) : MISSING_VALUE;
   const commission = portfolio ? formatBpsPercent(portfolio.commissionBps, locale) : MISSING_VALUE;
+  const unavailableReason = unavailableReasonsOf(quotes)[def.symbol];
+  const tradeHref = cabinetTerminalHref('real', def.symbol, locale, site.defaultLanguage);
+  const demoHref = cabinetTerminalHref('demo', def.symbol, locale, site.defaultLanguage);
 
   const categoryLabel = (await getTranslations({ locale, namespace: 'categories' }))(def.category);
 
@@ -181,10 +176,12 @@ export default async function InstrumentPage({ params }: PageParams) {
             </p>
 
             <dl className="mt-8 grid grid-cols-2 gap-6 sm:grid-cols-3">
-              <div>
-                <dt className="text-sm text-secondary">{t('specMinLot')}</dt>
-                <dd className="mt-1 font-medium text-primary">0.01</dd>
-              </div>
+              {def.minQty && (
+                <div>
+                  <dt className="text-sm text-secondary">{t('specMinLot')}</dt>
+                  <dd className="mt-1 font-medium text-primary">{def.minQty}</dd>
+                </div>
+              )}
               <div>
                 <dt className="text-sm text-secondary">{t('specLeverage')}</dt>
                 <dd className="mt-1 font-medium text-primary" data-testid="instrument-leverage">
@@ -203,20 +200,25 @@ export default async function InstrumentPage({ params }: PageParams) {
               </div>
               <div>
                 <dt className="text-sm text-secondary">{t('specPrecision')}</dt>
-                <dd className="mt-1 font-medium text-primary">
-                  {t('specPrecisionValue', { digits: def.digits })}
+                <dd className="mt-1 font-medium text-primary" data-testid="instrument-precision">
+                  {def.digits === null ? MISSING_VALUE : t('specPrecisionValue', { digits: def.digits })}
                 </dd>
               </div>
               <div>
                 <dt className="text-sm text-secondary">{t('specSwapFree')}</dt>
                 <dd className="mt-1 font-medium text-primary">
-                  {meta.swapFree ? t('specAvailable') : '—'}
+                  {def.swapFree ? t('specAvailable') : '—'}
                 </dd>
               </div>
             </dl>
           </div>
 
-          <LiveQuotePanel def={def} />
+          <LiveQuotePanel
+            symbol={def.symbol}
+            unavailableReason={unavailableReason}
+            tradeHref={tradeHref}
+            demoHref={demoHref}
+          />
         </div>
       </Container>
     </Section>

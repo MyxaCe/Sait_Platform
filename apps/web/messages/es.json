@@ -583,6 +583,8 @@
     "thresholdUnset": "No hay umbral de actualidad definido: no se puede valorar la antigüedad del precio",
     "notMentioned": "La fuente no ha informado nada sobre este instrumento",
     "technical": "El instrumento no está disponible por un motivo técnico",
+    "marketClosed": "Mercado cerrado",
+    "marketHalted": "Negociación suspendida",
     "shortLimited": "aún no disponible",
     "shortFault": "sin precio"
   },

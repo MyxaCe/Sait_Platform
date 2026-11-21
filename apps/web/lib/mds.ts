@@ -1,4 +1,9 @@
-import { parseQuotesState, type QuotesState } from '@broker/realtime';
+import {
+  INSTRUMENT_CATEGORIES,
+  parseQuotesState,
+  type InstrumentCategory,
+  type QuotesState,
+} from '@broker/realtime';
 
 /**
  * Каталог MDS (ADR-024): какие символы РЕАЛЬНО стримятся живыми ценами.
@@ -18,7 +23,12 @@ import { parseQuotesState, type QuotesState } from '@broker/realtime';
  * `empty` — сосед ответил, но вселенная пуста.
  */
 interface MdsInstrumentItem {
-  symbol?: string;
+  symbol?: unknown;
+  name?: unknown;
+  category?: unknown;
+  digits?: unknown;
+  priceDecimals?: unknown;
+  minQty?: unknown;
   icon?: string | null;
 }
 
@@ -150,7 +160,7 @@ export async function getMdsCatalog(): Promise<MdsCatalog> {
   }
 
   const symbols = new Set(
-    outcome.items.map((i) => i.symbol).filter((s): s is string => Boolean(s)),
+    outcome.items.map((i) => i.symbol).filter((s): s is string => typeof s === 'string' && s.length > 0),
   );
   // Пустой каталог — это ответ «сейчас не транслируется ничего», а не
   // разрешение показать что-нибудь своё.
@@ -161,6 +171,48 @@ export async function getMdsCatalog(): Promise<MdsCatalog> {
 
   reportCatalogState(null);
   return { state: 'available', symbols };
+}
+
+export interface MdsCatalogEntry {
+  symbol: string;
+  name: string | null;
+  category: InstrumentCategory | null;
+  digits: number | null;
+  minQty: string | null;
+}
+
+export type MdsCatalogEntries =
+  | { state: 'available'; entries: Record<string, MdsCatalogEntry> }
+  | { state: 'unavailable'; reason: Exclude<MdsCatalogUnavailableReason, 'empty'> };
+
+function catalogDigits(item: MdsInstrumentItem): number | null {
+  const raw = item.digits ?? item.priceDecimals;
+  return typeof raw === 'number' && Number.isInteger(raw) && raw >= 0 && raw <= 12 ? raw : null;
+}
+
+export function catalogEntryOf(item: MdsInstrumentItem): MdsCatalogEntry | null {
+  if (typeof item.symbol !== 'string' || item.symbol.length === 0) return null;
+  return {
+    symbol: item.symbol,
+    name: typeof item.name === 'string' && item.name.trim() ? item.name.trim() : null,
+    category:
+      typeof item.category === 'string' && (INSTRUMENT_CATEGORIES as readonly string[]).includes(item.category)
+        ? (item.category as InstrumentCategory)
+        : null,
+    digits: catalogDigits(item),
+    minQty: typeof item.minQty === 'string' && /^\d+(\.\d+)?$/.test(item.minQty) ? item.minQty : null,
+  };
+}
+
+export async function getMdsCatalogEntries(): Promise<MdsCatalogEntries> {
+  const outcome = await fetchMdsInstruments();
+  if (!outcome.ok) return { state: 'unavailable', reason: outcome.reason };
+  const entries: Record<string, MdsCatalogEntry> = {};
+  for (const item of outcome.items) {
+    const entry = catalogEntryOf(item);
+    if (entry) entries[entry.symbol] = entry;
+  }
+  return { state: 'available', entries };
 }
 
 /**
@@ -180,7 +232,7 @@ export async function getMdsIcons(): Promise<Record<string, string>> {
   if (!outcome.ok) return {};
   const icons: Record<string, string> = {};
   for (const item of outcome.items) {
-    if (item.symbol && item.icon) icons[item.symbol] = `${base}${item.icon}`;
+    if (typeof item.symbol === 'string' && item.symbol && item.icon) icons[item.symbol] = `${base}${item.icon}`;
   }
   return icons;
 }

@@ -583,6 +583,8 @@
     "thresholdUnset": "Aucun seuil de fraîcheur n’est défini — impossible d’évaluer l’âge du prix",
     "notMentioned": "La source n’a rien communiqué sur cet instrument",
     "technical": "L’instrument est indisponible pour une raison technique",
+    "marketClosed": "Marché fermé",
+    "marketHalted": "Cotation suspendue",
     "shortLimited": "pas encore proposé",
     "shortFault": "pas de prix"
   },

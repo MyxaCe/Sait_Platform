@@ -16,6 +16,10 @@
  * Карточка сайта (`/v1/cms/sites/{slug}`) несёт языки сайта (ru, en, de;
  * по умолчанию ru) и стартовый демо-баланс, но не несёт `instruments[]` —
  * граница доступа к инструментам закрыта (fail-closed, причина `malformed`).
+ * Исключение — сайт `e2e-open`: у него список есть (второй сервер витрины).
+ *
+ * Стаб отвечает и за MDS (`MDS_HTTP_URL` второго сервера): каталог
+ * `/v1/instruments` и состояние котировок `/v1/quotes`.
  *
  * Стаб отвечает и за публичную ручку кабинета `/api/public/platform-terms`
  * (`CABINET_INTERNAL_URL` витрины в e2e): снимок живых параметров платформы.
@@ -105,6 +109,37 @@ const PLATFORM_TERMS = {
   },
 };
 
+const cmsInstrument = (symbol, name, category, digits) => ({
+  symbol,
+  name,
+  category,
+  digits,
+  spreadFrom: '0.1',
+  swapFree: category !== 'crypto',
+  icon: null,
+});
+
+const OPEN_SITE = 'e2e-open';
+const OPEN_SITE_INSTRUMENTS = ['BTCUSD', 'XAUUSD', 'EURUSD', 'LTCUSD'];
+
+const MDS_INSTRUMENTS = [
+  { symbol: 'BTCUSD', name: 'Bitcoin', category: 'crypto', digits: 2, icon: null },
+  { symbol: 'LTCUSD', name: 'Litecoin', category: 'crypto', digits: 2, icon: null },
+  { symbol: 'ETHUSD', name: 'Ethereum', category: 'crypto', digits: 2, icon: null },
+  { symbol: 'XAUUSD', name: 'Gold / US Dollar', category: 'metals', priceDecimals: 2, minQty: '0.01', icon: null },
+  { symbol: 'EURUSD', name: 'Euro / US Dollar', category: 'forex', priceDecimals: 5, minQty: '0.01', icon: null },
+];
+
+const MDS_QUOTES = {
+  items: [],
+  staleAfterMs: 20_000,
+  missing: [],
+  unavailable: [
+    { symbol: 'XAUUSD', reason: 'market-closed' },
+    { symbol: 'LTCUSD', reason: 'source-silent' },
+  ],
+};
+
 const DATA = {
   brand: () => ({
     name: 'E2E Brand',
@@ -147,6 +182,10 @@ const DATA = {
         swapFree: false,
         icon: null,
       },
+      cmsInstrument('BTCUSD', 'Bitcoin', 'crypto', 2),
+      cmsInstrument('EURUSD', 'Euro / US Dollar', 'forex', 5),
+      cmsInstrument('LTCUSD', 'Litecoin', 'crypto', 2),
+      cmsInstrument('ETHUSD', 'Ethereum', 'crypto', 2),
     ],
   }),
   accounts: () => ({
@@ -207,8 +246,12 @@ const server = http.createServer((req, res) => {
   }
   if (url.pathname === '/health') return send(200, { ok: true });
   if (/^\/v1\/cms\/sites\/[a-z0-9-]+$/.test(url.pathname)) {
-    return send(200, { languages: SITE_LANGUAGES, defaultLanguage: 'ru', demoStartBalanceCents: 1_000_000 });
+    const card = { languages: SITE_LANGUAGES, defaultLanguage: 'ru', demoStartBalanceCents: 1_000_000 };
+    if (url.pathname.endsWith(`/${OPEN_SITE}`)) card.instruments = OPEN_SITE_INSTRUMENTS;
+    return send(200, card);
   }
+  if (url.pathname === '/v1/instruments') return send(200, { items: MDS_INSTRUMENTS, catalogSource: 'e2e-stub' });
+  if (url.pathname === '/v1/quotes') return send(200, MDS_QUOTES);
   if (url.pathname === '/api/public/platform-terms') {
     if (down.has('platform-terms')) return send(503, { error: 'unavailable' });
     return send(200, PLATFORM_TERMS);

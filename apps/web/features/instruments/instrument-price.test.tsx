@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import type { Quote, SymbolDef } from '@broker/realtime';
+import type { Quote } from '@broker/realtime';
 import { InstrumentsBrowser } from './InstrumentsBrowser';
 import { LiveQuotePanel } from './LiveQuotePanel';
 
@@ -25,13 +25,10 @@ import { LiveQuotePanel } from './LiveQuotePanel';
 
 const SEED_PRICE = 67450;
 
-const def: SymbolDef = {
+const panelProps = {
   symbol: 'BTCUSD',
-  name: 'Bitcoin',
-  category: 'crypto',
-  basePrice: SEED_PRICE,
-  digits: 0,
-  tickVolatility: 0.0012,
+  tradeHref: 'https://cabinet.test/terminal?account=real&symbol=BTCUSD',
+  demoHref: 'https://cabinet.test/terminal?account=demo&symbol=BTCUSD',
 };
 
 const quote = (over: Partial<Quote> = {}): Quote =>
@@ -124,7 +121,7 @@ describe('WEB-17 · панель инструмента', () => {
   it('котировки нет вовсе → ни цены, ни bid, ни ask', () => {
     feed.quotes = [];
 
-    render(<LiveQuotePanel def={def} />);
+    render(<LiveQuotePanel {...panelProps} />);
 
     expect(valueUnder('Bid')).toBe('—');
     expect(valueUnder('Ask')).toBe('—');
@@ -134,23 +131,31 @@ describe('WEB-17 · панель инструмента', () => {
   it('снимок без настоящего чтения → то же самое', () => {
     feed.quotes = [quote({ ts: 0 })];
 
-    render(<LiveQuotePanel def={def} />);
+    render(<LiveQuotePanel {...panelProps} />);
 
     expect(valueUnder('Bid')).toBe('—');
     expect(valueUnder('Ask')).toBe('—');
     expectNoSeedPrice();
   });
 
-  it('настоящее чтение → цена, bid и ask появляются и считаются из живой', () => {
-    feed.quotes = [quote({ ts: 1_700_000_000_000, price: 68100, changePercent: 1.2 })];
+  it('bid и ask — из котировки фида, а не из цены', () => {
+    feed.quotes = [quote({ ts: 1_700_000_000_000, price: 68100, bid: 68042, ask: 68157, changePercent: 1.2 })];
 
-    render(<LiveQuotePanel def={def} />);
+    render(<LiveQuotePanel {...panelProps} />);
 
-    expect(valueUnder('Bid')).toMatch(/^68[\s,.]?0?\d\d$/);
-    expect(valueUnder('Ask')).toMatch(/^68[\s,.]?1\d\d$/);
-    // Ни прочерков, ни справочной цены: всё, что видно, — от живого чтения.
+    expect(valueUnder('Bid')).toMatch(/^68[\s,.  ]?042$/);
+    expect(valueUnder('Ask')).toMatch(/^68[\s,.  ]?157$/);
     expect(screen.queryAllByText('—')).toEqual([]);
     expectNoSeedPrice();
+  });
+
+  it('цена есть, а bid и ask источник не дал → прочерки, не расчёт', () => {
+    feed.quotes = [quote({ ts: 1_700_000_000_000, price: 68100, bid: null, ask: null })];
+
+    render(<LiveQuotePanel {...panelProps} />);
+
+    expect(valueUnder('Bid')).toBe('—');
+    expect(valueUnder('Ask')).toBe('—');
   });
 });
 

@@ -12,7 +12,7 @@ import {
 import { Button, ConnectionDot, Input, PriceChange, cn } from '@broker/ui';
 import { CATEGORY_ORDER } from './categories';
 import { QuotePrice, priceReading } from './QuotePrice';
-import { explainUnavailable } from '../quotes/unavailable-text';
+import { explainUnavailable, shortKeyOf } from '../quotes/unavailable-text';
 import { usePriceFlash } from './usePriceFlash';
 
 type CategoryFilter = InstrumentCategory | 'all';
@@ -68,7 +68,7 @@ export function InstrumentsBrowser({
     if (reason === undefined) return undefined;
     const e = explainUnavailable(reason);
     return {
-      short: tWhy(e.family === 'limited' ? 'shortLimited' : 'shortFault'),
+      short: tWhy(shortKeyOf(e)),
       full: tWhy(e.key),
     };
   };
