@@ -29,7 +29,8 @@ export function RegisterForm({
   prefill,
   plans = [],
   selectedPlan,
-}: { prefill?: RegisterPrefill; plans?: RegisterPlan[]; selectedPlan?: string } = {}) {
+  next,
+}: { prefill?: RegisterPrefill; plans?: RegisterPlan[]; selectedPlan?: string; next?: string | null } = {}) {
   const t = useTranslations('auth');
   const locale = useLocale();
   const fieldError = useFieldError();
@@ -40,6 +41,7 @@ export function RegisterForm({
       <FormMessage error={state.error} />
       <input type="hidden" name="locale" value={locale} />
       {prefill ? <input type="hidden" name="invite" value={prefill.invite} /> : null}
+      {next ? <input type="hidden" name="next" value={next} /> : null}
       {/* honeypot */}
       <input type="text" name="website" tabIndex={-1} autoComplete="off" className="hidden" aria-hidden />
 

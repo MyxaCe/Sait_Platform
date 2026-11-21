@@ -6,6 +6,7 @@ import { getTenantStartBalance } from '@/lib/tenant';
 import { loadRegisterPlans } from '@/lib/register-plans';
 // ── Перевод с другой платформы группы (ветка client-transfer) ──
 import { InviteNotice, loadInvite } from '@/features/auth/TransferInvite';
+import { safeNext, withNext } from '@/lib/auth/next-path';
 
 /**
  * Подпись регистрации называет сумму ТОЛЬКО когда её назначил тенант
@@ -37,10 +38,11 @@ export default async function RegisterPage({
   searchParams,
 }: {
   params: { locale: string };
-  searchParams?: { invite?: string; accountType?: string };
+  searchParams?: { invite?: string; accountType?: string; next?: string };
 }) {
   setRequestLocale(params.locale);
   const t = await getTranslations('auth');
+  const next = safeNext(searchParams?.next);
   const [startBalance, invite, plans] = await Promise.all([
     getTenantStartBalance(),
     loadInvite(searchParams?.invite),
@@ -64,10 +66,11 @@ export default async function RegisterPage({
         prefill={invite.state === 'ok' ? invite.prefill : undefined}
         plans={plans.plans}
         selectedPlan={plans.selected ?? undefined}
+        next={next}
       />
       <p className="mt-6 text-center text-sm text-secondary">
         {t('haveAccount')}{' '}
-        <Link href="/login" className="text-accent hover:underline">
+        <Link href={withNext('/login', next)} className="text-accent hover:underline">
           {t('toLogin')}
         </Link>
       </p>

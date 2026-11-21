@@ -13,7 +13,7 @@ import { hashPassword, verifyPassword } from './auth/password';
 import { registerUser } from './auth/register';
 import { checkLogin } from './auth/login';
 import { resetDemoAccount, type TerminalFailure } from './terminal/client';
-import { safeLaunchNext } from './sso/launch';
+import { safeNext } from './auth/next-path';
 import { getTenantStartBalance } from './tenant';
 import {
   changePasswordSchema,
@@ -110,7 +110,7 @@ export async function registerAction(_prev: ActionState, formData: FormData): Pr
     return { error: result.reason };
   }
   await createSession(result.userId);
-  redirect(await homePath(parsed.data.locale));
+  redirect(safeNext(formData.get('next')) ?? (await homePath(parsed.data.locale)));
 }
 
 export async function loginAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
@@ -137,7 +137,7 @@ export async function loginAction(_prev: ActionState, formData: FormData): Promi
     redirect(await localeHref('/change-password', String(formData.get('uiLocale') ?? check.locale)));
   }
   // Вход начался с launch терминала (sso-pack v1.1) — продолжаем его; иначе на главную.
-  const next = safeLaunchNext(formData.get('next'));
+  const next = safeNext(formData.get('next'));
   redirect(next ?? (await homePath(String(formData.get('uiLocale') ?? check.locale))));
 }
 

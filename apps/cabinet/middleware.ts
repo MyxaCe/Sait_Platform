@@ -10,7 +10,7 @@ import { routing } from './i18n/routing';
 import { SESSION_COOKIE } from './lib/auth/constants';
 import { legacyTarget } from './lib/legacy-routes';
 import { applyAttributionCookies } from './lib/attribution-cookies';
-import { homePathFor, isMailLinkPath, isPublicAuthPath, loginPathFor } from './lib/auth/public-paths';
+import { homePathFor, isMailLinkPath, isPublicAuthPath, loginPathFor, safeTerminalNext } from './lib/auth/public-paths';
 import { siteLanguagesForMiddleware } from './lib/site-languages-edge';
 
 const LOCALE_COOKIE_MAX_AGE = 60 * 60 * 24 * 365;
@@ -72,6 +72,8 @@ export default async function middleware(request: NextRequest) {
     const url = request.nextUrl.clone();
     url.pathname = loginPathFor(pathname, site);
     url.search = '';
+    const next = safeTerminalNext(`${pathname}${request.nextUrl.search}`);
+    if (next) url.searchParams.set('next', next);
     return NextResponse.redirect(url);
   }
 

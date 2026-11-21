@@ -18,14 +18,15 @@ interface TerminalFrameProps {
   title: string;
   /** Счёт входа: демо или реальный (claim `account_kind` в SSO). */
   accountKind?: 'demo' | 'real';
+  symbol?: string | null;
   /** Высота/вид — задаёт страница (полноэкранный режим r2). */
   className?: string;
 }
 
-export function TerminalFrame({ terminalUrl, site, title, accountKind = 'demo', className }: TerminalFrameProps) {
+export function TerminalFrame({ terminalUrl, site, title, accountKind = 'demo', symbol = null, className }: TerminalFrameProps) {
   const frameRef = useRef<HTMLIFrameElement>(null);
   const locale = useLocale();
-  const src = `${terminalUrl}?site=${encodeURIComponent(site)}&lang=${locale}&locale=${locale}`;
+  const src = `${terminalUrl}?site=${encodeURIComponent(site)}&lang=${locale}&locale=${locale}${symbol ? `&symbol=${encodeURIComponent(symbol)}` : ''}`;
   const terminalOrigin = new URL(terminalUrl).origin;
 
   const sendToken = useCallback(async () => {

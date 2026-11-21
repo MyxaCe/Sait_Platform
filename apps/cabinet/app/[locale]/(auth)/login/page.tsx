@@ -1,7 +1,7 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
 import { LoginForm } from '@/features/auth/LoginForm';
-import { safeLaunchNext } from '@/lib/sso/launch';
+import { safeNext, withNext } from '@/lib/auth/next-path';
 
 export default async function LoginPage({
   params,
@@ -13,6 +13,7 @@ export default async function LoginPage({
   setRequestLocale(params.locale);
   const t = await getTranslations('auth');
   const tm = await getTranslations('authMail');
+  const next = safeNext(searchParams?.next);
 
   return (
     <>
@@ -24,7 +25,7 @@ export default async function LoginPage({
         </p>
       ) : null}
       {/* Продолжение входа в терминал (launch) — только внутренний путь. */}
-      <LoginForm next={safeLaunchNext(searchParams?.next)} />
+      <LoginForm next={next} />
       <p className="mt-3 text-right text-sm">
         <Link href="/forgot-password" className="text-accent hover:underline">
           {tm('forgotLink')}
@@ -32,7 +33,7 @@ export default async function LoginPage({
       </p>
       <p className="mt-6 text-center text-sm text-secondary">
         {t('noAccount')}{' '}
-        <Link href="/register" className="text-accent hover:underline">
+        <Link href={withNext('/register', next)} className="text-accent hover:underline">
           {t('toRegister')}
         </Link>
       </p>

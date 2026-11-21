@@ -99,6 +99,7 @@ export function terminalLaunchHref(
   account: AccountKind,
   locale: string,
   env: NodeJS.ProcessEnv = process.env,
+  symbol: string | null = null,
 ): string | null {
   if (!topLevelTerminalEnabled(env)) return null;
   const site = env.SITE_SLUG?.trim();
@@ -113,6 +114,7 @@ export function terminalLaunchHref(
   if (ret.pathname === '') ret.pathname = '/';
   ret.search = '';
   ret.searchParams.set('site', site);
+  if (symbol) ret.searchParams.set('symbol', symbol);
   ret.hash = '';
   const q = new URLSearchParams({ account, return: ret.toString() });
   const lang = parseLang(locale);

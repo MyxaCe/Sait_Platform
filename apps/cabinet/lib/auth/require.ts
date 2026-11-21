@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
 import { localeHref } from '@/i18n/redirect';
+import { withNext } from './next-path';
 import { getSessionUser, type SessionUser } from './session';
 
 /**
@@ -11,8 +12,8 @@ import { getSessionUser, type SessionUser } from './session';
  * или клиент заблокирован) между двумя чтениями, давала `null`, и `!` превращал
  * его в TypeError на `user.id` — белая страница ошибки вместо входа.
  */
-export async function requireSessionUser(locale: string): Promise<SessionUser> {
+export async function requireSessionUser(locale: string, next: string | null = null): Promise<SessionUser> {
   const user = await getSessionUser();
-  if (!user) redirect(await localeHref('/login', locale));
+  if (!user) redirect(withNext(await localeHref('/login', locale), next));
   return user;
 }

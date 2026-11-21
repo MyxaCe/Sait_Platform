@@ -1,10 +1,14 @@
+import { redirect } from 'next/navigation';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { cn } from '@broker/ui';
 import { Link } from '@/i18n/navigation';
+import { localeHref } from '@/i18n/redirect';
 import { TerminalFrame } from '@/features/trade/TerminalFrame';
 import { NavIcon } from '@/features/shell/NavIcon';
+import { parseTerminalSymbol } from '@/lib/auth/public-paths';
 import { requireSessionUser } from '@/lib/auth/require';
 import { tenantSlug } from '@/lib/sso/jwt';
+import { terminalLaunchHref } from '@/lib/sso/launch';
 
 /**
  * Терминал НА ВЕСЬ ЭКРАН (замечание владельца r2): без сайдбара, шапки,
@@ -25,17 +29,22 @@ export default async function TerminalPage({
   searchParams,
 }: {
   params: { locale: string };
-  searchParams: { account?: string };
+  searchParams: { account?: string; symbol?: string };
 }) {
   setRequestLocale(params.locale);
-  await requireSessionUser(params.locale);
+  const accountKind = searchParams.account === 'real' ? 'real' : 'demo';
+  const symbol = parseTerminalSymbol(searchParams.symbol);
+  const selfHref = (kind: 'demo' | 'real') =>
+    `/terminal?${new URLSearchParams(symbol ? { account: kind, symbol } : { account: kind }).toString()}`;
+  await requireSessionUser(params.locale, await localeHref(selfHref(accountKind), params.locale));
+  const launch = terminalLaunchHref(accountKind, params.locale, process.env, symbol);
+  if (launch) redirect(launch);
   const t = await getTranslations('trade');
   const terminalUrl = process.env.NEXT_PUBLIC_TERMINAL_URL;
-  const accountKind = searchParams.account === 'real' ? 'real' : 'demo';
 
   const seg = (kind: 'demo' | 'real', label: string) => (
     <Link
-      href={`/terminal?account=${kind}`}
+      href={selfHref(kind)}
       aria-current={accountKind === kind ? 'page' : undefined}
       className={cn(
         'inline-flex h-8 items-center gap-1.5 rounded-md px-3 text-xs font-semibold',
@@ -71,6 +80,7 @@ export default async function TerminalPage({
           site={tenantSlug()}
           title={t('title')}
           accountKind={accountKind}
+          symbol={symbol}
           className="block min-h-0 w-full flex-1 border-0 bg-elevated"
         />
       ) : (
