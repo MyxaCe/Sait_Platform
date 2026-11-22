@@ -5,6 +5,7 @@ import { claimDeposit, parseUsdtAmountToCents, requestWithdrawal } from '@broker
 import { getSessionUser } from './auth/session';
 import { isRateLimited } from './rate-limit';
 import { moneyPool, terminalMoney } from './money';
+import { secondFactorGate } from './two-factor';
 
 export interface MoneyFormState {
   ok?: boolean;
@@ -34,6 +35,9 @@ export async function requestWithdrawalAction(_prev: MoneyFormState, fd: FormDat
 
   const amount = parseUsdtAmountToCents(String(fd.get('amount') ?? ''));
   if (!amount.ok) return { error: `amount_${amount.reason}` };
+
+  const gate = await secondFactorGate(user.id, fd.get('code'));
+  if (!gate.ok) return { error: gate.error };
 
   const r = await requestWithdrawal(moneyPool(), terminalMoney(), {
     userId: user.id,

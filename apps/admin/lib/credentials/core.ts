@@ -11,7 +11,9 @@ import {
 } from '@broker/money';
 import {
   authMailLimited,
+  clearTwoFactorTx,
   enqueueMail,
+  enqueueTwoFactorNotice,
   firstNameOf,
   isPlausibleEmail,
   issueEmailVerifyMail,
@@ -304,6 +306,29 @@ export async function sendPasswordResetLink(
       emailVerified: client.emailVerified,
     });
     return { ok: true, sentTo: maskEmail(email) };
+  });
+}
+
+export type TwoFactorResetResult = { ok: true; autoHoldUntil: string | null } | Fail<CommonFail | 'twoFactorOff'>;
+
+export async function resetClientTwoFactor(
+  input: CredentialEditBase,
+  deps: { pool: PoolLike; now?: Date },
+): Promise<TwoFactorResetResult> {
+  const now = deps.now ?? new Date();
+  return inTransaction<TwoFactorResetResult>(deps.pool, async (tx) => {
+    const pr = await prologue(tx, input, true);
+    if (!pr.ok) return rollback<TwoFactorResetResult>(pr);
+    const { client, settings, common } = pr.p;
+    if (!(await clearTwoFactorTx(tx, client.id))) return rollback<TwoFactorResetResult>({ ok: false, reason: 'twoFactorOff' });
+    await enqueueTwoFactorNotice(tx, client.id, 'reset', common.ticket);
+    const hold = await applyAutoHold(tx, settings, { actorId: input.actorId, userId: client.id, cause: 'two_factor', now });
+    await journal(tx, input.actorId, CREDENTIAL_ACTIONS.twoFactorReset, client.id, {
+      ...common,
+      noticeSentTo: maskEmail(client.email),
+      autoHold: hold,
+    });
+    return { ok: true, autoHoldUntil: hold?.applied ? hold.until : null };
   });
 }
 

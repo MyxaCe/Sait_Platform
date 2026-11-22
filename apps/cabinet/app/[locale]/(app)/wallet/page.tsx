@@ -132,7 +132,7 @@ export default async function WalletPage({
         {tab === 'deposit' ? (
           <DepositPanel policy={policy} address={exchangeAddress()} />
         ) : (
-          <WithdrawPanel policy={policy} availableMinor={available} kycAllowance={kycAllowance} />
+          <WithdrawPanel policy={policy} availableMinor={available} kycAllowance={kycAllowance} userId={user.id} />
         )}
 
         <div className="xl:hidden">

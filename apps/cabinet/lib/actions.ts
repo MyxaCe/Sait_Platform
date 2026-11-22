@@ -24,6 +24,8 @@ import {
 import { envOr } from '@broker/utils';
 import { localeHref } from '@/i18n/redirect';
 import { MAX_DOC_BYTES } from '@/upload-limits.mjs';
+import { completeLoginChallenge, createLoginChallenge, isTwoFactorEnabled, LOGIN_CHALLENGE_TTL_MINUTES } from '@broker/support';
+import { cabinetTwoFactorKey, codeError, secondFactorGate, TWO_FACTOR_COOKIE, twoFactorPool } from './two-factor';
 import {
   createSession,
   destroyCurrentSession,
@@ -34,6 +36,7 @@ import {
 export interface ActionState {
   ok?: boolean;
   error?: string;
+  twoFactor?: boolean;
   fieldErrors?: Record<string, string>;
 }
 
@@ -105,13 +108,54 @@ export async function loginAction(_prev: ActionState, formData: FormData): Promi
     return { error: check.error };
   }
 
-  await getPool().query(`UPDATE users SET last_login_at = now() WHERE id = $1`, [check.userId]);
-  await createSession(check.userId);
-  if (check.mustChangePassword) {
-    redirect(await localeHref('/change-password', String(formData.get('uiLocale') ?? check.locale)));
+  if (await isTwoFactorEnabled(twoFactorPool(), check.userId)) {
+    const token = await createLoginChallenge(twoFactorPool(), check.userId);
+    cookies().set(TWO_FACTOR_COOKIE, token, {
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production',
+      path: '/',
+      maxAge: LOGIN_CHALLENGE_TTL_MINUTES * 60,
+    });
+    return { twoFactor: true };
+  }
+
+  await finishLogin(check.userId, check.locale, check.mustChangePassword, formData);
+  return {};
+}
+
+async function finishLogin(userId: string, locale: string, mustChangePassword: boolean, formData: FormData): Promise<void> {
+  await getPool().query(`UPDATE users SET last_login_at = now() WHERE id = $1`, [userId]);
+  await createSession(userId);
+  if (mustChangePassword) {
+    redirect(await localeHref('/change-password', String(formData.get('uiLocale') ?? locale)));
   }
   const next = safeNext(formData.get('next'));
-  redirect(next ?? (await homePath(String(formData.get('uiLocale') ?? check.locale))));
+  redirect(next ?? (await homePath(String(formData.get('uiLocale') ?? locale))));
+}
+
+export async function loginTwoFactorAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  if (isRateLimited(`login-2fa:${clientIp()}`, 10, 60_000)) {
+    return { twoFactor: true, error: 'rateLimited' };
+  }
+  const jar = cookies();
+  const r = await completeLoginChallenge(twoFactorPool(), {
+    token: jar.get(TWO_FACTOR_COOKIE)?.value,
+    code: String(formData.get('code') ?? ''),
+    key: cabinetTwoFactorKey(),
+  });
+  if (!r.ok) {
+    if (r.reason === 'expired') {
+      jar.delete(TWO_FACTOR_COOKIE);
+      return { error: 'twoFactorExpired' };
+    }
+    return { twoFactor: true, error: codeError(r.reason) };
+  }
+  jar.delete(TWO_FACTOR_COOKIE);
+  const u = await getPool().query(`SELECT locale, password_must_change FROM users WHERE id = $1`, [r.userId]);
+  const row = u.rows[0];
+  await finishLogin(r.userId, String(row?.locale ?? 'ru'), row?.password_must_change === true, formData);
+  return {};
 }
 
 export async function logoutAction(formData: FormData): Promise<void> {
@@ -147,6 +191,8 @@ export async function changePasswordAction(_prev: ActionState, formData: FormDat
   if (!(await verifyPassword(parsed.data.currentPassword, r.rows[0].password_hash))) {
     return { fieldErrors: { currentPassword: 'wrongPassword' } };
   }
+  const gate = await secondFactorGate(user.id, formData.get('code'));
+  if (!gate.ok) return { fieldErrors: { code: gate.error } };
 
   await getPool().query(`UPDATE users SET password_hash = $1 WHERE id = $2`, [
     await hashPassword(parsed.data.newPassword),

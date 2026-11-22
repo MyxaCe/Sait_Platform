@@ -15,6 +15,7 @@ import {
   issueTemporaryPassword,
   liftWithdrawHold,
   readCredentialSettings,
+  resetClientTwoFactor,
   sendPasswordResetLink,
   setWithdrawHold,
   updateCredentialSettings,
@@ -109,6 +110,17 @@ export async function issueTempPasswordAction(_prev: TempPasswordState, fd: Form
       sessionsRevoked: r.sessionsRevoked,
       autoHoldUntil: r.autoHoldUntil,
     };
+  });
+}
+
+export async function resetTwoFactorAction(_prev: CredentialActionState, fd: FormData): Promise<CredentialActionState> {
+  const op = await requireOperator();
+  return guarded(async () => {
+    const input = base(fd, op.operatorId);
+    const r = await resetClientTwoFactor(input, { pool: moneyPool() });
+    if (!r.ok) return { error: r.reason };
+    done(input.userId);
+    return { ok: true, detail: r.autoHoldUntil ? `вывод заморожен до ${fmt(r.autoHoldUntil)}` : undefined };
   });
 }
 

@@ -2,6 +2,7 @@ import bcrypt from 'bcryptjs';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { resolveMoneyPolicy, tronHexToBase58, USDT_TRC20_CONTRACT } from '@broker/money';
 import { createTestDb, seedOperator, seedUser, type TestDb } from '@broker/support/testing';
+import { beginTwoFactorEnrollment, confirmTwoFactorEnrollment, generateTotp, isTwoFactorEnabled, twoFactorKey } from '@broker/support';
 import { ALL_ROLES, canEditClientCredentials } from '@/components/shell/sections';
 import {
   changeClientEmail,
@@ -10,6 +11,7 @@ import {
   issueTemporaryPassword,
   liftWithdrawHold,
   readCredentialSettings,
+  resetClientTwoFactor,
   sendPasswordResetLink,
   setWithdrawHold,
   updateCredentialSettings,
@@ -428,5 +430,44 @@ describe('учётные данные · журнал и алерты', () => {
     expect(await updateCredentialSettings({ actorId: admin, basis: 'x', next }, { pool: db })).toEqual({ ok: false, reason: 'noChange' });
     const j = await db.query(`SELECT action, subject_id, payload FROM admin_action_journal WHERE action = 'platform.credential_settings.updated'`);
     expect(j.rows[0]).toMatchObject({ subject_id: 'platform:credential_settings' });
+  });
+});
+
+describe('учётные данные · сброс 2FA клиента', () => {
+  const key = twoFactorKey('k'.repeat(48));
+  async function enableTwoFactor(userId: string) {
+    const b = await beginTwoFactorEnrollment(db, { userId, key });
+    if (!b.ok) throw new Error(b.reason);
+    const c = await confirmTwoFactorEnrollment(db, { userId, code: generateTotp(b.secret), key });
+    if (!c.ok) throw new Error(c.reason);
+    await db.query(`DELETE FROM outbound_mail`);
+  }
+
+  it('менеджер клиента сбрасывает 2FA: коды удалены, письмо клиенту, запись в журнале с основанием, автозаморозка', async () => {
+    await enableTwoFactor(client);
+    const r = await resetClientTwoFactor(editBase(manager), { pool: db });
+    expect(r.ok).toBe(true);
+    expect(await isTwoFactorEnabled(db, client)).toBe(false);
+    expect((await db.query(`SELECT count(*)::int AS n FROM client_totp_recovery_codes WHERE user_id = $1`, [client])).rows[0]!.n).toBe(0);
+    const m = await mails();
+    expect(m.map((x) => [x.purpose, x.to, x.subject])).toEqual([['credentials_notice', 'Ivan.Petrov@Mail.test', 'Двухфакторная защита сброшена']]);
+    expect(m[0]!.body).toContain('№1042');
+    const j = (await journalRows()).find((x) => x.action === CREDENTIAL_ACTIONS.twoFactorReset)!;
+    expect(j.operatorId).toBe(manager);
+    expect(j.payload).toMatchObject({ basis: 'Клиент потерял доступ к почте, звонок', ticket: '1042', actorAs: 'manager' });
+    expect((await resolveMoneyPolicy(client, db)).withdrawBanKind).toBe('credentials_auto');
+  });
+
+  it('без права, без основания, без чек-листа или без включённой 2FA — отказ, ничего не меняется', async () => {
+    await enableTwoFactor(client);
+    expect(await resetClientTwoFactor(editBase(plainOperator), { pool: db })).toEqual({ ok: false, reason: 'forbidden' });
+    expect(await resetClientTwoFactor(editBase(support), { pool: db })).toEqual({ ok: false, reason: 'forbidden' });
+    expect(await resetClientTwoFactor(editBase(otherManager), { pool: db })).toEqual({ ok: false, reason: 'forbidden' });
+    expect(await resetClientTwoFactor({ ...editBase(admin), basis: '  ' }, { pool: db })).toEqual({ ok: false, reason: 'missingReason' });
+    expect(await resetClientTwoFactor({ ...editBase(admin), checks: [] }, { pool: db })).toMatchObject({ ok: false });
+    expect(await isTwoFactorEnabled(db, client)).toBe(true);
+    expect(await resetClientTwoFactor(editBase(admin, foreignClient), { pool: db })).toEqual({ ok: false, reason: 'twoFactorOff' });
+    expect((await journalRows()).filter((x) => x.action === CREDENTIAL_ACTIONS.twoFactorReset)).toEqual([]);
+    expect(await mails()).toEqual([]);
   });
 });

@@ -11,3 +11,5 @@ export * from './context';
 export * from './queries';
 export * from './admin';
 export * from './keys';
+export * from './totp';
+export * from './two-factor';

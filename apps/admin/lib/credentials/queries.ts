@@ -19,6 +19,7 @@ export interface CredentialsView {
   editorAs: 'admin' | 'manager' | null;
   passwordMustChange: boolean;
   tempPasswordExpiresAt: string | null;
+  twoFactorEnabledAt: string | null;
   editableWithdrawals: EditableWithdrawal[];
   settings: CredentialSettings;
 }
@@ -28,7 +29,11 @@ export async function getCredentialsView(
   input: { userId: string; operatorId: string; role: OperatorRole | null | undefined },
 ): Promise<CredentialsView> {
   const [u, op, w, settings] = await Promise.all([
-    db.query(`SELECT password_must_change, temp_password_expires_at FROM users WHERE id = $1`, [input.userId]),
+    db.query(
+      `SELECT u.password_must_change, u.temp_password_expires_at, t.enabled_at AS two_factor_enabled_at
+         FROM users u LEFT JOIN client_totp t ON t.user_id = u.id WHERE u.id = $1`,
+      [input.userId],
+    ),
     db.query(
       `SELECT o.is_client_manager,
               EXISTS (SELECT 1 FROM client_managers cm WHERE cm.user_id = $2 AND cm.manager_id = o.id) AS assigned
@@ -51,6 +56,7 @@ export async function getCredentialsView(
     editorAs: canEdit ? (input.role === 'admin' ? 'admin' : 'manager') : null,
     passwordMustChange: Boolean(u.rows[0]?.password_must_change),
     tempPasswordExpiresAt: iso(u.rows[0]?.temp_password_expires_at),
+    twoFactorEnabledAt: iso(u.rows[0]?.two_factor_enabled_at),
     editableWithdrawals: w.rows.map((r) => ({
       id: String(r.id),
       status: String(r.status),

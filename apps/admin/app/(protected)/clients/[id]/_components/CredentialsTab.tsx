@@ -14,7 +14,7 @@ const HOLD_KIND: Record<string, string> = {
   credentials_auto: 'автозаморозка после правки данных',
 };
 
-const CAUSE: Record<string, string> = { email: 'смена email', temp_password: 'временный пароль' };
+const CAUSE: Record<string, string> = { email: 'смена email', temp_password: 'временный пароль', two_factor: 'сброс 2FA' };
 
 function str(v: unknown): string | null {
   return typeof v === 'string' && v.trim() ? v : null;
@@ -106,6 +106,11 @@ export function CredentialsTab({
                 hint: view.passwordMustChange && view.tempPasswordExpiresAt ? `временный действует до ${fmtDateTime(view.tempPasswordExpiresAt)}` : undefined,
               },
               {
+                term: 'Двухфакторная защита',
+                value: view.twoFactorEnabledAt ? <ToneBadge tone="positive">включена</ToneBadge> : 'не включена',
+                hint: view.twoFactorEnabledAt ? `с ${fmtDateTime(view.twoFactorEnabledAt)}` : undefined,
+              },
+              {
                 term: 'Вывод средств',
                 value: hold.active ? <StatusBadge status="withdraw_banned" /> : 'открыт',
                 hint: hold.active
@@ -174,6 +179,7 @@ export function CredentialsTab({
             tickets={tickets}
             withdrawals={view.editableWithdrawals}
             hold={hold}
+            twoFactorEnabled={view.twoFactorEnabledAt !== null}
           />
         </Panel>
       ) : (

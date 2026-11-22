@@ -6,16 +6,21 @@ import { Link } from '@/i18n/navigation';
 import { WithdrawForm } from './MoneyForms';
 import { PolicyNotice } from './PolicyNotice';
 import { moneyFormat } from '@/features/ui/money-format';
+import { isTwoFactorEnabled } from '@broker/support';
+import { twoFactorPool } from '@/lib/two-factor';
 
 export async function WithdrawPanel({
   policy,
   availableMinor,
   kycAllowance = null,
+  userId,
 }: {
   policy: MoneyPolicy;
   availableMinor: number;
   kycAllowance?: KycAllowance | null;
+  userId?: string;
 }) {
+  const twoFactor = userId ? await isTwoFactorEnabled(twoFactorPool(), userId) : false;
   const fmt = moneyFormat(await getLocale());
   const t = await getTranslations('money');
   const reasons = policy.withdrawReasons.filter((r) => !(policy.frozen && r === 'frozen'));
@@ -63,6 +68,7 @@ export async function WithdrawPanel({
           disabled={!policy.withdrawAllowed || exhausted}
           availableMinor={formAvailable}
           minMinor={policy.minWithdrawMinor}
+          twoFactor={twoFactor}
         />
         <p className="mt-4 text-xs leading-relaxed text-muted">{t('withdrawNote')}</p>
       </section>

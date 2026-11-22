@@ -7,6 +7,7 @@ export const CREDENTIAL_ACTIONS = {
   holdAutoSet: 'client.credentials.withdraw_hold_auto_set',
   holdLifted: 'client.credentials.withdraw_hold_lifted',
   tempPasswordReplaced: 'client.credentials.temp_password_replaced',
+  twoFactorReset: 'client.credentials.two_factor_reset',
   settingsUpdated: 'platform.credential_settings.updated',
 } as const;
 
@@ -18,6 +19,7 @@ export const RISKY_CREDENTIAL_ACTIONS: readonly string[] = [
   CREDENTIAL_ACTIONS.tempPasswordIssued,
   CREDENTIAL_ACTIONS.withdrawalAddressChanged,
   CREDENTIAL_ACTIONS.holdLifted,
+  CREDENTIAL_ACTIONS.twoFactorReset,
 ];
 
 export const EDITABLE_WITHDRAWAL_STATUSES = ['requested', 'approved'] as const;
@@ -161,6 +163,7 @@ export const CREDENTIAL_ERRORS: Record<string, string> = {
   invalidSettings: 'Настройки не сохранены: проверьте значения.',
   noChange: 'Изменений нет.',
   journalUnavailable: 'Журнал недоступен — действие не выполнено и не записано.',
+  twoFactorOff: 'У клиента двухфакторная защита не включена — сбрасывать нечего.',
 };
 
 export function credentialErrorText(error: string, detail?: string): string {

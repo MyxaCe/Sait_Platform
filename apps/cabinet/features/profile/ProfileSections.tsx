@@ -7,6 +7,9 @@ import { listDocuments } from '@/lib/data';
 import { KYC_DOC_KINDS, listKycDocuments, type VerificationState } from '@/lib/kyc';
 import { ProfileForm } from './ProfileForm';
 import { PasswordForm } from '@/features/security/PasswordForm';
+import { TwoFactorCard } from '@/features/security/TwoFactorCard';
+import { isTwoFactorEnabled } from '@broker/support';
+import { twoFactorPool } from '@/lib/two-factor';
 import { UploadForm } from '@/features/documents/UploadForm';
 import { KycUploadForm } from '@/features/kyc/KycUploadForm';
 
@@ -121,12 +124,13 @@ export async function VerificationSection({ userId, state }: { userId: string; s
 export async function SecuritySection({ userId }: { userId: string }) {
   const t = await getTranslations('security');
   const format = await getFormatter();
-  const sessions = await listSessions(userId);
+  const [sessions, twoFactor] = await Promise.all([listSessions(userId), isTwoFactorEnabled(twoFactorPool(), userId)]);
   return (
     <div className="space-y-4 xl:grid xl:grid-cols-2 xl:items-start xl:gap-5 xl:space-y-0">
       <Card title={t('changePassword')}>
-        <PasswordForm />
+        <PasswordForm twoFactor={twoFactor} />
       </Card>
+      <TwoFactorCard userId={userId} />
       <Card title={t('sessions')} hint={t('sessionsHint')}>
         <ul className="divide-y divide-border rounded-xl border border-border">
           {sessions.map((session) => (

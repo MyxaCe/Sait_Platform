@@ -13,6 +13,7 @@ import { parseAmount } from './amount';
 import { REAL_ACCOUNT_CURRENCY } from '@broker/money/display-currency';
 import { looksLikeTronAddress, looksLikeTxHash } from './tronscan';
 import { moneyFormat } from '@/features/ui/money-format';
+import { CodeInput } from '@/features/security/CodeInput';
 
 const inputCls =
   'h-12 w-full rounded-xl border bg-sunken px-3.5 text-[16px] text-primary outline-none transition-colors placeholder:text-muted focus:border-accent disabled:opacity-60';
@@ -29,10 +30,12 @@ function Submit({ label, disabled }: { label: string; disabled?: boolean }) {
 function Outcome({ state, okKey, op }: { state: MoneyFormState; okKey: string; op: 'deposit' | 'withdraw' }) {
   const fmt = moneyFormat(useLocale());
   const t = useTranslations('money');
+  const tv = useTranslations('validation');
   if (state.ok) {
     return <Callout tone="positive">{t(state.pending ? 'withdrawPending' : okKey)}</Callout>;
   }
   if (!state.error) return null;
+  if (state.error.startsWith('twoFactor')) return <Callout tone="negative">{tv(state.error)}</Callout>;
   if (state.error === 'policy' && state.reasons?.length) {
     return (
       <Callout tone="negative" title={t(op === 'deposit' ? 'depositUnavailableTitle' : 'withdrawUnavailableTitle')}>
@@ -117,11 +120,14 @@ export function WithdrawForm({
   disabled,
   availableMinor,
   minMinor,
+  twoFactor = false,
 }: {
   disabled: boolean;
   availableMinor: number | null;
   minMinor: number;
+  twoFactor?: boolean;
 }) {
+  const tf = useTranslations('twoFactor');
   const fmt = moneyFormat(useLocale());
   const t = useTranslations('money');
   const [state, action] = useFormState<MoneyFormState, FormData>(requestWithdrawalAction, {});
@@ -153,7 +159,7 @@ export function WithdrawForm({
       setAmount('');
       setTouched({ address: false, amount: false });
       setConfirming(false);
-    } else if (state.error) {
+    } else if (state.error && !state.error.startsWith('twoFactor')) {
       setConfirming(false);
     }
   }, [state]);
@@ -259,6 +265,17 @@ export function WithdrawForm({
             </div>
           </dl>
           <p className="text-xs leading-relaxed text-warning">{t('confirmNote')}</p>
+          {twoFactor ? (
+            <div className="space-y-1.5">
+              <label htmlFor="wd-2fa-code" className="text-xs font-medium text-secondary">
+                {tf('actionCode')}
+              </label>
+              <CodeInput id="wd-2fa-code" invalid={!!state.error?.startsWith('twoFactor')} describedBy="wd-2fa-hint" autoFocus />
+              <p id="wd-2fa-hint" className="text-xs text-muted">
+                {tf('actionCodeHint')}
+              </p>
+            </div>
+          ) : null}
           <div className="flex flex-col gap-2 sm:flex-row">
             <Submit label={t('confirmSubmit')} disabled={disabled || !ready} />
             <Button

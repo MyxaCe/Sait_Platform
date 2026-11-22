@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 import { Button, FormField, Input } from '@broker/ui';
 import { changePasswordAction, type ActionState } from '@/lib/actions';
 import { FormMessage, useFieldError } from '@/features/auth/FormMessage';
+import { CodeInput } from './CodeInput';
 
 function SubmitButton({ label }: { label: string }) {
   const { pending } = useFormStatus();
@@ -15,8 +16,9 @@ function SubmitButton({ label }: { label: string }) {
   );
 }
 
-export function PasswordForm() {
+export function PasswordForm({ twoFactor = false }: { twoFactor?: boolean }) {
   const t = useTranslations('security');
+  const tf = useTranslations('twoFactor');
   const tCommon = useTranslations('common');
   const fieldError = useFieldError();
   const [state, formAction] = useFormState<ActionState, FormData>(changePasswordAction, {});
@@ -39,6 +41,12 @@ export function PasswordForm() {
       <FormField label={t('confirmPassword')} htmlFor="confirmPassword" required error={fieldError(state.fieldErrors?.confirmPassword)}>
         <Input id="confirmPassword" name="confirmPassword" type="password" autoComplete="new-password" invalid={!!state.fieldErrors?.confirmPassword} />
       </FormField>
+
+      {twoFactor ? (
+        <FormField label={tf('actionCode')} htmlFor="password-2fa-code" required error={fieldError(state.fieldErrors?.code)}>
+          <CodeInput id="password-2fa-code" invalid={!!state.fieldErrors?.code} />
+        </FormField>
+      ) : null}
 
       <div>
         <SubmitButton label={tCommon('save')} />

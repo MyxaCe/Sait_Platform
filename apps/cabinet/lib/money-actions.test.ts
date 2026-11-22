@@ -13,6 +13,7 @@ vi.mock('./money', () => ({
   terminalMoney: () => env.term,
 }));
 vi.mock('./auth/session', () => ({ getSessionUser: async () => env.user }));
+vi.mock('./two-factor', () => ({ secondFactorGate: async () => ({ ok: true }) }));
 vi.mock('next/cache', () => ({ revalidatePath: () => {} }));
 
 const fd = (o: Record<string, string>) => {

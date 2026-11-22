@@ -39,9 +39,9 @@ export const ACTION_GROUPS: { key: ActionGroup; label: string }[] = [
   { key: 'ib', label: 'IB-партнёры' },
   { key: 'platform', label: 'Платформа и журнал' },
   { key: 'support', label: 'Поддержка: обращения клиентов' },
-  { key: 'client_auth', label: 'Вход клиента: сброс пароля и email' },
+  { key: 'client_auth', label: 'Вход клиента: сброс пароля, email и 2FA' },
   { key: 'managers', label: 'Менеджеры клиентов' },
-  { key: 'credentials', label: 'Учётные данные клиента: email, пароль, адрес вывода' },
+  { key: 'credentials', label: 'Учётные данные клиента: email, пароль, 2FA, адрес вывода' },
   { key: 'transfers', label: 'Переводы клиентов между платформами' },
 ];
 
@@ -333,6 +333,11 @@ export const ACTION_LABELS: Record<string, ActionMeta> = {
   'auth.password_reset.completed': { label: 'Пароль сброшен, сессии погашены', tone: 'warning', group: 'client_auth' },
   'auth.email_verify.sent': { label: 'Отправлено письмо подтверждения email', tone: 'neutral', group: 'client_auth' },
   'auth.email_verify.confirmed': { label: 'Email подтверждён', tone: 'positive', group: 'client_auth' },
+  'auth.two_factor.enabled': { label: 'Клиент включил двухфакторную защиту', tone: 'positive', group: 'client_auth' },
+  'auth.two_factor.disabled': { label: 'Клиент отключил двухфакторную защиту', tone: 'warning', group: 'client_auth' },
+  'auth.two_factor.recovery_regenerated': { label: 'Клиент выпустил новые резервные коды 2FA', tone: 'info', group: 'client_auth' },
+  'auth.two_factor.recovery_used': { label: 'Использован резервный код 2FA', tone: 'warning', group: 'client_auth' },
+  'auth.two_factor.locked': { label: '2FA заблокирована: много неверных кодов', tone: 'negative', group: 'client_auth' },
 
   'client.manager_assigned': { label: 'Клиенту назначен менеджер', tone: 'info', group: 'managers' },
   'client.manager_unassigned': { label: 'Менеджер клиента снят', tone: 'neutral', group: 'managers' },
@@ -367,6 +372,7 @@ export const ACTION_LABELS: Record<string, ActionMeta> = {
     group: 'credentials',
   },
   'client.credentials.withdraw_hold_lifted': { label: 'Заморозка вывода снята', tone: 'positive', group: 'credentials' },
+  'client.credentials.two_factor_reset': { label: 'Двухфакторная защита клиента сброшена', tone: 'warning', group: 'credentials' },
   'platform.credential_settings.updated': {
     label: 'Изменены настройки безопасности учётных данных',
     tone: 'info',

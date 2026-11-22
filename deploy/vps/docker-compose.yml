@@ -133,6 +133,7 @@ services:
       SITE_SLUG: apex-ru
       TERMINAL_HTTP_URL: ${TERMINAL_HTTP_URL:-}
       SSO_PRIVATE_KEY_B64: ${SSO_PRIVATE_KEY_B64}
+      CABINET_TOTP_KEY: ${CABINET_TOTP_KEY:-}
       SENTRY_DSN: ${SENTRY_DSN_BFF}
     ports:
       - '3002:3002'

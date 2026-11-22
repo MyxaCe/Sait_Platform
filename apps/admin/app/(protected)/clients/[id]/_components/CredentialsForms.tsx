@@ -8,6 +8,7 @@ import {
   fixWithdrawalAddressAction,
   issueTempPasswordAction,
   liftHoldAction,
+  resetTwoFactorAction,
   sendResetLinkAction,
   setHoldAction,
   type TempPasswordState,
@@ -27,6 +28,7 @@ export interface CredentialsFormsProps {
   tickets: { number: number; subject: string }[];
   withdrawals: { id: string; status: string; amountMinor: number; toAddress: string; requestedAt: string }[];
   hold: { active: boolean; kind: string | null; until: string | null };
+  twoFactorEnabled?: boolean;
 }
 
 const STATUS: Record<string, string> = { requested: 'подана', approved: 'одобрена' };
@@ -171,6 +173,32 @@ function ResetLinkForm(p: CredentialsFormsProps) {
         summary: <ConfirmFacts rows={[['На email клиента', p.email], ['Статус email', p.emailVerified ? 'подтверждён' : 'не подтверждён']]} />,
         consequence: 'Клиент сам задаст новый пароль по ссылке (действует 30 минут). Пароль вы не видите и не задаёте.',
         confirmLabel: 'Да, отправить',
+      }}
+    >
+      <input type="hidden" name="userId" value={p.userId} />
+      <VerifyFields items={p.checklist} checks={checks} tickets={p.tickets} />
+    </ActionForm>
+  );
+}
+
+function TwoFactorResetForm(p: CredentialsFormsProps) {
+  const checks = useChecks(p.checklist, p.minChecked);
+  return (
+    <ActionForm
+      action={resetTwoFactorAction}
+      submitLabel="Сбросить 2FA"
+      variant="secondary"
+      okText="Двухфакторная защита сброшена, клиенту отправлено письмо, запись в журнале."
+      errorText={credentialErrorText}
+      reasonPlaceholder="Почему сбрасывается 2FA (клиент потерял телефон, как проверена личность)"
+      extraValid={checks.valid}
+      disarmOn={checks.checked.join()}
+      confirm={{
+        tone: 'danger',
+        title: 'Сбросить двухфакторную защиту клиента?',
+        summary: <ConfirmFacts rows={[['Клиент', p.email]]} />,
+        consequence: `2FA и резервные коды клиента будут удалены: войти можно будет по одному паролю, клиент сможет включить защиту заново. Клиенту уйдёт письмо.${p.autoHoldEnabled ? ` Вывод будет заморожен на ${p.autoHoldHours} ч.` : ''}`,
+        confirmLabel: 'Да, сбросить 2FA',
       }}
     >
       <input type="hidden" name="userId" value={p.userId} />
@@ -424,6 +452,11 @@ export function CredentialsForms(p: CredentialsFormsProps) {
           <TempPasswordForm {...p} />
         </div>
       </Section>
+      {p.twoFactorEnabled ? (
+        <Section title="Двухфакторная защита" hint="Только если клиент потерял доступ к приложению и резервным кодам. Личность — по чек-листу.">
+          <TwoFactorResetForm {...p} />
+        </Section>
+      ) : null}
       <Section
         title="Адрес в заявке на вывод"
         hint="Только заявки «подана»/«одобрена», пока нет хэша отправки. Адресной книги нет — адрес живёт в заявке."
