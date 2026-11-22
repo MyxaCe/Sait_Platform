@@ -116,7 +116,7 @@ describe('decideTicker · каталога нет — строки нет', () =
 });
 
 describe('decideTicker · пересечение, а не замена', () => {
-  it('в строку попадает только то, что разрешено И транслируется И есть на витрине', () => {
+  it('в строку попадает то, что разрешено И транслируется; порядок — сначала записи CMS', () => {
     const decision = decideTicker(
       ['EURUSD', 'BTCUSD', 'AAPL'],
       ALLOWED(['EURUSD', 'BTCUSD', 'TSLA']),
@@ -124,8 +124,9 @@ describe('decideTicker · пересечение, а не замена', () => {
     );
 
     // BTCUSD разрешён, но не транслируется. AAPL транслируется, но не
-    // разрешён. TSLA разрешена и транслируется, но её нет на витрине.
-    expect(decision).toEqual({ kind: 'ticker', symbols: ['EURUSD'] });
+    // разрешён. TSLA разрешена и транслируется: записи CMS у неё нет, но
+    // запись — необязательное обогащение, состав задаёт карточка сайта.
+    expect(decision).toEqual({ kind: 'ticker', symbols: ['EURUSD', 'TSLA'] });
   });
 
   it('символ, которого нет в каталоге, не проходит даже будучи разрешённым', () => {
@@ -141,7 +142,7 @@ describe('decideTicker · пересечение, а не замена', () => {
     // `TickerTape` при нуле элементов возвращает `null`: пустой список
     // отдать в ленту значит молча убрать строку, и «показывать нечего»
     // станет неотличимо от «строки тут не бывает».
-    const decision = decideTicker(['AAPL'], ALLOWED(['EURUSD']), STREAMING(['EURUSD']));
+    const decision = decideTicker(['AAPL'], ALLOWED(['BTCUSD']), STREAMING(['EURUSD']));
 
     expect(decision).toEqual({ kind: 'notice', state: 'empty', reason: NO_OVERLAP_REASON });
     expect(decision).not.toMatchObject({ kind: 'ticker' });
@@ -152,10 +153,19 @@ describe('decideTicker · пересечение, а не замена', () => {
     // сейчас не торгуется». Один текст на оба отправил бы владельца
     // править настройку, которая в порядке.
     const noSelection = decideTicker(['AAPL'], { state: 'empty', symbols: [] }, STREAMING(['AAPL']));
-    const noOverlap = decideTicker(['AAPL'], ALLOWED(['EURUSD']), STREAMING(['EURUSD']));
+    const noOverlap = decideTicker(['AAPL'], ALLOWED(['BTCUSD']), STREAMING(['EURUSD']));
 
     expect(noSelection.kind === 'notice' && noSelection.reason).not.toBe(
       noOverlap.kind === 'notice' && noOverlap.reason,
     );
+  });
+});
+
+describe('карточка сайта — источник состава строки', () => {
+  it('без записей CMS строка всё равно из разрешённого и транслируемого', () => {
+    expect(decideTicker([], ALLOWED(['LTCUSD', 'TRXUSD']), STREAMING(['LTCUSD', 'TRXUSD']))).toEqual({
+      kind: 'ticker',
+      symbols: ['LTCUSD', 'TRXUSD'],
+    });
   });
 });

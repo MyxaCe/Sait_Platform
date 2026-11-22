@@ -7,14 +7,10 @@ import type { QuoteMarket } from '@broker/realtime';
 import { AccessNotice } from '@/features/instruments/AccessNotice';
 import { InstrumentsBrowser } from '@/features/instruments/InstrumentsBrowser';
 import { marketsFromOutcome, unavailableReasonsOf } from '@/features/instruments/unavailable-map';
+import { listInstrumentPages } from '@/features/instruments/instrument-detail';
 import { getCms } from '@/lib/cms';
-import { getMdsIcons, getMdsQuotesState } from '@/lib/mds';
-import {
-  accessNotice,
-  getTenantAccess,
-  isSymbolAllowed,
-  type AccessNoticeSpec,
-} from '@/lib/tenant';
+import { getMdsCatalogEntries, getMdsIcons, getMdsQuotesState } from '@/lib/mds';
+import { accessNotice, getTenantAccess, type AccessNoticeSpec } from '@/lib/tenant';
 
 /**
  * Страница ДИНАМИЧЕСКАЯ, и это требование, а не настройка (WEB-07).
@@ -43,7 +39,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function InstrumentsPage({ params }: PageProps) {
   setRequestLocale(params.locale);
-  // Контент страницы ∩ ДОСТУП сайта (allow-list карточки сайта, ADR-028).
+  // Список — ДОСТУП сайта (allow-list карточки сайта, ADR-028) ∩ каталог
+  // MDS, те же правила, что у деталки; запись CMS лишь обогащает.
   // Граница fail-closed (Р-025): закрыта — список пуст, и вместо него
   // стоит объяснение, а не пустая таблица «0 из 0».
   // Состояние котировок спрашиваем здесь же (WEB-39): страница и так
@@ -52,25 +49,26 @@ export default async function InstrumentsPage({ params }: PageProps) {
   // списке РЯДОМ с работающими и молчал без объяснения — а прочерк
   // рядом с уверенным числом читается как «это неизвестно, а
   // остальное известно».
-  const [{ items: pageItems }, access, quotes] = await Promise.all([
+  const [{ items: cmsItems }, access, quotes, catalog] = await Promise.all([
     getCms('instruments', { locale: pageLocale(params.locale) }),
     getTenantAccess(),
     getMdsQuotesState(),
+    getMdsCatalogEntries(),
   ]);
   const notice = accessNotice(access);
-  const items = pageItems.filter((i) => isSymbolAllowed(access, i.symbol));
+  const symbols = listInstrumentPages({ cmsItems, access, catalog }).map((p) => p.symbol);
 
   // Иконки: загруженная в CMS приоритетнее, иначе — иконка монеты из MDS
   const mdsIcons = await getMdsIcons();
   const icons: Record<string, string> = {};
-  for (const item of items) {
-    const url = item.icon?.url ?? mdsIcons[item.symbol];
-    if (url) icons[item.symbol] = url;
+  for (const symbol of symbols) {
+    const url = cmsItems.find((i) => i.symbol === symbol)?.icon?.url ?? mdsIcons[symbol];
+    if (url) icons[symbol] = url;
   }
 
   return (
     <PageContent
-      symbols={items.map((i) => i.symbol)}
+      symbols={symbols}
       icons={icons}
       notice={notice}
       unavailableReasons={unavailableReasonsOf(quotes)}

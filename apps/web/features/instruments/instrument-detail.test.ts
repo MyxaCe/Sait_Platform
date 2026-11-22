@@ -52,7 +52,8 @@ describe('деталка инструмента · какие инструмен
   });
 
   it.each([
-    ['нет в CMS', input({ cmsItems: [] })],
+    ['нет в CMS и каталог MDS недоступен', input({ cmsItems: [], catalog: { state: 'unavailable', reason: 'network' } })],
+    ['нет в CMS и нет в списке доступа', input({ cmsItems: [], access: allowed('EURUSD') })],
     ['нет в каталоге MDS', input({ catalog: catalog(EUR) })],
     ['нет в списке доступа сайта', input({ access: allowed('EURUSD') })],
     ['категория в адресе чужая', input({ category: 'forex' })],
@@ -117,6 +118,53 @@ describe('ТД-010 · список страниц инструментов дл�
   it('дубль символа в CMS — одна запись', () => {
     expect(listInstrumentPages({ ...base, cmsItems: [cmsItem(), cmsItem({ symbol: 'ltcusd' })] })).toEqual([
       { symbol: 'LTCUSD', category: 'crypto' },
+      { symbol: 'EURUSD', category: 'forex' },
     ]);
+  });
+
+  it('инструмент из карточки сайта без записи CMS — в списке; сначала порядок CMS', () => {
+    expect(listInstrumentPages({ ...base, cmsItems: [cmsItem({ symbol: 'EURUSD', category: 'forex' })] })).toEqual([
+      { symbol: 'EURUSD', category: 'forex' },
+      { symbol: 'LTCUSD', category: 'crypto' },
+    ]);
+  });
+
+  it('без записей CMS и без каталога MDS — пусто (категорию взять неоткуда)', () => {
+    expect(listInstrumentPages({ ...base, cmsItems: [], catalog: { state: 'unavailable', reason: 'network' } })).toEqual([]);
+  });
+});
+
+describe('карточка сайта — источник, запись CMS — необязательное обогащение', () => {
+  it('инструмента нет в CMS → страница открывается по каталогу MDS', () => {
+    const r = resolveInstrument(input({ cmsItems: [] }));
+
+    expect(r).toEqual({
+      kind: 'ok',
+      instrument: {
+        symbol: 'LTCUSD',
+        name: 'Litecoin',
+        category: 'crypto',
+        digits: 2,
+        minQty: null,
+        swapFree: false,
+        cmsIconUrl: null,
+      },
+    });
+  });
+
+  it('запись CMS обогащает: иконка и swapFree', () => {
+    const r = resolveInstrument(input({ cmsItems: [cmsItem({ swapFree: true, icon: { url: '/media/ltc.svg' } as Instrument['icon'] })] }));
+
+    expect(r).toMatchObject({ kind: 'ok', instrument: { swapFree: true, cmsIconUrl: '/media/ltc.svg', name: 'Litecoin' } });
+  });
+
+  it('без записи CMS граница закрыта → объяснение по имени из каталога', () => {
+    const r = resolveInstrument(input({ cmsItems: [], access: { state: 'unavailable', reason: 'network' } }));
+
+    expect(r).toMatchObject({ kind: 'closed', symbol: 'LTCUSD', name: 'Litecoin' });
+  });
+
+  it('каталог MDS не знает категорию, записи CMS нет → 404', () => {
+    expect(resolveInstrument(input({ cmsItems: [], catalog: catalog({ ...LTC, category: null }) }))).toEqual({ kind: 'not-found' });
   });
 });

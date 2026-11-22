@@ -31,35 +31,48 @@ export interface ResolveInput {
 
 const NOT_FOUND: InstrumentDetail = { kind: 'not-found' };
 
+function findSymbol(symbols: Iterable<string>, upper: string): string | undefined {
+  for (const s of symbols) if (s.toUpperCase() === upper) return s;
+  return undefined;
+}
+
+/**
+ * Инструмент существует, если он выбран в карточке сайта (список доступа) и
+ * есть в каталоге MDS. Запись CMS «Инструменты» — необязательное обогащение
+ * (иконка, swapFree, имя/категория на случай недоступного каталога).
+ */
 export function resolveInstrument({ category, symbol, cmsItems, access, catalog }: ResolveInput): InstrumentDetail {
   if (!URL_SYMBOL.test(symbol)) return NOT_FOUND;
   const upper = symbol.toUpperCase();
 
   const cms = cmsItems.find((i) => i.symbol.toUpperCase() === upper);
-  if (!cms) return NOT_FOUND;
-
-  const entry = catalog.state === 'available' ? catalog.entries[cms.symbol] : undefined;
+  const catalogKey = catalog.state === 'available' ? findSymbol(Object.keys(catalog.entries), upper) : undefined;
+  const entry = catalogKey && catalog.state === 'available' ? catalog.entries[catalogKey] : undefined;
   if (catalog.state === 'available' && !entry) return NOT_FOUND;
 
-  const resolvedCategory = entry?.category ?? cms.category;
-  if (resolvedCategory !== category) return NOT_FOUND;
+  const allowedKey = access.state === 'allowed' ? findSymbol(access.symbols, upper) : undefined;
+  const canonical = allowedKey ?? cms?.symbol ?? catalogKey;
+  if (!canonical) return NOT_FOUND;
 
-  const name = entry?.name ?? cms.name;
+  const resolvedCategory = entry?.category ?? cms?.category;
+  if (!resolvedCategory || resolvedCategory !== category) return NOT_FOUND;
+
+  const name = entry?.name ?? cms?.name ?? canonical;
 
   const notice = accessNotice(access);
-  if (notice) return { kind: 'closed', symbol: cms.symbol, name, notice };
-  if (!isSymbolAllowed(access, cms.symbol)) return NOT_FOUND;
+  if (notice) return { kind: 'closed', symbol: canonical, name, notice };
+  if (!allowedKey || !isSymbolAllowed(access, allowedKey)) return NOT_FOUND;
 
   return {
     kind: 'ok',
     instrument: {
-      symbol: cms.symbol,
+      symbol: allowedKey,
       name,
       category: resolvedCategory,
       digits: entry?.digits ?? null,
       minQty: entry?.minQty ?? null,
-      swapFree: cms.swapFree,
-      cmsIconUrl: cms.icon?.url ?? null,
+      swapFree: cms?.swapFree ?? false,
+      cmsIconUrl: cms?.icon?.url ?? null,
     },
   };
 }
@@ -69,19 +82,26 @@ export interface InstrumentPageRef {
   category: InstrumentCategory;
 }
 
-/** Страницы инструментов, которые `resolveInstrument` откроет (для sitemap). */
+/**
+ * Страницы инструментов, которые `resolveInstrument` откроет (sitemap, каталог).
+ * Порядок: сначала в порядке записей CMS, затем остальные из карточки сайта.
+ */
 export function listInstrumentPages(input: Omit<ResolveInput, 'category' | 'symbol'>): InstrumentPageRef[] {
+  if (input.access.state !== 'allowed') return [];
   const pages: InstrumentPageRef[] = [];
   const seen = new Set<string>();
-  for (const item of input.cmsItems) {
-    const entry = input.catalog.state === 'available' ? input.catalog.entries[item.symbol] : undefined;
-    const detail = resolveInstrument({
-      ...input,
-      category: entry?.category ?? item.category,
-      symbol: item.symbol.toLowerCase(),
-    });
-    if (detail.kind !== 'ok' || seen.has(detail.instrument.symbol)) continue;
-    seen.add(detail.instrument.symbol);
+  for (const symbol of [...input.cmsItems.map((i) => i.symbol), ...input.access.symbols]) {
+    const upper = symbol.toUpperCase();
+    const cms = input.cmsItems.find((i) => i.symbol.toUpperCase() === upper);
+    const entry =
+      input.catalog.state === 'available'
+        ? input.catalog.entries[findSymbol(Object.keys(input.catalog.entries), upper) ?? '']
+        : undefined;
+    const category = entry?.category ?? cms?.category;
+    if (!category || seen.has(upper)) continue;
+    const detail = resolveInstrument({ ...input, category, symbol: symbol.toLowerCase() });
+    if (detail.kind !== 'ok') continue;
+    seen.add(upper);
     pages.push({ symbol: detail.instrument.symbol, category: detail.instrument.category });
   }
   return pages;

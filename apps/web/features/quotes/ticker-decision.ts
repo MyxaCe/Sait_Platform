@@ -11,10 +11,10 @@
  *
  * **Три сомножителя, и ни один не заменяется умолчанием:**
  *
- *  1. `candidates` — инструменты страницы из CMS. Редакционный контент,
- *     считается на сборке законно: он и есть содержимое витрины.
- *  2. `access` — граница доступа тенанта, рантайм (WEB-07). Регуляторный
- *     фильтр, fail-closed.
+ *  1. `access` — граница доступа тенанта, рантайм (WEB-07). Выбор в
+ *     карточке сайта — единственный источник состава; fail-closed.
+ *  2. `candidates` — записи CMS «Инструменты»: необязательное обогащение,
+ *     здесь задают только порядок (сначала они, затем остальные из доступа).
  *  3. `catalog` — что реально стримится в MDS, рантайм (WEB-08). Защита
  *     от замерших выдуманных цен рядом с живыми (ADR-024).
  *
@@ -100,7 +100,8 @@ export function decideTicker(
 
   const allowed = new Set(access.symbols);
   const streaming = new Set(catalog.symbols);
-  const symbols = candidates.filter((s) => allowed.has(s) && streaming.has(s));
+  const ordered = new Set([...candidates.filter((s) => allowed.has(s)), ...access.symbols]);
+  const symbols = [...ordered].filter((s) => streaming.has(s));
 
   // 3. Оба ответа получены, пересечение пусто. Это ЗНАНИЕ, а не отказ, и
   //    подписывается оно иначе: показывать нечего, потому что нечего, а
