@@ -39,6 +39,7 @@ export default async function MarketingLayout({ children, params }: LayoutProps)
         riskWarning={navigation.footer.riskWarning}
         brandName={brand.name}
         socials={brand.socials}
+        legalEntity={brand.legalEntity}
       />
     </div>
   );

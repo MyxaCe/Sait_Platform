@@ -1,3 +1,4 @@
+import { legalEntitySchema, type LegalEntity } from '@broker/api-client';
 import { readTenantSlug } from '@broker/tenant';
 import { envOr, readEnv } from '@broker/utils';
 import { isPlatformLocale, localizedPath } from '@broker/utils/locales';
@@ -8,7 +9,10 @@ export interface ChromeBrand {
   primaryColor: string | null;
   logo: { url: string; width: number; height: number; alt: string } | null;
   socials: { name: string; url: string }[];
+  legalEntity: LegalEntity | null;
 }
+
+export const SITE_REGULATION_PATH = '/company/regulation';
 
 export interface ChromeFooter {
   columns: { title: string; links: { href: string; label: string }[] }[];
@@ -64,6 +68,7 @@ export async function getChromeBrand(locale: string): Promise<ChromeBrand | null
     primaryColor: typeof data.primaryColor === 'string' ? data.primaryColor : null,
     logo: logo && typeof logo.url === 'string' ? logo : null,
     socials: Array.isArray(data.socials) ? (data.socials as ChromeBrand['socials']) : [],
+    legalEntity: legalEntitySchema.parse(data.legalEntity),
   };
 }
 

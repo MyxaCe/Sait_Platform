@@ -620,5 +620,23 @@
   },
   "liveParams": {
     "supportAlwaysOpen": "24/7"
+  },
+  "legalEntity": {
+    "regNumber": "reg. No. {number}",
+    "license": "Licence",
+    "licenseNumber": "Licence No. {number}",
+    "verifyLicense": "Verify licence",
+    "regulationLink": "Regulation",
+    "title": "Regulation",
+    "entityTitle": "Legal entity",
+    "name": "Name",
+    "registrationNumber": "Registration number",
+    "address": "Registered address",
+    "licensesTitle": "Licences",
+    "licenseNumberLabel": "Licence number",
+    "activity": "Type of activity",
+    "regulator": "Regulator",
+    "regulatorCountry": "Regulator country",
+    "document": "Licence (PDF)"
   }
 }

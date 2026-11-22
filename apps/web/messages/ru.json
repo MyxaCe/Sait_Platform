@@ -620,5 +620,23 @@
   },
   "liveParams": {
     "supportAlwaysOpen": "круглосуточно"
+  },
+  "legalEntity": {
+    "regNumber": "рег. № {number}",
+    "license": "Лицензия",
+    "licenseNumber": "Лицензия № {number}",
+    "verifyLicense": "Проверить лицензию",
+    "regulationLink": "Регулирование",
+    "title": "Регулирование",
+    "entityTitle": "Юридическое лицо",
+    "name": "Название",
+    "registrationNumber": "Регистрационный номер",
+    "address": "Юридический адрес",
+    "licensesTitle": "Лицензии",
+    "licenseNumberLabel": "Номер лицензии",
+    "activity": "Вид деятельности",
+    "regulator": "Регулятор",
+    "regulatorCountry": "Страна регулятора",
+    "document": "Лицензия (PDF)"
   }
 }

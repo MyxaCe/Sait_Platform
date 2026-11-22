@@ -985,5 +985,12 @@
   },
   "liveParams": {
     "supportAlwaysOpen": "24 h/24, 7 j/7"
+  },
+  "legalEntity": {
+    "regNumber": "n° d’immatriculation {number}",
+    "license": "Licence",
+    "licenseNumber": "Licence n° {number}",
+    "verifyLicense": "Vérifier la licence",
+    "regulationLink": "Réglementation"
   }
 }

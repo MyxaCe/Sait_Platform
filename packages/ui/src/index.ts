@@ -73,4 +73,18 @@ export { Container, type ContainerProps } from './layout/Container/Container';
 export { Section } from './layout/Section/Section';
 
 export { cn } from './lib/cn';
-export { SiteFooter, type SiteFooterProps, type FooterLink } from './organisms/SiteFooter/SiteFooter';
+export {
+  SiteFooter,
+  type SiteFooterProps,
+  type SiteFooterLegal,
+  type FooterLink,
+} from './organisms/SiteFooter/SiteFooter';
+export {
+  footerLegalLines,
+  legalEntityLine,
+  licenseLine,
+  type FooterLegalLines,
+  type FooterLegalLicense,
+  type LegalEntityInput,
+  type LegalLabels,
+} from './organisms/SiteFooter/legal';

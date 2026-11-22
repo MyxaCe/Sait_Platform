@@ -1,9 +1,15 @@
 import type { ReactNode } from 'react';
 import { Container } from '../../layout/Container/Container';
+import type { FooterLegalLines } from './legal';
 
 export interface FooterLink {
   href: string;
   label: string;
+}
+
+export interface SiteFooterLegal extends FooterLegalLines {
+  verifyLabel: string;
+  more?: FooterLink;
 }
 
 export interface SiteFooterProps {
@@ -12,6 +18,7 @@ export interface SiteFooterProps {
   brandName: string;
   socials?: { name: string; url: string }[];
   copyright: string;
+  legal?: SiteFooterLegal | null;
   renderLink?: (link: FooterLink) => ReactNode;
 }
 
@@ -48,6 +55,39 @@ function SocialLink({ name, url }: { name: string; url: string }) {
   );
 }
 
+function FooterLegalBlock({
+  legal,
+  renderLink,
+}: {
+  legal: SiteFooterLegal;
+  renderLink: (link: FooterLink) => ReactNode;
+}) {
+  return (
+    <div className="mb-4 space-y-1 text-xs leading-relaxed text-secondary" data-testid="footer-legal">
+      {legal.entity && <p>{legal.entity}</p>}
+      {legal.licenses.map((license, i) => (
+        <p key={i}>
+          {license.text}
+          {license.verifyUrl && (
+            <>
+              {' · '}
+              <a
+                href={license.verifyUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline underline-offset-2 transition-colors hover:text-primary"
+              >
+                {legal.verifyLabel}
+              </a>
+            </>
+          )}
+        </p>
+      ))}
+      {legal.more && <div className="pt-1">{renderLink(legal.more)}</div>}
+    </div>
+  );
+}
+
 const defaultRenderLink = (link: FooterLink) => (
   <a href={link.href} className="text-sm text-secondary transition-colors hover:text-primary">
     {link.label}
@@ -60,6 +100,7 @@ export function SiteFooter({
   brandName,
   socials = [],
   copyright,
+  legal = null,
   renderLink = defaultRenderLink,
 }: SiteFooterProps) {
   return (
@@ -79,6 +120,7 @@ export function SiteFooter({
         </div>
 
         <div className="mt-12 border-t border-border pt-8">
+          {legal && <FooterLegalBlock legal={legal} renderLink={renderLink} />}
           <p className="text-xs leading-relaxed text-secondary">{riskWarning}</p>
           <div className="mt-4 flex flex-wrap items-center justify-between gap-4">
             <p className="text-xs text-secondary">{copyright}</p>

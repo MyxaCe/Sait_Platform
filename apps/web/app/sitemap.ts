@@ -7,6 +7,7 @@ import { getTenantAccess } from '@/lib/tenant';
 import { localizedPath } from '@broker/utils/locales';
 import { getSiteLanguages } from '@/lib/site-languages';
 import { SITE_URL } from '@/lib/site';
+import { REGULATION_PATH } from '@/features/legal/regulation';
 
 export const dynamic = 'force-dynamic';
 
@@ -29,11 +30,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const site = await getSiteLanguages();
   const locale = site.defaultLanguage;
 
-  const [articles, academy, legal, instrumentPages] = await Promise.all([
+  const [articles, academy, legal, instrumentPages, brand] = await Promise.all([
     getCms('articles', { locale, revalidate: 60, params: { pageSize: '50' } }),
     getCms('academy', { locale }),
     getCms('legal', { locale }),
     siteInstrumentPages(locale),
+    getCms('brand', { locale }),
   ]);
 
   const staticRoutes: MetadataRoute.Sitemap = [
@@ -51,6 +53,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { path: '/partners', priority: 0.7, changeFrequency: 'monthly' as const },
     { path: '/promotions', priority: 0.7, changeFrequency: 'weekly' as const },
     { path: '/company/careers', priority: 0.5, changeFrequency: 'weekly' as const },
+    ...(brand.legalEntity
+      ? [{ path: REGULATION_PATH, priority: 0.4, changeFrequency: 'monthly' as const }]
+      : []),
   ].map((r) => ({
     url: `${SITE_URL}${r.path}`,
     lastModified: now,

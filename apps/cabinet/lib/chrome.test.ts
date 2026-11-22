@@ -41,6 +41,46 @@ describe('цвет не задан', () => {
   });
 });
 
+describe('юрлицо и лицензии', () => {
+  it('старая CMS без legalEntity → null, бренд цел', async () => {
+    stubFetch(BRAND_V2);
+    const brand = await getChromeBrand('ru');
+    expect(brand?.legalEntity).toBeNull();
+    expect(brand?.name).toBe('Apex Capital');
+  });
+
+  it('юрлицо доезжает; http-ссылка на реестр отбрасывается, лицензия остаётся', async () => {
+    stubFetch({
+      ...BRAND_V2,
+      legalEntity: {
+        name: 'Example Ltd',
+        registrationNumber: null,
+        address: null,
+        licenses: [
+          {
+            number: 'LIC-0001',
+            activity: null,
+            regulator: 'Example Authority',
+            regulatorCountry: null,
+            verifyUrl: 'http://register.example.test/firms/LIC-0001',
+            document: null,
+          },
+        ],
+      },
+    });
+    const brand = await getChromeBrand('ru');
+    expect(brand?.legalEntity?.name).toBe('Example Ltd');
+    expect(brand?.legalEntity?.licenses[0]).toMatchObject({ number: 'LIC-0001', verifyUrl: null });
+  });
+
+  it('мусор вместо legalEntity → null, бренд цел', async () => {
+    stubFetch({ ...BRAND_V2, legalEntity: 'Example Ltd' });
+    const brand = await getChromeBrand('ru');
+    expect(brand?.legalEntity).toBeNull();
+    expect(brand?.socials).toHaveLength(1);
+  });
+});
+
 describe('бренда нет', () => {
   it('ответ без имени → null: показывать нечего, статический фолбэк', async () => {
     stubFetch({ primaryColor: '#0b5fff' });
@@ -51,7 +91,7 @@ describe('бренда нет', () => {
 
 describe('resolveBrandName', () => {
   afterEach(() => vi.unstubAllEnvs());
-  const fromCms = { name: 'Из CMS', primaryColor: null, logo: null, socials: [] };
+  const fromCms = { name: 'Из CMS', primaryColor: null, logo: null, socials: [], legalEntity: null };
 
   it('CMS ответила → имя из CMS, даже если окружение задано', () => {
     vi.stubEnv('SITE_BRAND_NAME', 'Из окружения');

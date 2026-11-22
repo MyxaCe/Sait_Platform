@@ -3,7 +3,7 @@ import { LangSwitcher } from '@/features/shell/LangSwitcher';
 import { getSiteLanguages } from '@/lib/site-languages';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { redirect } from 'next/navigation';
-import { SiteFooter } from '@broker/ui';
+import { SiteFooter, footerLegalLines } from '@broker/ui';
 import { CabinetHeader } from '@/features/shell/CabinetHeader';
 import { LogoutForm } from '@/features/shell/LogoutForm';
 import { MobileNav } from '@/features/shell/MobileNav';
@@ -11,7 +11,13 @@ import { NavIcon } from '@/features/shell/NavIcon';
 import { CountBadge, NavLink, type NavItem } from '@/features/shell/NavLink';
 import { Link } from '@/i18n/navigation';
 import { getSessionUser } from '@/lib/auth/session';
-import { getChromeBrand, getChromeFooter, siteHref, resolveBrandName } from '@/lib/chrome';
+import {
+  SITE_REGULATION_PATH,
+  getChromeBrand,
+  getChromeFooter,
+  siteHref,
+  resolveBrandName,
+} from '@/lib/chrome';
 import { countUnread } from '@/lib/data';
 import { hasLiveContest } from '@/features/promo/format';
 import { loadContests } from '@/lib/promo';
@@ -34,9 +40,10 @@ export default async function AppLayout({ children, params }: LayoutProps) {
     redirect(await localeHref('/change-password', params.locale));
   }
 
-  const [tNav, tCommon, unread, brand, footer, contests, site] = await Promise.all([
+  const [tNav, tCommon, tLegal, unread, brand, footer, contests, site] = await Promise.all([
     getTranslations('nav'),
     getTranslations('common'),
+    getTranslations('legalEntity'),
     countUnread(user.id),
     getChromeBrand(params.locale),
     getChromeFooter(params.locale),
@@ -44,6 +51,10 @@ export default async function AppLayout({ children, params }: LayoutProps) {
     getSiteLanguages(),
   ]);
   const brandName = resolveBrandName(brand, tCommon('cabinet'));
+  const legalLines = footerLegalLines(brand?.legalEntity, {
+    regNumber: (number) => tLegal('regNumber', { number }),
+    license: (number) => (number ? tLegal('licenseNumber', { number }) : tLegal('license')),
+  });
   const support = await Promise.all([loadSupportSettings(getPool()), countClientUnread(getPool(), user.id)])
     .then(([s, n]) => ({ enabled: s.channels.chat, unread: n }))
     .catch(() => ({ enabled: false, unread: 0 }));
@@ -145,6 +156,16 @@ export default async function AppLayout({ children, params }: LayoutProps) {
                 riskWarning={footer.riskWarning}
                 brandName={brandName}
                 socials={brand?.socials ?? []}
+                legal={
+                  legalLines && {
+                    ...legalLines,
+                    verifyLabel: tLegal('verifyLicense'),
+                    more: {
+                      href: siteHref(SITE_REGULATION_PATH, params.locale, site.defaultLanguage),
+                      label: tLegal('regulationLink'),
+                    },
+                  }
+                }
                 copyright={tCommon('copyright', { year: new Date().getFullYear(), brand: brandName })}
               />
             </div>

@@ -19,6 +19,73 @@ const brandSocialsSchema = z
   )
   .catch([] as z.infer<typeof socialLinkSchema>[]);
 
+const legalTextSlot = z
+  .unknown()
+  .transform((value) => (typeof value === 'string' && value.trim() !== '' ? value.trim() : null));
+
+export function isVerifyUrl(value: unknown): value is string {
+  if (typeof value !== 'string' || value.trim() !== value || value === '') return false;
+  let url: URL;
+  try {
+    url = new URL(value);
+  } catch {
+    return false;
+  }
+  return (
+    url.protocol === 'https:' &&
+    url.hostname.includes('.') &&
+    !url.hostname.endsWith('.') &&
+    url.username === '' &&
+    url.password === ''
+  );
+}
+
+const legalLicenseFileSchema = z.object({
+  url: z.string().url().refine((url) => /^https?:\/\//.test(url)),
+  filename: z.string(),
+  mimeType: z.literal('application/pdf'),
+});
+
+const legalLicenseSchema = z.object({
+  number: legalTextSlot,
+  activity: legalTextSlot,
+  regulator: legalTextSlot,
+  regulatorCountry: legalTextSlot,
+  verifyUrl: z.unknown().transform((value) => (isVerifyUrl(value) ? value : null)),
+  document: legalLicenseFileSchema.nullable().catch(null),
+});
+export type LegalLicense = z.infer<typeof legalLicenseSchema>;
+
+const legalEntityObjectSchema = z
+  .object({
+    name: legalTextSlot,
+    registrationNumber: legalTextSlot,
+    address: legalTextSlot,
+    licenses: z
+      .array(z.unknown())
+      .catch([])
+      .transform((items) =>
+        items.flatMap((item) => {
+          const parsed = legalLicenseSchema.safeParse(item);
+          return parsed.success && (parsed.data.number || parsed.data.activity || parsed.data.regulator)
+            ? [parsed.data]
+            : [];
+        }),
+      ),
+  })
+  .transform((entity) =>
+    entity.name || entity.registrationNumber || entity.address || entity.licenses.length > 0
+      ? entity
+      : null,
+  );
+
+export const legalEntitySchema = legalEntityObjectSchema
+  .nullable()
+  .optional()
+  .catch(null)
+  .transform((entity) => entity ?? null);
+export type LegalEntity = NonNullable<z.infer<typeof legalEntitySchema>>;
+
 const brandLegacySchema = z.object({
   name: z.string().min(1),
   logo: brandMediaSlot,
@@ -26,6 +93,7 @@ const brandLegacySchema = z.object({
   primaryColor: brandColorSlot,
   socials: brandSocialsSchema,
   heroBackground: heroBackgroundSlot,
+  legalEntity: legalEntitySchema,
 });
 
 const brandV2Schema = z
@@ -39,6 +107,7 @@ const brandV2Schema = z
       socials: brandSocialsSchema,
       heroBackground: heroBackgroundSlot,
     }),
+    legalEntity: legalEntitySchema,
   })
   .transform((response) => ({
     name: response.site.name,
@@ -47,6 +116,7 @@ const brandV2Schema = z
     primaryColor: response.brand.primaryColor,
     socials: response.brand.socials,
     heroBackground: response.brand.heroBackground,
+    legalEntity: response.legalEntity,
   }));
 
 export const brandSchema = z.union([brandV2Schema, brandLegacySchema]);

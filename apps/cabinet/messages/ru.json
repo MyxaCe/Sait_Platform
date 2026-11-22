@@ -985,5 +985,12 @@
   },
   "liveParams": {
     "supportAlwaysOpen": "круглосуточно"
+  },
+  "legalEntity": {
+    "regNumber": "рег. № {number}",
+    "license": "Лицензия",
+    "licenseNumber": "Лицензия № {number}",
+    "verifyLicense": "Проверить лицензию",
+    "regulationLink": "Регулирование"
   }
 }

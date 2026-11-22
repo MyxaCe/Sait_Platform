@@ -145,6 +145,21 @@ describe('остаток текстов в messages — без неподтве�
   });
 
   it.each(['messages/ru.json', 'messages/en.json'])('%s', (file) => {
-    expect(offendingClaims(readFileSync(path.join(WEB, file), 'utf8'))).toEqual([]);
+    const { legalEntity: _labels, ...rest } = JSON.parse(readFileSync(path.join(WEB, file), 'utf8'));
+    expect(offendingClaims(JSON.stringify(rest, null, 2))).toEqual([]);
   });
+
+  it.each(['ru', 'en', 'de', 'fr', 'es'])(
+    'messages/%s.json: legalEntity — только короткие подписи к данным из CMS, без заявлений',
+    (locale) => {
+      const { legalEntity } = JSON.parse(readFileSync(path.join(WEB, `messages/${locale}.json`), 'utf8'));
+      const values = Object.values(legalEntity as Record<string, unknown>);
+      expect(values.length).toBeGreaterThan(0);
+      for (const value of values) {
+        expect(typeof value).toBe('string');
+        expect((value as string).length).toBeLessThanOrEqual(40);
+        expect(value).not.toMatch(/регулируем|regulated|\b(CySEC|FSCA|FCA|ASIC)\b|\d{3,}/i);
+      }
+    },
+  );
 });

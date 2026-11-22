@@ -113,13 +113,42 @@ const MDS_QUOTES = {
   ],
 };
 
+const OPEN_SITE_LEGAL_ENTITY = (locale) => ({
+  name: 'Example Ltd',
+  registrationNumber: 'EX-000000',
+  address: locale === 'en' ? '1 Example Street, Example City' : 'Пример-сити, ул. Примерная, 1',
+  licenses: [
+    {
+      number: 'LIC-0001',
+      activity: locale === 'en' ? 'Brokerage' : 'Брокерская деятельность',
+      regulator: 'Example Financial Authority',
+      regulatorCountry: 'Exampleland',
+      verifyUrl: 'https://register.example.test/firms/LIC-0001',
+      document: {
+        url: 'https://cms.example.test/api/media/file/license.pdf',
+        filename: 'license.pdf',
+        mimeType: 'application/pdf',
+      },
+    },
+    {
+      number: 'LIC-0002',
+      activity: null,
+      regulator: null,
+      regulatorCountry: null,
+      verifyUrl: null,
+      document: null,
+    },
+  ],
+});
+
 const DATA = {
-  brand: () => ({
+  brand: (locale, _raw, site) => ({
     name: 'E2E Brand',
     logo: null,
     favicon: null,
     primaryColor: null,
     socials: [],
+    ...(site === OPEN_SITE ? { legalEntity: OPEN_SITE_LEGAL_ENTITY(locale) } : {}),
   }),
   navigation: (locale) => ({
     header:
@@ -235,7 +264,7 @@ const server = http.createServer((req, res) => {
   if (!build) return send(404, { error: 'not_found' });
   if (down.has(match[1])) return send(503, { error: 'stub_down' });
   const locale = url.searchParams.get('locale');
-  return send(200, build(!locale || locale === 'ru' ? 'ru' : 'en', locale || 'ru'));
+  return send(200, build(!locale || locale === 'ru' ? 'ru' : 'en', locale || 'ru', url.searchParams.get('site')));
 });
 
 server.listen(PORT, '127.0.0.1', () => {

@@ -87,6 +87,7 @@ describe('негодный слот теряет СЕБЯ, а не весь бр
       favicon: null,
       primaryColor: null,
       socials: [],
+      legalEntity: null,
     });
   });
 });
@@ -133,6 +134,7 @@ describe('читаются обе формы: legacy и public-brand.v1', () => 
       favicon: MEDIA,
       primaryColor: '#d4a437',
       socials: [SOCIAL],
+      legalEntity: null,
     });
   });
 
@@ -143,6 +145,7 @@ describe('читаются обе формы: legacy и public-brand.v1', () => 
       favicon: MEDIA,
       primaryColor: '#d4a437',
       socials: [SOCIAL],
+      legalEntity: null,
     });
   });
 
@@ -209,5 +212,92 @@ describe('heroBackground — необязательное поле бренда'
       expect(parsed.name).toBe('Apex Capital');
       expect(parsed.heroBackground).toBeUndefined();
     }
+  });
+});
+
+describe('legalEntity — юрлицо и лицензии из CMS', () => {
+  const ENTITY = {
+    name: 'Example Ltd',
+    registrationNumber: 'EX-000000',
+    address: '1 Example Street, Example City',
+    licenses: [
+      {
+        number: 'LIC-0001',
+        activity: 'Брокерская деятельность',
+        regulator: 'Example Financial Authority',
+        regulatorCountry: 'Exampleland',
+        verifyUrl: 'https://register.example.test/firms/LIC-0001',
+        document: {
+          url: 'https://cms.example.test/api/media/file/license.pdf',
+          filename: 'license.pdf',
+          mimeType: 'application/pdf',
+        },
+      },
+    ],
+  };
+
+  it('старая CMS без поля → null (строк в подвале нет)', () => {
+    expect(brandSchema.parse(legacy()).legalEntity).toBeNull();
+    expect(brandSchema.parse(v2()).legalEntity).toBeNull();
+  });
+
+  it('заполненное юрлицо разбирается целиком', () => {
+    expect(brandSchema.parse(legacy({ legalEntity: ENTITY })).legalEntity).toEqual(ENTITY);
+  });
+
+  it.each([
+    ['http', 'http://register.example.test/firms/1'],
+    ['javascript:', 'javascript:alert(1)'],
+    ['относительный', '/firms/1'],
+    ['без точки в хосте', 'https://localhost/firms/1'],
+    ['с учёткой', 'https://user:pass@register.example.test/'],
+  ])('ссылка «Проверить лицензию» %s → null, лицензия остаётся', (_name, verifyUrl) => {
+    const parsed = brandSchema.parse(
+      legacy({ legalEntity: { ...ENTITY, licenses: [{ ...ENTITY.licenses[0], verifyUrl }] } }),
+    );
+    expect(parsed.legalEntity?.licenses[0]?.verifyUrl).toBeNull();
+    expect(parsed.legalEntity?.licenses[0]?.number).toBe('LIC-0001');
+  });
+
+  it('не-PDF вместо файла лицензии → document = null', () => {
+    const parsed = brandSchema.parse(
+      legacy({
+        legalEntity: {
+          ...ENTITY,
+          licenses: [{ ...ENTITY.licenses[0], document: { ...ENTITY.licenses[0]!.document, mimeType: 'image/png' } }],
+        },
+      }),
+    );
+    expect(parsed.legalEntity?.licenses[0]?.document).toBeNull();
+  });
+
+  it('пустые строки и пустые лицензии не дают юрлица', () => {
+    const parsed = brandSchema.parse(
+      legacy({
+        legalEntity: {
+          name: '  ',
+          registrationNumber: '',
+          address: null,
+          licenses: [{ number: '', activity: null, regulator: '', verifyUrl: 'https://register.example.test/x' }],
+        },
+      }),
+    );
+    expect(parsed.legalEntity).toBeNull();
+  });
+
+  it('мусор вместо юрлица не роняет бренд', () => {
+    for (const legalEntity of ['Example Ltd', 42, [], { licenses: 'LIC-0001' }]) {
+      const parsed = brandSchema.parse(legacy({ legalEntity }));
+      expect(parsed.name).toBe('Apex Capital');
+      expect(parsed.socials).toEqual([SOCIAL]);
+    }
+    expect(brandSchema.parse(legacy({ legalEntity: { licenses: 'LIC-0001' } })).legalEntity).toBeNull();
+  });
+
+  it('битая лицензия выброшена, годные сохранены', () => {
+    const parsed = brandSchema.parse(
+      legacy({ legalEntity: { ...ENTITY, licenses: ['LIC', null, ENTITY.licenses[0]] } }),
+    );
+    expect(parsed.legalEntity?.licenses).toEqual(ENTITY.licenses);
   });
 });
