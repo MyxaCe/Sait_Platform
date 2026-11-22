@@ -5,35 +5,60 @@
       "name": "Сайт и регистрация",
       "description": "Маркетинговый сайт, формы заявок",
       "status": "operational",
-      "uptime90d": "99.99%"
+      "uptime90d": "99.99%",
+      "check": "site",
+      "manualStatus": "auto",
+      "maintenanceNote": null,
+      "maintenanceFrom": null,
+      "maintenanceTo": null
     },
     {
       "id": "svc-1",
       "name": "Торговый API",
       "description": "Исполнение ордеров, торговые операции",
       "status": "operational",
-      "uptime90d": "99.97%"
+      "uptime90d": "99.97%",
+      "check": "terminal",
+      "manualStatus": "auto",
+      "maintenanceNote": null,
+      "maintenanceFrom": null,
+      "maintenanceTo": null
     },
     {
       "id": "quotes-ws",
       "name": "Котировки (WebSocket)",
       "description": "Поток цен в реальном времени — статус вашего соединения",
       "status": "operational",
-      "uptime90d": "99.98%"
+      "uptime90d": "99.98%",
+      "check": "quotes",
+      "manualStatus": "auto",
+      "maintenanceNote": null,
+      "maintenanceFrom": null,
+      "maintenanceTo": null
     },
     {
       "id": "svc-2",
       "name": "Личный кабинет",
       "description": "Авторизация, профиль, документы",
       "status": "operational",
-      "uptime90d": "99.95%"
+      "uptime90d": "99.95%",
+      "check": "cabinet",
+      "manualStatus": "auto",
+      "maintenanceNote": null,
+      "maintenanceFrom": null,
+      "maintenanceTo": null
     },
     {
       "id": "svc-3",
       "name": "Платёжный шлюз",
       "description": "Пополнения и выводы средств",
       "status": "operational",
-      "uptime90d": "99.92%"
+      "uptime90d": "99.92%",
+      "check": null,
+      "manualStatus": "auto",
+      "maintenanceNote": null,
+      "maintenanceFrom": null,
+      "maintenanceTo": null
     }
   ],
   "incidents": [
@@ -41,12 +66,14 @@
       "date": "2026-07-14",
       "title": "Замедление обработки выводов на банковские карты",
       "status": "Решено",
+      "state": "resolved",
       "text": "С 10:20 до 12:45 UTC часть заявок на вывод обрабатывалась с задержкой из-за деградации на стороне платёжного провайдера. Все заявки исполнены, средства зачислены."
     },
     {
       "date": "2026-06-30",
       "title": "Плановое обслуживание торгового API",
       "status": "Завершено",
+      "state": "resolved",
       "text": "В ночь с 29 на 30 июня (01:00–02:30 UTC, рынки закрыты) проведено обновление инфраструктуры исполнения. Время недоступности — 12 минут в рамках объявленного окна."
     }
   ]

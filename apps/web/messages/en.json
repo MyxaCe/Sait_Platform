@@ -568,7 +568,21 @@
     "stateOutage": "Outage",
     "stateMaintenance": "Maintenance",
     "uptime": "90-day uptime: {value}",
-    "incidentsTitle": "Incident history"
+    "incidentsTitle": "Incident history",
+    "subtitleLive": "Service health from automated monitoring, refreshed every 30 seconds.",
+    "bannerMaintenance": "Scheduled maintenance in progress",
+    "bannerUnavailable": "Status is temporarily unavailable",
+    "stateUnknown": "No data",
+    "uptimePlain": "uptime: {value}",
+    "uptimeUnderDay": "uptime, less than a day: {value}",
+    "uptimeDays": "{days, plural, one {# day} other {# days}} uptime: {value}",
+    "maintenancePlanned": "Maintenance scheduled",
+    "maintenanceWindow": "{from} – {to} UTC",
+    "maintenanceUntil": "until {to} UTC",
+    "maintenanceFrom": "from {from} UTC",
+    "incidentInvestigating": "Investigating",
+    "incidentFixing": "Fixing",
+    "incidentResolved": "Resolved"
   },
   "offline": {
     "metaTitle": "No Connection",

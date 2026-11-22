@@ -5,6 +5,10 @@ import { Container, Section } from '@broker/ui';
 import { StatusBoard } from '@/features/status/StatusBoard';
 import { getCms } from '@/lib/cms';
 import { brandName } from '@/lib/brand';
+import { loadLiveStatus } from '@/lib/live-status';
+import { resolveStatusView } from '@/features/status/view';
+
+export const dynamic = 'force-dynamic';
 
 interface PageProps {
   params: { locale: string };
@@ -26,6 +30,7 @@ export default async function StatusPage({ params }: PageProps) {
     locale: pageLocale(params.locale),
     revalidate: 60,
   });
+  const view = resolveStatusView(services, await loadLiveStatus(), Date.now());
 
   return (
     <Section className="py-10 md:py-14">
@@ -33,9 +38,9 @@ export default async function StatusPage({ params }: PageProps) {
         <h1 className="text-3xl font-semibold tracking-tight text-primary sm:text-4xl">
           {t('title')}
         </h1>
-        <p className="mt-3 text-secondary">{t('subtitle')}</p>
+        <p className="mt-3 text-secondary">{t(view.mode === 'legacy' ? 'subtitle' : 'subtitleLive')}</p>
         <div className="mt-8">
-          <StatusBoard services={services} incidents={incidents} />
+          <StatusBoard view={view} incidents={incidents} />
         </div>
       </Container>
     </Section>

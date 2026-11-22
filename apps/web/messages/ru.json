@@ -568,7 +568,21 @@
     "stateOutage": "Сбой",
     "stateMaintenance": "Обслуживание",
     "uptime": "uptime 90 дн: {value}",
-    "incidentsTitle": "История инцидентов"
+    "incidentsTitle": "История инцидентов",
+    "subtitleLive": "Состояние сервисов по данным автоматического мониторинга, обновляется каждые 30 секунд.",
+    "bannerMaintenance": "Идут плановые работы",
+    "bannerUnavailable": "Статус временно недоступен",
+    "stateUnknown": "Нет данных",
+    "uptimePlain": "uptime: {value}",
+    "uptimeUnderDay": "uptime менее чем за сутки: {value}",
+    "uptimeDays": "uptime за {days, plural, one {# день} few {# дня} many {# дней} other {# дня}}: {value}",
+    "maintenancePlanned": "Запланированы работы",
+    "maintenanceWindow": "{from} — {to} UTC",
+    "maintenanceUntil": "до {to} UTC",
+    "maintenanceFrom": "с {from} UTC",
+    "incidentInvestigating": "Расследуем",
+    "incidentFixing": "Исправляем",
+    "incidentResolved": "Решено"
   },
   "offline": {
     "metaTitle": "Нет соединения",

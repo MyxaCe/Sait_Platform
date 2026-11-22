@@ -29,6 +29,37 @@
               },
               "uptime90d": {
                 "type": "string"
+              },
+              "check": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "manualStatus": {
+                "type": "string",
+                "enum": [
+                  "auto",
+                  "maintenance"
+                ]
+              },
+              "maintenanceNote": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "maintenanceFrom": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "maintenanceTo": {
+                "type": [
+                  "string",
+                  "null"
+                ]
               }
             },
             "required": [
@@ -54,6 +85,21 @@
               },
               "status": {
                 "type": "string"
+              },
+              "state": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "investigating",
+                      "fixing",
+                      "resolved"
+                    ]
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
               },
               "text": {
                 "type": "string"

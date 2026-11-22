@@ -38,6 +38,7 @@ export default defineConfig({
         CABINET_INTERNAL_URL: `http://127.0.0.1:${STUB_PORT}`,
         CMS_LAST_GOOD_DIR: path.join(tmpdir(), `web-e2e-cms-last-good-${PORT}`),
         NEXT_PUBLIC_WS_URL: E2E_FEED_URL,
+        STATUS_PROMETHEUS_URL: `http://127.0.0.1:${STUB_PORT}`,
       },
       timeout: process.env.CI ? 120_000 : 300_000,
     },

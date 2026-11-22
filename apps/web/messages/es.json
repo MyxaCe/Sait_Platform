@@ -568,7 +568,21 @@
     "stateOutage": "Caída",
     "stateMaintenance": "Mantenimiento",
     "uptime": "Disponibilidad a 90 días: {value}",
-    "incidentsTitle": "Historial de incidencias"
+    "incidentsTitle": "Historial de incidencias",
+    "subtitleLive": "Estado de los servicios según la monitorización automática, actualizado cada 30 segundos.",
+    "bannerMaintenance": "Mantenimiento programado en curso",
+    "bannerUnavailable": "Estado temporalmente no disponible",
+    "stateUnknown": "Sin datos",
+    "uptimePlain": "Disponibilidad: {value}",
+    "uptimeUnderDay": "Disponibilidad en menos de un día: {value}",
+    "uptimeDays": "Disponibilidad en {days, plural, one {# día} other {# días}}: {value}",
+    "maintenancePlanned": "Mantenimiento programado",
+    "maintenanceWindow": "{from} – {to} UTC",
+    "maintenanceUntil": "hasta el {to} UTC",
+    "maintenanceFrom": "desde el {from} UTC",
+    "incidentInvestigating": "Investigando",
+    "incidentFixing": "Corrigiendo",
+    "incidentResolved": "Resuelto"
   },
   "offline": {
     "metaTitle": "Sin conexión",

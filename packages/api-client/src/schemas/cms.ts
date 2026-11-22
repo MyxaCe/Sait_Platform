@@ -322,9 +322,20 @@ export const systemStatusResponseSchema = z.object({
       description: z.string(),
       status: z.enum(['operational', 'degraded', 'outage', 'maintenance']),
       uptime90d: z.string(),
+      check: z.string().nullable().optional(),
+      manualStatus: z.enum(['auto', 'maintenance']).optional(),
+      maintenanceNote: z.string().nullable().optional(),
+      maintenanceFrom: z.string().nullable().optional(),
+      maintenanceTo: z.string().nullable().optional(),
     }),
   ),
   incidents: z.array(
-    z.object({ date: z.string(), title: z.string(), status: z.string(), text: z.string() }),
+    z.object({
+      date: z.string(),
+      title: z.string(),
+      status: z.string(),
+      state: z.enum(['investigating', 'fixing', 'resolved']).nullable().optional(),
+      text: z.string(),
+    }),
   ),
 });

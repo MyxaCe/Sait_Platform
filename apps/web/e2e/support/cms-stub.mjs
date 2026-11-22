@@ -230,7 +230,18 @@ const DATA = {
   }),
   careers: () => ({ benefits: [], vacancies: [] }),
   legal: () => ({ items: [] }),
-  'system-status': () => ({ services: [], incidents: [] }),
+  'system-status': () => ({
+    services: [
+      { id: 'site', name: 'Сайт', description: 'Витрина', status: 'operational', uptime90d: '99.99%', check: 'site', manualStatus: 'auto' },
+      { id: 'storage', name: 'Хранилища', description: 'Базы', status: 'operational', uptime90d: '99.98%', check: 'storage', manualStatus: 'auto' },
+      { id: 'cms', name: 'CMS', description: 'Контент', status: 'outage', uptime90d: '99.90%', check: 'cms', manualStatus: 'maintenance', maintenanceNote: 'Обновление CMS' },
+      { id: 'pay', name: 'Платежи', description: 'Без проверки', status: 'operational', uptime90d: '99.92%', check: null, manualStatus: 'auto' },
+    ],
+    incidents: [
+      { date: '2026-11-20', title: 'Задержка котировок', status: '', state: 'fixing', text: 'Разбираемся' },
+      { date: '2026-07-14', title: 'Старый инцидент', status: 'Решено', text: 'Без статуса списком' },
+    ],
+  }),
 };
 
 const server = http.createServer((req, res) => {
@@ -247,6 +258,24 @@ const server = http.createServer((req, res) => {
     return send(200, { down: [...down] });
   }
   if (url.pathname === '/health') return send(200, { ok: true });
+  if (url.pathname === '/api/v1/query') {
+    if (down.has('prometheus')) return send(503, { status: 'error' });
+    let body = '';
+    req.on('data', (chunk) => (body += chunk));
+    req.on('end', () => {
+      const query = new URLSearchParams(body).get('query') ?? '';
+      if (query.startsWith('time()')) {
+        return send(200, { status: 'success', data: { resultType: 'vector', result: [{ metric: {}, value: [0, String(40.5 * 86400)] }] } });
+      }
+      const uptime = query.includes('avg_over_time');
+      const result = [...query.matchAll(/"status_check", "(\w+)", "", ""\), "status_signal", "(\d+)"/g)].map(([, check, signal]) => ({
+        metric: { instance: `${check}-${signal}`, status_check: check, status_signal: signal },
+        value: [0, uptime ? '0.99955' : check === 'storage' && signal === '0' && !query.includes('max_over_time') ? '0' : '1'],
+      }));
+      send(200, { status: 'success', data: { resultType: 'vector', result } });
+    });
+    return;
+  }
   if (/^\/v1\/cms\/sites\/[a-z0-9-]+$/.test(url.pathname)) {
     const card = { languages: SITE_LANGUAGES, defaultLanguage: 'ru', demoStartBalanceCents: 1_000_000 };
     if (url.pathname.endsWith(`/${OPEN_SITE}`)) card.instruments = OPEN_SITE_INSTRUMENTS;

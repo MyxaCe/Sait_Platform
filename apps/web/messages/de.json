@@ -568,7 +568,21 @@
     "stateOutage": "Ausfall",
     "stateMaintenance": "Wartung",
     "uptime": "Verfügbarkeit (90 Tage): {value}",
-    "incidentsTitle": "Störungsverlauf"
+    "incidentsTitle": "Störungsverlauf",
+    "subtitleLive": "Zustand der Dienste laut automatischem Monitoring, alle 30 Sekunden aktualisiert.",
+    "bannerMaintenance": "Geplante Wartungsarbeiten laufen",
+    "bannerUnavailable": "Status vorübergehend nicht verfügbar",
+    "stateUnknown": "Keine Daten",
+    "uptimePlain": "Verfügbarkeit: {value}",
+    "uptimeUnderDay": "Verfügbarkeit (weniger als ein Tag): {value}",
+    "uptimeDays": "Verfügbarkeit ({days, plural, one {# Tag} other {# Tage}}): {value}",
+    "maintenancePlanned": "Wartung geplant",
+    "maintenanceWindow": "{from} – {to} UTC",
+    "maintenanceUntil": "bis {to} UTC",
+    "maintenanceFrom": "ab {from} UTC",
+    "incidentInvestigating": "Wird untersucht",
+    "incidentFixing": "Wird behoben",
+    "incidentResolved": "Behoben"
   },
   "offline": {
     "metaTitle": "Keine Verbindung",
