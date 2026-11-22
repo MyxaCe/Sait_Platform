@@ -9,6 +9,7 @@ export interface StreamFacadeProps {
   title: string;
   posterUrl?: string | null;
   className?: string;
+  startActive?: boolean;
 }
 
 function embedUrl(provider: 'youtube' | 'vimeo', videoId: string): string {
@@ -17,8 +18,8 @@ function embedUrl(provider: 'youtube' | 'vimeo', videoId: string): string {
     : `https://player.vimeo.com/video/${encodeURIComponent(videoId)}?autoplay=1`;
 }
 
-export function StreamFacade({ provider, videoId, title, posterUrl, className }: StreamFacadeProps) {
-  const [activated, setActivated] = useState(false);
+export function StreamFacade({ provider, videoId, title, posterUrl, className, startActive = false }: StreamFacadeProps) {
+  const [activated, setActivated] = useState(startActive);
 
   return (
     <div

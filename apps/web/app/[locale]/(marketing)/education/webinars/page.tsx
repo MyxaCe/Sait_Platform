@@ -4,7 +4,9 @@ import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { Badge, Button } from '@broker/ui';
 import { formatDate, formatTime } from '@broker/utils';
 import { Link } from '@/i18n/navigation';
+import { RecordingButton } from '@/features/streams/RecordingButton';
 import { StreamFacade } from '@/features/streams/StreamFacade';
+import type { VideoRef } from '@broker/api-client';
 import { getCms } from '@/lib/cms';
 
 interface PageProps {
@@ -27,6 +29,8 @@ interface WebinarView {
   durationMinutes: number;
   level: string;
   description: string;
+  recording?: VideoRef;
+  joinUrl?: string;
   isPast: boolean;
 }
 
@@ -37,6 +41,7 @@ interface CardLabels {
   date: (iso: string) => string;
   seat: string;
   recordSoon: string;
+  watchRecording: string;
 }
 
 function WebinarCard({ webinar, labels }: { webinar: WebinarView; labels: CardLabels }) {
@@ -70,10 +75,18 @@ function WebinarCard({ webinar, labels }: { webinar: WebinarView; labels: CardLa
       </div>
 
       <div className="mt-5">
-        {webinar.isPast ? (
+        {webinar.isPast && webinar.recording ? (
+          <RecordingButton recording={webinar.recording} title={webinar.title} label={labels.watchRecording} />
+        ) : webinar.isPast ? (
           <Button variant="secondary" className="w-full" disabled>
             {labels.recordSoon}
           </Button>
+        ) : webinar.joinUrl ? (
+          <a href={webinar.joinUrl} target="_blank" rel="noopener noreferrer" className="block">
+            <Button className="w-full" tabIndex={-1}>
+              {labels.seat}
+            </Button>
+          </a>
         ) : (
           <Link href="/register" className="block">
             <Button className="w-full" tabIndex={-1}>
@@ -104,6 +117,9 @@ export default async function WebinarsPage({ params }: PageProps) {
   const upcoming = views.filter((w) => !w.isPast);
   const past = views.filter((w) => w.isPast).reverse();
   const activeStreams = streams.items.filter((s) => s.status !== 'past');
+  const pastStreams = streams.items
+    .filter((s) => s.status === 'past')
+    .sort((a, b) => Date.parse(b.startsAt) - Date.parse(a.startsAt));
 
   const labels: CardLabels = {
     live: t('liveBadge'),
@@ -112,6 +128,7 @@ export default async function WebinarsPage({ params }: PageProps) {
     date: (iso) => formatDate(iso, intlLocale),
     seat: t('seat'),
     recordSoon: t('recordSoon'),
+    watchRecording: t('watchRecording'),
   };
 
   return (
@@ -147,6 +164,23 @@ export default async function WebinarsPage({ params }: PageProps) {
           <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3 lg:gap-6">
             {past.map((w) => (
               <WebinarCard key={w.id} webinar={w} labels={labels} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {pastStreams.length > 0 && (
+        <section aria-label={t('streamRecords')}>
+          <h2 className="text-xl font-semibold text-primary">{t('streamRecords')}</h2>
+          <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3 lg:gap-6">
+            {pastStreams.map((stream) => (
+              <StreamFacade
+                key={`${stream.provider}:${stream.videoId}`}
+                provider={stream.provider}
+                videoId={stream.videoId}
+                title={stream.title}
+                posterUrl={stream.poster?.url}
+              />
             ))}
           </div>
         </section>

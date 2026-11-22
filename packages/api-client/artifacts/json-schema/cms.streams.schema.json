@@ -80,6 +80,10 @@
                   "upcoming",
                   "past"
                 ]
+              },
+              "videoUrl": {
+                "type": "string",
+                "format": "uri"
               }
             },
             "required": [

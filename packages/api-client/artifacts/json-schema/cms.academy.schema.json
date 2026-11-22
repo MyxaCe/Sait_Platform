@@ -31,6 +31,32 @@
               },
               "bodyMarkdown": {
                 "type": "string"
+              },
+              "video": {
+                "type": "object",
+                "properties": {
+                  "provider": {
+                    "type": "string",
+                    "enum": [
+                      "youtube",
+                      "vimeo"
+                    ]
+                  },
+                  "videoId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "url": {
+                    "type": "string",
+                    "format": "uri"
+                  }
+                },
+                "required": [
+                  "provider",
+                  "videoId",
+                  "url"
+                ],
+                "additionalProperties": false
               }
             },
             "required": [
@@ -82,6 +108,14 @@
               },
               "description": {
                 "type": "string"
+              },
+              "recording": {
+                "$ref": "#/definitions/cms.academy/properties/articles/items/properties/video"
+              },
+              "joinUrl": {
+                "type": "string",
+                "format": "uri",
+                "pattern": "^https:\\/\\/"
               }
             },
             "required": [

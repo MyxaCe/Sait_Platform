@@ -148,6 +148,15 @@ export const partnersResponseSchema = z.object({
   steps: z.array(z.object({ title: z.string(), text: z.string() })),
 });
 
+const videoProviderSchema = z.enum(['youtube', 'vimeo']);
+export const videoRefSchema = z.object({
+  provider: videoProviderSchema,
+  videoId: z.string().min(1),
+  url: z.string().url(),
+});
+export type VideoRef = z.infer<typeof videoRefSchema>;
+const httpsUrlSchema = z.string().url().regex(/^https:\/\//);
+
 export const academyResponseSchema = z.object({
   articles: z.array(
     z.object({
@@ -157,6 +166,7 @@ export const academyResponseSchema = z.object({
       level: z.enum(['beginner', 'intermediate']),
       readingMinutes: z.number().int().positive(),
       bodyMarkdown: z.string(),
+      video: videoRefSchema.optional().catch(undefined),
     }),
   ),
   webinars: z.array(
@@ -169,18 +179,21 @@ export const academyResponseSchema = z.object({
       durationMinutes: z.number().int().positive(),
       level: z.string(),
       description: z.string(),
+      recording: videoRefSchema.optional().catch(undefined),
+      joinUrl: httpsUrlSchema.optional().catch(undefined),
     }),
   ),
   glossary: z.array(z.object({ term: z.string(), definition: z.string() })),
 });
 
 export const streamSchema = z.object({
-  provider: z.enum(['youtube', 'vimeo']),
+  provider: videoProviderSchema,
   videoId: z.string().min(1),
   title: z.string(),
   poster: mediaSchema.nullable(),
   startsAt: isoDateTimeSchema,
   status: z.enum(['live', 'upcoming', 'past']),
+  videoUrl: z.string().url().optional().catch(undefined),
 });
 export const streamsResponseSchema = z.object({ items: z.array(streamSchema) });
 

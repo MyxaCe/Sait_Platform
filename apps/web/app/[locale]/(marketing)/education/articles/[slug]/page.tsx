@@ -5,6 +5,7 @@ import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { Button } from '@broker/ui';
 import { Link } from '@/i18n/navigation';
 import { MarkdownText } from '@/components/MarkdownText';
+import { StreamFacade } from '@/features/streams/StreamFacade';
 import { brandName } from '@/lib/brand';
 import { getCms, staticParamsFromCms } from '@/lib/cms';
 
@@ -73,6 +74,12 @@ export default async function EducationArticlePage({ params }: PageParams) {
       <h1 className="mt-4 text-2xl font-semibold leading-snug tracking-tight text-primary sm:text-3xl lg:text-4xl">
         {article.title}
       </h1>
+
+      {article.video && (
+        <section aria-label={t('articleVideo')} className="mt-8">
+          <StreamFacade provider={article.video.provider} videoId={article.video.videoId} title={article.title} />
+        </section>
+      )}
 
       <div className="mt-8 space-y-5 border-t border-border pt-8">
         <MarkdownText markdown={article.bodyMarkdown} />
