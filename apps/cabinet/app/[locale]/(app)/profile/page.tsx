@@ -10,8 +10,8 @@ import {
   DocumentsSection,
   PersonalSection,
   SecuritySection,
-  VerificationSection,
 } from '@/features/profile/ProfileSections';
+import { KYC_TONE, VerificationSection } from '@/features/kyc/VerificationSection';
 import { EmailVerifyNotice } from '@/features/auth/EmailVerifyNotice';
 import { TransferNotice } from '@/features/transfer/TransferNotice';
 
@@ -25,12 +25,13 @@ export default async function ProfilePage({
   searchParams,
 }: {
   params: { locale: string };
-  searchParams: { tab?: string };
+  searchParams: { tab?: string; step?: string };
 }) {
   setRequestLocale(params.locale);
   const user = await requireSessionUser(params.locale);
   const t = await getTranslations('profile');
   const th = await getTranslations('home');
+  const tk = await getTranslations('kyc');
   const format = await getFormatter();
   const tab: Tab = (TABS as readonly string[]).includes(searchParams.tab ?? '') ? (searchParams.tab as Tab) : 'personal';
   const state = (await getVerificationState(user.id)) ?? 'unverified';
@@ -63,10 +64,10 @@ export default async function ProfilePage({
                 <span className="inline-flex h-[22px] items-center rounded-md bg-primary/[0.06] px-2 tabular-nums">
                   UID {user.uid ?? '—'}
                 </span>
-                <ToneBadge
-                  tone={state === 'verified' ? 'positive' : state === 'pending' ? 'warning' : state === 'rejected' ? 'negative' : 'neutral'}
-                >
-                  {th(state === 'verified' ? 'kycVerified' : state === 'pending' ? 'kycPending' : state === 'rejected' ? 'kycRejected' : 'kycNone')}
+                <ToneBadge tone={KYC_TONE[state]}>
+                  {state === 'resubmit_requested'
+                    ? tk('states.resubmit_requested')
+                    : th(state === 'verified' ? 'kycVerified' : state === 'pending' ? 'kycPending' : state === 'rejected' ? 'kycRejected' : 'kycNone')}
                 </ToneBadge>
                 <span>{t('memberSince', { date: format.dateTime(user.createdAt, { dateStyle: 'long' }) })}</span>
               </div>
@@ -99,7 +100,7 @@ export default async function ProfilePage({
             </div>
           </div>
         ) : null}
-        {tab === 'verification' ? <VerificationSection userId={user.id} state={state} /> : null}
+        {tab === 'verification' ? <VerificationSection userId={user.id} state={state} step={searchParams.step} /> : null}
         {tab === 'security' ? <SecuritySection userId={user.id} /> : null}
         {tab === 'documents' ? <DocumentsSection userId={user.id} /> : null}
       </div>

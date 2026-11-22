@@ -3,11 +3,13 @@
 import { useRef } from 'react';
 import { useFormState, useFormStatus } from 'react-dom';
 import { useTranslations } from 'next-intl';
-import { Button, FormField, Select } from '@broker/ui';
+import { Button, FormField } from '@broker/ui';
 import { submitKycDocumentAction } from '@/lib/kyc-actions';
-import { KYC_DOC_KINDS } from '@/lib/kyc-kinds';
+import type { KycDocKind } from '@/lib/kyc-kinds';
 import type { ActionState } from '@/lib/actions';
 import { FormMessage, useFieldError } from '@/features/auth/FormMessage';
+
+export type UploadKycKind = Exclude<KycDocKind, 'selfie_liveness'>;
 
 function SubmitButton({ label }: { label: string }) {
   const { pending } = useFormStatus();
@@ -18,7 +20,7 @@ function SubmitButton({ label }: { label: string }) {
   );
 }
 
-export function KycUploadForm() {
+export function KycUploadForm({ kind }: { kind: UploadKycKind }) {
   const t = useTranslations('kyc');
   const fieldError = useFieldError();
   const formRef = useRef<HTMLFormElement>(null);
@@ -30,6 +32,7 @@ export function KycUploadForm() {
     },
     {},
   );
+  const inputId = `file-${kind}`;
 
   return (
     <form ref={formRef} action={formAction} className="flex flex-col gap-4" noValidate>
@@ -40,19 +43,11 @@ export function KycUploadForm() {
         </p>
       )}
 
-      <FormField label={t('kind')} htmlFor="kind">
-        <Select id="kind" name="kind" defaultValue={KYC_DOC_KINDS[0]}>
-          {KYC_DOC_KINDS.map((kind) => (
-            <option key={kind} value={kind}>
-              {t(`kinds.${kind}` as never)}
-            </option>
-          ))}
-        </Select>
-      </FormField>
+      <input type="hidden" name="kind" value={kind} />
 
-      <FormField label={t('file')} htmlFor="file" required error={fieldError(state.fieldErrors?.file)}>
+      <FormField label={t('file')} htmlFor={inputId} required error={fieldError(state.fieldErrors?.file)}>
         <input
-          id="file"
+          id={inputId}
           name="file"
           type="file"
           accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"

@@ -4,11 +4,11 @@ import { EmptyState, ToneBadge, cn, type StatusTone } from '@broker/ui';
 import { listSessions, type SessionUser } from '@/lib/auth/session';
 import { revokeSessionAction } from '@/lib/actions';
 import { listDocuments } from '@/lib/data';
-import { KYC_DOC_KINDS, listKycDocuments, type VerificationState } from '@/lib/kyc';
+import type { VerificationState } from '@/lib/kyc';
+import { KYC_TONE } from '@/features/kyc/VerificationSection';
 import { ProfileForm } from './ProfileForm';
 import { PasswordForm } from '@/features/security/PasswordForm';
 import { UploadForm } from '@/features/documents/UploadForm';
-import { KycUploadForm } from '@/features/kyc/KycUploadForm';
 
 function Card({ title, hint, children }: { title: string; hint?: string; children: React.ReactNode }) {
   return (
@@ -29,94 +29,6 @@ export async function PersonalSection({ user }: { user: SessionUser }) {
   );
 }
 
-const KYC_TONE: Record<VerificationState, StatusTone> = {
-  unverified: 'neutral',
-  pending: 'warning',
-  verified: 'positive',
-  rejected: 'negative',
-};
-
-export async function VerificationSection({ userId, state }: { userId: string; state: VerificationState }) {
-  const t = await getTranslations('kyc');
-  const format = await getFormatter();
-  const documents = await listKycDocuments(userId);
-  const submitted = new Set(documents.map((d) => d.kind));
-
-  const steps = [
-    ...KYC_DOC_KINDS.slice(0, 3).map((kind) => ({
-      key: kind,
-      label: t(`kinds.${kind}` as never),
-      done: state === 'verified' || submitted.has(kind),
-    })),
-    { key: 'review', label: t('stepReview'), done: state === 'verified' },
-  ];
-
-  return (
-    <div className="space-y-4 xl:grid xl:grid-cols-2 xl:items-start xl:gap-5 xl:space-y-0">
-      <section
-        className={cn(
-          'rounded-2xl border p-4 sm:p-5',
-          state === 'verified' ? 'border-positive/25 bg-positive/[0.04]' : 'border-border bg-elevated',
-        )}
-      >
-        <div className="flex flex-wrap items-center gap-2">
-          <h2 className="text-[15px] font-semibold">{t('title')}</h2>
-          <ToneBadge tone={KYC_TONE[state]}>{t(`states.${state}` as never)}</ToneBadge>
-        </div>
-        <p className="mt-1 text-sm text-secondary">{t(`stateText.${state}` as never)}</p>
-        <ol className="mt-4 grid gap-2 sm:grid-cols-2">
-          {steps.map((s, i) => (
-            <li key={s.key} className="flex items-center gap-2.5 text-sm">
-              <span
-                className={cn(
-                  'grid size-6 shrink-0 place-items-center rounded-full text-xs font-semibold',
-                  s.done ? 'bg-positive/15 text-positive' : 'border border-border-strong text-secondary',
-                )}
-              >
-                {s.done ? (
-                  <svg viewBox="0 0 16 16" className="size-3.5" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
-                    <path d="M3.5 8.5l3 3 6-6.5" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                ) : (
-                  i + 1
-                )}
-              </span>
-              <span className={s.done ? 'text-primary' : 'text-secondary'}>{s.label}</span>
-            </li>
-          ))}
-        </ol>
-      </section>
-
-      {state !== 'verified' ? (
-        <Card title={t('submit')} hint={t('hint')}>
-          <KycUploadForm />
-        </Card>
-      ) : null}
-
-      <section className="space-y-2">
-        <h2 className="text-sm font-semibold">{t('submittedTitle')}</h2>
-        {documents.length === 0 ? (
-          <div className="rounded-2xl border border-border bg-elevated">
-            <EmptyState size="compact" title={t('empty')} description={t('emptyHint')} />
-          </div>
-        ) : (
-          <ul className="divide-y divide-border rounded-2xl border border-border bg-elevated">
-            {documents.map((doc) => (
-              <li key={doc.id} className="flex items-center justify-between gap-3 px-4 py-3">
-                <div className="min-w-0">
-                  <p className="truncate text-sm">{t(`kinds.${doc.kind}` as never)}</p>
-                  <p className="text-xs text-secondary">
-                    {format.dateTime(doc.submittedAt, { dateStyle: 'short', timeStyle: 'short' })}
-                  </p>
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-    </div>
-  );
-}
 
 export async function SecuritySection({ userId }: { userId: string }) {
   const t = await getTranslations('security');

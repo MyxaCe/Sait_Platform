@@ -249,7 +249,7 @@
     "kind": "Tipo de documento",
     "kinds": {
       "identity": "Pasaporte / documento de identidad",
-      "selfie_liveness": "Selfi con prueba de vida",
+      "selfie_liveness": "Selfi con cámara",
       "address_proof": "Justificante de domicilio",
       "source_of_funds": "Origen de los fondos"
     },
@@ -259,17 +259,70 @@
       "unverified": "No completada",
       "pending": "En revisión",
       "verified": "Verificada",
-      "rejected": "Rechazada"
+      "rejected": "Rechazada",
+      "resubmit_requested": "Se necesitan más documentos"
     },
-    "stepReview": "Revisión por un operador",
     "stateText": {
-      "unverified": "Verifique su identidad para habilitar los retiros. Suba los documentos a continuación; la revisión suele tardar hasta un día hábil.",
-      "pending": "Documentos en revisión: normalmente hasta un día hábil. Le notificaremos la decisión.",
+      "unverified": "Verifique su identidad para habilitar los retiros. Complete los tres pasos de abajo.",
+      "pending": "Sus documentos están en revisión. Le avisaremos de la decisión.",
       "verified": "Identidad verificada. Los depósitos y retiros están disponibles.",
-      "rejected": "Verificación no superada. Vuelva a subir los documentos y los revisaremos de nuevo."
+      "rejected": "Verificación no superada. Vuelva a subir los documentos y los revisaremos de nuevo.",
+      "resubmit_requested": "Nuestro equipo necesita documentos adicionales o tomados de nuevo. Revise los pasos de abajo y envíe lo que falta."
     },
     "submittedTitle": "Documentos enviados",
-    "emptyHint": "Los documentos enviados aparecerán aquí con la fecha de envío."
+    "emptyHint": "Los documentos enviados aparecerán aquí con la fecha de envío.",
+    "reviewEta": "Plazo estimado de revisión: hasta un día hábil.",
+    "stepsLabel": "Pasos de la verificación",
+    "steps": {
+      "identity": "Documento",
+      "address_proof": "Dirección",
+      "selfie_liveness": "Selfi"
+    },
+    "stepDone": "Enviado",
+    "stepTodo": "Pendiente",
+    "stepOf": "Paso {current} de {total}",
+    "stepHint": {
+      "identity": "Pasaporte o documento de identidad: página con foto, todas las esquinas visibles, texto legible. PDF, JPG o PNG de hasta 10 MB.",
+      "address_proof": "Factura de suministros o extracto bancario de menos de 3 meses, con su nombre y dirección. PDF, JPG o PNG de hasta 10 MB.",
+      "selfie_liveness": "Fotos con la cámara frontal según la tarea en pantalla. Un miembro de nuestro equipo las compara con la foto de su documento."
+    },
+    "nextStep": "Siguiente: {step}",
+    "extraTitle": "Adicional: origen de los fondos",
+    "extraHint": "Si nuestro equipo lo solicita, suba un documento sobre el origen de sus fondos: justificante de ingresos, extracto o contrato.",
+    "selfie": {
+      "cameraOnly": "En este paso solo se aceptan fotos de la cámara: no se puede subir desde la galería.",
+      "intro": "Active la cámara: aparecerán una tarea aleatoria y un código. Tome 3 fotos según las indicaciones; tiene 2 minutos.",
+      "start": "Activar cámara",
+      "preview": "Imagen de la cámara",
+      "code": "Código {code}",
+      "codeHint": "El código y la hora se verán en las fotos, para que nuestro equipo sepa que se tomaron ahora.",
+      "timeLeft": "Quedan {seconds} s",
+      "stepOf": "Foto {current} de {total}",
+      "tasks": {
+        "face_front": "Mire directamente a la cámara, con toda la cara en el encuadre",
+        "turn_left": "Gire la cabeza a la izquierda",
+        "turn_right": "Gire la cabeza a la derecha",
+        "show_fingers": "{count, plural, one {Levante # dedo junto a su cara} other {Levante # dedos junto a su cara}}",
+        "hold_document": "Sostenga su documento de identidad junto a su cara"
+      },
+      "capture": "Tomar foto",
+      "review": "Revise las fotos: la cara se ve y la tarea está hecha.",
+      "send": "Enviar a revisión",
+      "sending": "Enviando…",
+      "retake": "Repetir",
+      "done": "Fotos enviadas. Un miembro de nuestro equipo las comparará con la foto de su documento.",
+      "expired": "Se acabó el tiempo de la tarea. Empiece de nuevo y le daremos una tarea nueva.",
+      "restart": "Empezar de nuevo",
+      "unavailable": {
+        "unsupported": "Este navegador no da acceso a la cámara.",
+        "denied": "Sin acceso a la cámara. Permita la cámara para este sitio en los ajustes del navegador e inténtelo de nuevo.",
+        "nocamera": "No se encontró ninguna cámara en este dispositivo.",
+        "error": "No se pudo activar la cámara. Cierre otras aplicaciones que la usen e inténtelo de nuevo."
+      },
+      "phoneHint": "Haga este paso desde el teléfono: escanee el código QR o inicie sesión en el teléfono y abra Perfil → Verificación → Selfi.",
+      "qrAlt": "Código QR con enlace al paso «Selfi»",
+      "tryAgain": "Intentar de nuevo"
+    }
   },
   "notifications": {
     "title": "Notificaciones",
@@ -327,7 +380,10 @@
     "startBalanceUnset": "Ahora mismo no se puede abrir la cuenta: el importe inicial de la cuenta demo no está definido. No lo sustituimos por otro; contacte con Soporte, se corrige en la configuración del sitio.",
     "startBalanceUnavailable": "Ahora mismo no se puede abrir la cuenta: no se ha podido obtener la configuración del sitio. Inténtelo más tarde; los datos del formulario no se han perdido.",
     "tempPasswordExpired": "Su contraseña temporal ha caducado. Pida una nueva a su gestor o use «¿Olvidó su contraseña?».",
-    "accountTypeUnavailable": "Este tipo de cuenta no está disponible en este momento. Elija otro."
+    "accountTypeUnavailable": "Este tipo de cuenta no está disponible en este momento. Elija otro.",
+    "selfieCameraOnly": "El selfi solo se acepta como foto de la cámara: la subida de archivos está desactivada en este paso.",
+    "selfieExpired": "La tarea ha caducado: empiece de nuevo.",
+    "selfieInvalid": "No se aceptaron las fotos. Tómelas de nuevo con la cámara."
   },
   "history": {
     "title": "Historial",

@@ -26,4 +26,5 @@ export const EXPECTED_MIGRATIONS: readonly string[] = [
   '1795710000000_platform_transfers',
   '1795830000000_withdraw_kyc_allowance',
   '1795910000000_money_command_execution',
+  '1795960000000_kyc_selfie_capture',
 ];

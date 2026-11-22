@@ -249,7 +249,7 @@
     "kind": "Document type",
     "kinds": {
       "identity": "Passport / identity document",
-      "selfie_liveness": "Selfie with liveness",
+      "selfie_liveness": "Camera selfie",
       "address_proof": "Proof of address",
       "source_of_funds": "Source of funds"
     },
@@ -259,17 +259,70 @@
       "unverified": "Not started",
       "pending": "Under review",
       "verified": "Verified",
-      "rejected": "Rejected"
+      "rejected": "Rejected",
+      "resubmit_requested": "More documents needed"
     },
-    "stepReview": "Operator review",
     "stateText": {
-      "unverified": "Verify your identity to unlock withdrawals. Upload documents below; review usually takes up to one business day.",
-      "pending": "Documents under review — usually up to one business day. We will notify you of the decision.",
+      "unverified": "Verify your identity to unlock withdrawals. Complete the three steps below.",
+      "pending": "Your documents are under review. We will notify you of the decision.",
       "verified": "Identity verified. Deposits and withdrawals are available.",
-      "rejected": "Verification failed. Upload documents again and we will review once more."
+      "rejected": "Verification failed. Upload documents again and we will review once more.",
+      "resubmit_requested": "Our team needs additional or retaken documents. Check the steps below and send what is missing."
     },
     "submittedTitle": "Submitted documents",
-    "emptyHint": "Submitted documents will appear here with the submission date."
+    "emptyHint": "Submitted documents will appear here with the submission date.",
+    "reviewEta": "Estimated review time: up to one business day.",
+    "stepsLabel": "Verification steps",
+    "steps": {
+      "identity": "Document",
+      "address_proof": "Address",
+      "selfie_liveness": "Selfie"
+    },
+    "stepDone": "Submitted",
+    "stepTodo": "To do",
+    "stepOf": "Step {current} of {total}",
+    "stepHint": {
+      "identity": "Passport or ID card: the photo page, all corners in frame, text readable. PDF, JPG or PNG up to 10 MB.",
+      "address_proof": "A utility bill or bank statement no older than 3 months, showing your name and address. PDF, JPG or PNG up to 10 MB.",
+      "selfie_liveness": "Photos from your front camera following the on-screen task. A member of our team compares them with your document photo."
+    },
+    "nextStep": "Next: {step}",
+    "extraTitle": "Additional: source of funds",
+    "extraHint": "If our team asks, upload a document showing where your funds come from: proof of income, a statement or a contract.",
+    "selfie": {
+      "cameraOnly": "Only camera photos are accepted at this step — uploading from your gallery is not possible.",
+      "intro": "Turn on your camera: a random task and a code will appear on screen. Take 3 photos as prompted — you have 2 minutes.",
+      "start": "Turn on camera",
+      "preview": "Camera view",
+      "code": "Code {code}",
+      "codeHint": "The code and time will be shown on the photos, so our team can see they were taken just now.",
+      "timeLeft": "{seconds} s left",
+      "stepOf": "Photo {current} of {total}",
+      "tasks": {
+        "face_front": "Look straight into the camera with your whole face in frame",
+        "turn_left": "Turn your head to the left",
+        "turn_right": "Turn your head to the right",
+        "show_fingers": "{count, plural, one {Hold up # finger next to your face} other {Hold up # fingers next to your face}}",
+        "hold_document": "Hold your photo ID next to your face"
+      },
+      "capture": "Take photo",
+      "review": "Check the photos: your face is visible and the task is done.",
+      "send": "Send for review",
+      "sending": "Sending…",
+      "retake": "Retake",
+      "done": "Photos sent. A member of our team will compare them with your document photo.",
+      "expired": "Time for this task is up. Start again and we will give you a new task.",
+      "restart": "Start again",
+      "unavailable": {
+        "unsupported": "This browser does not provide camera access.",
+        "denied": "No camera access. Allow the camera for this site in your browser settings and try again.",
+        "nocamera": "No camera found on this device.",
+        "error": "Could not turn on the camera. Close other apps that use it and try again."
+      },
+      "phoneHint": "Do this step on your phone: scan the QR code, or sign in on your phone and open Profile → Verification → Selfie.",
+      "qrAlt": "QR code linking to the Selfie step",
+      "tryAgain": "Try again"
+    }
   },
   "notifications": {
     "title": "Notifications",
@@ -327,7 +380,10 @@
     "startBalanceUnset": "The account cannot be opened right now: the demo starting amount has not been set. We do not substitute one — please contact support, it is fixed in the site settings.",
     "startBalanceUnavailable": "The account cannot be opened right now: the site settings could not be retrieved. Please try again later — your form data is not lost.",
     "tempPasswordExpired": "Your temporary password has expired. Ask your manager for a new one or use “Forgot password?”.",
-    "accountTypeUnavailable": "This account type is not available right now. Please choose another one."
+    "accountTypeUnavailable": "This account type is not available right now. Please choose another one.",
+    "selfieCameraOnly": "The selfie is accepted only as a camera photo — file upload is disabled for this step.",
+    "selfieExpired": "The task has expired — please start again.",
+    "selfieInvalid": "The photos were not accepted. Please take them again with the camera."
   },
   "history": {
     "title": "History",

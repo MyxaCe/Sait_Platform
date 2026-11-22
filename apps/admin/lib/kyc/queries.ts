@@ -30,7 +30,7 @@ export function isDocumentOlderThan(
 
 export const DOC_KIND_LABELS: Record<KycDocKind, string> = {
   identity: 'Паспорт / ID',
-  selfie_liveness: 'Селфи с liveness',
+  selfie_liveness: 'Селфи с камеры',
   address_proof: 'Подтверждение адреса',
   source_of_funds: 'Источник средств',
 };
@@ -43,12 +43,79 @@ export interface PendingClient {
   documentCount: number;
 }
 
+export type LivenessTaskKind = 'face_front' | 'turn_left' | 'turn_right' | 'show_fingers' | 'hold_document';
+
+export interface LivenessTask {
+  kind: LivenessTaskKind;
+  count?: number;
+}
+
+export interface SelfieFrame {
+  index: number;
+  capturedAt: string;
+}
+
+export interface SelfieCapture {
+  provider: string;
+  code: string;
+  tasks: LivenessTask[];
+  issuedAt: string;
+  expiresAt: string;
+  usedAt: string | null;
+  userAgent: string | null;
+  frames: SelfieFrame[];
+}
+
 export interface KycDocument {
   id: string;
   kind: KycDocKind;
   storageKey: string;
   contentType: string | null;
   submittedAt: string;
+  capture: SelfieCapture | null;
+}
+
+const TASK_KINDS: readonly string[] = ['face_front', 'turn_left', 'turn_right', 'show_fingers', 'hold_document'];
+
+const iso = (v: unknown): string => new Date(v as string | Date).toISOString();
+
+function parseJson(v: unknown): unknown {
+  if (typeof v !== 'string') return v;
+  try {
+    return JSON.parse(v);
+  } catch {
+    return null;
+  }
+}
+
+export function toSelfieCapture(row: Record<string, unknown>): SelfieCapture | null {
+  if (!row.challenge_code) return null;
+  const rawTasks = parseJson(row.challenge_tasks);
+  const tasks: LivenessTask[] = Array.isArray(rawTasks)
+    ? rawTasks.flatMap((t) =>
+        t && typeof t === 'object' && TASK_KINDS.includes((t as { kind?: string }).kind ?? '')
+          ? [
+              typeof (t as { count?: unknown }).count === 'number'
+                ? { kind: (t as LivenessTask).kind, count: (t as { count: number }).count }
+                : { kind: (t as LivenessTask).kind },
+            ]
+          : [],
+      )
+    : [];
+  const rawFrames = parseJson(row.frames);
+  const frames: SelfieFrame[] = Array.isArray(rawFrames)
+    ? rawFrames.map((f) => ({ index: Number((f as { i: unknown }).i), capturedAt: iso((f as { at: unknown }).at) }))
+    : [];
+  return {
+    provider: String(row.challenge_provider ?? 'manual'),
+    code: String(row.challenge_code),
+    tasks,
+    issuedAt: iso(row.challenge_issued_at),
+    expiresAt: iso(row.challenge_expires_at),
+    usedAt: row.challenge_used_at ? iso(row.challenge_used_at) : null,
+    userAgent: (row.challenge_user_agent as string | null) ?? null,
+    frames,
+  };
 }
 
 export interface ClientVerificationCard {
@@ -124,10 +191,16 @@ export async function getClientVerificationCard(
   if (!row) return null;
 
   const docs = await db.query(
-    `SELECT id, doc_kind, storage_key, content_type, submitted_at
-       FROM kyc_documents
-      WHERE user_id = $1
-      ORDER BY submitted_at ASC`,
+    `SELECT d.id, d.doc_kind, d.storage_key, d.content_type, d.submitted_at,
+            c.provider AS challenge_provider, c.code AS challenge_code, c.tasks AS challenge_tasks,
+            c.issued_at AS challenge_issued_at, c.expires_at AS challenge_expires_at,
+            c.used_at AS challenge_used_at, c.user_agent AS challenge_user_agent,
+            (SELECT COALESCE(json_agg(json_build_object('i', f.frame_index, 'at', f.captured_at) ORDER BY f.frame_index), '[]'::json)
+               FROM kyc_document_frames f WHERE f.document_id = d.id) AS frames
+       FROM kyc_documents d
+       LEFT JOIN kyc_liveness_challenges c ON c.document_id = d.id
+      WHERE d.user_id = $1
+      ORDER BY d.submitted_at ASC`,
     [userId],
   );
 
@@ -144,6 +217,7 @@ export async function getClientVerificationCard(
       storageKey: d.storage_key as string,
       contentType: (d.content_type as string | null) ?? null,
       submittedAt: new Date(d.submitted_at as string | Date).toISOString(),
+      capture: toSelfieCapture(d),
     })),
   };
 }

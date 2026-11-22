@@ -3,7 +3,10 @@ import { isKycDocKind, type KycDocKind, type VerificationState } from './kyc-kin
 
 export {
   KYC_DOC_KINDS,
+  KYC_STEPS,
+  CAMERA_ONLY_KYC_KINDS,
   isKycDocKind,
+  type KycStep,
   type KycDocKind,
   type VerificationState,
 } from './kyc-kinds';
@@ -37,7 +40,13 @@ export async function getVerificationState(userId: string): Promise<Verification
     [userId],
   );
   const state = r.rows[0]?.state as string | undefined;
-  if (state === 'unverified' || state === 'pending' || state === 'verified' || state === 'rejected') {
+  if (
+    state === 'unverified' ||
+    state === 'pending' ||
+    state === 'verified' ||
+    state === 'rejected' ||
+    state === 'resubmit_requested'
+  ) {
     return state;
   }
   return null;
