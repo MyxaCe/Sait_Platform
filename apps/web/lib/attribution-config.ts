@@ -1,17 +1,5 @@
 import { envOr } from '@broker/utils';
 
-/**
- * Срок first-click атрибуции — ИЗ НАСТРОЕК ПЛАТФОРМЫ (админка,
- * `platform_promo_settings.attribution_window_days`). У витрины нет базы,
- * поэтому срок читается с сервера сайта: публичная ручка кабинета
- * `/api/public/platform-terms`. Адрес — `CABINET_INTERNAL_URL` (внутренняя
- * сеть), иначе публичный адрес кабинета.
- *
- * Кеш в памяти процесса (минута) — middleware не ходит в кабинет на каждый
- * клик. Кабинет недоступен — `null`: cookie ставится сессионной, а срок всё
- * равно проверит регистрация по метке времени в значении (свой failure domain:
- * витрина не ждёт кабинет больше короткого таймаута).
- */
 const TTL_MS = 60_000;
 const TIMEOUT_MS = 800;
 
@@ -36,7 +24,6 @@ export async function attributionWindowDays(fetchImpl: typeof fetch = fetch, now
   return days;
 }
 
-/** Для тестов. */
 export function resetAttributionConfigCache(): void {
   cache = null;
 }

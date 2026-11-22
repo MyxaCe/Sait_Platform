@@ -35,13 +35,6 @@ function isDocumentRequest(request: NextRequest): boolean {
   return (dest === null || dest === 'document') && !request.headers.has('rsc') && !request.headers.has('next-router-prefetch');
 }
 
-/**
- * Локали (next-intl) + first-click атрибуция: `?ref=` / `?promo=` на любой
- * странице витрины → cookie `bp_ref` / `bp_promo` (HttpOnly, SameSite=Lax) на
- * срок из настроек платформы. Действующая cookie не перезаписывается (защита
- * от «перехвата» чужой ссылкой). Домен — `ATTRIBUTION_COOKIE_DOMAIN`
- * (`.wholesalefy.com` — чтобы её прочитала регистрация кабинета на поддомене).
- */
 export default async function middleware(request: NextRequest) {
   const site = await siteLanguagesForMiddleware();
   const prefixed = stripLocalePrefix(request.nextUrl.pathname).locale;
@@ -90,10 +83,5 @@ export default async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  // Исключаем API, служебные пути Next и файлы с расширением (sw.js, иконки и т.п.).
-  // `\.` — двойной слэш обязателен: в строке JS `\.` превращается в `.`, и
-  // `.*..*` исключал ЛЮБОЙ путь длиннее символа — middleware (локали) не
-  // работал, /instruments, /company/contacts, /register отдавали 404
-  // (тест: lib/middleware-matcher.test.ts).
   matcher: ['/((?!api|_next|_vercel|.*\\..*).*)'],
 };

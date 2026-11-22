@@ -4,18 +4,6 @@ import { useState, useTransition } from 'react';
 import { Button, Callout, Panel } from '@broker/ui';
 import { verifyChainAction, type VerifyChainState } from '../actions';
 
-/**
- * «Целостность журнала» (ADM-06, § 3.10). Объясняет, почему журналу можно
- * верить (append-only на уровне базы + хеш-цепочка SHA-256), и даёт админу
- * пересчитать цепочку целиком: admin-экшен считает хеши РОВНО тем же
- * `computeEntryHash`/`canonicalize`, что и запись, и показывает итог —
- * «цепочка цела» (N записей) или «разрыв на seq N» с родом разрыва.
- *
- * Кнопка — только для admin (роль-гейт в `page.tsx`, `canVerify`); экшен всё
- * равно проверяет роль сам (fail-closed, defense-in-depth). Остальные роли
- * видят то же объяснение без кнопки.
- */
-
 function Fact({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div className="min-w-0">
@@ -53,7 +41,6 @@ export function ChainStatus({
 }: {
   total: number;
   lastSeq: number | null;
-  /** Уже отформатированное время последней записи. */
   lastAt: string | null;
   canVerify: boolean;
 }) {

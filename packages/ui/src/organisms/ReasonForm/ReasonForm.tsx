@@ -7,42 +7,18 @@ import { Select } from '../../atoms/Select/Select';
 import { FormField } from '../../molecules/FormField/FormField';
 import { cn } from '../../lib/cn';
 
-/**
- * `ReasonForm` — форма-с-основанием (§5.3 п.3, §5.4). UI-воплощение инварианта
- * «кто/когда/основание»: ни одно state-changing действие не уходит без
- * заполненного основания. Поле «Основание» обязательно (select типовых причин +
- * свободный текст); submit заблокирован, пока оно пусто. `danger`-вариант
- * (блокировка, портфель плеча, break-glass) требует второго клика-подтверждения.
- *
- * Личность оператора форма НЕ несёт — её берёт server action из сессии (Р-451).
- * В форму кладётся только `reason` (+ опц. номер заявки/инцидента и доп. поля
- * через `children`, напр. скрытый `subjectId`).
- */
 export interface ReasonFormProps {
-  /** Server action, принимающий FormData (reason + children-поля). */
   action: (formData: FormData) => void | Promise<void>;
-  /** Типовые причины для быстрого выбора; свободный текст доступен всегда. */
   reasons?: string[];
   reasonName?: string;
   reasonLabel?: string;
-  /** По умолчанию `true`: пустое основание блокирует submit. */
   requireReason?: boolean;
-  /** Опасное действие: красная кнопка + подтверждение в два шага. */
   danger?: boolean;
   submitLabel?: string;
   confirmLabel?: string;
-  /** Опциональное поле «№ заявки/инцидента». */
   reference?: { name?: string; label?: string; placeholder?: string };
-  /** Доп. поля формы (скрытые subjectId/сумма/тип и пр.). */
   children?: ReactNode;
-  /** Текст ошибки от server action (уже локализованный). */
   error?: string;
-  /**
-   * Идёт ли отправка. Прокидывается потребителем: `useFormStatus` здесь НЕ
-   * используем — он требует типов form-action из next-окружения, которых у
-   * `@broker/ui` (react-library tsconfig) нет. Потребитель в admin/cabinet, где
-   * эти типы есть, при желании оборачивает submit в свой pending-компонент.
-   */
   pending?: boolean;
   className?: string;
 }
@@ -58,7 +34,6 @@ interface SubmitProps {
   onDisarm: () => void;
 }
 
-/** Кнопка submit: pending (от потребителя) + danger-двухшаг. */
 function SubmitRow({
   danger,
   armed,
@@ -70,7 +45,6 @@ function SubmitRow({
   onDisarm,
 }: SubmitProps) {
   if (danger && !armed) {
-    // Первый клик — только взвод, не отправка (type=button).
     return (
       <Button type="button" variant="danger" disabled={!canSubmit} onClick={onArm}>
         {submitLabel}
@@ -121,10 +95,6 @@ export function ReasonForm({
 
   return (
     <form
-      // Server action как значение `action` — реальная семантика (работает и без
-      // JS). Плоские типы react-library (без next-аугментации) знают только
-      // `action: string`, поэтому узкий каст: во время выполнения React/Next
-      // корректно обрабатывает функцию. См. коммент к `pending` выше.
       action={action as unknown as string}
       className={cn('space-y-4 rounded-lg border border-border bg-elevated p-4', className)}
     >
@@ -163,7 +133,7 @@ export function ReasonForm({
           value={reason}
           onChange={(e) => {
             setReason(e.target.value);
-            if (armed) setArmed(false); // правка основания снимает взвод
+            if (armed) setArmed(false);
           }}
           className={cn(
             'w-full rounded-xl border border-border bg-card px-4 py-2 text-sm text-primary',

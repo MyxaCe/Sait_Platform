@@ -2,12 +2,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { FakeDb, FakeTerminal } from '@broker/money/testing';
 import { USDT_TRC20_CONTRACT } from '@broker/money';
 
-/**
- * Экшены ввода/вывода кабинета на фейках `@broker/money` (ни одного
- * сетевого вызова): userId — из сессии, исход виден человеку ключом
- * перевода, политика проверяется сервером, а не кнопкой.
- */
-
 const env = vi.hoisted(() => ({
   db: null as unknown as FakeDb,
   term: null as unknown as FakeTerminal,

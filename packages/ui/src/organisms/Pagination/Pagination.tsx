@@ -1,13 +1,7 @@
 import type { ElementType } from 'react';
 import { cn } from '../../lib/cn';
 
-/**
- * Пагинация-ссылки (концепция §6.1): «Показано 51–100 из 1 284» слева,
- * «← Назад / стр. 2 из 26 / Вперёд →» справа. Серверная: каждая страница — URL
- * (`hrefFor(page)`), работает без JS. Размер страницы — 50 по умолчанию.
- */
 export interface PaginationProps {
-  /** Текущая страница, с 1. */
   page: number;
   pageSize: number;
   total: number;

@@ -17,11 +17,6 @@ import { scopeViolation } from './role-scope';
 import { canOperateMoney } from '../crypto/runtime';
 import { canViewPromo } from '../promo/runtime';
 
-/**
- * Матрица «раздел → роли» (волна 3): КАЖДАЯ роль × КАЖДЫЙ раздел. Ожидание
- * записано здесь явно, а не выведено из SECTIONS, — иначе тест подтверждал бы
- * сам себя. Расширили матрицу — правьте обе таблицы осознанно.
- */
 const EXPECTED: Record<OperatorRole, SectionKey[]> = {
   admin: ['dashboard', 'clients', 'kyc', 'aml', 'support', 'risk', 'journal', 'operators', 'money', 'promo', 'settings'],
   operator: ['dashboard', 'clients', 'kyc', 'aml', 'support', 'risk', 'journal'],
@@ -29,7 +24,6 @@ const EXPECTED: Record<OperatorRole, SectionKey[]> = {
   support_operator: ['support'],
 };
 
-/** Пример адреса страницы внутри раздела (вложенный — проверка префикса). */
 const SAMPLE_PATH: Record<SectionKey, string[]> = {
   dashboard: ['/'],
   clients: ['/clients', '/clients/00000000-0000-4000-8000-0000000c0001'],
@@ -53,12 +47,10 @@ describe('матрица доступа: роль × раздел', () => {
         for (const p of SAMPLE_PATH[key]) {
           expect(sectionOfPath(p)).toBe(key);
           expect(canAccessPath(role, p)).toBe(allowed);
-          // Middleware: закрытый путь → редирект на домашнюю роли, открытый → null.
           const v = scopeViolation(role, p);
           if (allowed) expect(v).toBeNull();
           else expect(v?.home).toBe(homeFor(role));
         }
-        // Рельс = та же матрица: пункт есть ⇔ раздел открыт.
         expect(navForRole(role).some((i) => i.key === key)).toBe(allowed);
       });
     }

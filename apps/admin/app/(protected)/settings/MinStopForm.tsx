@@ -4,12 +4,6 @@ import { Input } from '@broker/ui';
 import { updateMinStopAction } from '@/lib/crypto/actions';
 import { ActionForm } from '../_money/ActionForm';
 
-/**
- * Минимальное расстояние SL/TP (б.п.) — значение живёт в терминале. Форма
- * с основанием; сохранение = вызов терминала, при отказе/молчании — ошибка,
- * ничего не записано. `initial = null` — терминал не ответил на чтение:
- * поле пустое, оператор вводит значение сам.
- */
 export function MinStopForm({ initial }: { initial: number | null }) {
   return (
     <ActionForm

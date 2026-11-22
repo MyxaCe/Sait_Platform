@@ -5,20 +5,8 @@ import { describe, expect, it } from 'vitest';
 import middleware from '../../middleware';
 import { API_PUBLIC_PATHS } from '../../lib/auth/constants';
 
-/**
- * ADM-01 · `/api` DEFAULT-DENY (Р-451, критерий готовности).
- *
- * Тест ходит по ВСЕМ реально существующим `/api`-роутам (сканируя
- * `app/api/**​/route.ts`) и требует: без сессии — 401, КРОМЕ явного allowlist
- * (`API_PUBLIC_PATHS`). Роут, добавленный мимо allowlist, попадает сюда
- * автоматически — и обязан отвечать 401 без сессии; забыли закрыть новую
- * ручку → этот тест краснеет. Плюс проверяем, что default-deny держит и
- * ещё-не-существующий чувствительный путь.
- */
-
 const API_DIR = path.resolve(__dirname);
 
-/** Все пути `/api/...`, у которых на диске есть `route.ts`. */
 function discoverApiRoutes(): string[] {
   const routes: string[] = [];
   function walk(dir: string, prefix: string) {
@@ -41,7 +29,6 @@ function isAllowlisted(pathname: string): boolean {
 }
 
 async function hit(pathname: string): Promise<number> {
-  // Без куки сессии вовсе — именно «без сессии».
   const req = new NextRequest(new URL(`http://admin.local${pathname}`));
   const res = await middleware(req);
   return res.status;
@@ -70,16 +57,12 @@ describe('/api default-deny (Р-451)', () => {
   });
 
   it('ещё-не-существующий чувствительный путь тоже закрыт по умолчанию', async () => {
-    // Default-deny держит не только то, что уже написано: любой /api вне
-    // allowlist без сессии — 401.
     expect(await hit('/api/operators')).toBe(401);
     expect(await hit('/api/money/transfer')).toBe(401);
     expect(await hit('/api')).toBe(401);
   });
 
   it('allowlist минимален: health и только то, что названо явно', () => {
-    // Растяжка на сам список: разрастётся молча — заметим здесь.
-    // + приём межплатформенных сообщений перевода (своя проверка подписи).
     expect([...API_PUBLIC_PATHS]).toEqual(['/api/health', '/api/platform-transfer/v1/messages']);
   });
 });

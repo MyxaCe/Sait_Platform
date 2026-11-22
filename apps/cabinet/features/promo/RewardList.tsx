@@ -11,10 +11,6 @@ export const REWARD_TONE: Record<ClientRewardStatus, StatusTone> = {
   rejected: 'negative',
 };
 
-/**
- * «Мои начисления»: три состояния для клиента — в обработке / зачислено /
- * отклонено (с причиной оператора). Сумма — в валюте начисления.
- */
 export function RewardList({ rewards }: { rewards: RewardView[] }) {
   const t = useTranslations('promo');
   const locale = useLocale();

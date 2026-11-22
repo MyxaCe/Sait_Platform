@@ -5,11 +5,6 @@ import { updateCredentialSettingsAction } from '@/lib/credentials/actions';
 import { credentialErrorText } from '@/lib/credentials/policy';
 import { ActionForm } from '../_money/ActionForm';
 
-/**
- * «Безопасность учётных данных» (функция 3): чек-лист проверки личности,
- * автозаморозка вывода после правки, порог алерта и срок временного пароля.
- * Только admin; изменение — с основанием, журнал до/после.
- */
 function Num({ name, label, defaultValue, suffix }: { name: string; label: string; defaultValue: number; suffix: string }) {
   return (
     <label className="block space-y-1.5">

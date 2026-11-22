@@ -13,7 +13,7 @@ import { FakeDb } from './testing/fake-db';
 import { FakeTerminal } from './testing/fake-terminal';
 import { USDT_TRC20_CONTRACT } from './tron';
 
-const ADDR = USDT_TRC20_CONTRACT; // валидный base58check-адрес
+const ADDR = USDT_TRC20_CONTRACT;
 const U = 'user-1';
 const OP = { operatorId: 'op-1', operatorLogin: 'fin', reason: 'проверено' };
 const HASH = 'c'.repeat(64);
@@ -62,7 +62,6 @@ describe('подача заявки на вывод', () => {
       ok: false,
       reason: 'belowMinimum',
     });
-    // Доля вывода без верификации 0 % — прежнее поведение: без KYC вывода нет.
     db.clients.set(U, { kycState: 'pending', unverifiedWithdrawBps: 0 });
     expect(await requestWithdrawal(db, term, { userId: U, toAddress: ADDR, amountMinor: 5000 })).toMatchObject({
       reason: 'policy',
@@ -86,7 +85,7 @@ describe('подача заявки на вывод', () => {
     expect(db.withdrawals.get(id)!.debit_state).toBe('pending');
 
     expect(await ensureWithdrawalDebited(db, term, id)).toEqual({ state: 'debited' });
-    expect(term.balances.get(U)).toBe(95_000); // списано один раз
+    expect(term.balances.get(U)).toBe(95_000);
   });
 });
 

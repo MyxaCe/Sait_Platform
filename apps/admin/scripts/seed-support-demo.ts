@@ -17,18 +17,6 @@ import {
 import { readEnv } from '@broker/utils';
 import { getPool } from '../lib/db';
 
-/**
- * ДЕМО-НАБОР «Поддержки» поверх `seed:demo` (локальный просмотр и сцена §5
- * показа). НЕ миграция и не часть схемы. Создаёт оператора поддержки,
- * шаблоны ответов, обращения во всех состояниях и каналах (чат, письмо,
- * восстановленные с формы контактов), заметку, оценку, просроченный SLA.
- *
- * Fail-closed: отказ при NODE_ENV=production, без `seed:demo` (нет витринного
- * клиента) и при уже засеянной поддержке.
- *
- *   DATABASE_URL=… pnpm --filter @broker/admin seed:support-demo
- */
-
 const HERO = '00000000-0000-4000-8000-0000000c0001';
 const SUPPORT_OP = { id: '00000000-0000-4000-8000-00000000a005', login: 'o.belova', name: 'Ольга Белова' };
 const ADMIN = '00000000-0000-4000-8000-00000000a001';
@@ -64,9 +52,6 @@ async function main(): Promise<number> {
     [SUPPORT_OP.id, SUPPORT_OP.login, SUPPORT_OP.name],
   );
 
-  // Часы по умолчанию (пн–пт 09–21 МСК); имя отправителя — бренд ячейки из
-  // окружения (SITE_BRAND_NAME, тот же мост, что у кабинета), не строкой в коде:
-  // контента и бренда в коде нет (web-cms-lastgood). Нет бренда — нейтрально.
   const brand = readEnv(process.env.SITE_BRAND_NAME);
   const S: SupportSettings = {
     ...DEFAULT_SUPPORT_SETTINGS,
@@ -92,7 +77,6 @@ async function main(): Promise<number> {
   const users = await pool.query(`SELECT id, email, full_name FROM users ORDER BY created_at`);
   const byName = (part: string) => users.rows.find((u) => String(u.full_name).includes(part))?.id as string | undefined;
 
-  // 1) Витринный клиент (сцена §5): вывод ограничен — пишет в чат.
   const hero1 = await postClientChatMessage(db, S, {
     userId: HERO,
     body: 'Здравствуйте! Хочу вывести 250 USDT, но вывод ограничен. Документы загрузил вчера. Что нужно сделать?',
@@ -102,11 +86,9 @@ async function main(): Promise<number> {
     await postClientChatMessage(db, S, { userId: HERO, body: 'Скрин ошибки могу приложить, если нужно.', now: ago(0.55) });
   }
 
-  // 2) Клиент ждёт с утра — SLA чата просрочен, не назначено.
   const volkov = byName('Волков');
   if (volkov) await postClientChatMessage(db, S, { userId: volkov, body: 'Не открывается терминал после смены пароля, пишет «сессия истекла».', now: ago(5) });
 
-  // 3) Заморозка: эскалировано в финансы/комплаенс, заметка для своих.
   const bianchi = byName('Bianchi');
   if (bianchi) {
     const t = await postClientChatMessage(db, S, { userId: bianchi, body: 'Why is my account blocked? I need access to my funds.', now: ago(26) });
@@ -117,7 +99,6 @@ async function main(): Promise<number> {
     }
   }
 
-  // 4) Решено с оценкой 5.
   const kuz = byName('Кузнецова');
   if (kuz) {
     const t = await postClientChatMessage(db, S, { userId: kuz, body: 'Как пополнить счёт через USDT TRC20? Не вижу адреса.', now: ago(30) });
@@ -132,7 +113,6 @@ async function main(): Promise<number> {
     }
   }
 
-  // 5) Ждём клиента: оператор ответил по шаблону.
   const lebedeva = byName('Лебедева');
   if (lebedeva) {
     const t = await postClientChatMessage(db, S, { userId: lebedeva, body: 'Сколько идёт проверка документов?', now: ago(3) });
@@ -145,7 +125,6 @@ async function main(): Promise<number> {
     }
   }
 
-  // 6) Письмо гостя на ящик поддержки (канал email) + письмо клиента платформы.
   await processInboundMail(
     db,
     {
@@ -183,7 +162,6 @@ async function main(): Promise<number> {
         ticketId: v.ticketId,
         body: 'Dear Elena,\n\nthe October statement is being prepared and will be sent to this address within one business day.',
       });
-      // Письмо не ушло: почта не настроена / хостинг отверг — оператор видит «не доставлено».
       await pool.query(
         `UPDATE outbound_mail SET status = 'failed', attempts = 8, last_error = '421 4.7.0 Try again later (лимит отправки хостинга)'
           WHERE ticket_id = $1 AND purpose = 'support_reply'`,
@@ -192,7 +170,6 @@ async function main(): Promise<number> {
     }
   }
 
-  // 7) Спам.
   const spam = await processInboundMail(
     db,
     {
@@ -212,7 +189,6 @@ async function main(): Promise<number> {
     await changeTicketStatus(db, sup, { ticketId: spam.ticketId, to: 'spam', reason: 'Рекламная рассылка', blockSender: true });
   }
 
-  // 8) «Потерянные» обращения с формы контактов (как на стенде: лиды есть, тикетов не было).
   for (const [email, name, topic, message, hours] of [
     ['d.romanov@yandex.example', 'Денис Романов', 'Вывод средств', 'Подал заявку на вывод неделю назад через форму, ответа так и нет. Подскажите статус.', 150],
     ['a.ivanova@mail.example', 'Анна Иванова', 'Открытие счёта', 'Хочу открыть реальный счёт для юрлица. Какие документы нужны?', 96],
@@ -225,7 +201,6 @@ async function main(): Promise<number> {
   }
   const rec = await recoverContactLeads(db, S);
 
-  // Почтовый воркер ни разу не отмечался — состояние честное («не настроена»).
   await pool.query(
     `INSERT INTO support_mail_status (id, smtp_configured, imap_configured, missing_env, last_heartbeat_at)
      VALUES (1, false, false, ARRAY['SUPPORT_SMTP_HOST','SUPPORT_SMTP_PASSWORD','SUPPORT_IMAP_HOST','SUPPORT_IMAP_PASSWORD'], now())

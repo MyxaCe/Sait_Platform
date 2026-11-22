@@ -16,7 +16,6 @@ async function legalDocuments(locale: string) {
   return items;
 }
 
-// Список документов — из CMS; нет CMS на сборке → пусто, страницы по первому запросу
 export function generateStaticParams({ params }: { params: { locale: string } }) {
   return staticParamsFromCms(async () =>
     (await legalDocuments(params.locale)).map((d) => ({ document: d.slug })),
@@ -32,7 +31,6 @@ export async function generateMetadata({ params }: PageParams): Promise<Metadata
 export default async function LegalDocumentPage({ params }: PageParams) {
   setRequestLocale(params.locale);
 
-  // Контент из CMS (теги cms:legal, cms:legal:<сайт>; вебхук-инвалидация)
   const documents = await legalDocuments(params.locale);
   const doc = documents.find((d) => d.slug === params.document);
   if (!doc) notFound();
@@ -44,7 +42,6 @@ export default async function LegalDocumentPage({ params }: PageParams) {
     <Section className="py-10 md:py-14">
       <Container>
         <div className="grid gap-10 lg:grid-cols-[260px_1fr] lg:gap-16">
-          {/* Навигация по документам */}
           <nav aria-label={t('navAria')} className="lg:sticky lg:top-24 lg:self-start">
             <h2 className="text-sm font-semibold text-primary">{t('navTitle')}</h2>
             <ul className="mt-3 flex gap-2 overflow-x-auto pb-2 lg:flex-col lg:gap-1 lg:overflow-visible lg:pb-0"

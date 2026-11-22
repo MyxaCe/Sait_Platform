@@ -1,14 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { MAX_DOC_BYTES, SERVER_ACTION_BODY_LIMIT_BYTES } from '@/upload-limits.mjs';
 
-/**
- * KYC-загрузка > 1 МБ (волна 3). Server actions Next 14 режут тело на 1 МБ по
- * умолчанию — фото паспорта с телефона не доходило до нашей проверки размера.
- * Проверяем: (1) конфиг Next поднимает потолок из того же источника, что и
- * лимит файла, с запасом на multipart; (2) action принимает файл в несколько
- * МБ и отдаёт понятное `fileTooLarge` сверх лимита.
- */
-
 const env = vi.hoisted(() => ({
   user: { id: 'user-1' } as { id: string } | null,
   put: vi.fn(async () => undefined),

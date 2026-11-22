@@ -2,27 +2,12 @@ import { DAY_MS, isLiveWithdrawal, ms, type ClientFacts, type DepositFact } from
 import type { CashbackRules, DepositBonusRules, IbCpaRules, ParsedRules, ReferralRules } from './rules';
 import { computeTurnover } from './turnover';
 
-/**
- * ДВИЖОК УСЛОВИЙ — чистые функции над фактами (`facts.ts`), по образцу
- * `computeMoneyPolicy`. Ни базы, ни часов: «сейчас» приходит параметром.
- *
- * Правило окна: в зачёт идут только факты ВНУТРИ окна выполнения
- * [начало, начало + windowDays]. Поэтому итог детерминирован: условия,
- * выполненные в окне, остаются выполненными, когда бы ни считали; не
- * выполненные к концу окна — `expired`.
- *
- * Движок возвращает КЛЮЧИ условий и числа; подписи — у кабинета/админки
- * (тексты не живут в коде движка).
- */
-
 export type ConditionKey = 'deposit' | 'kyc' | 'turnover' | 'no_withdrawal' | 'window';
 
 export interface ConditionView {
   key: ConditionKey;
   met: boolean;
-  /** Текущее значение (минорные единицы для денег/оборота). */
   current?: number;
-  /** Цель (минорные единицы). */
   target?: number;
 }
 
@@ -38,10 +23,6 @@ export interface Evaluation {
   state: EvaluationState;
   reason?: EvaluationReason;
   conditions: ConditionView[];
-  /**
-   * Ожидаемое вознаграждение (минорные). Для бонуса на депозит известно,
-   * когда есть депозит-основание; до того — `null`.
-   */
   rewardMinor: number | null;
   baseDepositId: string | null;
   windowStart: string;
@@ -49,18 +30,15 @@ export interface Evaluation {
   turnover?: { qualifyingMinor: number; grossMinor: number; shortHolds: number };
 }
 
-/** Общая часть условий бонуса, друга и CPA. */
 export interface ConditionSpec {
   kycRequired: boolean;
   minDepositMinor: number;
   firstDepositOnly: boolean;
-  /** Цель оборота, центы; 0 — условия оборота нет. */
   turnoverTargetMinor: number | null;
   minHoldSeconds: number;
   windowStart: string;
   windowDays: number;
   forfeitOnWithdrawal: boolean;
-  /** Депозит-основание не раньше (старт акции); `null` — без ограничения. */
   depositNotBefore: string | null;
 }
 
@@ -90,11 +68,6 @@ function pickBaseDeposit(
   return { base, firstBeforeStart: false, belowMinimum: false };
 }
 
-/**
- * Ядро: условия по фактам. `rewardFor(base)` — вознаграждение от депозита-
- * основания (для бонуса — процент, для друга — фикс). Цель оборота может
- * зависеть от вознаграждения (бонус: k × награда) — `turnoverTarget(reward)`.
- */
 export function evaluateConditions(
   spec: ConditionSpec,
   facts: ClientFacts,
@@ -155,7 +128,6 @@ export function evaluateConditions(
   return { ...common, state: 'in_progress' };
 }
 
-/** Бонус на депозит: процент от основания, потолок, оборот k × награда. */
 export function evaluateDepositBonus(
   rules: DepositBonusRules,
   ctx: { enrolledAt: string; promotionStartsAt: string | null },
@@ -182,7 +154,7 @@ export function evaluateDepositBonus(
       turnoverTarget: (reward) =>
         rules.turnoverMultiplier > 0
           ? reward === null
-            ? // Пока основания нет — цель от потолка (показ «до X»), не ноль.
+            ?
               Math.ceil(rules.capMinor * rules.turnoverMultiplier)
             : Math.ceil(reward * rules.turnoverMultiplier)
           : null,
@@ -190,7 +162,6 @@ export function evaluateDepositBonus(
   );
 }
 
-/** Условия друга (реферала): фикс-награды, абсолютный оборот, окно от регистрации. */
 export function evaluateReferee(
   rules: ReferralRules | IbCpaRules,
   ctx: { attributedAt: string; rewardMinor: number },
@@ -218,9 +189,6 @@ export function evaluateReferee(
   );
 }
 
-/* ── Кешбэк ──────────────────────────────────────────────────────────── */
-
-/** Календарный месяц UTC: `YYYY-MM`. */
 export function periodOf(at: Date | string): string {
   const d = typeof at === 'string' ? new Date(at) : at;
   return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
@@ -239,19 +207,12 @@ export function isPeriod(v: string): boolean {
 
 export interface CashbackResult {
   period: string;
-  /** Уплачено клиентом за период: наценка + комиссия, центы. */
   feesMinor: number;
-  /** Сделок без полей комиссии/наценки (старый терминал) — для показа. */
   tradesWithoutFees: number;
   cashbackMinor: number;
-  /** Кешбэк ниже минимума выплаты — к начислению 0. */
   belowMinimum: boolean;
 }
 
-/**
- * Кешбэк за период = % от уплаченных клиентом наценки и комиссии. Сделка без
- * этих полей (событие старого терминала) даёт 0 — догадку не подставляем.
- */
 export function computeCashback(
   rules: CashbackRules,
   trades: readonly { executedAt: string; commissionMinor?: number | null; markupMinor?: number | null }[],
@@ -282,7 +243,6 @@ export function computeCashback(
   };
 }
 
-/** Доход платформы с клиента за период (для IB revshare): Σ наценка + комиссия. */
 export function platformRevenueMinor(
   trades: readonly { executedAt: string; commissionMinor?: number | null; markupMinor?: number | null }[],
   period: string,
@@ -292,7 +252,6 @@ export function platformRevenueMinor(
   for (const t of trades) {
     const at = ms(t.executedAt);
     if (at < ms(from) || at > ms(until)) continue;
-    // Поля нет (старое событие) — вклада нет: доход не выдумываем, а не «ноль комиссии».
     const c = typeof t.commissionMinor === 'number' && Number.isFinite(t.commissionMinor) ? Math.max(0, t.commissionMinor) : null;
     const m = typeof t.markupMinor === 'number' && Number.isFinite(t.markupMinor) ? Math.max(0, t.markupMinor) : null;
     if (c !== null) sum += c;
@@ -301,23 +260,15 @@ export function platformRevenueMinor(
   return sum;
 }
 
-/** Доля IB от дохода (б.п.), вниз до цента. */
 export function revshareMinor(revenueMinor: number, bps: number): number {
   return Math.floor((Math.max(0, revenueMinor) * bps) / 10_000);
 }
-
-/* ── Диспетчер ───────────────────────────────────────────────────────── */
 
 export interface PromotionContext {
   startsAt: string | null;
   endsAt: string | null;
 }
 
-/**
- * `evaluatePromotion` — единая точка для участия клиента (бонус, кешбэк).
- * Друг/реферал — `evaluateReferee`, конкурс — `rankContest` (у них другая
- * форма участия). Для кешбэка — прогресс ТЕКУЩЕГО периода.
- */
 export function evaluatePromotion(
   parsed: ParsedRules,
   promo: PromotionContext,

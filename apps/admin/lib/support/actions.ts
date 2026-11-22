@@ -21,21 +21,12 @@ import {
 import { LOGIN_PATH } from '../auth/constants';
 import { getPool } from '../db';
 import { supportActor, supportPool } from './runtime';
-// ── Перевод на другую платформу группы (ветка client-transfer): шаблон не может предлагать перевод ──
 import { listGroupPlatforms, mentionsOtherPlatform } from '@broker/transfer';
-
-/**
- * Server actions раздела «Поддержка». Личность — из сессии (Р-451), права —
- * в `@broker/support` (fail-closed). Результат — состояние формы для Callout
- * над формой (концепция §6.6: тосты на периметре не используем).
- */
 
 export interface SupportActionState {
   ok?: boolean;
   error?: string;
-  /** Ошибки полей настроек: путь поля → код. */
   fields?: Record<string, string>;
-  /** Счётчик успешных отправок — форма по нему очищается. */
   seq?: number;
 }
 
@@ -107,14 +98,11 @@ export async function requeueMailAction(prev: SupportActionState, fd: FormData):
   return ok ? done(str(fd, 'ticketNumber'), prev) : { error: 'invalidTransition' };
 }
 
-/* ─── Настройки (admin) ─────────────────────────────────────────────── */
-
 const int = (fd: FormData, k: string) => {
   const v = str(fd, k).trim();
   return /^\d+$/.test(v) ? Number(v) : NaN;
 };
 
-/** Форма → настройки (строгая проверка — в пакете, `validateSettings`). */
 export async function formToSettings(fd: FormData, base: SupportSettings): Promise<SupportSettings> {
   const week = { ...base.hours.week };
   for (const d of WEEKDAYS) {
@@ -177,13 +165,8 @@ export async function saveSettingsAction(_prev: SupportActionState, fd: FormData
   return { ok: true };
 }
 
-/* ─── Шаблоны (admin) ───────────────────────────────────────────────── */
-
 export async function saveTemplateAction(_prev: SupportActionState, fd: FormData): Promise<SupportActionState> {
   const actor = await actorOrLogin();
-  // ── Перевод (ветка client-transfer): шаблоны — инструмент массовых ответов; упоминание
-  //    другой платформы группы в шаблоне = предложение перевода, а перевод — только по
-  //    инициативе клиента (решение юристов 10.11). Реестра нет (миграция не применена) — не мешаем. ──
   const platforms = await listGroupPlatforms(getPool()).catch(() => []);
   if (mentionsOtherPlatform(`${str(fd, 'title')}
 ${str(fd, 'body')}`, platforms, process.env.SITE_SLUG?.trim() ?? '')) {

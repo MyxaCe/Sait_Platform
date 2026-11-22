@@ -1,8 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { SITE_URL } from '@/lib/site';
 
-/** ТД-010 · инструменты в sitemap — инструменты сайта из CMS, а не клиентский справочник. */
-
 const cms = vi.hoisted(() => ({ instrumentsFail: false, catalog: { state: 'unavailable', reason: 'network' } as unknown }));
 
 vi.mock('@/lib/cms', () => ({

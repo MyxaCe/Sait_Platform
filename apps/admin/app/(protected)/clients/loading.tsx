@@ -1,6 +1,5 @@
 import { DataTable, PageHeader, Panel } from '@broker/ui';
 
-/** Загрузка реестра: тот же каркас, что у страницы, строки-скелеты (концепция §6.1). */
 const COLS = ['Клиент', 'KYC', 'AML', 'Доступ', 'Реальный счёт', 'Последний вход', ''].map((h, i) => ({
   key: String(i),
   header: h,

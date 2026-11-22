@@ -10,11 +10,11 @@ interface BeforeInstallPromptEvent extends Event {
 }
 
 type InstallState =
-  | 'idle' // ждём beforeinstallprompt
-  | 'ready' // можно вызвать нативный промпт
-  | 'installed' // уже установлено (standalone)
-  | 'ios' // iOS: нативного промпта нет, показываем инструкцию
-  | 'manual'; // прочие браузеры без промпта
+  | 'idle'
+  | 'ready'
+  | 'installed'
+  | 'ios'
+  | 'manual';
 
 function detectIos(): boolean {
   return /iPhone|iPad|iPod/.test(navigator.userAgent);
@@ -42,8 +42,6 @@ export function InstallPWAButton({ className }: { className?: string }) {
 
     window.addEventListener('beforeinstallprompt', onPrompt);
     window.addEventListener('appinstalled', onInstalled);
-    // Если за 3 секунды промпт не пришёл (Firefox, некоторые браузеры) —
-    // покажем инструкцию по ручной установке
     const timer = setTimeout(() => {
       setState((s) => (s === 'idle' ? 'manual' : s));
     }, 3000);

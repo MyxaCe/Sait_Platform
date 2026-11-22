@@ -5,7 +5,6 @@ import { readEnv, sentryEnvironment } from '@broker/utils';
 import { BATCH_SIZE, POLL_INTERVAL_MS, processBatch } from './outbox';
 import { createPublisher } from './publisher';
 
-// GlitchTip (site-bff /2): ошибки воркера. Без DSN — выключен. Скраббинг до отправки.
 const sentryDsn = readEnv(process.env.SENTRY_DSN);
 if (sentryDsn) {
   Sentry.init({
@@ -18,13 +17,6 @@ if (sentryDsn) {
   });
 }
 
-/**
- * Релей outbox → шина платформы (ADR-018).
- * SELECT ... FOR UPDATE SKIP LOCKED: безопасен при нескольких инстансах.
- * Доставка at-least-once: упали между publish и UPDATE → событие уйдёт
- * повторно; потребители дедуплицируют по event_id (контракт платформы).
- */
-
 const databaseUrl = readEnv(process.env.DATABASE_URL);
 if (!databaseUrl) {
   console.error('[relay] DATABASE_URL is required');
@@ -35,12 +27,6 @@ const pool = new Pool({ connectionString: databaseUrl, max: 3 });
 const publisher = createPublisher();
 let running = true;
 
-/**
- * Пер-строчная логика повторов живёт в `outbox.ts` (REL-04): здесь она
- * была непроверяема на уровне связки — импорт этого файла поднимает пул
- * и запускает `main()`. Трекер ошибок остаётся здесь и уходит туда
- * параметром.
- */
 async function runBatch(): Promise<number> {
   const client = await pool.connect();
   try {

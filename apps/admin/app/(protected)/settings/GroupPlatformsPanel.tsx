@@ -5,13 +5,6 @@ import { fmtDateTime } from '@/lib/ui/format';
 import { selfPublicKeyPem, selfSlug } from '@/lib/transfer/runtime';
 import { GroupPlatformsForm, type PlatformFormValue } from './GroupPlatformsForm';
 
-/**
- * «Платформы группы» в настройках (только admin — страница уже гейтится).
- * Реестр — настройка ячейки: своя строка + соседи, их адреса, публичные
- * ключи и профили юрисдикций. Ключ ЭТОЙ платформы показывается для копирования
- * в реестры соседей; приватный ключ живёт только в env ячейки.
- */
-
 const COLUMNS = (self: string | null): DataTableColumn<GroupPlatform>[] => [
   {
     key: 'name',

@@ -16,10 +16,6 @@ const inter = Inter({
   display: 'swap',
 });
 
-/**
- * `viewport-fit=cover` — чтобы `env(safe-area-inset-bottom)` работал: нижняя
- * навигация телефона отступает от жестовой полосы (аудит К2).
- */
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
@@ -39,7 +35,6 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const t = await getTranslations({ locale: params.locale, namespace: 'meta' });
   const tCommon = await getTranslations({ locale: params.locale, namespace: 'common' });
-  // Бренд — из CMS (строки бренда в коде нет, 10.11)
   const brand = resolveBrandName(await getChromeBrand(params.locale), tCommon('cabinet'));
   return {
     title: t('title', { brand }),
@@ -53,18 +48,11 @@ export default async function RootLayout({ children, params }: LayoutProps) {
   const site = await getSiteLanguages();
   if (!(site.languages as readonly string[]).includes(locale)) notFound();
 
-  // Первой строкой — до любых проверок (урок B-007)
   setRequestLocale(locale);
   const messages = await getMessages();
 
-  // Бренд из CMS (тот же тенант, что у сайта): акцент поверх токенов.
-  // Цвет не задан (в v2 это штатное `null`) — остаёмся на палитре
-  // токенов СОЗНАТЕЛЬНО: у кабинета нет витринной задачи держать
-  // фирменный цвет, он за логином. Остальной бренд при этом на месте.
   const brand = await getChromeBrand(locale);
   const accentChannels = brand?.primaryColor ? hexToRgbChannels(brand.primaryColor) : null;
-  // Акцент бренда приходит с текстом на нём: тёмный на светлом акценте,
-  // белый на тёмном — primary-кнопка держит AA при любом цвете из CMS.
   const onAccent = accentChannels ? onAccentChannels(accentChannels) : null;
 
   return (

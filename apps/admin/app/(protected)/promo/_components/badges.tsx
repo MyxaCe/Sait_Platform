@@ -31,7 +31,6 @@ export function TypeLabel({ type }: { type: string }) {
   return <span className="text-secondary">{TYPE_LABELS[type] ?? type}</span>;
 }
 
-/** Сигналы связанности — короткие бейджи (для таблицы). */
 export function SignalBadges({ signals }: { signals: LinkSignal[] }) {
   const kinds = [...new Set(signals.map((s) => s.kind))];
   if (kinds.length === 0) return <span className="text-muted text-xs">нет</span>;
@@ -46,7 +45,6 @@ export function SignalBadges({ signals }: { signals: LinkSignal[] }) {
   );
 }
 
-/** Сигналы подробно: с кем связь и по какому значению (ссылки на клиентов). */
 export function SignalDetails({
   signals,
   names,
@@ -93,7 +91,6 @@ interface Cond {
   target?: number;
 }
 
-/** Условия участия: ✓/○ и «текущее из цели» для денег/оборота. */
 export function ConditionList({ conditions, compact = false }: { conditions: Cond[]; compact?: boolean }) {
   const list = conditions.filter((c) => c.key !== 'window');
   if (list.length === 0) return <span className="text-muted text-xs">ещё не оценивалось</span>;
@@ -116,7 +113,6 @@ export function ConditionList({ conditions, compact = false }: { conditions: Con
   );
 }
 
-/** Полоса бюджета: израсходовано (одобрено) из общего. */
 export function BudgetBar({ spent, budget }: { spent: number; budget: number }) {
   const pct = budget > 0 ? Math.min(100, Math.round((spent / budget) * 100)) : 0;
   return (

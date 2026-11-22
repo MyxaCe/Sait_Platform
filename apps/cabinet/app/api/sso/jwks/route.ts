@@ -1,10 +1,6 @@
 import { NextResponse } from 'next/server';
 import { isSsoConfigured, publicJwks } from '@/lib/sso/jwt';
 
-/**
- * JWKS для валидации handoff-токенов терминалом.
- * Публичный по определению (только публичный ключ).
- */
 export const dynamic = 'force-dynamic';
 
 export async function GET() {

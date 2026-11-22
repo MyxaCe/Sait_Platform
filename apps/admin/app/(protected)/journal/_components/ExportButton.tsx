@@ -5,15 +5,6 @@ import { Button, Callout, Input, Panel } from '@broker/ui';
 import { exportJournalAction, type ExportState } from '../actions';
 import type { JournalFilters } from '../queries';
 
-/**
- * Выгрузка выборки (ADM-06, § 3.10). Экспорт САМ journal-able: admin-экшен
- * сперва пишет `journal.exported` (основание = объём + фильтр), затем отдаёт
- * сериализацию, которую мы сохраняем файлом на стороне браузера. Основание
- * (заметка) опционально дополняет авто-основание из фильтра.
- *
- * Рендерится только для admin (роль-гейт в `page.tsx`); экшен проверяет роль
- * сам (fail-closed).
- */
 export function ExportButton({ filters, count }: { filters: JournalFilters; count: number }) {
   const [note, setNote] = useState('');
   const [state, setState] = useState<ExportState | null>(null);

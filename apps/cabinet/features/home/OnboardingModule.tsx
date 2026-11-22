@@ -15,12 +15,6 @@ interface Step {
   action?: { href: string; label: string; primary?: boolean };
 }
 
-/**
- * Модуль «Онбординг»: шаги нового клиента (состав — из CMS).
- * Верификация — по решению оператора (`client_verification`, не по старой
- * заглушке документов); пополнение — реальный счёт USDT (работает, а не
- * «после подключения провайдера», аудит К6).
- */
 export async function OnboardingModule({
   config,
   verification,
@@ -30,11 +24,6 @@ export async function OnboardingModule({
   config: OnboardingConfig;
   verification: VerificationStatus;
   realFunded: boolean;
-  /**
-   * Десктоп-раскладка главной: на ≥ 2xl модуль живёт в правой колонке
-   * «Следующие шаги» — карточки столбиком, выполненные сжаты в строку.
-   * Ниже 2xl вид прежний (ряд из трёх карточек равной высоты).
-   */
   column?: boolean;
 }) {
   const t = await getTranslations('home');
@@ -53,7 +42,6 @@ export async function OnboardingModule({
             ? t('stepVerificationRejected')
             : t('stepVerificationText'),
       done,
-      // На проверке — действовать нечего, кнопку не показываем.
       action:
         done || verification === 'pending'
           ? undefined
@@ -83,11 +71,6 @@ export async function OnboardingModule({
   const doneLabel = t('stepDone');
   const pendingLabel = t('stepVerificationPendingShort');
 
-  // Равная высота (замечание владельца r2): на ≥ sm карточки в одной строке
-  // сетки тянутся до самой высокой, текст занимает остаток, а низ — всегда
-  // слот 44 px (кнопка или отметка «Выполнено»), поэтому кнопки стоят на
-  // одной линии. На телефоне карточки идут столбиком: выполненный шаг там —
-  // одна строка (место отдано счетам), высоту сравнивать не с чем.
   const col = (cls: string) => (column ? cls : undefined);
   return (
     <section aria-labelledby="next-steps" className={cn('flex flex-col gap-2', col('2xl:h-full'))}>

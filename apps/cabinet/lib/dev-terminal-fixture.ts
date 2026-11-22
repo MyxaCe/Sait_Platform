@@ -1,21 +1,6 @@
 import type { AccountsOutcome } from '@broker/money';
 import { getPool } from './db';
 
-/**
- * DEV-ФИКСТУРА живых цифр терминала (`GET …/accounts`) для кабинета — ТОЛЬКО
- * для локального просмотра главной/вывода (скриншоты редизайна), когда
- * терминала нет. Образец — `apps/admin/lib/crypto/dev-terminal-fixture.ts`.
- *
- * Fail-closed, два независимых условия, оба обязательны:
- *   1) `NODE_ENV === 'development'` (только `next dev`; любая сборка — production);
- *   2) `CABINET_DEV_TERMINAL_FIXTURE === '1'`.
- * Иначе `enabled()` = false и используется настоящий клиент терминала.
- * Подменяется ТОЛЬКО чтение `accounts`; вывод (`withdraw`) всегда идёт в
- * настоящий клиент — фикстура не может «провести» деньги.
- *
- * Баланс — из проекций (`real_accounts`/`demo_accounts`), к нему
- * детерминированный плавающий P&L по id клиента.
- */
 export function devTerminalFixtureEnabled(): boolean {
   return process.env.NODE_ENV === 'development' && process.env.CABINET_DEV_TERMINAL_FIXTURE === '1';
 }

@@ -11,7 +11,6 @@ import { formatDate, formatPeriod, PROMO_CURRENCY } from './format';
 
 export const CARD = 'rounded-2xl border border-border bg-elevated p-4 sm:p-5';
 
-/** Карточка доступной акции: заголовок, суть, ключевые условия, срок, «Участвовать». */
 export function AvailablePromoCard({ promo }: { promo: PromoCardView }) {
   const t = useTranslations('promo');
   const locale = useLocale();
@@ -57,7 +56,6 @@ const STATE_TONE: Record<string, StatusTone> = {
   rejected: 'negative',
 };
 
-/** Метка статуса участия: закрытые — по статусу, открытые — по живой оценке. */
 export function participationBadge(p: ParticipationView): { key: string; tone: StatusTone } {
   if (p.status === 'rewarded' || p.status === 'rejected' || p.status === 'expired' || p.status === 'not_eligible') {
     return { key: `status.${p.status}`, tone: STATE_TONE[p.status] ?? 'neutral' };
@@ -67,7 +65,6 @@ export function participationBadge(p: ParticipationView): { key: string; tone: S
   return { key: `state.${s}`, tone: STATE_TONE[s] ?? 'info' };
 }
 
-/** «Участвую»: прогресс по каждому условию, срок, ожидаемая награда, полные условия. */
 export function ParticipationCard({ p, now }: { p: ParticipationView; now?: Date }) {
   const t = useTranslations('promo');
   const lines = useRuleLines(p.rules);
@@ -95,7 +92,6 @@ export function ParticipationCard({ p, now }: { p: ParticipationView; now?: Date
       ) : p.conditions.length > 0 ? (
         <ConditionList conditions={p.conditions} deadline={open ? p.deadline : null} now={now} />
       ) : (
-        // Условий-снимка нет (кешбэк после выплаты, старое участие) — суть и главное из правил.
         <div className="space-y-2">
           {p.texts.summary ? <p className="text-sm text-secondary">{p.texts.summary}</p> : null}
           <RulesList lines={lines.slice(0, 3)} />

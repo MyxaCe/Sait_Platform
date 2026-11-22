@@ -6,7 +6,6 @@ import { bpsText } from '@/lib/promo/labels';
 const yes = (v: boolean) => (v ? 'да' : 'нет');
 const usdt = (m: number) => <Money minor={m} currency={REAL_ACCOUNT_CURRENCY} />;
 
-/** Правила акции человеческими словами (числа — из базы, не из кода). */
 export function rulesItems(p: ParsedRules): DescriptionItem[] {
   switch (p.type) {
     case 'deposit_bonus': {

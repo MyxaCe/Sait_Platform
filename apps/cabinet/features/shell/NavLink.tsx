@@ -11,12 +11,10 @@ export interface NavItem {
   badge?: number;
 }
 
-/** Активен ли пункт для текущего пути (главная — только точное совпадение). */
 export function isActive(pathname: string, href: string): boolean {
   return href === '/' ? pathname === '/' : pathname === href || pathname.startsWith(`${href}/`);
 }
 
-/** Пункт боковой навигации (десктоп). */
 export function NavLink({ item }: { item: NavItem }) {
   const pathname = usePathname();
   const active = isActive(pathname, item.href);

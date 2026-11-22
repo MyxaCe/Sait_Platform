@@ -8,18 +8,8 @@ import { localizedPath } from '@broker/utils/locales';
 import { getSiteLanguages } from '@/lib/site-languages';
 import { SITE_URL } from '@/lib/site';
 
-/**
- * Sitemap: статические разделы + страницы, чьи списки живут в CMS
- * (инструменты сайта, новости, статьи обучения, юр-документы). Прежде слаги брались из
- * data-файлов кода и расходились с CMS на первой же новой статье.
- *
- * Динамический: на сборке CMS нет (CI), а пререндер запёк бы sitemap без
- * CMS-страниц. CMS недоступна → последняя сохранённая версия её ответа
- * (`getCms`); нет и её — ошибка, а не sitemap «из ничего».
- */
 export const dynamic = 'force-dynamic';
 
-/** Инструменты сайта — те же, что открывает страница инструмента. CMS недоступна → без них. */
 async function siteInstrumentPages(locale: ContentLocale): Promise<InstrumentPageRef[]> {
   try {
     const [{ items }, access, catalog] = await Promise.all([

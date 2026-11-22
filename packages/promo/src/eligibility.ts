@@ -1,18 +1,5 @@
 import type { PromotionStatus } from './rules';
 
-/**
- * ДОСТУПНОСТЬ АКЦИИ клиенту = платформа ∧ акция ∧ страна (дизайн §3.9).
- *
- *  - платформа: «акции выключены» (профиль юрисдикции) и список стран, где
- *    акции не показываются;
- *  - акция: статус `active`, период, `countries_allow` / `countries_deny`;
- *  - страна клиента: `users.country` (из формы регистрации).
- *
- * Страна неизвестна (клиент зарегистрирован до сохранения страны): запреты
- * по «чёрному» списку её не задевают, а «белый» список акции — fail-closed
- * (раз акция объявлена только для некоторых стран, неизвестной её не даём).
- */
-
 export interface PlatformPromoSettings {
   promotionsEnabled: boolean;
   attributionWindowDays: number;
@@ -57,7 +44,6 @@ export function promoAvailability(
   return { available: true };
 }
 
-/** Платформенный уровень (без конкретной акции): показывать ли раздел акций вообще. */
 export function platformAllowsPromotions(
   settings: PlatformPromoSettings,
   clientCountry: string | null,

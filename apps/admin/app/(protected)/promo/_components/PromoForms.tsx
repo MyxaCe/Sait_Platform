@@ -18,12 +18,6 @@ import { promoErrorText } from '@/lib/promo/labels';
 import { REAL_ACCOUNT_CURRENCY } from '@broker/money/display-currency';
 import { ActionForm, ConfirmFacts, type ConfirmSpec } from '../../_money/ActionForm';
 
-/**
- * Формы-с-основанием зоны «Акции и партнёры». Вид и шаги — общие с денежной
- * зоной (`ActionForm`): основание обязательно и пишется в журнал; денежное и
- * опасное — в два шага со сводкой. Личность оператора форма не несёт (Р-451).
- */
-
 export function PromoActionForm(props: {
   action: (s: PromoActionState, fd: FormData) => Promise<PromoActionState>;
   submitLabel: string;
@@ -86,8 +80,6 @@ function prevMonth(): string {
   return `${p.getUTCFullYear()}-${String(p.getUTCMonth() + 1).padStart(2, '0')}`;
 }
 
-/* ── Статус акции ─────────────────────────────────────────────────────── */
-
 const STATUS_FORMS: Record<string, { to: string; label: string; ok: string; danger?: boolean; consequence: string }[]> = {
   draft: [
     { to: 'active', label: 'Запустить акцию', ok: 'Акция запущена.', consequence: 'Клиенты увидят акцию в кабинете и смогут участвовать. Условия идущей акции менять нельзя — только через паузу.' },
@@ -125,8 +117,6 @@ export function StatusForms({ id, status }: { id: string; status: string }) {
     </div>
   );
 }
-
-/* ── Пересчёт и кешбэк ────────────────────────────────────────────────── */
 
 export function SyncForm({ id }: { id?: string }) {
   return (
@@ -168,8 +158,6 @@ export function CashbackForm({ id }: { id: string }) {
     </PromoActionForm>
   );
 }
-
-/* ── Очередь начислений ───────────────────────────────────────────────── */
 
 export interface RewardFacts {
   id: string;
@@ -301,8 +289,6 @@ export function RewardActions({ r }: { r: RewardFacts }) {
   return null;
 }
 
-/* ── Конкурс ──────────────────────────────────────────────────────────── */
-
 export function FinalizeForm({ id, prizesMinor, winners }: { id: string; prizesMinor: number; winners: number }) {
   return (
     <PromoActionForm
@@ -323,8 +309,6 @@ export function FinalizeForm({ id, prizesMinor, winners }: { id: string; prizesM
     </PromoActionForm>
   );
 }
-
-/* ── Рефералы ─────────────────────────────────────────────────────────── */
 
 export function ReassignForm({ refereeUserId, hasReferrer }: { refereeUserId: string; hasReferrer: boolean }) {
   const [referrer, setReferrer] = useState('');
@@ -366,8 +350,6 @@ export function ReassignForm({ refereeUserId, hasReferrer }: { refereeUserId: st
     </div>
   );
 }
-
-/* ── IB-партнёры ──────────────────────────────────────────────────────── */
 
 export interface PartnerInitial {
   id?: string;
@@ -464,8 +446,6 @@ export function RevshareForm({ id }: { id: string }) {
     </PromoActionForm>
   );
 }
-
-/* ── Настройки платформы: акции и атрибуция ───────────────────────────── */
 
 export function PromoSettingsForm({
   initial,

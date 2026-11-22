@@ -10,9 +10,6 @@ import { envOr } from '@broker/utils';
 import { localizedPath } from '@broker/utils/locales';
 import { useSiteLanguages } from '@/i18n/site-languages-context';
 
-/** Вход и открытие счёта живут в кабинете (ADR-022) — отдельное приложение. */
-// Пустая строка — не отсутствие (WEB-21): пустой build-arg перекрывал
-// умолчание, `href` получал '' и кнопка входа вела на саму витрину.
 const CABINET_URL = envOr(process.env.NEXT_PUBLIC_CABINET_URL, 'http://localhost:3002').replace(
   /\/$/,
   '',
@@ -23,9 +20,7 @@ function cabinetHref(path: '/login' | '/register', locale: string, defaultLangua
 }
 
 export interface SiteHeaderProps {
-  /** Название бренда и навигация приходят из CMS (тег cms:brand / cms:navigation) */
   brandName: string;
-  /** Логотип из CMS; null — фолбэк на букву в квадрате */
   logo?: { url: string; width: number; height: number; alt: string } | null;
   nav: { label: string; href: string }[];
 }
@@ -38,10 +33,8 @@ export function SiteHeader({ brandName, logo, nav }: SiteHeaderProps) {
   const t = useTranslations('nav');
   const tCommon = useTranslations('common');
 
-  // Закрываем мобильное меню при переходе на другую страницу
   useEffect(() => setMenuOpen(false), [pathname]);
 
-  // Блокируем скролл body под открытым меню
   useEffect(() => {
     document.body.style.overflow = menuOpen ? 'hidden' : '';
     return () => {
@@ -54,9 +47,6 @@ export function SiteHeader({ brandName, logo, nav }: SiteHeaderProps) {
       <Container className="flex h-16 items-center justify-between gap-4 lg:h-[72px]">
         <Link href="/" className="flex items-center gap-2 text-lg font-semibold text-primary">
           {logo ? (
-            // Обычный <img>: файл отдаёт CMS с другого origin — next/image
-            // потребовал бы remotePatterns и проксирование через сервер сайта.
-            // width/height из контракта обязательны — защита от CLS (R-05).
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={logo.url}
@@ -108,7 +98,6 @@ export function SiteHeader({ brandName, logo, nav }: SiteHeaderProps) {
         <div className="flex items-center gap-1 lg:hidden">
           <LangSwitcher />
           <ThemeToggle />
-          {/* Burger — только mobile/tablet, touch-target 44px */}
           <button
             type="button"
             onClick={() => setMenuOpen((v) => !v)}
@@ -140,7 +129,6 @@ export function SiteHeader({ brandName, logo, nav }: SiteHeaderProps) {
         </div>
       </Container>
 
-      {/* Mobile drawer */}
       <div
         className={cn(
           'fixed inset-x-0 bottom-0 top-16 z-40 flex flex-col bg-base transition-all duration-300 lg:hidden',

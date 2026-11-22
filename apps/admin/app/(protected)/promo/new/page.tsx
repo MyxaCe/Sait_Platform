@@ -7,7 +7,6 @@ import { getPromoSettings } from '@/lib/promo/queries';
 import { PromoHeader } from '../_components/PromoHeader';
 import { PromotionForm } from '../_components/PromotionForm';
 
-/** Новая акция — черновик (только admin). Запуск — отдельным действием в карточке. */
 export const dynamic = 'force-dynamic';
 
 export default async function NewPromotionPage({ searchParams }: { searchParams: { type?: string } }) {

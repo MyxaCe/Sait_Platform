@@ -2,14 +2,6 @@ import { readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-/**
- * Системные авторы журнала (system:*) вставляются миграциями с ЖЁСТКИМ id.
- * `ON CONFLICT (login)` не спасает от совпадения id: две ветки (акции и
- * поддержка, 10.11) независимо взяли …c0b3, и накат с нуля падал на
- * operators_pkey. Тест читает тексты миграций (как expected.test.ts) и
- * требует, чтобы каждый id системного оператора был уникален, а роль
- * операторов в последнем CHECK включала все роли кода.
- */
 const DIR = path.resolve(__dirname, '../migrations');
 
 function migrations(): { name: string; text: string }[] {

@@ -1,11 +1,6 @@
 import { getTranslations } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
 
-/**
- * Кнопка «Поддержка» витрины (решение владельца 10.11): гостю — не чат, а
- * форма обращения → тикет, ответ на почту. Чат — только в кабинете (для
- * вошедших). Ведёт к форме на странице контактов.
- */
 export async function SupportFab({ locale }: { locale: string }) {
   const t = await getTranslations({ locale, namespace: 'supportFab' });
   return (

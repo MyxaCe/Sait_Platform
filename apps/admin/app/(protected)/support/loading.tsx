@@ -1,6 +1,5 @@
 import { DataTable, KpiTile, PageHeader, Panel } from '@broker/ui';
 
-/** Загрузка очереди поддержки: тот же каркас, плитки-заглушки и строки-скелеты. */
 const COLS = ['Обращение', 'Канал', 'Статус', 'Назначен', 'Ждёт / SLA', ''].map((h, i) => ({ key: String(i), header: h, cell: () => null }));
 
 export default function Loading() {

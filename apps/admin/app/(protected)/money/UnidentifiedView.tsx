@@ -17,12 +17,6 @@ import { TronRef } from '../_money/tron';
 import { BindForm } from './MoneyForms';
 import { moneyHref } from './view';
 
-/**
- * Вкладка «Неопознанные»: входящие USDT на кошелёк биржи, на которые никто не
- * заявил хэш. Слева список, справа — привязка выбранного (`?u=<id>`) к
- * клиенту с основанием (зачисление на реальный счёт, журнал).
- */
-
 function columns(selectedId: string | undefined): DataTableColumn<DepositRowView>[] {
   return [
     {
@@ -144,11 +138,9 @@ export function UnidentifiedView({
   selectedId,
 }: {
   rows: DepositRowView[];
-  /** Прочие депозиты: только что привязанное ищется здесь, чтобы панель не пропала. */
   identified: DepositRowView[];
   selectedId: string | undefined;
 }) {
-  // Как и в выводах: выбранное поступление закрепляется в URL.
   if (!selectedId && rows[0]) redirect(moneyHref({ tab: 'unidentified', u: rows[0].id }));
   const selected = rows.find((d) => d.id === selectedId) ?? identified.find((d) => d.id === selectedId);
 

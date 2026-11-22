@@ -24,33 +24,17 @@ import {
 } from '@/lib/dashboard/queries';
 import { actionLabel } from '@/lib/journal/labels';
 import { fmtAge, fmtDateTime, fmtRelativeDay } from '@/lib/ui/format';
-// ── Поддержка (ветка demo-support) ──
 import { queueStats } from '@broker/support';
 import { getPool } from '@/lib/db';
 import { supportActor } from '@/lib/support/runtime';
-// ── Менеджеры клиентов (ветка admin-managers) ──
 import { getMyClientsSummary, isClientManager, listMyClients } from '@/lib/managers/queries';
 import { MyClientsKpis, MyClientsPanel } from './_managers/MyClientsSection';
-// ── Учётные данные клиента (ветка admin-credentials) ──
 import { getCredentialsAlerts } from '@/lib/credentials/queries';
 import { moneyPool } from '@/lib/crypto/runtime';
-// ── Перевод на другую платформу группы (ветка client-transfer) ──
 import { unseenTransferCounts } from '@broker/transfer';
 
-/**
- * Дашборд `/` (эталонный экран редизайна, концепция §7.3). Операционный пульт,
- * не витрина: отвечает на «где меня ждут?» (очереди с возрастом старейшей
- * заявки) и «что произошло?» (последние действия журнала). Числа мгновенные и
- * точные, табличными цифрами, без анимации (§5.4).
- *
- * Только чтение: агрегаты `lib/dashboard/queries.ts`. Денежный блок — только
- * для ролей с доступом к деньгам (admin, finance_operator): для оператора его
- * нет вовсе — ни плиток, ни запроса (fail-closed, Р-394). Выдуманных чисел нет:
- * чего не знаем — того не показываем.
- */
 export const dynamic = 'force-dynamic';
 
-/** Старше этого — заявка KYC «просрочена» (подсветка возраста). */
 const KYC_SLA_HOURS = 48;
 
 function isOverdue(iso: string): boolean {
@@ -141,10 +125,8 @@ function OpenLink({ href, children = 'Открыть →' }: { href: string; chi
 }
 
 export default async function ControlCenterHome() {
-  // Дашборд — по матрице разделов; support_operator уводится на «Поддержку».
   const operator = await requireSection('dashboard');
   const money = canOperateMoney(operator.role);
-  // KYC/AML-плитки и очередь — только ролям этих разделов (finance_operator их не видит).
   const kyc = canAccessSection(operator.role, 'kyc');
   const aml = canAccessSection(operator.role, 'aml');
 
@@ -155,19 +137,13 @@ export default async function ControlCenterHome() {
     money ? getMoneySummary() : Promise.resolve(null),
     money ? listPendingWithdrawals(5) : Promise.resolve([] as PendingWithdrawal[]),
   ]);
-  // Очередь отсортирована по возрастанию updated_at → старейшая первая.
-  // ── Поддержка (ветка demo-support): та же видимость, что у очереди (по роли). ──
   const supportActorNow = await supportActor();
   const support = supportActorNow ? await queueStats(getPool(), supportActorNow) : null;
-  // ── Менеджер клиентов: свой портфель — первым блоком («где меня ждут»). ──
   const manager = await isClientManager(operator.operatorId).catch(() => false);
   const [mySummary, myClients] = manager
     ? await Promise.all([getMyClientsSummary(operator.operatorId), listMyClients(operator.operatorId, 8)])
     : [null, []];
-  // ── Сигнал службе безопасности (только admin): правки учётных данных за сутки
-  //    и операторы сверх порога. Информационно — ничего не блокирует. ──
   const credAlerts = operator.role === 'admin' ? await getCredentialsAlerts(moneyPool()).catch(() => null) : null;
-  // ── Переводы клиентов (ветка client-transfer): admin видит постфактум — уведомление о непросмотренных. ──
   const transfers =
     operator.role === 'admin' ? await unseenTransferCounts(getPool()).catch(() => null) : null;
   const oldest = pending[0];
@@ -187,7 +163,6 @@ export default async function ControlCenterHome() {
 
       {mySummary ? <MyClientsKpis summary={mySummary} /> : null}
 
-      {/* ── Переводы клиентов (ветка client-transfer) ── */}
       {transfers && transfers.outgoing + transfers.inbound + transfers.refundTasks > 0 ? (
         <Callout
           tone="warning"

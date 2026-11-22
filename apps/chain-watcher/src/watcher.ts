@@ -16,20 +16,6 @@ import { ChainUnavailableError, type ChainReader } from './trongrid';
 import { verifyDeposit, verifyPayout } from './verify';
 import { describeError, formatError, secretsFromEnv, type ErrorInfo } from './errors';
 
-/**
- * Один проход наблюдателя (опрос раз в 15 с). Ключей нет — только чтение
- * сети и вызовы internal-маршрутов терминала через `@broker/money`.
- *
- *  (а) заявленные хэши депозитов → зачисление / отклонение / ждём;
- *  (б) входящие USDT без заявки старше 10 мин → «неопознанные»;
- *  (в) хэши выплат → settled / needs_review (без авто-возврата);
- *  (г) списания выводов с неизвестным исходом → довести повтором (тот же ref).
- *
- * Ошибка одной заявки (сеть, терминал) не останавливает проход: она
- * записывается заметкой и повторяется на следующем тике. Сбой сети НИКОГДА
- * не превращается в отклонение.
- */
-
 export interface WatcherDeps {
   pool: PoolLike;
   chain: ChainReader;
@@ -37,18 +23,13 @@ export interface WatcherDeps {
   exchangeAddress: string;
   now?: () => number;
   log?: (msg: string) => void;
-  /** Ошибки прохода — с причиной (по умолчанию console.error). */
   logError?: (msg: string, detail: TickError) => void;
-  /** Значения, которые нельзя печатать (по умолчанию — секреты из env). */
   secrets?: readonly string[];
 }
 
-/** Причина одной ошибки прохода: этап, заявка, тип и сообщение (без секретов). */
 export interface TickError extends ErrorInfo {
   stage: 'deposit' | 'scan' | 'payout' | 'debit';
-  /** id заявки (депозит/вывод), если ошибка про заявку. */
   id?: string;
-  /** Хэш транзакции заявки, если есть. */
   txHash?: string;
 }
 
@@ -80,7 +61,6 @@ export async function runTick(deps: WatcherDeps): Promise<TickStats> {
   const secrets = deps.secrets ?? secretsFromEnv();
   const logError =
     deps.logError ?? ((m: string, d: TickError) => console.error(`[chain-watcher] ${m}`, JSON.stringify(d)));
-  /** Счётчик + строка с причиной: «errors:1» без причины больше не бывает. */
   const fail = (where: Omit<TickError, keyof ErrorInfo>, e: unknown, info = describeError(e, secrets)): ErrorInfo => {
     s.errors++;
     const detail: TickError = { ...where, ...info };
@@ -90,7 +70,6 @@ export async function runTick(deps: WatcherDeps): Promise<TickStats> {
   };
   const settings = await readPlatformMoneySettings(deps.pool);
 
-  // (а) заявленные депозиты
   const claimed = await deps.pool.query(
     `SELECT id, tx_hash, claimed_at FROM crypto_deposits WHERE status = 'claimed' ORDER BY claimed_at LIMIT 50`,
   );
@@ -152,7 +131,6 @@ export async function runTick(deps: WatcherDeps): Promise<TickStats> {
     }
   }
 
-  // (б) неопознанные: подтверждённые входящие без заявки старше 10 мин
   try {
     const incoming = await deps.chain.listIncomingUsdt(deps.exchangeAddress, now() - SCAN_WINDOW_MS);
     for (const t of incoming) {
@@ -166,7 +144,6 @@ export async function runTick(deps: WatcherDeps): Promise<TickStats> {
     fail({ stage: 'scan' }, e);
   }
 
-  // (в) выплаты с внесённым хэшем
   const sent = await deps.pool.query(
     `SELECT id, payout_tx_hash, to_address, amount_minor, sent_at FROM crypto_withdrawals
       WHERE status = 'sent' ORDER BY sent_at LIMIT 50`,
@@ -205,7 +182,6 @@ export async function runTick(deps: WatcherDeps): Promise<TickStats> {
     }
   }
 
-  // (г) списания с неизвестным исходом
   const pending = await deps.pool.query(
     `SELECT id, requested_at FROM crypto_withdrawals
       WHERE status = 'requested' AND debit_state = 'pending' ORDER BY requested_at LIMIT 20`,

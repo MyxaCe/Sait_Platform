@@ -4,20 +4,13 @@ import { getClientTransfers, LIVE_STATUSES } from '@broker/transfer';
 import type { Queryable } from '@broker/money';
 import { getPool } from '@/lib/db';
 
-/**
- * Кабинет платформы-ИСТОЧНИКА: у клиента есть живой перевод на другую
- * платформу группы (проведён менеджером по заявлению клиента в поддержку).
- * Только информация: статус и инструкция по деньгам (вывод здесь → депозит
- * там). Кнопки «запросить перевод» в кабинете НЕТ (решение владельца 10.11):
- * инициатива — только заявление клиента в поддержку.
- */
 export async function TransferNotice({ userId, withWithdrawLink = true }: { userId: string; withWithdrawLink?: boolean }) {
   let live: Awaited<ReturnType<typeof getClientTransfers>>[number] | undefined;
   try {
     const list = await getClientTransfers(getPool() as unknown as Queryable, userId);
     live = list.find((t) => (LIVE_STATUSES as readonly string[]).includes(t.status));
   } catch {
-    return null; // нет таблиц/базы — блока нет, страница работает
+    return null;
   }
   if (!live) return null;
   const t = await getTranslations('platformTransfer');

@@ -2,7 +2,6 @@ import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
 import { ForgotPasswordForm } from '@/features/auth/AuthMailForms';
 
-/** «Забыли пароль?» — ответ один и тот же для любого email (не оракул существования). */
 export default async function ForgotPasswordPage({ params }: { params: { locale: string } }) {
   setRequestLocale(params.locale);
   const t = await getTranslations('authMail');

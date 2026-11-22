@@ -23,12 +23,6 @@ import { RewardActions } from '../_components/PromoForms';
 import { REAL_ACCOUNT_CURRENCY } from '@broker/money/display-currency';
 import { RewardStatusBadge, SignalBadges, SignalDetails } from '../_components/badges';
 
-/**
- * Очередь начислений (концепция §7.4): слева — старейшие сверху, справа —
- * панель решения (`?r=<id>`): сумма, получатель, основание расчёта, сигналы
- * связанности со ссылками на связанных клиентов, одобрить / отклонить /
- * повторить. Решают admin и finance_operator; каждое решение — с основанием.
- */
 export const dynamic = 'force-dynamic';
 
 type Filter = 'open' | 'closed' | 'all';

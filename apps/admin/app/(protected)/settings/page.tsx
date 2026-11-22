@@ -6,27 +6,17 @@ import { exchangeTronAddress } from '@/lib/crypto/runtime';
 import { getPlatformMoneySettings } from '@/lib/crypto/settings';
 import { TronRef } from '../_money/tron';
 import { SettingsForm } from './SettingsForm';
-// ── Лимит вывода без верификации + мин. расстояние SL/TP (ветка demo-withdraw-limits) ──
 import { formatBpsPercent } from '@/lib/crypto/withdraw-limit';
 import { readMinStop } from '@/lib/terminal-settings/stops';
 import { MinStopForm } from './MinStopForm';
 import { getPromoSettings } from '@/lib/promo/queries';
 import { PromoSettingsForm } from '../promo/_components/PromoForms';
-// ── Учётные данные клиента (ветка admin-credentials) ──
 import { moneyPool } from '@/lib/crypto/runtime';
 import { readCredentialSettings } from '@/lib/credentials/core';
 import { checklistToText } from '@/lib/credentials/policy';
 import { CredentialSettingsForm } from './CredentialSettingsForm';
-// ── Реестр платформ группы (ветка client-transfer) ──
 import { GroupPlatformsPanel } from './GroupPlatformsPanel';
 
-/**
- * «Настройки платформы» (дизайн §3) — только admin. Денежные гейты и
- * минимумы; адрес кошелька биржи — из env, здесь только для чтения (правка
- * через админку = один украденный пароль уводит все депозиты).
- *
- * Фаза 2 — только вид: action, поля формы и роль-гейт прежние.
- */
 export const dynamic = 'force-dynamic';
 
 function KycValue({ required }: { required: boolean }) {
@@ -202,7 +192,6 @@ export default async function PlatformSettingsPage() {
             }}
           />
         </Panel>
-        {/* ── Реестр платформ группы (ветка client-transfer) ── */}
         <GroupPlatformsPanel />
         </div>
 

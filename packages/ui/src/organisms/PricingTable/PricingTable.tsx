@@ -9,7 +9,6 @@ export interface AccountPlan {
   id: string;
   name: string;
   description?: string;
-  /** Уже отформатированная строка: "$100" */
   minDeposit: string;
   featured?: boolean;
   features: AccountPlanFeature[];
@@ -39,22 +38,14 @@ const DEFAULT_LABELS: PricingTableLabels = {
 
 export interface PricingTableProps {
   plans: AccountPlan[];
-  /** Локализованные подписи; по умолчанию — русские */
   labels?: Partial<PricingTableLabels>;
   className?: string;
 }
 
-/**
- * Сравнение тарифов. Один источник данных — два представления:
- * mobile/tablet — snap-скролл карточек (таблицы на 360px нечитаемы),
- * desktop (lg+) — полная сравнительная таблица.
- * Серверный компонент: никакой интерактивности, CTA — обычные ссылки.
- */
 export function PricingTable({ plans, labels: labelsProp, className }: PricingTableProps) {
   const labels = { ...DEFAULT_LABELS, ...labelsProp };
   return (
     <div className={className}>
-      {/* Mobile/tablet: горизонтальный snap-скролл карточек */}
       <div
         className="-mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-4 lg:hidden"
         style={{ scrollbarWidth: 'none' }}
@@ -105,7 +96,6 @@ export function PricingTable({ plans, labels: labelsProp, className }: PricingTa
         ))}
       </div>
 
-      {/* Desktop: полная сравнительная таблица */}
       <div className="hidden overflow-hidden rounded-2xl border border-border lg:block">
         <table className="w-full text-sm">
           <thead className="bg-elevated">

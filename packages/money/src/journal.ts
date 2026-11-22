@@ -1,24 +1,7 @@
 import { createHash } from 'node:crypto';
 import type { Queryable } from './db';
 
-/**
- * Неизменяемый журнал действий (ADM-01, Р-049) — ЕДИНСТВЕННАЯ реализация
- * аппенда и хеш-цепочки. Перенесено из `apps/admin/lib/journal/journal.ts`,
- * потому что денежные переходы пишут журнал не только из админки, но и из
- * кабинета (заявка клиента) и из наблюдателя сети. Копия алгоритма в каждом
- * приложении — это две цепочки, расходящиеся от первой правки; поэтому
- * админка теперь лишь реэкспортирует отсюда.
- *
- * Таблица неизменяема на уровне базы (триггер). Записи связаны цепочкой
- * `prev_hash → entry_hash`; канонизация зафиксирована (рекурсивная
- * сортировка ключей), иначе один смысл дал бы разные хеши.
- *
- * Сериализация: `pg_advisory_xact_lock` ДО чтения prev — иначе два аппенда
- * под READ COMMITTED прочли бы один prev и разветвили цепочку.
- */
-
 export interface JournalEntryInput {
-  /** `operators.id` автора действия (системные авторы — `SYSTEM_OPERATORS`). */
   operatorId: string;
   action: string;
   subjectKind: string;
@@ -68,10 +51,6 @@ export function computeEntryHash(fields: {
 
 const JOURNAL_LOCK_SQL = `SELECT pg_advisory_xact_lock(hashtext('admin_action_journal'))`;
 
-/**
- * Аппенд ВНУТРИ уже открытой транзакции вызывающего (BEGIN/COMMIT — на нём).
- * Возвращает запись с `seq` (нужен для `last_journal_seq` состояния).
- */
 export async function appendJournalWithinTx(
   input: JournalEntryInput,
   db: Queryable,
@@ -124,7 +103,6 @@ export async function appendJournalWithinTx(
   };
 }
 
-/** Аппенд + `seq` записи (для привязки `last_journal_seq`), внутри транзакции. */
 export async function appendJournalSeqWithinTx(
   input: JournalEntryInput,
   db: Queryable,

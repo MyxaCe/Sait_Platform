@@ -10,11 +10,6 @@ import {
 } from '@broker/support';
 import { getPool } from '../db';
 
-/**
- * Состояние виджета поддержки для клиента. Тексты — из настроек поддержки
- * (админка, ключи совместимы с будущим глобалом CMS), а не из кода.
- * Внутренние заметки операторов сюда не попадают — их не выбирает запрос.
- */
 export interface SupportWidgetState {
   enabled: boolean;
   online: boolean;
@@ -57,10 +52,6 @@ export async function loadWidgetState(
   };
 }
 
-/**
- * Запрос с нашей же страницы (защита от CSRF у JSON/multipart-ручек: кука
- * сессии `lax`, плюс явная сверка Origin с хостом).
- */
 export function sameOrigin(req: Request): boolean {
   const origin = req.headers.get('origin');
   if (!origin) return false;

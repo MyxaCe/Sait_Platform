@@ -11,23 +11,6 @@ import {
   ticketNumberFromSubject,
 } from './text';
 
-/**
- * Приём входящего письма (дизайн §3.6/3.6.1). Нормализованное письмо от
- * IMAP-воркера → правила → привязка к тикету → сообщение. Всё — в одной
- * транзакции; дедуп по Message-ID — уникальностью `inbound_mail.message_id`
- * (второе такое же письмо — «дубль», ничего не создаёт).
- *
- * Правила по порядку: дубль → своё письмо (петля) → автоответчик (RFC 3834) →
- * блок-лист → лимит писем с адреса → привязка:
- *   1) In-Reply-To/References на наш Message-ID или на письмо этого тикета;
- *   2) метка `[#номер]` в теме — ТОЛЬКО если отправитель = контакт тикета
- *      (иначе любой, угадавший номер, дописывал бы в чужую переписку);
- *   3) plus-адрес `support+<token>@` (если хостинг его поддерживает);
- *   иначе — новый тикет канала email.
- * Закрытый/спам тикет не дописывается — новый тикет (ссылка на старый номер
- * видна в теме).
- */
-
 export interface InboundMail {
   messageId: string | null;
   inReplyTo: string | null;
@@ -37,7 +20,6 @@ export interface InboundMail {
   subject: string | null;
   text: string;
   date: Date | null;
-  /** Заголовки, по которым узнаём автоответчики. */
   autoSubmitted?: string | null;
   precedence?: string | null;
   autoReplyHeader?: boolean;
@@ -47,7 +29,6 @@ export interface InboundMail {
   uidValidity?: number | null;
   rawObjectKey?: string | null;
   attachments?: AttachmentInput[];
-  /** Хеш сырого письма — Message-ID для писем без него. */
   rawSha256?: string;
 }
 
@@ -58,7 +39,6 @@ export type InboundVerdict =
 
 export interface InboundOptions {
   settings: SupportSettings;
-  /** Адрес ящика поддержки (свои письма — петля). */
   ownAddresses: readonly string[];
   now?: Date;
 }
@@ -139,7 +119,6 @@ export async function processInboundMail(db: PoolLike, mail: InboundMail, opts: 
       return verdict('spam', `больше ${opts.settings.limits.emailsPerSenderPerHour} писем в час с адреса`);
     }
 
-    // Привязка к тикету.
     const threadIds = [mail.inReplyTo, ...mail.references]
       .map((x) => normalizeMessageId(x))
       .filter((x): x is string => x !== null);
@@ -220,7 +199,6 @@ export async function processInboundMail(db: PoolLike, mail: InboundMail, opts: 
   });
 }
 
-/** Письмо не разобралось — запись для оператора (сырое .eml в хранилище). */
 export async function recordInboundFailure(
   db: Queryable,
   m: { mailbox: string; uid: number | null; uidValidity: number | null; messageId: string; from: string; subject: string | null; rawObjectKey: string | null; error: string },

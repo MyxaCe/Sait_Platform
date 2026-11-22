@@ -5,20 +5,6 @@ import { enqueueMail } from './outbound';
 import type { SupportSettings } from './settings';
 import { firstNameOf, isPlausibleEmail, mailLocale, normalizeEmail, renderTemplate } from './text';
 
-/**
- * Auth-письма через почту поддержки (решение владельца 10.11): сброс пароля
- * и подтверждение email.
- *
- * Свойства, которые проверяются тестами:
- *  - токен — 32 случайных байта, в базе только sha256;
- *  - одноразовый (`used_at`), со сроком жизни;
- *  - запрос сброса НЕ раскрывает, существует ли email: ответ один и тот же,
- *    письмо уходит только существующему, строка для лимита пишется всегда;
- *  - лимит частоты — по email и по IP, считается по базе;
- *  - успешный сброс гасит все сессии клиента (украденная сессия не живёт
- *    дольше смены пароля) и другие живые токены сброса.
- */
-
 export const RESET_TTL_MINUTES = 30;
 export const VERIFY_TTL_HOURS = 24;
 export const LIMIT_PER_EMAIL_PER_HOUR = 3;
@@ -32,7 +18,6 @@ function newToken(): string {
   return randomBytes(32).toString('base64url');
 }
 
-/** Лимит частоты auth-писем (по email и IP, по базе). Экспорт — для писем по просьбе менеджера. */
 export async function authMailLimited(tx: Queryable, purpose: string, email: string, ip: string | null, now: Date): Promise<boolean> {
   return limited(tx, purpose, email, ip, now);
 }
@@ -58,7 +43,6 @@ export interface LinkBuilder {
   (path: string, token: string, locale: string): string;
 }
 
-/** Клиент, которому уходит auth-письмо (строка `users`). */
 export interface AuthMailUser {
   id: string;
   email: string;
@@ -66,11 +50,6 @@ export interface AuthMailUser {
   locale: string;
 }
 
-/**
- * Токен сброса пароля + письмо со ссылкой — ВНУТРИ транзакции вызывающего,
- * без журнала (журналирует вызывающий: кабинет — от system:cabinet, менеджер
- * — от себя). Один механизм для «Забыли пароль?» и кнопки менеджера.
- */
 export async function issuePasswordResetMail(
   tx: Queryable,
   settings: SupportSettings,
@@ -102,7 +81,6 @@ export async function issuePasswordResetMail(
   return { expiresAt };
 }
 
-/** Токен подтверждения email + письмо — внутри транзакции вызывающего, без журнала. */
 export async function issueEmailVerifyMail(
   tx: Queryable,
   settings: SupportSettings,
@@ -134,7 +112,6 @@ export async function issueEmailVerifyMail(
   return { expiresAt };
 }
 
-/** Ответ запроса сброса — ВСЕГДА один и тот же (не оракул существования email). */
 export type ResetRequestResult = { ok: true; internal: 'sent' | 'unknownEmail' | 'rateLimited' | 'invalid' };
 
 export async function requestPasswordReset(
@@ -180,7 +157,6 @@ export async function requestPasswordReset(
 export type ConsumeFailure = 'invalidToken' | 'expiredToken' | 'usedToken';
 export type ConsumeResult = { ok: true; userId: string } | { ok: false; reason: ConsumeFailure };
 
-/** Проверка токена без расхода (страница «новый пароль» до отправки формы). */
 export async function inspectToken(
   db: Queryable,
   purpose: 'password_reset' | 'email_verify',
@@ -199,11 +175,6 @@ export async function inspectToken(
   return { ok: true, userId: String(row.user_id) };
 }
 
-/**
- * Новый пароль по токену. Хеш пароля считает вызывающий (у кабинета свой
- * алгоритм), пакет его не знает. Токен расходуется атомарно: два параллельных
- * запроса с одним токеном — успех только у одного.
- */
 export async function completePasswordReset(
   db: PoolLike,
   input: { token: string; passwordHash: string; now?: Date },
@@ -222,13 +193,11 @@ export async function completePasswordReset(
       return rollback({ ok: false as const, reason: why.ok ? ('invalidToken' as const) : why.reason });
     }
     await tx.query(`UPDATE users SET password_hash = $2 WHERE id = $1`, [userId, input.passwordHash]);
-    // Другие живые ссылки сброса — недействительны; все сессии — погашены.
     await tx.query(
       `UPDATE auth_mail_tokens SET used_at = $2 WHERE user_id = $1 AND purpose = 'password_reset' AND used_at IS NULL`,
       [userId, now],
     );
     await tx.query(`DELETE FROM sessions WHERE user_id = $1`, [userId]);
-    // Ссылка пришла на почту — значит, почта подтверждена.
     await tx.query(`UPDATE users SET email_verified_at = COALESCE(email_verified_at, $2) WHERE id = $1`, [userId, now]);
     await appendJournalWithinTx(
       {
@@ -279,10 +248,6 @@ export async function requestEmailVerification(
   });
 }
 
-/**
- * Подтверждение email по ссылке. Токен привязан к адресу, на который ушёл:
- * если клиент сменил email после отправки — ссылка уже не подтверждает новый.
- */
 export async function confirmEmail(
   db: PoolLike,
   input: { token: string; now?: Date },
@@ -317,14 +282,6 @@ export async function confirmEmail(
   });
 }
 
-/**
- * Смена ВРЕМЕННОГО пароля, выданного менеджером (функция 3, 10.11). Клиент
- * вошёл по временному паролю и обязан задать свой: только тогда снимается
- * `password_must_change`. Другие сессии гасятся (текущая — та, в которой
- * клиент сейчас, — остаётся), живые ссылки сброса — тоже. Если флага нет,
- * ничего не меняется (`notRequired`): обычная смена пароля идёт через
- * профиль с текущим паролем.
- */
 export type ForcedChangeResult = { ok: true; sessionsRevoked: number } | { ok: false; reason: 'notRequired' };
 
 export async function completeForcedPasswordChange(

@@ -5,14 +5,8 @@ import { promoAvailability, type Unavailability } from './eligibility';
 import { readPromoSettings, readPromotion, type PromotionRow } from './reader';
 import type { ContestRules } from './rules';
 
-/**
- * Конкурс в базе: участие (со сбросом демо-счёта терминалом), база участника
- * по событию сброса, лидерборд.
- */
-
 const iso = (v: unknown) => (v instanceof Date ? v.toISOString() : new Date(String(v)).toISOString());
 
-/** Факты участников + ранжирование. Окно сделок: [max(база, старт), min(конец, сейчас)]. */
 export async function readContestStandings(
   db: Queryable,
   promo: Pick<PromotionRow, 'id' | 'startsAt' | 'endsAt'>,
@@ -62,7 +56,6 @@ export function contestPhase(promo: Pick<PromotionRow, 'status' | 'startsAt' | '
   return 'running';
 }
 
-/** Исход сброса демо от терминала (форма — как у кабинета `resetDemoAccount`). */
 export type DemoResetResult =
   | { state: 'accepted' }
   | { state: 'refused'; reason: string | null }
@@ -83,17 +76,6 @@ export type JoinContestResult =
       detail?: string | null;
     };
 
-/**
- * Вступить в конкурс. Стартовая сумма одинакова у всех: вступление
- * сбрасывает демо-счёт ТЕРМИНАЛОМ (`resetDemo` — кабинетный
- * `resetDemoAccount`, `POST /account/demo-reset`). Порядок:
- *  1. транзакция: строка `pending_reset` + журнал → COMMIT (строка есть ДО
- *     вызова — событие сброса не может обогнать её);
- *  2. сброс в терминале; отказ (`account_not_flat` — есть открытые позиции)
- *     или недоступность → строка `withdrawn`, причина клиенту;
- *  3. базу (`baseline_minor`) поставит консюмер по событию
- *     `terminal.balance.changed` reason=reset (`apps/consumer/src/contest-reset.ts`).
- */
 export async function joinContest(
   pool: PoolLike,
   input: { userId: string; promotionId: string; now?: Date },
@@ -110,7 +92,6 @@ export async function joinContest(
       settings: settings ?? { promotionsEnabled: false, attributionWindowDays: 1, blockedCountries: [] },
       promo,
       clientCountry: (u.rows[0]?.country as string | null) ?? null,
-      // Вступать можно и до старта (стартуют все одновременно), но не после конца.
       now: promo.startsAt && Date.parse(promo.startsAt) > now.getTime() ? new Date(Date.parse(promo.startsAt)) : now,
     });
     if (!avail.available) {

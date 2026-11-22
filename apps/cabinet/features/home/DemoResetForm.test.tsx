@@ -3,20 +3,6 @@ import { describe, expect, it, vi } from 'vitest';
 import type { DemoResetOutcome } from '@/lib/actions';
 import { DemoResetForm } from './DemoResetForm';
 
-/**
- * WEB-42 · форма ПОКАЗЫВАЕТ исход, а не только получает его.
- *
- * **Зачем отдельно от проверок действия.** Там доказано, что действие
- * возвращает названное состояние. Это не доказывает, что человек его
- * увидит: раскладка состояния в подпись живёт здесь, и сломать её
- * можно, не тронув действие.
- *
- * До этой проверки в кабинете нельзя было отрисовать ни один из
- * тринадцати клиентских компонентов — окружение было узловым. Дыра та
- * же, что WEB-16 закрыл в витрине, и нашлась она, когда я добавил
- * четырнадцатый, чья работа как раз показывать.
- */
-
 const state = vi.hoisted(() => ({ current: { state: 'idle' } as DemoResetOutcome }));
 
 vi.mock('react-dom', async (importOriginal) => {
@@ -49,7 +35,6 @@ describe('WEB-42 · подпись под кнопкой', () => {
   it('до нажатия подписи нет', () => {
     show({ state: 'idle' });
 
-    // Сообщение до действия было бы утверждением ни о чём.
     for (const text of Object.values(TEXTS)) {
       expect(screen.queryByText(text)).toBeNull();
     }
@@ -97,7 +82,6 @@ describe('WEB-42 · подпись под кнопкой', () => {
     render(<DemoResetForm label="Сбросить" texts={TEXTS} />);
     const no = screen.getByText('закройте позиции').className;
 
-    // Цвет несёт то же различие для того, кто читает бегло.
     expect(ok).not.toBe(no);
   });
 

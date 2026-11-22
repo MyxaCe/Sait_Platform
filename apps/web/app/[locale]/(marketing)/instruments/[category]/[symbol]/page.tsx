@@ -18,20 +18,6 @@ import { getSiteLanguages } from '@/lib/site-languages';
 import { SITE_URL } from '@/lib/site';
 import { getTenantAccess } from '@/lib/tenant';
 
-/**
- * Страница ДИНАМИЧЕСКАЯ, и это требование, а не настройка (WEB-07).
- *
- * Её содержимое режет граница доступа тенанта — регуляторный фильтр,
- * который читается из окружения В РАНТАЙМЕ. На сборке окружения нет:
- * `getTenantAccess()` возвращает `not-configured`, список становится
- * пустым, а объяснение «список недоступен» ЗАПЕКАЕТСЯ в разметку. На
- * живом домене это вечная ложная авария — та же природа, что у адресов
- * в WEB-22: состояние среды, замороженное на сборке.
- *
- * Отдать список статически и отфильтровать его в браузере нельзя:
- * неразрешённые инструменты оказались бы в HTML, а fail-closed значит
- * «не публиковать то, что может быть запрещено», а не «спрятать потом».
- */
 export const dynamic = 'force-dynamic';
 
 interface PageParams {
@@ -60,8 +46,6 @@ export async function generateMetadata({ params }: PageParams): Promise<Metadata
 }
 
 export default async function InstrumentPage({ params }: PageParams) {
-  // setRequestLocale строго до notFound(): иначе рендер 404-границы
-  // уходит в динамический режим (DYNAMIC_SERVER_USAGE)
   setRequestLocale(params.locale);
   const locale = pageLocale(params.locale);
 
@@ -110,7 +94,6 @@ export default async function InstrumentPage({ params }: PageParams) {
 
   const categoryLabel = (await getTranslations({ locale, namespace: 'categories' }))(def.category);
 
-  // Микроразметка хлебных крошек — дублирует видимую навигацию для поисковиков
   const breadcrumbJsonLd = {
     '@context': 'https://schema.org',
     '@type': 'BreadcrumbList',

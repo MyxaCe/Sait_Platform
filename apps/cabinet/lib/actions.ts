@@ -31,13 +31,6 @@ import {
   revokeSession,
 } from './auth/session';
 
-/**
- * Серверные экшены кабинета. Контракт с формами:
- * { fieldErrors } — ключи namespace `validation` (ADR-011), перевод на рендере;
- * { error } — общая ошибка ('rateLimited' | 'invalidCredentials' | ...).
- * Успех навигационных экшенов — redirect (throw), не возврат.
- */
-
 export interface ActionState {
   ok?: boolean;
   error?: string;
@@ -61,10 +54,6 @@ function homePath(locale: string): Promise<string> {
   return localeHref('/', locale);
 }
 
-/* ------------------------------------------------------------------ */
-/* Auth                                                                */
-/* ------------------------------------------------------------------ */
-
 export async function registerAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
   if (isRateLimited(`register:${clientIp()}`, 5, 60_000)) {
     return { error: 'rateLimited' };
@@ -72,17 +61,9 @@ export async function registerAction(_prev: ActionState, formData: FormData): Pr
   const raw = Object.fromEntries(formData.entries());
   const parsed = registerSchema.safeParse(raw);
   if (!parsed.success) {
-    // honeypot: боту отвечаем как обычной ошибке валидации, без деталей
     return { fieldErrors: zodFieldErrors(parsed.error) };
   }
 
-  /*
-    Атрибуция (акции и рефералы): first-click cookie ставят middleware
-    витрины и кабинета по `?ref=` / `?promo=`; скрытые поля формы — запасной
-    путь. IP — как у ограничителя частоты; страна по IP — из гео-заголовка
-    прокси, ИМЯ заголовка — из окружения (`GEO_COUNTRY_HEADER`, напр.
-    `cf-ipcountry`): у каждой площадки свой прокси.
-  */
   const jar = cookies();
   const geoHeader = process.env.GEO_COUNTRY_HEADER?.trim();
   const ip = clientIp();
@@ -97,13 +78,9 @@ export async function registerAction(_prev: ActionState, formData: FormData): Pr
     },
     ip: ip === 'local' ? null : ip,
     ipCountry: geoHeader ? headers().get(geoHeader) : null,
-    // ── Перевод с другой платформы группы (ветка client-transfer) ──
     invite: typeof raw.invite === 'string' && raw.invite ? raw.invite : null,
   });
   if (!result.ok) {
-    // Три причины отказа — три разных ответа формы. Прежде здесь любой
-    // отказ превращался в «email занят»: один беззвучный исход на
-    // несколько причин, ровно тот класс, который закрывает Р-025.
     if (result.reason === 'emailExists') {
       return { fieldErrors: { email: 'emailExists' } };
     }
@@ -123,8 +100,6 @@ export async function loginAction(_prev: ActionState, formData: FormData): Promi
     return { fieldErrors: zodFieldErrors(parsed.error) };
   }
 
-  // Пароль + блокировка (ADM-02) — в `checkLogin`; о блоке говорим только
-  // после верного пароля, чтобы форма не стала оракулом.
   const check = await checkLogin(parsed.data.email, parsed.data.password);
   if (!check.ok) {
     return { error: check.error };
@@ -132,11 +107,9 @@ export async function loginAction(_prev: ActionState, formData: FormData): Promi
 
   await getPool().query(`UPDATE users SET last_login_at = now() WHERE id = $1`, [check.userId]);
   await createSession(check.userId);
-  // Временный пароль от менеджера — сначала свой пароль, потом всё остальное.
   if (check.mustChangePassword) {
     redirect(await localeHref('/change-password', String(formData.get('uiLocale') ?? check.locale)));
   }
-  // Вход начался с launch терминала (sso-pack v1.1) — продолжаем его; иначе на главную.
   const next = safeNext(formData.get('next'));
   redirect(next ?? (await homePath(String(formData.get('uiLocale') ?? check.locale))));
 }
@@ -145,10 +118,6 @@ export async function logoutAction(formData: FormData): Promise<void> {
   await destroyCurrentSession();
   redirect(await localeHref('/login', String(formData.get('uiLocale'))));
 }
-
-/* ------------------------------------------------------------------ */
-/* Профиль и безопасность                                              */
-/* ------------------------------------------------------------------ */
 
 export async function updateProfileAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const user = await getSessionUser();
@@ -192,12 +161,8 @@ export async function revokeSessionAction(formData: FormData): Promise<void> {
   const sessionId = String(formData.get('sessionId') ?? '');
   if (sessionId) await revokeSession(user.id, sessionId);
   revalidatePath('/security');
-  revalidatePath('/profile'); // r2: безопасность — вкладка «Профиля»
+  revalidatePath('/profile');
 }
-
-/* ------------------------------------------------------------------ */
-/* Документы (KYC-заглушка до интеграции с CRM)                        */
-/* ------------------------------------------------------------------ */
 
 const ALLOWED_MIME = new Set(['application/pdf', 'image/jpeg', 'image/png']);
 
@@ -216,8 +181,6 @@ export async function uploadDocumentAction(_prev: ActionState, formData: FormDat
   if (!ALLOWED_MIME.has(file.type)) return { fieldErrors: { file: 'unsupportedFormat' } };
   if (file.size > MAX_DOC_BYTES) return { fieldErrors: { file: 'fileTooLarge' } };
 
-  // Пустая строка — не отсутствие (WEB-21): пустой UPLOAD_DIR уводил бы
-  // запись файлов в корень рабочего каталога.
   const uploadDir = envOr(process.env.UPLOAD_DIR, path.join(process.cwd(), 'uploads'));
   await mkdir(uploadDir, { recursive: true });
   const ext = file.type === 'application/pdf' ? 'pdf' : file.type === 'image/png' ? 'png' : 'jpg';
@@ -234,84 +197,24 @@ export async function uploadDocumentAction(_prev: ActionState, formData: FormDat
     [randomUUID(), user.id, JSON.stringify({ filename: file.name.slice(0, 200) })],
   );
   revalidatePath('/documents');
-  revalidatePath('/profile'); // r2: документы — вкладка «Профиля»
+  revalidatePath('/profile');
   return { ok: true };
 }
 
-/* ------------------------------------------------------------------ */
-/* Демо-счёт                                                           */
-/* ------------------------------------------------------------------ */
-
-/**
- * Сброс демо-счёта — **операция ТЕРМИНАЛА** (WEB-29, решение владельца).
- *
- * > Владелец денежного числа — терминал. Кабинет — проекция.
- *
- * **Чем это было.** Кабинет правил свою копию баланса сам, и следующее
- * же событие о балансе возвращало прежнюю сумму — **сброс отменялся
- * сам**, тихо и не сразу. Человек видел нужное число, уходил, а при
- * следующем тике оно пропадало. Это не потеря денег, а расхождение
- * проекции с источником, которое ничем не краснело.
- *
- * **Чем стало.** `POST /account/demo-reset` у терминала (`TRM-54`):
- * операция идёт его обычным путём мутации — журнал, инварианты,
- * сверка, исходящая очередь одной транзакцией, — и возвращается к нам
- * событием с причиной `reset`. Отдельного пути у денег не бывает.
- *
- * **«Принято» не равно «применено».** Новой суммы мы здесь не знаем и
- * не показываем: она приедет событием. Показать её сразу значило бы
- * утверждать результат, которого мы не видели, — и это ровно то, на
- * чём ломался прежний сброс.
- *
- * **Стартовую сумму здесь больше не читаем.** Её назначает владелец
- * счёта, а им стал терминал; наш барьер Р-040 переехал туда вместе с
- * операцией (`not_a_demo_account`).
- *
- * Барьер ограничения частоты остаётся здесь, а не только в интерфейсе:
- * кнопка в `BalanceModule` задизейблена с подписью, но экшен
- * вызывается запросом, а не кнопкой.
- */
-/**
- * Исход сброса — для ЧЕЛОВЕКА, а не только для лога (WEB-42).
- *
- * Прежде действие возвращало пустоту. Это значило, что нажатие не
- * даёт отклика **вообще**: страница перерисовывается со старым
- * числом (событие ещё не приехало), а отказ терминала уходит в
- * `console.error`, то есть в серверный лог. Для человека успех и
- * отказ выглядели одинаково — наш основной класс, в единственном
- * месте, куда мы не смотрели: там, где нажимают кнопку.
- *
- * Оси те же, что у причин молчания инструментов: **не дошли** против
- * **отказано по существу**. Схлопнутые, они отправляют чинить
- * наугад — а здесь «чинит» сам человек, и `account_not_flat` он
- * исправить может: закрыть позиции.
- */
 export type DemoResetOutcome =
-  /** Ничего ещё не нажимали. */
   | { state: 'idle' }
-  /** Терминал принял. **Не «сброшено»**: сумма приедет событием. */
   | { state: 'accepted' }
-  /** Терминал отказал по существу. `null` — причина незнакомая. */
   | { state: 'refused'; reason: 'not_a_demo_account' | 'account_not_flat' | null }
-  /** До терминала не дошли. */
   | { state: 'unavailable'; reason: TerminalFailure }
-  /** Слишком часто. **Называется**, иначе человек жмёт в третью тишину. */
   | { state: 'too-often' }
-  /** Сессии нет. */
   | { state: 'no-session' };
 
 export async function resetDemoAccountAction(
-  /** Предыдущее состояние: его требует `useFormState`, нам оно не нужно. */
   _previous: DemoResetOutcome,
 ): Promise<DemoResetOutcome> {
   const user = await getSessionUser();
   if (!user) return { state: 'no-session' };
   if (isRateLimited(`demo-reset:${user.id}`, 5, 60_000)) {
-    /*
-      Молчащее ограничение поверх молчащего отказа — худшее из
-      сочетаний: человек жмёт второй раз именно потому, что первый не
-      ответил, и получает за это третье молчание.
-    */
     return { state: 'too-often' };
   }
 
@@ -326,19 +229,9 @@ export async function resetDemoAccountAction(
     return { state: 'refused', reason: outcome.reason };
   }
 
-  /*
-    Уведомления здесь больше нет. Прежде кабинет писал «счёт сброшен до
-    N» сам, и N брал из своей копии стартовой суммы — то есть сообщал
-    человеку число, которого не наблюдал. Теперь уведомление родится
-    из события шины, когда сброс действительно применится.
-  */
   revalidatePath('/', 'layout');
   return { state: 'accepted' };
 }
-
-/* ------------------------------------------------------------------ */
-/* Уведомления                                                         */
-/* ------------------------------------------------------------------ */
 
 export async function markNotificationReadAction(formData: FormData): Promise<void> {
   const user = await getSessionUser();

@@ -5,13 +5,6 @@ import type { AccountKind } from '@/lib/sso/jwt';
 import { parseTerminalSymbol } from '@/lib/auth/public-paths';
 import { terminalPageHref } from './terminal-href';
 
-/**
- * Кнопка «Торговать на демо/реальном». При `TERMINAL_TOP_LEVEL=1` — вход в
- * терминал верхним уровнем в ТОЙ ЖЕ вкладке через `/api/sso/launch`
- * (sso-pack v1.1; обычная ссылка `<a>` — маршрут API не локализуется).
- * Без флага — как раньше: полноэкранная `/terminal?account=…` с iframe
- * (она же остаётся запасным путём).
- */
 export function TerminalLink({
   account,
   symbol,

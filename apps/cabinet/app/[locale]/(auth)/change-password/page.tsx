@@ -4,11 +4,6 @@ import { ForcedPasswordForm } from '@/features/auth/AuthMailForms';
 import { getSessionUser } from '@/lib/auth/session';
 import { localeHref } from '@/i18n/redirect';
 
-/**
- * Обязательная смена временного пароля, выданного менеджером (функция 3,
- * 10.11). Сюда ведут вход, зона `(app)` и SSO, пока у клиента стоит
- * `password_must_change`. Гость — на вход; пароль уже свой — в кабинет.
- */
 export const dynamic = 'force-dynamic';
 
 export default async function ChangePasswordPage({ params }: { params: { locale: string } }) {

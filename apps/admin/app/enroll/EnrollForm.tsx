@@ -11,15 +11,6 @@ import {
   type EnrollStartResult,
 } from '@/lib/totp/actions';
 
-/**
- * Клиентская форма регистрации TOTP. На монтировании просит сервер завести
- * секрет (`beginTotpEnrollment`) — секрет живёт в httpOnly-тикете, сюда
- * приходят только provisioning-URI и ручной ключ для сканирования. QR рисуется
- * здесь же, в браузере, из этого URI (никуда не отправляется). Затем оператор
- * вводит код; `confirmTotpEnrollment` сверяет его и при успехе сохраняет
- * секрет и уводит внутрь (redirect из action).
- */
-
 const MESSAGES: Record<string, string> = {
   invalidCode: 'Код не подошёл. Проверьте время на устройстве и попробуйте снова.',
   expired: 'Время настройки истекло. Обновите страницу и начните заново.',
@@ -49,7 +40,6 @@ function Step({ n, title, children }: { n: number; title: string; children?: Rea
   );
 }
 
-/** Ключ группами по 4 — так его легче перепечатать вручную. */
 function grouped(secret: string): string {
   return secret.replace(/(.{4})/g, '$1 ').trim();
 }
@@ -76,8 +66,6 @@ export function EnrollForm() {
 
   useEffect(() => {
     if (!provision) return;
-    // QR — функциональный код для камеры: строго чёрный по белому (не цвета
-    // палитры), иначе часть сканеров его не прочтёт.
     QRCode.toString(provision.uri, {
       type: 'svg',
       margin: 1,

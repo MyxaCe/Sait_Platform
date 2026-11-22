@@ -1,7 +1,6 @@
 import { draftMode } from 'next/headers';
 import { getTranslations } from 'next-intl/server';
 
-/** Плашка активного preview-режима с кнопкой выхода. */
 export async function PreviewBanner({ locale }: { locale: string }) {
   if (!draftMode().isEnabled) return null;
   const t = await getTranslations({ locale, namespace: 'preview' });

@@ -2,34 +2,9 @@ import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-/**
- * Образ приложения содержит ВСЕ его рабочие зависимости (B-OPS-029).
- *
- * **Что было.** `apps/consumer/package.json` объявлял `@broker/tenant`,
- * `index.ts` первым делом звал оттуда гейт личности, а
- * `docker/consumer.Dockerfile` этот пакет не копировал — ни манифест, ни
- * исходники. Пакет завели 06.10, файл сборки за ним не пошёл. На сервере
- * образ встал в бесконечный перезапуск: «Cannot find module».
- *
- * **Почему это не ловилось.** Прогон публикации собирает образ, ставит
- * метку ревизии, публикует, скачивает обратно на чистом раннере и
- * сверяет метку — и **ни один гейт не запускает контейнер**. «Образ
- * скачивается» и «образ работает» — разные утверждения.
- *
- * Здесь закрыта та половина, которую видно по тексту. Вторая — запуск
- * образа с требованием НАЗВАННОГО отказа — заведена как `WEB-27`.
- *
- * **Две сборки устроены по-разному, и это учтено.** Витрина и кабинет
- * копируют дерево целиком (`COPY . .`): поштучная проверка там была бы
- * ложной, а сторож, красящий законное, отключают первым. Релей и
- * консюмер копируют пакеты поимённо — и пропустить там можно именно
- * поимённо.
- */
-
 const ROOT = path.resolve(__dirname, '../../..');
 const APPS = ['consumer', 'relay', 'web', 'cabinet', 'chain-watcher', 'support-mail'];
 
-/** Копирует ли сборка дерево целиком. */
 export function copiesWholeTree(dockerfile: string): boolean {
   return dockerfile.split('\n').some((line) => line.trim() === 'COPY . .');
 }
@@ -44,11 +19,9 @@ export function missingCopies(dockerfile: string, deps: string[]): string[] {
     if (!dep.startsWith('@broker/')) continue;
     const pkg = dep.slice('@broker/'.length);
 
-    // Манифест: без него установка не узнает о зависимости.
     if (!lines.includes(`COPY packages/${pkg}/package.json packages/${pkg}/`)) {
       missing.push(`манифест ${pkg}`);
     }
-    // Исходники: без них нечего импортировать.
     if (!lines.includes(`COPY packages/${pkg} packages/${pkg}`)) {
       missing.push(`исходники ${pkg}`);
     }
@@ -77,8 +50,6 @@ describe('B-OPS-029 · объявленная зависимость попад�
   });
 
   it('проверка умеет краснеть — на том самом пропуске', () => {
-    // Берём настоящий Dockerfile консюмера и убираем ровно те две
-    // строки, которых не хватало.
     const real = dockerfileOf('consumer') as string;
     const broken = real
       .split('\n')

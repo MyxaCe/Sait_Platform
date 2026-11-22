@@ -6,7 +6,6 @@
 
 @layer base {
   :root {
-    /* Inter (self-hosted, два подмножества) → системный стек. */
     --font-sans: var(--font-inter-latin), var(--font-inter-cyrillic), system-ui, -apple-system,
       'Segoe UI', Roboto, Arial, sans-serif;
   }
@@ -18,7 +17,6 @@
   body {
     @apply bg-base font-sans text-sm text-primary;
     text-rendering: optimizeLegibility;
-    /* Inter: «открытые» цифры 6/9 и прямая «1» читаются лучше в таблицах. */
     font-feature-settings: 'cv05', 'cv08';
   }
 
@@ -31,8 +29,6 @@
     outline-offset: 2px;
   }
 
-  /* Операторский периметр: никакой «витринной» анимации даже при её
-     случайном появлении в общих компонентах; уважение reduce-motion. */
   @media (prefers-reduced-motion: reduce) {
     *,
     *::before,

@@ -1,21 +1,3 @@
-/*
- * Точка запуска сервера витрины: 503 вместо 500, когда CMS недоступна и
- * показать нечего (решение владельца 10.11, `lib/cms-outage.ts`).
- *
- * App Router не умеет вернуть из страницы код 503 — брошенная ошибка
- * рендера даёт 500. Здесь на каждый запрос заводится хранилище
- * AsyncLocalStorage под глобальным символом; `getCms`, не найдя ни CMS,
- * ни сохранённой версии, отмечает в нём отказ, а мы переписываем ответ:
- *   500 → 503, Retry-After, X-Robots-Tag: noindex, no-store, и своё
- *   статическое тело «Контент временно недоступен» (без бренда и контента).
- * Остальные 500 (настоящие ошибки кода) не трогаются.
- *
- * Запуск: `node server-entry.cjs <скрипт сервера> [аргументы]`, например
- *   node apps/web/server-entry.cjs apps/web/server.js          (standalone, Docker)
- *   node server-entry.cjs node_modules/next/dist/bin/next start (локально)
- * Скрипт загружается в ЭТОМ ЖЕ процессе: обёртка ставится на
- * http.createServer до того, как Next создаст сервер.
- */
 'use strict';
 
 const { AsyncLocalStorage } = require('node:async_hooks');
@@ -28,12 +10,6 @@ const RETRY_AFTER_SECONDS = process.env.CMS_OUTAGE_RETRY_AFTER || '120';
 const storage = new AsyncLocalStorage();
 globalThis[OUTAGE] = storage;
 
-/**
- * Тело ответа 503 — своё, статическое: у Next при отказе корневого layout
- * в теле оказывается «500: Internal Server Error», а при отказе страницы —
- * пустая оболочка, которую дорисовывает клиент. Здесь нет ни бренда, ни
- * контента: показать нечего, и страница честно говорит именно это.
- */
 function outageHtml(url) {
   const en = /^\/en(\/|$|\?)/.test(url || '');
   const title = en ? 'Content is temporarily unavailable' : 'Контент временно недоступен';
@@ -65,7 +41,6 @@ function wrapListener(listener) {
       if (statusCode === 500 && store.outage && !replaced) {
         replaced = true;
         statusCode = 503;
-        // Тело заменяется целиком: снимаем всё, что описывало прежнее
         for (const name of ['content-length', 'content-encoding', 'etag', 'vary']) {
           this.removeHeader(name);
         }
@@ -73,7 +48,6 @@ function wrapListener(listener) {
         this.setHeader('Retry-After', RETRY_AFTER_SECONDS);
         this.setHeader('X-Robots-Tag', 'noindex');
         this.setHeader('Cache-Control', 'no-store');
-        // Заголовки аргументом writeHead сильнее setHeader — выравниваем и их
         const last = rest[rest.length - 1];
         if (last && typeof last === 'object' && !Array.isArray(last)) {
           for (const key of Object.keys(last)) {
@@ -86,14 +60,12 @@ function wrapListener(listener) {
       }
       return writeHead.call(this, statusCode, ...rest);
     };
-    // Первый write/end без явного writeHead шлёт заголовки неявно — до
-    // нашей проверки. Поэтому решение о замене принимаем раньше Node.
     const decideBeforeBody = () => {
       if (!res.headersSent && res.statusCode === 500 && store.outage) res.writeHead(500);
     };
     res.write = function patchedWrite(...args) {
       decideBeforeBody();
-      if (replaced) return true; // тело Next не нужно — своё отдадим в end
+      if (replaced) return true;
       return write.apply(this, args);
     };
     res.end = function patchedEnd(...args) {
@@ -113,7 +85,6 @@ http.createServer = function patchedCreateServer(...args) {
   const index = args.findIndex((a) => typeof a === 'function');
   if (index !== -1) args[index] = wrapListener(args[index]);
   const server = createServer.apply(this, args);
-  // Слушатель может прийти позже — через server.on('request', …)
   const on = server.on;
   server.on = function patchedOn(event, listener) {
     if (event === 'request' && typeof listener === 'function') {

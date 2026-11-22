@@ -5,7 +5,6 @@ import { getChromeBrand } from '@/lib/chrome';
 import { loadMyReferral } from '@/lib/promo';
 import { ReferralScreen } from '@/features/promo/ReferralScreen';
 
-/** «Пригласи друга» (дизайн §4.1): ссылка, код, QR, условия, приглашённые; IB — свой договор. */
 export const dynamic = 'force-dynamic';
 
 export default async function ReferralsPage({ params }: { params: { locale: string } }) {

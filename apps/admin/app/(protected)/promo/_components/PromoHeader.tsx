@@ -4,10 +4,6 @@ import type { PlatformPromoSettings } from '@broker/promo';
 
 export type PromoTab = 'promotions' | 'queue' | 'contests' | 'referrals' | 'partners';
 
-/**
- * Шапка раздела «Акции и партнёры»: заголовок, вкладки-ссылки, состояние
- * платформенного флага. Роль-гейт решают страницы.
- */
 export function PromoHeader({
   active,
   settings,

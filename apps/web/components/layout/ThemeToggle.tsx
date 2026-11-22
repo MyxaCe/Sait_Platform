@@ -5,10 +5,6 @@ import { useTheme } from 'next-themes';
 import { useEffect, useState } from 'react';
 import { cn } from '@broker/ui';
 
-/**
- * Переключатель тёмной/светлой темы. Рендерит нейтральную заглушку
- * до маунта, чтобы не получить hydration mismatch (тема известна только на клиенте).
- */
 export function ThemeToggle({ className }: { className?: string }) {
   const { theme, setTheme } = useTheme();
   const t = useTranslations('theme');
@@ -33,7 +29,6 @@ export function ThemeToggle({ className }: { className?: string }) {
       {!mounted ? (
         <span className="size-5 rounded-full bg-border" aria-hidden />
       ) : isDark ? (
-        // Солнце — переключение на светлую
         <svg viewBox="0 0 24 24" className="size-5 fill-none stroke-current" aria-hidden>
           <circle cx="12" cy="12" r="4" strokeWidth="1.8" />
           <path
@@ -43,7 +38,6 @@ export function ThemeToggle({ className }: { className?: string }) {
           />
         </svg>
       ) : (
-        // Луна — переключение на тёмную
         <svg viewBox="0 0 24 24" className="size-5 fill-none stroke-current" aria-hidden>
           <path
             d="M21 12.8A9 9 0 1111.2 3a7 7 0 009.8 9.8z"

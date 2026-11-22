@@ -2,17 +2,6 @@ import { readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-/**
- * Сторож «ничего не хардкодим» (решения владельца 10.11, сквозной принцип):
- * в вёрстке экранов акций, рефералов, конкурса и условий счетов нет ни одной
- * суммы, процента, плеча — всё приходит из `@broker/promo`/`@broker/money`
- * (админка). Тексты — в словарях без чисел акций.
- *
- * **Что было.** Страница счетов обещала «комиссия $2.5–3, плечо 1:500,
- * 12 000+ инструментов», витринные карточки акций — «бонус 30% до $5 000».
- * Ни одно из этих чисел терминал не исполнял.
- */
-
 const ROOT = path.resolve(__dirname, '../..');
 const PROMO_DIR = path.join(ROOT, 'features/promo');
 const FILES = [
@@ -27,11 +16,11 @@ const FILES = [
 ];
 
 const BANNED: RegExp[] = [
-  /\d[\d\s  .,]*\s?(USDT|USD|EUR)\b/, // сумма с валютой
-  /\$\s?\d/, // «$25»
-  /\b\d+(?:[.,]\d+)?\s?%/, // «30%», «0,05 %»
-  /\b1:\d{2,}/, // плечо «1:500»
-  /\d+\s?000\+/, // «12 000+ инструментов»
+  /\d[\d\s  .,]*\s?(USDT|USD|EUR)\b/,
+  /\$\s?\d/,
+  /\b\d+(?:[.,]\d+)?\s?%/,
+  /\b1:\d{2,}/,
+  /\d+\s?000\+/,
 ];
 
 function offending(text: string): string[] {
@@ -39,7 +28,6 @@ function offending(text: string): string[] {
   text.split('\n').forEach((line, i) => {
     const s = line.trim();
     if (s.startsWith('//') || s.startsWith('*') || s.startsWith('/*') || s.startsWith('{/*')) return;
-    // Шаблонные литералы Tailwind (`w-[9rem]`, `h-1.5`) и `${v}%` ширины полосы — не заявления.
     const cleaned = line.replace(/`\$\{[^}]+\}%`/g, '');
     if (BANNED.some((re) => re.test(cleaned))) out.push(`${i + 1}: ${s}`);
   });
@@ -71,7 +59,6 @@ describe('экраны акций — без захардкоженных чис
     };
     PROMO_NAMESPACES.forEach((ns) => walk(m[ns]));
     expect(strings.length).toBeGreaterThan(0);
-    // `{…}` и ICU-ветки (`=0`, `#`) убираем — остальное не должно содержать сумм/процентов/плеча.
     const bad = strings.filter((s) => BANNED.some((re) => re.test(s.replace(/\{[^{}]*\}/g, ''))));
     expect(bad).toEqual([]);
   });

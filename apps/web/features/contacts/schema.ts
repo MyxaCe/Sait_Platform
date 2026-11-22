@@ -1,9 +1,5 @@
 import { z } from 'zod';
 
-/**
- * Схема формы обратной связи — общая для клиента и BFF-роута.
- * Сообщения — ключи из namespace `validation` (см. registration/schema.ts).
- */
 export const contactSchema = z.object({
   name: z.string().trim().min(2, 'nameMin').max(80, 'nameMax'),
   email: z.string().trim().email('invalidEmail'),

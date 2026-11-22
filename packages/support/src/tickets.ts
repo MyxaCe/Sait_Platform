@@ -26,12 +26,6 @@ import {
   subjectWithTag,
 } from './text';
 
-/**
- * Жизненный цикл тикета (дизайн §3.1–3.4). Каждое действие оператора — одна
- * транзакция: состояние + сообщение + (письмо в очередь | уведомление
- * клиенту) + запись журнала. Текст ответа в журнал не кладётся — id и sha256.
- */
-
 export interface Actor {
   operatorId: string;
   role: SupportRole;
@@ -92,7 +86,6 @@ async function lockTicket(tx: Queryable, ticketId: string): Promise<TicketRow | 
   return r.rows[0] ? toTicket(r.rows[0]) : null;
 }
 
-/** Может ли актор работать с этим тикетом. Fail-closed. */
 export function canActOn(actor: Actor, t: { assignee_operator_id: string | null }): boolean {
   if (supportAccess.seesWholeQueue(actor.role)) return true;
   return actor.role === 'finance_operator' && t.assignee_operator_id === actor.operatorId;
@@ -174,8 +167,6 @@ export async function insertAttachments(
   }
 }
 
-/* ─── Создание тикета ───────────────────────────────────────────────── */
-
 export interface NewTicket {
   userId: string | null;
   contactEmail: string;
@@ -199,11 +190,6 @@ export interface CreatedTicket {
   threadToken: string;
 }
 
-/**
- * Тикет + первое сообщение клиента, внутри транзакции вызывающего. Срок
- * первого ответа — в рабочих минутах календаря (SLA канала из настроек).
- * `sourceLeadId` уже занят → `null` (идемпотентность восстановления лидов).
- */
 export async function createTicketTx(
   tx: Queryable,
   settings: SupportSettings,
@@ -247,7 +233,6 @@ export async function createTicketTx(
   return { ticketId, number: Number(row.number), messageId, threadToken: String(row.email_thread_token) };
 }
 
-/** Переменные шаблонов и автоответов. */
 export function templateVars(
   settings: SupportSettings,
   t: { number: number; subject: string; contactName: string | null; locale: 'ru' | 'en' },
@@ -261,7 +246,6 @@ export function templateVars(
   };
 }
 
-/** Подтверждение получения письмом (гость формы/письма). */
 export async function enqueueAckTx(
   tx: Queryable,
   settings: SupportSettings,
@@ -278,12 +262,9 @@ export async function enqueueAckTx(
     bodyText: `${renderTemplate(texts.autoReply, vars)}\n\n${renderTemplate(texts.signature, vars)}`,
     inReplyTo: c.inReplyTo ?? null,
     references: c.inReplyTo ? [c.inReplyTo] : [],
-    // Подтверждение, ушедшее через трое суток, только путает.
     expiresAt: new Date(Date.now() + 72 * 3_600_000),
   });
 }
-
-/* ─── Форма витрины (гость) ─────────────────────────────────────────── */
 
 export interface WebFormInput {
   name: string;
@@ -296,11 +277,6 @@ export interface WebFormInput {
   createdAt?: Date;
 }
 
-/**
- * Гость с витрины → тикет `web_form`, ответ письмом. Вызывается ВНУТРИ
- * транзакции записи лида (форма контактов): лид, событие и тикет появляются
- * вместе или не появляются вовсе.
- */
 export async function createWebFormTicketTx(
   tx: Queryable,
   settings: SupportSettings,
@@ -336,9 +312,6 @@ export async function createWebFormTicketTx(
   return { ok: true, ...created };
 }
 
-/* ─── Чат кабинета ──────────────────────────────────────────────────── */
-
-/** Тема чат-обращения: первая строка, не длиннее 60 символов (с «…»). */
 export function chatSubject(body: string): string {
   const first = body.trim().split('\n')[0]!.trim();
   return first.length > 60 ? `${first.slice(0, 59).trimEnd()}…` : first;
@@ -352,12 +325,6 @@ export interface ChatPostInput {
   now?: Date;
 }
 
-/**
- * Сообщение клиента из кабинета. Активный тикет клиента (не closed/spam)
- * дополняется; «решено» и «ждём клиента» переоткрываются; иначе — новый тикет
- * канала `chat`. Вне рабочих часов на новый/переоткрытый — автоответ из
- * настроек. Лимит частоты — по базе (переживает рестарт, общий для реплик).
- */
 export async function postClientChatMessage(
   db: PoolLike,
   settings: SupportSettings,
@@ -448,7 +415,6 @@ export async function postClientChatMessage(
   });
 }
 
-/** Клиент открыл переписку — всё, что было, прочитано. */
 export async function markClientRead(db: Queryable, userId: string, ticketId: string): Promise<void> {
   await db.query(
     `UPDATE support_tickets SET client_last_read_at = now() WHERE id = $1 AND user_id = $2`,
@@ -456,7 +422,6 @@ export async function markClientRead(db: Queryable, userId: string, ticketId: st
   );
 }
 
-/** Оценка 1–5 после «решено»: один раз, только своего тикета. */
 export async function rateTicket(
   db: Queryable,
   input: { userId: string; ticketId: string; score: number; comment?: string | null },
@@ -478,8 +443,6 @@ export async function rateTicket(
   }
   return { ok: true };
 }
-
-/* ─── Действия оператора ────────────────────────────────────────────── */
 
 async function emailThread(tx: Queryable, ticketId: string): Promise<{ inReplyTo: string | null; references: string[] }> {
   const r = await tx.query(
@@ -694,7 +657,6 @@ export async function changeTicketStatus(
   });
 }
 
-/** Склейка гостевого тикета с клиентом — только с основанием (не молча). */
 export async function linkTicketToClient(
   db: PoolLike,
   actor: Actor,
@@ -720,11 +682,6 @@ export async function linkTicketToClient(
   });
 }
 
-/**
- * Просмотр контекста клиента (комплаенс §3.4). Запись не чаще раза в 30 минут
- * на оператора и тикет — экран перечитывается опросом, журнал не должен
- * захлебнуться повторами одного просмотра.
- */
 export async function recordContextView(db: PoolLike, actor: Actor, ticketId: string, userId: string): Promise<boolean> {
   return inTransaction<boolean>(db, async (tx) => {
     const recent = await tx.query(
@@ -748,7 +705,6 @@ export async function recordContextView(db: PoolLike, actor: Actor, ticketId: st
   });
 }
 
-/** Решённые без ответа клиента N дней → закрыты (системный автор журнала). */
 export async function autoCloseResolved(db: PoolLike, settings: SupportSettings, now = new Date()): Promise<number> {
   const cutoff = new Date(now.getTime() - settings.autoCloseDays * 86_400_000);
   const due = await db.query(

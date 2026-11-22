@@ -22,17 +22,6 @@ import { supportPool } from './state';
 import { localeHref } from '@/i18n/redirect';
 import { getSiteLanguages } from '../site-languages';
 
-/**
- * Auth-письма кабинета: сброс пароля и подтверждение email (через почту
- * поддержки, SMTP хостинга; письмо уходит воркером из очереди).
- *
- * Ссылка в письме строится ТОЛЬКО от `CABINET_PUBLIC_URL` (адрес ячейки из
- * окружения), никогда от заголовка Host запроса: иначе подменённый Host
- * отправил бы человеку ссылку сброса на чужой домен (reset-link poisoning).
- * Не задан → письмо не ставится (fail-closed), форма отвечает так же, как
- * всегда, а в лог уходит причина.
- */
-
 export interface AuthMailState {
   ok?: boolean;
   error?: string;
@@ -56,10 +45,9 @@ async function linkBuilder(): Promise<LinkBuilder | null> {
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
-/** Запрос сброса. Ответ ОДИН И ТОТ ЖЕ для существующего и несуществующего email. */
 export async function forgotPasswordAction(_prev: AuthMailState, fd: FormData): Promise<AuthMailState> {
   const email = String(fd.get('email') ?? '').trim();
-  if (String(fd.get('website') ?? '')) return { ok: true }; // honeypot
+  if (String(fd.get('website') ?? '')) return { ok: true };
   if (!EMAIL.test(email)) return { fieldErrors: { email: 'invalidEmail' } };
   if (isRateLimited(`forgot:${clientIp() ?? 'local'}`, 10, 60_000)) return { error: 'rateLimited' };
   const link = await linkBuilder();
@@ -106,10 +94,6 @@ export async function confirmEmailAction(_prev: AuthMailState, fd: FormData): Pr
   return r.ok ? { ok: true } : { error: r.reason };
 }
 
-/**
- * Вход по временному паролю от менеджера → свой пароль (функция 3, 10.11).
- * Текущая сессия остаётся, остальные гасятся; после — в кабинет.
- */
 export async function forcedPasswordChangeAction(_prev: AuthMailState, fd: FormData): Promise<AuthMailState> {
   const user = await getSessionUser();
   if (!user) return { error: 'unauthorized' };

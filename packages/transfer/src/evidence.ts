@@ -1,23 +1,6 @@
 import type { Queryable } from '@broker/money';
 import { canonicalSha256, sha256Hex } from './envelope';
 
-/**
- * Доказательство инициативы клиента — ТОЛЬКО тикет поддержки (решение
- * владельца 10.11): клиент пишет заявление в техподдержку (чат кабинета или
- * письмо на support@), менеджер привязывает этот тикет к переводу.
- *
- * Система проверяет, а не верит отметке:
- *  - тикет привязан к ЭТОМУ клиенту (`support_tickets.user_id`);
- *  - ПЕРВОЕ сообщение тикета (любая видимость) написал клиент
- *    (`author_kind = 'client'`). Тикет, открытый оператором, не принимается;
- *  - тикет ещё не служит основанием другого живого перевода;
- *  - согласие на передачу данных — конкретное сообщение КЛИЕНТА в этом же
- *    тикете (публичное), созданное не позже проведения перевода.
- *
- * В пакет и журнал уходит не текст, а sha256 канонической формы доказательства.
- */
-
-/** Версия текста согласия, на которое ссылается отметка менеджера. */
 export const CONSENT_TEXT_VERSION = 'transfer-consent-v1-2026-11-10';
 
 export const CONSENT_TEXT_RU =
@@ -43,11 +26,8 @@ export interface EligibleTicket {
   status: string;
   originChannel: string;
   createdAt: string;
-  /** Первое сообщение тикета (от клиента). */
   first: TicketMessageView;
-  /** Сообщения клиента — кандидаты «согласие». */
   clientMessages: TicketMessageView[];
-  /** Уже служит основанием живого перевода. */
   usedByTransfer: string | null;
 }
 
@@ -64,7 +44,6 @@ const excerpt = (t: unknown) => {
   return s.length > 280 ? `${s.slice(0, 279)}…` : s;
 };
 
-/** Тикеты клиента для формы перевода: годные и отвергнутые (с причиной). */
 export async function listTicketsForTransfer(
   db: Queryable,
   userId: string,
@@ -134,10 +113,6 @@ export interface VerifiedEvidence {
   consentMessageSha256: string;
 }
 
-/**
- * Серверная проверка доказательства (повторно, внутри транзакции перевода —
- * форма могла устареть). Блокирует строку тикета от гонки двух переводов.
- */
 export async function verifyTicketEvidence(
   tx: Queryable,
   input: { userId: string; ticketId: string; consentMessageId: string; now: Date },

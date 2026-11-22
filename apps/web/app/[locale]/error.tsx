@@ -5,15 +5,6 @@ import { useTranslations } from 'next-intl';
 import { useEffect } from 'react';
 import { Button } from '@broker/ui';
 
-/**
- * Страница не собралась — почти всегда потому, что CMS недоступна и
- * сохранённой версии её ответа нет (`getCms` → `CmsUnavailableError`).
- *
- * Контента-заменителя здесь нет и быть не должно (решение 10.11): честное
- * «временно недоступно» вместо правдоподобного текста из кода. HTTP-код
- * 503 + `Retry-After` + `X-Robots-Tag: noindex` ставит `server-entry.cjs`
- * (из App Router страница сама код ответа не задаёт).
- */
 export default function LocaleError({
   error,
   reset,

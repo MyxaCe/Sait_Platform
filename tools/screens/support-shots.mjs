@@ -1,9 +1,3 @@
-// Скрины модуля «Поддержка» (ветка demo-support) — вызывается из shoot.mjs:
-//   node tools/screens/shoot.mjs <outDir> --set support
-// Нужны: seed:demo + seed:support-demo на локальной базе; админка, кабинет
-// (и витрина — WEB_URL, по умолчанию http://127.0.0.1:3487).
-// Сцена §5 дизайна: оператор поддержки видит обращение без денег → отвечает
-// шаблоном → клиент видит ответ и бейдж → «решено» → оценка.
 import { join } from 'node:path';
 
 const HERO_TICKET = '/support/1001';
@@ -35,7 +29,6 @@ export async function shootSupport(browser, { outDir, ADMIN, CABINET, adminToken
     console.log('ok', name);
   };
 
-  // ── Админка до ответа: оператор поддержки (1440 и 1024) ──
   const adminSet = [
     ['s01-queue', 'support', '/support'],
     ['s02-ticket-chat-support-role', 'support', HERO_TICKET],
@@ -64,7 +57,6 @@ export async function shootSupport(browser, { outDir, ADMIN, CABINET, adminToken
     for (const c of Object.values(ctxs)) await c.close();
   }
 
-  // ── Сцена: оператор поддержки отвечает шаблоном ──
   if (want('s13-reply')) {
     const ctx = await adminCtx(browser, null, adminToken, ADMIN, 'support', 1440);
     const page = await ctx.newPage();
@@ -79,7 +71,6 @@ export async function shootSupport(browser, { outDir, ADMIN, CABINET, adminToken
     await ctx.close();
   }
 
-  // ── Кабинет: бейдж и диалог (390 и 1440) ──
   for (const [w, h, tag] of [[390, 844, 'm390'], [1440, 900, 'd1440']]) {
     const ctx = await browser.newContext({
       viewport: { width: w, height: h },
@@ -103,7 +94,6 @@ export async function shootSupport(browser, { outDir, ADMIN, CABINET, adminToken
     await ctx.close();
   }
 
-  // ── «Решено» → оценка в кабинете ──
   if (want('s14-resolve')) {
     const ctx = await adminCtx(browser, null, adminToken, ADMIN, 'support', 1440);
     const page = await ctx.newPage();
@@ -124,7 +114,6 @@ export async function shootSupport(browser, { outDir, ADMIN, CABINET, adminToken
     }
   }
 
-  // ── Кабинет без входа: «Забыли пароль?» ──
   for (const [w, h, tag] of [[390, 844, 'm390'], [1440, 900, 'd1440']]) {
     if (!want('c04-forgot')) break;
     const ctx = await browser.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: tag === 'm390' ? 2 : 1, isMobile: tag === 'm390', hasTouch: tag === 'm390', locale: 'ru-RU' });
@@ -139,7 +128,6 @@ export async function shootSupport(browser, { outDir, ADMIN, CABINET, adminToken
     await ctx.close();
   }
 
-  // ── Витрина: кнопка «Поддержка» гостя → форма → номер обращения ──
   if (want('w01-site')) {
     for (const [w, h, tag] of [[390, 844, 'm390'], [1440, 900, 'd1440']]) {
       const ctx = await browser.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: tag === 'm390' ? 2 : 1, isMobile: tag === 'm390', hasTouch: tag === 'm390', locale: 'ru-RU' });

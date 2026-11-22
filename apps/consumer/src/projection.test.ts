@@ -2,7 +2,6 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { applyTerminalEvent, classifyMessage, type Querier } from './projection.js';
 
-/** Фейковый Querier: пишет вызовы в лог, эмулирует ON CONFLICT дедупа. */
 function fakeDb() {
   const calls: { sql: string; params: unknown[] }[] = [];
   const claimed = new Set<string>();
@@ -34,7 +33,6 @@ function envelope(event: string, data: unknown, eventId = crypto.randomUUID()) {
   };
 }
 
-/** Разбирает валидное событие (используется дальше в проекции). */
 function parsed(raw: unknown) {
   const result = classifyMessage(raw);
   if (result.kind !== 'terminal-event') throw new Error(`ожидалось событие, а не ${result.kind}`);
@@ -57,15 +55,12 @@ describe('classifyMessage · чужое и сломанное — РАЗНЫЕ �
   });
 
   it('чужой тип события → foreign, а НЕ malformed', () => {
-    // Пропускать правильно: сосед выкатил тип раньше нас. Шуметь тут нельзя,
-    // иначе предупреждения обесценятся и в них утонет настоящая потеря
     const result = classifyMessage(envelope('billing.invoice.issued', { anything: true }));
     expect(result.kind).toBe('foreign');
     if (result.kind === 'foreign') expect(result.event).toBe('billing.invoice.issued');
   });
 
   it('НАШ тип со сломанным payload → malformed, а НЕ foreign', () => {
-    // Ровно то, что терялось: тип наш, значит событие адресовано нам
     const result = classifyMessage(envelope('terminal.balance.changed', { tenant: 'apex-ru' }));
     expect(result.kind).toBe('malformed');
     if (result.kind === 'malformed') {
@@ -168,13 +163,6 @@ describe('applyTerminalEvent', () => {
   });
 
   it('уведомление о сделке несёт ЦЕНУ, а не только символ и объём (CAB-08)', async () => {
-    // «Сделка исполнена: buy 0.1 EURUSD» — факт сделки без её сути:
-    // человеку не сказали, что произошло с деньгами.
-    //
-    // Проверяется здесь, а не в кабинете: цену, которой не прислали,
-    // кабинет может показать единственным способом — никак, и выглядит
-    // это его недочётом. Мутация «убрать цену из проекции» не красила
-    // ни один тест ни там, ни тут.
     const { db, calls } = fakeDb();
     const ev = parsed(
       envelope('terminal.trade.executed', {
@@ -195,8 +183,6 @@ describe('applyTerminalEvent', () => {
 
     const params = JSON.parse(String(notification?.params[2])) as Record<string, unknown>;
 
-    // Ассерт печатает полученное (Р-101): «нет цены» без набора полей
-    // отправляет искать её по всей проекции.
     expect(params.price, `в параметрах уведомления нет цены: ${JSON.stringify(params)}`).toBe(1900);
     expect(params.symbol).toBe('ETHUSD');
   });
@@ -217,10 +203,6 @@ describe('terminal.margin.called', () => {
     );
 
   it('событие распознаётся, а не пропускается как чужое', () => {
-    // Зеркало Р-204: тогда наш потребитель был построен, а издателя не
-    // было, и мы узнали через полтора месяца. Теперь издатель готов, и
-    // незнакомое имя молча отбрасывалось бы — а владелец считает
-    // недошедшее уведомление ДЕФЕКТОМ, а не «клиент не заметил».
     expect(event()).not.toBeNull();
   });
 
@@ -241,8 +223,6 @@ describe('terminal.margin.called', () => {
   });
 
   it('порога нет → `null`, а не ноль', async () => {
-    // Ноль означал бы «закроют при нулевой марже» — конкретную и очень
-    // плохую новость. Отсутствие означает, что закрытия нет вовсе.
     const { db, calls } = fakeDb();
     const ev = parsed(
       envelope('terminal.margin.called', {
@@ -271,7 +251,6 @@ describe('terminal.margin.called', () => {
 });
 
 describe('WEB-29 · баланс не теряется, когда счёта ещё нет', () => {
-  /** Та же подделка, но обновление баланса не находит строки. */
   function dbWithoutAccount() {
     const calls: { sql: string; params: unknown[] }[] = [];
     const claimed = new Set<string>();
@@ -284,11 +263,7 @@ describe('WEB-29 · баланс не теряется, когда счёта е
           claimed.add(id);
           return { rows: [], rowCount: 1 };
         }
-        // Строки пользователя нет: событие обогнало account.opened.
         if (sql.includes('UPDATE demo_accounts')) return { rows: [], rowCount: 0 };
-        // Проба существования (WEB-43): строки нет и здесь — значит это
-        // настоящее отсутствие счёта, а не устаревшее по accountSeq событие.
-        // Без неё отказ WEB-29 не отличить от штатного отбрасывания старого.
         if (sql.includes('SELECT 1 FROM demo_accounts')) return { rows: [], rowCount: 0 };
         return { rows: [], rowCount: 1 };
       },
@@ -305,9 +280,6 @@ describe('WEB-29 · баланс не теряется, когда счёта е
   )!;
 
   it('ноль обновлённых строк — ОТКАЗ, а не applied', async () => {
-    // Главное свойство. Прежде функция возвращала `applied`, event_id
-    // оставался в processed_events, и повторную доставку гасил дедуп:
-    // событие о деньгах терялось окончательно при зелёном консюмере.
     const { db } = dbWithoutAccount();
 
     await expect(applyTerminalEvent(db, 'ev-1', balanceEvent, cfg)).rejects.toThrow(
@@ -316,8 +288,6 @@ describe('WEB-29 · баланс не теряется, когда счёта е
   });
 
   it('в отказе названы пользователь и событие', async () => {
-    // Ассерт печатает полученное (Р-101), и отказ обязан называть место:
-    // «баланс не записан» без имён отправляет искать по всей проекции.
     const { db } = dbWithoutAccount();
 
     await expect(applyTerminalEvent(db, 'ev-2', balanceEvent, cfg)).rejects.toThrow(
@@ -326,17 +296,12 @@ describe('WEB-29 · баланс не теряется, когда счёта е
   });
 
   it('когда строка есть — обычный applied, отказ не мешает работе', async () => {
-    // Растяжка: проверка не должна превращать исправный путь в отказ.
     const { db } = fakeDb();
 
     expect(await applyTerminalEvent(db, 'ev-3', balanceEvent, cfg)).toBe('applied');
   });
 
   it('повторная доставка возможна: заявку на дедуп уносит откат транзакции', async () => {
-    // Здесь проверяется не код проекции, а её ДОГОВОР с вызывающим:
-    // проекция бросает, `index.ts` делает ROLLBACK, и заявка исчезает
-    // вместе с ним. Если кто-то уберёт транзакцию, событие снова начнёт
-    // теряться — поэтому требование записано тестом, а не комментарием.
     const index = readFileSync(new URL('./index.ts', import.meta.url), 'utf8');
 
     expect(index).toContain("client.query('BEGIN')");
@@ -376,9 +341,6 @@ describe('WEB-20 · уровень и разрыв доезжают в увед�
   });
 
   it('уровня нет → `null`, а НЕ ноль', async () => {
-    // Ноль здесь означал бы уровень «ноль» — цену, которой не бывает, и
-    // проскальзывание размером во всю цену. Отсутствие означает, что
-    // закрытие было не по уровню.
     const params = await paramsOf(trade(), 's2');
 
     expect(params.level).toBeNull();
@@ -386,15 +348,12 @@ describe('WEB-20 · уровень и разрыв доезжают в увед�
   });
 
   it('разрыв неизвестен → `null`, а не `false`', async () => {
-    // `false` утверждал бы, что разрыв проверяли и его не было, —
-    // ответ за прошлое, которого мы не видели.
     const params = await paramsOf(trade(), 's3');
 
     expect(params.acrossGap).toBeNull();
   });
 
   it('«проверяли, не было» сохраняется как `false`, а не теряется', async () => {
-    // Растяжка к предыдущему: это знание, и оно отличается от незнания.
     const params = await paramsOf(trade({ acrossGap: false }), 's4');
 
     expect(params.acrossGap).toBe(false);
@@ -402,29 +361,6 @@ describe('WEB-20 · уровень и разрыв доезжают в увед�
 });
 
 describe('шаг 2 · денежная тройка в проекции', () => {
-  /*
-   * **Чего здесь доказать НЕЛЬЗЯ, и это выяснилось мутацией.**
-   *
-   * Сперва тут стояли проверки «в счёт едет значение тройки». Мутация
-   * «проекция снова пишет старое поле напрямую» покрасила из них одну —
-   * ту, что про расхождение. Остальные остались зелёными, и правильно:
-   * пока валюта одна, старое и новое поле ОБЯЗАНЫ совпадать, а значит
-   * по записанному значению отличить «читаем тройку» от «читаем центы»
-   * невозможно в принципе.
-   *
-   * Те проверки были пусты. Они бы прошли и без шага 2 вовсе.
-   *
-   * **Отсюда следствие, ради которого терминал и завёл свой сторож:**
-   * на шаге 2 единственное наблюдаемое доказательство, что новое поле
-   * вообще читают, — это отказ при расхождении. Ловушка «числа
-   * совпадают, значит шаги лишние» превращена в единственный
-   * оставшийся наблюдатель.
-   *
-   * Поэтому ниже: один тест на то, что тройка не ломает разбор, и один
-   * на сторож. Третьего honest-теста на этом шаге не существует; он
-   * появится на шаге 3, когда старое поле снимут и подмена станет
-   * видимой как `undefined` в счёте.
-   */
   function balanceWritten(calls: { sql: string; params: unknown[] }[]): unknown {
     const call = calls.find((c) => c.sql.includes('UPDATE demo_accounts') && c.sql.includes('balance_cents'));
     if (!call) throw new Error('проекция не трогала баланс');
@@ -463,8 +399,6 @@ describe('шаг 2 · денежная тройка в проекции', () => 
   });
 
   it('ЕДИНСТВЕННЫЙ наблюдатель: расхождение — отказ, а не выбор молча', async () => {
-    // Откат транзакции уносит заявку на дедуп, событие уходит в DLX и
-    // при повторной доставке уже не гасится.
     const { db } = fakeDb();
     const ev = parsed(
       envelope('terminal.balance.changed', {
@@ -482,16 +416,6 @@ describe('шаг 2 · денежная тройка в проекции', () => 
 });
 
 describe('WEB-42 · сброс порождает уведомление ИЗ СОБЫТИЯ', () => {
-  /*
-   * Человек замечал сброс только по изменившемуся числу. Сделка
-   * уведомление порождает, сброс — нет; непоследовательность тут
-   * дороже лишнего сообщения: получающий о сделке и не получающий о
-   * сбросе решит, что сброса не было.
-   *
-   * Рождается оно здесь, а не в кабинете, потому что здесь мы знаем,
-   * что сброс ПРИМЕНИЛСЯ. Кабинет в момент нажатия знает только, что
-   * команда принята.
-   */
   function resetNotification(calls: { sql: string; params: unknown[] }[]) {
     return calls.find((c) => c.sql.includes("'demoReset'"));
   }
@@ -510,9 +434,6 @@ describe('WEB-42 · сброс порождает уведомление ИЗ С
   });
 
   it('и несёт сумму, которую применил ИСТОЧНИК', async () => {
-    // Не ту, которую кто-то собирался применить: прежде кабинет брал
-    // число из своей копии стартовой суммы и сообщал величину,
-    // которой не наблюдал.
     const { db, calls } = fakeDb();
     await applyTerminalEvent(db, 'r2', balanceEvent({ balanceCents: 777_000, reason: 'reset' }), cfg);
 
@@ -550,9 +471,6 @@ describe('WEB-42 · сброс порождает уведомление ИЗ С
   );
 
   it('причины нет вовсе → уведомления нет', async () => {
-    // Отсутствие причины — не «сброс»: утверждать сброс по молчанию
-    // источника значило бы сообщить человеку о действии, которого
-    // никто не называл.
     const { db, calls } = fakeDb();
     await applyTerminalEvent(db, 'r5', balanceEvent({ balanceCents: 1 }), cfg);
 

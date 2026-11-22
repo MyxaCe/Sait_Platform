@@ -3,17 +3,6 @@ import type { ReactNode } from 'react';
 import { Button, Input } from '@broker/ui';
 import { AutoSubmitSelect } from './AutoSubmitSelect';
 
-/**
- * Фильтр-бар списка (концепция §6.1, слот `toolbar` у `DataTable`) — локальный
- * компонент зоны «Клиенты и комплаенс», кандидат в @broker/ui.
- *
- * GET-форма: значения живут в URL, работает без JS (кнопка «Применить»); с JS
- * селекты отправляют форму сами (`AutoSubmitSelect`). Поиск — 36 px, селекты
- * `compact`; «Сбросить» — только когда есть что сбрасывать. `hidden` — параметры,
- * которые фильтр должен сохранить (сортировка); страница при смене фильтра
- * всегда возвращается на первую.
- */
-
 export interface FilterOption {
   value: string;
   label: string;
@@ -24,7 +13,6 @@ export interface FilterSelectSpec {
   label: string;
   value: string;
   options: FilterOption[];
-  /** Ширина контрола (tailwind-класс), по умолчанию `w-40`. */
   width?: string;
 }
 
@@ -33,9 +21,7 @@ export interface FilterBarProps {
   search?: { name: string; value: string; placeholder: string; label: string };
   selects?: FilterSelectSpec[];
   hidden?: Record<string, string | undefined>;
-  /** Ссылка «Сбросить» (без фильтров); `null` — фильтров нет, кнопки нет. */
   resetHref?: string | null;
-  /** Справа: короткая сводка («Найдено: 15»). */
   aside?: ReactNode;
 }
 

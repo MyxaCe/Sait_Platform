@@ -4,12 +4,6 @@ import { Link } from '@/i18n/navigation';
 import { NavIcon } from '@/features/shell/NavIcon';
 import { linkButton } from '@/features/ui/link-button';
 
-/**
- * Мини-карточка «Пригласи друга» на главной (десктоп-раскладка): условия
- * одной строкой из действующей программы, код, сколько приглашено, переход в
- * раздел. Данные — те же, что в «Пригласи друга»; программа выключена или не
- * загрузилась — карточки нет (раздел объясняет причину сам).
- */
 export async function ReferralMini({ referral }: { referral: MyReferralView | null }) {
   if (!referral || (!referral.enabled && !referral.isPartner)) return null;
   const t = await getTranslations('home');

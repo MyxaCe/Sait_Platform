@@ -2,29 +2,8 @@ import { getPool, type Queryable } from '@/lib/db';
 import type { OperatorRole } from '@/lib/auth/session';
 import type { ChainRow } from './verify-chain';
 
-/**
- * Чтения журнала/аудита (ADM-06, Р-049, Р-395).
- *
- * Журнал неизменяем базой и только дополняется (`appendJournalEntry`). Этот
- * модуль — ТОЛЬКО чтение: лента с фильтрами (для экрана) и полная выгрузка
- * цепочки по возрастанию `seq` (для проверки целостности).
- *
- * **Формат времени.** `occurred_at` в хеше записи — это ISO-строка из
- * `new Date().toISOString()` (мс + 'Z'), и в таблицу она пишется явно (а не
- * через `DEFAULT now()`), см. `journal.ts`. Драйвер `pg` отдаёт `timestamptz`
- * как `Date`; `new Date(value).toISOString()` возвращает ровно тот же вид
- * (JS-дата — миллисекундная, 'Z'), поэтому пересчёт хеша сходится с записью.
- *
- * **Роль-гейт чтения (fail-closed, Р-394).** `admin` видит все записи. `operator`
- * видит свои (`operator_id = сам`) и ОБЩИЕ операционные (`subject_kind <>
- * 'operator'` — записи о клиентах/деньгах/плече), но НЕ приватные записи об
- * ИНЫХ операторах (вход, провижининг, смена роли). Проверку цепочки и экспорт
- * запускает только `admin` (см. `actions.ts`).
- */
-
 export interface JournalRow {
   seq: number;
-  /** ISO-строка в формате `new Date().toISOString()` (мс, 'Z'). */
   occurredAt: string;
   operatorId: string;
   operatorLogin: string;
@@ -38,17 +17,11 @@ export interface JournalRow {
 }
 
 export interface JournalFilters {
-  /** `operators.id`. */
   operatorId?: string;
-  /** Точное совпадение `action`. */
   action?: string;
-  /** Род субъекта (`client`, `operator`, `journal`, …). */
   subjectKind?: string;
-  /** Идентификатор субъекта (точное совпадение). */
   subjectId?: string;
-  /** Нижняя граница периода (ISO/`YYYY-MM-DD`). */
   from?: string;
-  /** Верхняя граница периода (ISO/`YYYY-MM-DD`). */
   to?: string;
 }
 
@@ -56,13 +29,10 @@ export interface JournalListOptions {
   role: OperatorRole;
   selfOperatorId: string;
   filters: JournalFilters;
-  /** Потолок строк (по умолчанию 500 для ленты). */
   limit?: number;
-  /** Пропустить строк (постраничный показ). */
   offset?: number;
 }
 
-/** Опция фильтра «оператор». */
 export interface OperatorOption {
   id: string;
   login: string;
@@ -85,11 +55,6 @@ function toRow(r: Record<string, unknown>): JournalRow {
   };
 }
 
-/**
- * WHERE ленты: роль-видимость + фильтры. Клаузы собираются параметризованно —
- * конкатенации пользовательского ввода в SQL нет. Общий для ленты и счётчика,
- * чтобы «Показано N из M» считалось ровно по той же выборке.
- */
 function buildWhere(opts: Pick<JournalListOptions, 'role' | 'selfOperatorId' | 'filters'>): {
   whereSql: string;
   params: unknown[];
@@ -97,7 +62,6 @@ function buildWhere(opts: Pick<JournalListOptions, 'role' | 'selfOperatorId' | '
   const params: unknown[] = [];
   const where: string[] = [];
 
-  // Роль-видимость: admin — всё; operator — свои + общие (не про операторов).
   if (opts.role !== 'admin') {
     params.push(opts.selfOperatorId);
     where.push(`(j.operator_id = $${params.length} OR j.subject_kind <> 'operator')`);
@@ -109,9 +73,6 @@ function buildWhere(opts: Pick<JournalListOptions, 'role' | 'selfOperatorId' | '
     where.push(`j.operator_id = $${params.length}`);
   }
   if (f.action) {
-    // `префикс.*` — все действия группы (фильтр «правки учётных данных» для
-    // службы безопасности); иначе точное совпадение. Префикс — из [a-z_.]
-    // (код действия), `_` экранируется для LIKE.
     const prefix = f.action.endsWith('.*') ? f.action.slice(0, -1) : null;
     if (prefix !== null && /^[a-z_.]+$/.test(prefix)) {
       params.push(`${prefix.replaceAll('_', '\\_')}%`);
@@ -141,10 +102,6 @@ function buildWhere(opts: Pick<JournalListOptions, 'role' | 'selfOperatorId' | '
   return { whereSql: where.length > 0 ? `WHERE ${where.join(' AND ')}` : '', params };
 }
 
-/**
- * Лента журнала с фильтрами и роль-видимостью. Новые сверху (`seq DESC`).
- * `offset` — для постраничного показа (экспорт его не передаёт).
- */
 export async function listJournalEntries(
   opts: JournalListOptions,
   db: Queryable = getPool(),
@@ -167,7 +124,6 @@ export async function listJournalEntries(
   return result.rows.map(toRow);
 }
 
-/** Сколько записей в выборке (та же роль-видимость и фильтры, что у ленты). */
 export async function countJournalEntries(
   opts: Pick<JournalListOptions, 'role' | 'selfOperatorId' | 'filters'>,
   db: Queryable = getPool(),
@@ -180,7 +136,6 @@ export async function countJournalEntries(
   return Number(result.rows[0]?.n ?? 0);
 }
 
-/** Сводка цепочки для шапки раздела: всего записей, последняя seq и её момент. */
 export interface JournalTotals {
   total: number;
   lastSeq: number | null;
@@ -200,12 +155,6 @@ export async function getJournalTotals(db: Queryable = getPool()): Promise<Journ
   };
 }
 
-/**
- * Человеческие имена субъектов на странице ленты: клиент → ФИО, оператор →
- * имя, портфель → название. Ключ — `${kind}:${id}`. Только чтение
- * справочников, журнал не трогает; чего не нашли — того в карте нет
- * (показываем id).
- */
 export async function resolveSubjectNames(
   rows: Pick<JournalRow, 'subjectKind' | 'subjectId'>[],
   db: Queryable = getPool(),
@@ -247,11 +196,6 @@ export async function resolveSubjectNames(
   return out;
 }
 
-/**
- * Полная цепочка по возрастанию `seq` для проверки целостности — БЕЗ фильтров
- * и БЕЗ роль-видимости: цепочка линейна по всему журналу, проверять её имеет
- * смысл только целиком. Вызывается лишь из admin-экшена (`actions.ts`).
- */
 export async function loadChainRows(db: Queryable = getPool()): Promise<ChainRow[]> {
   const result = await db.query(
     `SELECT seq, occurred_at, operator_id, action, subject_kind, subject_id,
@@ -272,7 +216,6 @@ export async function loadChainRows(db: Queryable = getPool()): Promise<ChainRow
   }));
 }
 
-/** Операторы для выпадающего фильтра (id + подпись). */
 export async function listOperatorsForFilter(db: Queryable = getPool()): Promise<OperatorOption[]> {
   const result = await db.query(
     `SELECT id, login, display_name FROM operators ORDER BY display_name ASC`,
@@ -284,7 +227,6 @@ export async function listOperatorsForFilter(db: Queryable = getPool()): Promise
   }));
 }
 
-/** Встречающиеся в журнале типы действий — для фильтра. */
 export async function listDistinctActions(db: Queryable = getPool()): Promise<string[]> {
   const result = await db.query(
     `SELECT DISTINCT action FROM admin_action_journal ORDER BY action ASC`,
@@ -292,7 +234,6 @@ export async function listDistinctActions(db: Queryable = getPool()): Promise<st
   return result.rows.map((r) => r.action as string);
 }
 
-/** Встречающиеся роды субъектов — для фильтра. */
 export async function listDistinctSubjectKinds(db: Queryable = getPool()): Promise<string[]> {
   const result = await db.query(
     `SELECT DISTINCT subject_kind FROM admin_action_journal ORDER BY subject_kind ASC`,

@@ -2,16 +2,6 @@ import { describe, expect, it } from 'vitest';
 import type { PoolClient } from 'pg';
 import { clearAmlEscalation, recordAmlScreening } from './screening';
 
-/**
- * ADM-14 · фиксация результата ручного AML-скрининга (Р-454 I-5, Р-456 D, Р-049).
- *
- * База не поднимается — её роль играет in-memory фейк-клиент, который ведёт
- * себя как `client_aml_screening` + `client_blocks` + `admin_action_journal` в
- * одной транзакции. Проверяем: оба исхода, обязательность основания и непустого
- * набора списков, ТРИ списка обязательны для `clear` (Р-456 D), АВТО-БЛОК при
- * `escalated` той же транзакцией, и отдельное снятие эскалации с разблокировкой.
- */
-
 const USER = '22222222-2222-2222-2222-222222222222';
 const OP = '11111111-1111-1111-1111-111111111111';
 
@@ -77,7 +67,6 @@ function fakePool(opts: { userExists?: boolean; amlStatus?: string | null; block
         return { rows: [], rowCount: 1 };
       }
       if (/DELETE FROM sessions WHERE user_id = \$1 RETURNING id/i.test(sql)) {
-        // Авто-блок гасит кабинетные сессии тем же ядром (ADM-02).
         sessionsDeletedFor.push(params[0] as string);
         return { rows: [{ id: 'sess-1' }], rowCount: 1 };
       }
@@ -151,12 +140,10 @@ describe('ADM-14 · запись AML-скрининга', () => {
 
     expect(res).toMatchObject({ ok: true, status: 'escalated', autoBlocked: true });
     expect(f.aml.status).toBe('escalated');
-    expect(f.block.value).toBe(true); // авто-блок
+    expect(f.block.value).toBe(true);
     expect(f.journal.map((j) => j.action)).toEqual(['client.aml_escalated', 'client.block']);
-    // Основание блока несёт AML-причину и списки.
     expect(JSON.parse(f.journal[1]!.payload).basis).toContain('AML: совпадение');
     expect(JSON.parse(f.journal[1]!.payload).basis).toContain('OFAC');
-    // Авто-блок действует по-настоящему: сессии клиента гасятся той же транзакцией.
     expect(f.sessionsDeletedFor).toEqual([USER]);
     expect(JSON.parse(f.journal[1]!.payload).sessionsRevoked).toBe(1);
     expect(f.flags().committed).toBe(true);
@@ -170,7 +157,6 @@ describe('ADM-14 · запись AML-скрининга', () => {
     );
 
     expect(res).toMatchObject({ ok: true, status: 'escalated', autoBlocked: false });
-    // Только AML-запись: содержательного перехода блока нет → client.block не пишется.
     expect(f.journal.map((j) => j.action)).toEqual(['client.aml_escalated']);
     expect(f.flags().committed).toBe(true);
   });
@@ -251,7 +237,6 @@ describe('ADM-14 · снятие AML-эскалации (Р-456 D)', () => {
     );
     expect(res).toMatchObject({ ok: true, unblocked: false });
     expect(f.aml.status).toBe('clear');
-    // Только AML-запись: содержательного перехода разблокировки нет.
     expect(f.journal.map((j) => j.action)).toEqual(['client.aml_escalation_cleared']);
   });
 });

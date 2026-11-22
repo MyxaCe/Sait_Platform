@@ -4,12 +4,6 @@ import { describe, expect, it } from 'vitest';
 import { SUPPORT_ACTIONS } from '@broker/support';
 import { ACTION_GROUPS, ACTION_LABELS } from './labels';
 
-/**
- * Сторож подписей журнала для кодов поддержки и auth-писем (`support.*`,
- * `auth.*`). Отдельным файлом от общего `labels.test.ts`, чтобы его регэксп
- * не трогать (его же расширяют соседние ветки). Коды берутся из кода
- * (`SUPPORT_ACTIONS` + литералы в admin и packages/support).
- */
 const ROOTS = [resolve(__dirname, '..'), resolve(__dirname, '../../app'), resolve(__dirname, '../../../../packages/support/src')];
 const CODE = /'((?:support|auth)\.[a-z_]+\.[a-z_.]+)'/g;
 

@@ -6,30 +6,6 @@ import { lastGoodKey, loadLastGood, saveLastGood } from './cms-last-good';
 import { markCmsOutage } from './cms-outage';
 import { withLiveParams } from './live-params';
 
-/**
- * Единая точка чтения CMS-контента страницами.
- *
- * **Контента в коде нет — даже как запасного** (решение владельца 10.11,
- * `_brain/ДЕМО-контент-из-CMS-аудит.md`). Прежде здесь при любой ошибке
- * CMS и на сборке без CMS подставлялись фикстуры из `lib/cms-mock.ts`:
- * они разошлись с CMS, а посетитель не мог отличить их от настоящих.
- *
- * Порядок теперь такой:
- *  1. CMS ответила → данные; ответ записывается как «последний удачный»
- *     (`cms-last-good.ts`, на постоянном томе).
- *  2. CMS не ответила (сеть, таймаут, 5xx, мусор мимо схемы, CMS не
- *     настроена) → последний удачный ответ CMS с диска + лог уровня error.
- *  3. Сохранённого нет → `CmsUnavailableError`. Страница не рендерится:
- *     ISR оставляет прежнюю версию, а если её нет — посетитель видит
- *     «Контент временно недоступен» (503, noindex, Retry-After — см.
- *     `cms-outage.ts` и `server-entry.cjs`).
- *
- * **Теги.** Вешаются ОБА: `cms:<ресурс>` и `cms:<ресурс>:<слаг>`. CMS для
- * сайта не по умолчанию шлёт в вебхуке второй вид, и с одним первым
- * правки до второй платформы доходили только по таймеру (~час).
- */
-
-/** Все ресурсы контракта, которые читает витрина: для прогрева и тегов. */
 export const CMS_RESOURCES = [
   'brand',
   'navigation',
@@ -53,12 +29,10 @@ type CmsData<K extends CmsResource> = z.infer<(typeof CMS_RESPONSE_SCHEMAS)[K]>;
 
 interface GetCmsOptions {
   locale: ContentLocale;
-  /** Страховочный интервал ревалидации, сек (медленные данные — 3600) */
   revalidate?: number;
   params?: Record<string, string>;
 }
 
-/** CMS недоступна, и сохранённой версии ресурса нет. Показать нечего. */
 export class CmsUnavailableError extends Error {
   constructor(
     readonly resource: string,
@@ -69,19 +43,16 @@ export class CmsUnavailableError extends Error {
   }
 }
 
-/** Теги ресурса: общий и со слагом сайта (CMS не по умолчанию шлёт второй). */
 export function cmsTags(resource: string, slug: string | null): string[] {
   const tag = `cms:${resource}`;
   return slug ? [tag, `${tag}:${slug}`] : [tag];
 }
 
-/** CMS для витрины настроена: адрес и слаг сайта заданы. */
 export function isCmsConfigured(): boolean {
   return Boolean(process.env.CMS_API_URL?.trim()) && readTenantSlug(process.env.SITE_SLUG) !== null;
 }
 
 function isDraft(): boolean {
-  // Вне request-контекста (сборка, generateStaticParams) — false
   try {
     return draftMode().isEnabled;
   } catch {
@@ -108,8 +79,6 @@ export async function getCms<K extends CmsResource>(
   >;
   const draft = isDraft();
 
-  // Слага нет — в CMS НЕ идём вовсе (PKG-05): запрос с `?site=` вернул
-  // бы сайт по умолчанию, то есть чужой бренд без единой ошибки.
   const slug = readTenantSlug(process.env.SITE_SLUG);
   const key = slug ? lastGoodKey(resource, slug, locale, params) : null;
 
@@ -128,7 +97,6 @@ export async function getCms<K extends CmsResource>(
         revalidate: draft ? 0 : revalidate,
         searchParams: draft ? { ...siteParams, draft: 'true' } : siteParams,
       });
-      // Черновик — не «последняя версия сайта»
       if (!draft && key) await saveLastGood(key, data);
       return withLiveParams(data, locale);
     } catch (error) {
@@ -147,7 +115,6 @@ export async function getCms<K extends CmsResource>(
     }
   }
 
-  // Уровень error и постоянный префикс — по нему настраивается алерт
   console.error(
     `[cms] ALERT: CMS недоступна и сохранённой версии нет — ${resource} (${locale}), ` +
       `страница не будет показана (503): ${describeFailure(failure)}`,
@@ -156,11 +123,6 @@ export async function getCms<K extends CmsResource>(
   throw new CmsUnavailableError(resource, describeFailure(failure));
 }
 
-/**
- * Списки для `generateStaticParams`. CMS на сборке нет (так в CI) или она
- * не ответила → пустой список: страницы соберутся при первом запросе
- * (on-demand ISR, `dynamicParams` по умолчанию true). Списка из кода нет.
- */
 export async function staticParamsFromCms<T>(load: () => Promise<T[]>): Promise<T[]> {
   if (!isCmsConfigured()) return [];
   try {

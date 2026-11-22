@@ -1,12 +1,6 @@
 import { formatUsdtRaw, usdtRawToCents } from '@broker/money';
 import { Money, cn } from '@broker/ui';
 
-/**
- * Сумма поступления из сети. В базе — точная сумма в сырых единицах USDT
- * (6 знаков) и зачисляемые центы. Показываем центы через `<Money>`; если
- * центов ещё нет (ждёт сети, неопознанное) — переводим сырые единицы в центы
- * для показа. Дробь меньше цента не зачисляется — её видно отдельно.
- */
 export function chainCents(amountMinor: number | null, amountRaw: string | null): number | null {
   if (amountMinor !== null) return amountMinor;
   if (!amountRaw) return null;
@@ -29,7 +23,6 @@ export function ChainAmount({
   amountRaw: string | null;
   dustRaw?: string | null;
   hideCurrency?: boolean;
-  /** Денег не было (отклонён) — зачёркнуто, приглушённо. */
   struck?: boolean;
   className?: string;
 }) {

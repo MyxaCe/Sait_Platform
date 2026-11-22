@@ -3,7 +3,6 @@ import { getChromeBrand, resolveBrandName, siteHref } from '@/lib/chrome';
 import { getSiteLanguages } from '@/lib/site-languages';
 import { LangSwitcher } from '@/features/shell/LangSwitcher';
 
-/** Публичная зона: центрированная карточка; бренд — из CMS (ADR-025). */
 export default async function AuthLayout({ children }: { children: React.ReactNode }) {
   const locale = await getLocale();
   const t = await getTranslations('common');

@@ -20,11 +20,9 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 export default async function CareersPage({ params }: PageProps) {
   setRequestLocale(params.locale);
   const t = await getTranslations('careers');
-  // Вакансии и бенефиты из CMS (тег cms:careers)
   const { benefits, vacancies } = await getCms('careers', {
     locale: pageLocale(params.locale),
   });
-  // Адрес для резюме — только из CMS (вакансии); в коде адреса нет
   const hrEmail = vacancies[0]?.applyEmail ?? null;
 
   return (

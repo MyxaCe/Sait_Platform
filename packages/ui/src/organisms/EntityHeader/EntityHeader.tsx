@@ -1,16 +1,6 @@
 import type { ReactNode } from 'react';
 import { cn } from '../../lib/cn';
 
-/**
- * Шапка карточки сущности (концепция §6.12) — клиент, оператор, заявка.
- * Слева: монограмма → имя + статус-бейджи → строка метаданных (email · UID ·
- * id с копированием). Справа: действия. Под шапкой — `facts`: ряд ключевых
- * цифр (баланс, equity, депозиты…), чтобы ответ на «кто это и что с ним»
- * был виден без прокрутки.
- *
- * Тон `negative` — сущность ограничена (заблокирована): красная полоса слева
- * у всей шапки, причина — в Callout сразу под ней (рисует потребитель).
- */
 export interface EntityFact {
   label: string;
   value: ReactNode;
@@ -19,10 +9,8 @@ export interface EntityFact {
 
 export interface EntityHeaderProps {
   title: ReactNode;
-  /** Инициалы/монограмма; по умолчанию — первые буквы `initialsFrom`. */
   initialsFrom?: string;
   badges?: ReactNode;
-  /** Элементы строки метаданных; разделяются точкой. */
   meta?: ReactNode[];
   actions?: ReactNode;
   facts?: EntityFact[];

@@ -12,20 +12,6 @@ import { getCms } from '@/lib/cms';
 import { getMdsCatalogEntries, getMdsIcons, getMdsQuotesState } from '@/lib/mds';
 import { accessNotice, getTenantAccess, type AccessNoticeSpec } from '@/lib/tenant';
 
-/**
- * Страница ДИНАМИЧЕСКАЯ, и это требование, а не настройка (WEB-07).
- *
- * Её содержимое режет граница доступа тенанта — регуляторный фильтр,
- * который читается из окружения В РАНТАЙМЕ. На сборке окружения нет:
- * `getTenantAccess()` возвращает `not-configured`, список становится
- * пустым, а объяснение «список недоступен» ЗАПЕКАЕТСЯ в разметку. На
- * живом домене это вечная ложная авария — та же природа, что у адресов
- * в WEB-22: состояние среды, замороженное на сборке.
- *
- * Отдать список статически и отфильтровать его в браузере нельзя:
- * неразрешённые инструменты оказались бы в HTML, а fail-closed значит
- * «не публиковать то, что может быть запрещено», а не «спрятать потом».
- */
 export const dynamic = 'force-dynamic';
 
 interface PageProps {
@@ -39,16 +25,6 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function InstrumentsPage({ params }: PageProps) {
   setRequestLocale(params.locale);
-  // Список — ДОСТУП сайта (allow-list карточки сайта, ADR-028) ∩ каталог
-  // MDS, те же правила, что у деталки; запись CMS лишь обогащает.
-  // Граница fail-closed (Р-025): закрыта — список пуст, и вместо него
-  // стоит объяснение, а не пустая таблица «0 из 0».
-  // Состояние котировок спрашиваем здесь же (WEB-39): страница и так
-  // динамическая и ходит за доступом, CMS и иконками. Без этого
-  // вопроса инструмент, который источник не транслирует, стоял бы в
-  // списке РЯДОМ с работающими и молчал без объяснения — а прочерк
-  // рядом с уверенным числом читается как «это неизвестно, а
-  // остальное известно».
   const [{ items: cmsItems }, access, quotes, catalog] = await Promise.all([
     getCms('instruments', { locale: pageLocale(params.locale) }),
     getTenantAccess(),
@@ -58,7 +34,6 @@ export default async function InstrumentsPage({ params }: PageProps) {
   const notice = accessNotice(access);
   const symbols = listInstrumentPages({ cmsItems, access, catalog }).map((p) => p.symbol);
 
-  // Иконки: загруженная в CMS приоритетнее, иначе — иконка монеты из MDS
   const mdsIcons = await getMdsIcons();
   const icons: Record<string, string> = {};
   for (const symbol of symbols) {

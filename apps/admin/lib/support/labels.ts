@@ -1,8 +1,6 @@
 import type { StatusKey } from '@broker/ui';
 import type { Channel, SupportFailure, TicketStatus } from '@broker/support';
 
-/** Подписи раздела «Поддержка» (концепция: статусы — через словарь StatusBadge). */
-
 export const STATUS_KEY: Record<TicketStatus, StatusKey> = {
   new: 'support_new',
   open: 'support_open',
@@ -58,7 +56,6 @@ const ERRORS: Record<SupportFailure | 'invalid' | 'duplicate' | 'unauthorized' |
   invalid: 'Проверьте поля формы.',
   duplicate: 'Шаблон с таким ключом и языком уже есть.',
   unauthorized: 'Сессия истекла — войдите заново.',
-  // ── Перевод на другую платформу группы (ветка client-transfer) ──
   templateMentionsGroupPlatform:
     'Шаблон упоминает другую платформу группы. Предлагать перевод нельзя — только по заявлению клиента; шаблоны для этого не используются.',
 };

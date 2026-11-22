@@ -2,12 +2,6 @@ import { draftMode } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { requestOrigin, sanitizeRedirectPath } from '@/lib/preview';
 
-/**
- * Вход в preview: CMS даёт редактору ссылку
- * /api/preview?secret=<PREVIEW_SECRET>&path=/promotions
- * draftMode-кука включает обход кеша в getCms (черновой контент)
- * и noindex на страницах.
- */
 export async function GET(request: Request) {
   const secret = process.env.PREVIEW_SECRET;
   if (!secret) {

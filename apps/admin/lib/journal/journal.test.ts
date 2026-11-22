@@ -2,22 +2,6 @@ import { describe, expect, it } from 'vitest';
 import { appendJournalEntry, canonicalize, computeEntryHash } from './journal';
 import type { Queryable } from '../db';
 
-/**
- * ADM-01 · хеш-цепочка журнала не рвётся на серии (Р-049).
- *
- * База в прогоне не поднимается — её роль играет in-memory `Queryable`,
- * которая ведёт себя как таблица: отдаёт `entry_hash` последней строки и
- * принимает INSERT. Проверяется связывание: `prev_hash` каждой записи равен
- * `entry_hash` предыдущей, первая — с `prev_hash = null`, и хранимый хеш
- * совпадает с пересчитанным независимо.
- *
- * Сериализацию аппендов (advisory-lock) настоящей двух-коннектовой гонкой тут
- * не прогнать — пул мокается. Поэтому доказываем ЛОГИКУ: порядок вызовов
- * `query` (lock → select → insert, с BEGIN/COMMIT для пула и без них для
- * клиента) и fail-closed при сбое. Настоящую гонку надо гонять на реальном
- * Postgres (см. раздел «журнал · сериализация аппендов»).
- */
-
 interface Stored {
   seq: number;
   entry_hash: string;
@@ -30,7 +14,6 @@ interface Stored {
   payload: string;
 }
 
-/** Классификатор SQL — в тег, чтобы проверять порядок обращений к базе. */
 function tagSql(sql: string): string {
   if (/^\s*BEGIN/i.test(sql)) return 'BEGIN';
   if (/^\s*COMMIT/i.test(sql)) return 'COMMIT';
@@ -41,7 +24,6 @@ function tagSql(sql: string): string {
   return `OTHER(${sql})`;
 }
 
-/** Общий исполнитель запросов над in-memory таблицей журнала. */
 function runQuery(rows: Stored[], sql: string, params: unknown[]): { rows: Record<string, unknown>[] } {
   const tag = tagSql(sql);
   if (tag === 'SELECT_PREV') {
@@ -70,11 +52,6 @@ function runQuery(rows: Stored[], sql: string, params: unknown[]): { rows: Recor
   throw new Error(`unexpected sql: ${sql}`);
 }
 
-/**
- * Клиент-эмулятор (как `PoolClient`): есть `release`, поэтому функция считает
- * его клиентом чужой транзакции и НЕ открывает свою. Ведёт лог тегов SQL.
- * `failOn` — на каком теге бросить (для fail-closed).
- */
 function makeClient(opts: { rows?: Stored[]; failOn?: string } = {}) {
   const rows = opts.rows ?? [];
   const log: string[] = [];
@@ -97,11 +74,6 @@ function makeClient(opts: { rows?: Stored[]; failOn?: string } = {}) {
   return client;
 }
 
-/**
- * Пул-эмулятор (как `pg.Pool`): есть `connect`, НЕТ `release`, поэтому функция
- * сама берёт клиента и оборачивает аппенд транзакцией. Возвращает один и тот же
- * клиент, чтобы тест видел его лог.
- */
 function makePool(client: ReturnType<typeof makeClient>) {
   return {
     async query() {
@@ -113,7 +85,6 @@ function makePool(client: ReturnType<typeof makeClient>) {
   } as unknown as Queryable;
 }
 
-/** Таблица-эмулятор как Queryable без connect/release — путь «клиент дан». */
 function fakeJournal(): { db: Queryable; rows: Stored[] } {
   const rows: Stored[] = [];
   const db: Queryable = {
@@ -154,12 +125,9 @@ describe('журнал · сцепление prev→entry', () => {
       db,
     );
 
-    // Первая — начало цепи.
     expect(first.prevHash).toBeNull();
-    // Каждая следующая сцеплена с хешем предыдущей.
     expect(second.prevHash).toBe(first.entryHash);
     expect(third.prevHash).toBe(second.entryHash);
-    // Хеши различны.
     expect(new Set([first.entryHash, second.entryHash, third.entryHash]).size).toBe(3);
   });
 
@@ -199,10 +167,8 @@ describe('журнал · сцепление prev→entry', () => {
       db,
     );
 
-    // Убери среднюю — и у e3.prevHash не окажется записи с таким entryHash.
     const remaining = [e1, e3];
     expect(remaining.some((e) => e.entryHash === e3.prevHash)).toBe(false);
-    // А пока e2 на месте — находится.
     expect([e1, e2, e3].some((e) => e.entryHash === e3.prevHash)).toBe(true);
   });
 });
@@ -226,11 +192,8 @@ describe('журнал · сериализация аппендов (Р-049)', (
       pool,
     );
 
-    // Lock берётся ПОСЛЕ BEGIN и ДО чтения prev; вся работа обёрнута COMMIT-ом.
     expect(client.log).toEqual(['BEGIN', 'LOCK', 'SELECT_PREV', 'INSERT', 'COMMIT']);
-    // Клиента вернули в пул ровно один раз.
     expect(client.released).toBe(1);
-    // Запись реально легла в таблицу.
     expect(client.rows).toHaveLength(1);
     expect(entry.entryHash).toBe(client.rows[0]!.entry_hash);
   });
@@ -243,8 +206,6 @@ describe('журнал · сериализация аппендов (Р-049)', (
       client as unknown as Queryable,
     );
 
-    // Lock — первым, ДО чтения prev. Транзакцией распоряжается вызывающий:
-    // своих BEGIN/COMMIT/ROLLBACK функция не делает, клиента не освобождает.
     expect(client.log).toEqual(['LOCK', 'SELECT_PREV', 'INSERT']);
     expect(client.log).not.toContain('BEGIN');
     expect(client.log).not.toContain('COMMIT');
@@ -262,7 +223,6 @@ describe('журнал · сериализация аппендов (Р-049)', (
       ),
     ).rejects.toThrow('boom:LOCK');
 
-    // Откатили и освободили клиента; INSERT не случился — записи без lock нет.
     expect(client.log).toEqual(['BEGIN', 'LOCK', 'ROLLBACK']);
     expect(client.log).not.toContain('INSERT');
     expect(client.released).toBe(1);

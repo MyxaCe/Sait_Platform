@@ -1,16 +1,5 @@
 import localFont from 'next/font/local';
 
-/**
- * Шрифт центра управления — Inter (SIL OFL 1.1, © The Inter Project Authors),
- * вариативный (wght 100–900), подмножества latin + cyrillic. Self-hosted: файлы
- * лежат в репозитории (`app/fonts/*.woff2`) и раздаются с нашего origin —
- * внешних CDN на рантайме нет (CSP периметра).
- *
- * Два семейства с собственным `unicode-range`, склеенные в `--font-sans`
- * (globals.css): браузер берёт глиф из подходящего подмножества и грузит
- * кириллицу только когда она есть на странице. Метрический fallback отключён,
- * иначе Arial перехватил бы кириллицу раньше второго подмножества.
- */
 export const interLatin = localFont({
   src: './fonts/inter-latin-var.woff2',
   weight: '100 900',

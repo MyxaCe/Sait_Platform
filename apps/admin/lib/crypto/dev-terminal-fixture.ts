@@ -1,20 +1,6 @@
 import type { AccountsOutcome } from '@broker/money';
 import { getPool } from '../db';
 
-/**
- * DEV-ФИКСТУРА живых цифр терминала (`GET …/accounts`) — ТОЛЬКО для локального
- * просмотра карточки клиента (скриншоты редизайна), когда терминала нет.
- *
- * Fail-closed, два независимых условия, оба обязательны:
- *   1) `NODE_ENV === 'development'` (только `next dev`; любая сборка — production);
- *   2) `ADMIN_DEV_TERMINAL_FIXTURE === '1'`.
- * Иначе `enabled()` = false и используется настоящий клиент терминала. Фикстура
- * подменяет ТОЛЬКО чтение `accounts`; движения денег (deposit/withdraw/freeze)
- * всегда идут в настоящий клиент — фикстура не может «провести» деньги.
- *
- * Цифры не выдуманы из воздуха: баланс — из проекции (`real_accounts`/
- * `demo_accounts`), к нему детерминированный плавающий P&L по id клиента.
- */
 export function devTerminalFixtureEnabled(): boolean {
   return process.env.NODE_ENV === 'development' && process.env.ADMIN_DEV_TERMINAL_FIXTURE === '1';
 }

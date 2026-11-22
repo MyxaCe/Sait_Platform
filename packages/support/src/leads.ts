@@ -3,20 +3,6 @@ import { SUPPORT_ACTIONS, SUPPORT_SYSTEM_OPERATOR } from './model';
 import type { SupportSettings } from './settings';
 import { createWebFormTicketTx } from './tickets';
 
-/**
- * Восстановление потерянных обращений (дефект аудита §1: форма контактов
- * писала `leads(kind='contact')` + событие `lead.submitted`, которое шина
- * отбрасывала — обращения не видел никто). Каждое `contact`-обращение без
- * тикета становится тикетом `web_form` с исходной датой.
- *
- * Идемпотентно: `support_tickets.source_lead_id` UNIQUE — повторный прогон
- * (воркер на старте и раз в 10 минут, ручной скрипт) ничего не дублирует.
- * Подтверждение клиенту задним числом НЕ шлётся: письмо «получили ваш
- * вопрос» через месяц только путает — ответит оператор.
- *
- * Новая форма витрины пишет тикет сама; этот путь закрывает и лиды, которые
- * успеет записать старая версия витрины между миграцией и её выкаткой.
- */
 export async function recoverContactLeads(
   db: PoolLike,
   settings: SupportSettings,

@@ -1,22 +1,11 @@
 import { activeWithdrawBanSql, type Queryable } from '@broker/money';
 import { supportAccess, type SupportRole } from './model';
 
-/**
- * Контекст клиента для оператора поддержки (дизайн §3.3). Данные отбираются
- * НА СЕРВЕРЕ ПО РОЛИ — не прячутся в интерфейсе: для `support_operator`
- * выполняются другие запросы, в которых нет ни одной денежной колонки (сумм,
- * балансов, адресов, хэшей) и нет ключей KYC-документов. Чего не выбрали из
- * базы, то не утечёт ни в HTML, ни в RSC-поток. Тест проверяет и форму
- * ответа, и текст выполненных запросов.
- */
-
 export interface MoneyOpView {
   kind: 'deposit' | 'withdrawal';
   status: string;
   at: string;
-  /** Только для ролей с доступом к суммам. */
   amountMinor?: number | null;
-  /** Адрес вывода / хэш депозита — только для ролей с доступом к суммам. */
   ref?: string | null;
 }
 
@@ -36,12 +25,9 @@ export interface ClientContext {
   withdrawBanned: boolean;
   hasRealAccount: boolean;
   recentMoney: MoneyOpView[];
-  /** Есть только у ролей с доступом к суммам. */
   realBalanceMinor?: number | null;
   realCurrency?: string | null;
-  /** Количество KYC-документов — только ролям, которым видны документы. */
   kycDocumentCount?: number;
-  /** Что скрыто ролью — для честной подписи в интерфейсе. */
   redacted: { money: boolean; kycDocuments: boolean };
 }
 
@@ -75,7 +61,6 @@ export async function loadClientContext(
   const u = base.rows[0];
   if (!u) return null;
 
-  // Денежные операции: для support_operator — ТОЛЬКО вид, статус и дата.
   const ops = money
     ? await db.query(
         `SELECT * FROM (
@@ -137,7 +122,6 @@ export async function loadClientContext(
   return ctx;
 }
 
-/** Колонки, которых не должно быть в запросах контекста для support_operator. */
 export const MONEY_COLUMNS_FORBIDDEN_FOR_SUPPORT = [
   'amount_minor',
   'amount_raw',

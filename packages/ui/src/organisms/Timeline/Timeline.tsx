@@ -2,20 +2,11 @@ import type { ReactNode } from 'react';
 import { cn } from '../../lib/cn';
 import type { StatusTone } from '../../molecules/StatusBadge/StatusBadge';
 
-/**
- * Лента событий (концепция §6.13) — история верификации, журнал по субъекту,
- * история заявки. Новые сверху. Точка окрашена тоном события (та же семантика,
- * что у бейджей). `details` — раскрываемый блок (payload, хэши) через нативный
- * `<details>`: работает без JS.
- */
 export interface TimelineItem {
   key: string;
   title: ReactNode;
-  /** Время (уже отформатированное) — справа, табличными цифрами. */
   time: ReactNode;
-  /** Кто/откуда: «Мария Орлова · seq 49». */
   meta?: ReactNode;
-  /** Основание/описание. */
   body?: ReactNode;
   details?: ReactNode;
   detailsLabel?: string;

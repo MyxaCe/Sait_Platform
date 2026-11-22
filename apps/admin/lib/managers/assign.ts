@@ -4,28 +4,9 @@ import { appendJournalEntry } from '../journal/journal';
 import { asRole } from '../operators/queries';
 import { BULK_ASSIGN_LIMIT, isUuid, roleCanManageClients } from './policy';
 
-/**
- * Закрепление менеджера за клиентами и флаг «менеджер клиентов» —
- * транзакционное ядро (образец — `lib/clients/block.ts`).
- *
- * Одно решение = одна транзакция: смена `client_managers` + запись в
- * неизменяемый журнал + привязка `last_journal_seq`. Массовое назначение — та
- * же транзакция на всю пачку: либо закреплены все выбранные, либо ни один
- * (частично применённая пачка — худшее для разбора «кто кому назначен»).
- *
- * Журнал — ПО ЗАПИСИ НА КЛИЕНТА (субъект — клиент): тогда смена видна в ленте
- * карточки каждого клиента. Массовость отмечена в payload (`bulk`, размер
- * пачки) — по ней в журнале видно, что это одна операция.
- *
- * Роль-гейт (только admin) — на server action-е (fail-closed); сюда приходит
- * уже проверенный `actorId` из сессии (Р-451).
- */
-
 export interface AssignInput {
-  /** `operators.id` автора — из серверной сессии, НЕ из формы. */
   actorId: string;
   userIds: string[];
-  /** `null` — снять закрепление. */
   managerId: string | null;
   reason: string;
 }
@@ -49,7 +30,6 @@ interface ManagerRow {
   displayName: string;
 }
 
-/** Менеджер пригоден: существует, не отключён, флаг стоит, роль видит «Клиентов». */
 async function loadEligibleManager(db: Queryable, managerId: string): Promise<ManagerRow | null> {
   const r = await db.query(
     `SELECT id, display_name, role, is_client_manager, disabled_at
@@ -112,7 +92,6 @@ export async function assignClientManagers(
       return { ok: false, reason: 'noClient' };
     }
 
-    // Текущее закрепление выбранных клиентов — под блокировкой строк (гонка двух админов).
     const cur = await db.query(
       `SELECT cm.user_id, cm.manager_id, o.display_name
          FROM client_managers cm JOIN operators o ON o.id = cm.manager_id
@@ -131,7 +110,6 @@ export async function assignClientManagers(
       const prev = current.get(userId) ?? null;
       const target = manager?.id.toLowerCase() ?? null;
       if ((prev?.managerId ?? null) === target) {
-        // Содержательного перехода нет — пустых записей в журнал не пишем.
         unchanged += 1;
         continue;
       }
@@ -200,11 +178,6 @@ export type ManagerFlagResult =
       reason: 'missingReason' | 'invalidSubject' | 'notFound' | 'notActive' | 'roleNotEligible' | 'noChange' | 'hasClients';
     };
 
-/**
- * Флаг «менеджер клиентов» у оператора (только admin). Снять флаг с менеджера,
- * за которым ещё закреплены клиенты, нельзя (`hasClients`): сначала клиентов
- * передают другому менеджеру — «ничьих по ошибке» клиентов не бывает.
- */
 export async function setClientManagerFlag(
   input: ManagerFlagInput,
   pool: { connect(): Promise<PoolClient> } = getPool(),

@@ -1,13 +1,6 @@
 import type { ReactNode } from 'react';
 import { cn, type StatusTone } from '@broker/ui';
 
-/**
- * Итог проверок в панели решения (концепция §7.4: «статус, итог проверок,
- * формы») — локальный компонент зоны «Клиенты и комплаенс», кандидат в
- * @broker/ui. Строка = что проверено · результат; маркер повторяет форму
- * маркеров словаря статусов (●◆■○) — различимо без цвета.
- */
-
 export interface CheckItem {
   key: string;
   label: ReactNode;

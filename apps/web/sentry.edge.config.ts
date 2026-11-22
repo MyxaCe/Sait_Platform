@@ -2,9 +2,6 @@ import * as Sentry from '@sentry/nextjs';
 import { scrubSentryEvent } from '@broker/api-client';
 import { sentryEnvironment } from '@broker/utils';
 
-/**
- * Edge-рантайм (middleware) Sentry/GlitchTip — тот же проект site-bff.
- */
 const dsn = process.env.SENTRY_DSN;
 
 Sentry.init({

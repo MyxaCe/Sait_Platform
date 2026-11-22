@@ -36,11 +36,6 @@ function findSymbol(symbols: Iterable<string>, upper: string): string | undefine
   return undefined;
 }
 
-/**
- * Инструмент существует, если он выбран в карточке сайта (список доступа) и
- * есть в каталоге MDS. Запись CMS «Инструменты» — необязательное обогащение
- * (иконка, swapFree, имя/категория на случай недоступного каталога).
- */
 export function resolveInstrument({ category, symbol, cmsItems, access, catalog }: ResolveInput): InstrumentDetail {
   if (!URL_SYMBOL.test(symbol)) return NOT_FOUND;
   const upper = symbol.toUpperCase();
@@ -82,10 +77,6 @@ export interface InstrumentPageRef {
   category: InstrumentCategory;
 }
 
-/**
- * Страницы инструментов, которые `resolveInstrument` откроет (sitemap, каталог).
- * Порядок: сначала в порядке записей CMS, затем остальные из карточки сайта.
- */
 export function listInstrumentPages(input: Omit<ResolveInput, 'category' | 'symbol'>): InstrumentPageRef[] {
   if (input.access.state !== 'allowed') return [];
   const pages: InstrumentPageRef[] = [];

@@ -35,12 +35,6 @@ import {
   type WithdrawalFilter,
 } from './view';
 
-/**
- * Вкладка «Выводы» (концепция §7.4): слева очередь (старейшее и срочное
- * сверху), справа — панель решения выбранной заявки (`?w=<id>`): детали,
- * следующий шаг и формы-с-основанием только из допустимых переходов.
- */
-
 function WithdrawalStatus({ status }: { status: string }) {
   const key = statusKeyOf(`withdrawal_${status}`);
   return key ? <StatusBadge status={key} /> : <ToneBadge tone="neutral">{status}</ToneBadge>;
@@ -140,7 +134,6 @@ const NEXT_STEP: Record<string, { tone: 'info' | 'warning' | 'neutral' | 'positi
   cancelled: { tone: 'neutral', title: 'Отменена', text: 'Заявка закрыта без выплаты.' },
 };
 
-/** Где деньги закрытой без выплаты заявки — по факту возврата/списания, а не по статусу. */
 function voidMoneyNote(w: WithdrawalRowView): string {
   if (w.refunded) return ' Сумма возвращена на реальный счёт клиента.';
   if (w.debitState === 'refused') return ' Списания не было (терминал отказал) — деньги остались на счёте клиента.';
@@ -223,8 +216,6 @@ function DecisionPanel({ w }: { w: WithdrawalRowView }) {
           />
         </div>
         <DescriptionList columns={1} items={items} />
-        {/* Итог решения живёт над шагом и формами, пока открыта эта заявка
-            (панель перемонтируется только при выборе другой заявки). */}
         <DecisionArea>
           {step ? (
             <Callout tone={step.tone} title={step.title}>
@@ -265,9 +256,6 @@ export function WithdrawalsView({
 }) {
   const filter = asWithdrawalFilter(filterParam);
   const shown = orderWithdrawals(rows, filter);
-  // Выбранная заявка — всегда в URL. Без `w` открываем самую срочную, но
-  // закрепляем её в адресе: после решения порядок очереди меняется, и панель
-  // не должна молча переключиться на заявку другого клиента.
   if (!selectedId && shown[0]) {
     redirect(moneyHref({ tab: 'withdrawals', f: filter, w: shown[0].id }));
   }
@@ -360,11 +348,6 @@ export function WithdrawalsView({
   );
 }
 
-/**
- * Плашка над очередью (волна 3): одобренные выводы без хэша ждут ОПЕРАТОРА —
- * деньги клиенту никто, кроме него, не отправит. KPI «Ждут отправки» наверху
- * страницы легко пропустить; здесь — заметно, с суммой и следующим шагом.
- */
 export function AwaitingSendBanner({
   rows,
   filter,

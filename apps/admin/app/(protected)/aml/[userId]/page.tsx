@@ -22,18 +22,6 @@ import { amlKey } from '../../clients/_components/compliance-labels';
 import { ScreeningForm } from './ScreeningForm';
 import { ClearEscalationForm } from './ClearEscalationForm';
 
-/**
- * AML-сверка клиента `/aml/[userId]` (ADM-14, Р-454 I-5, Р-456 D; концепция §7.4).
- *
- * Сетка 2:1: слева — текущий результат и полная история сверок (из журнала);
- * справа — липкая панель «Зафиксировать результат» (форма с основанием), а при
- * эскалации у администратора — «Опасная зона» со снятием эскалации.
- *
- * Сверку оператор делает ВРУЧНУЮ во внешних источниках; форма фиксирует
- * РЕЗУЛЬТАТ. «Найдено» блокирует клиента автоматически (Р-456 D). Роль-гейт:
- * просмотр и фиксация — operator+admin; снятие эскалации — admin (fail-closed:
- * у оператора панели нет, на сервере роль проверяется повторно).
- */
 export const dynamic = 'force-dynamic';
 
 export default async function ClientAmlPage({ params }: { params: { userId: string } }) {

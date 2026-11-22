@@ -1,7 +1,6 @@
 import { cn } from '@broker/ui';
 import { Link } from '@/i18n/navigation';
 
-/** Фильтр-«чипы» на ссылках (значение в URL, работает без JS). */
 export function FilterChips({
   label,
   items,
@@ -9,7 +8,6 @@ export function FilterChips({
   vertical = false,
 }: {
   label: string;
-  /** ≥ 2xl — столбиком во всю ширину колонки фильтров (десктоп «Истории»). */
   vertical?: boolean;
   items: { key: string; label: string; href: string }[];
   active: string;

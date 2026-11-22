@@ -6,10 +6,6 @@ test('главная: hero, бегущая строка котировок и CT
   await expect(page.getByRole('heading', { level: 1 })).toContainText(
     'Торгуйте на мировых рынках',
   );
-  // Место бегущей строки занято: либо котировки, либо причина их отсутствия.
-  // В CI сайт поднят без CMS, граница доступа закрыта (ADR-029) — тикера нет,
-  // и на его месте стоит строка с причиной. Молча пустого места быть не может
-  // ни в одном из двух состояний, и проверяем мы именно это.
   const ticker = page.getByLabel('Котировки в реальном времени');
   const closed = page.getByTestId('access-notice').first();
   if (await ticker.count()) {
@@ -20,7 +16,6 @@ test('главная: hero, бегущая строка котировок и CT
     await expect(closed).toHaveAttribute('data-access-state', /empty|unavailable/);
   }
 
-  // Главный CTA ведёт на регистрацию
   await expect(
     page.getByRole('link', { name: 'Открыть счёт' }).first(),
   ).toHaveAttribute('href', /\/register/);
@@ -39,7 +34,6 @@ test('английская локаль: /en отдаёт переведённы
 
   await expect(page.locator('html')).toHaveAttribute('lang', 'en');
   await expect(page.getByRole('heading', { level: 1 })).toContainText('Trade global markets');
-  // Переключатель предлагает вернуться на русский
   await page.getByRole('button', { name: 'Language' }).filter({ visible: true }).click();
   await expect(page.getByRole('link', { name: /русск/i }).filter({ visible: true })).toBeVisible();
 });
@@ -53,7 +47,6 @@ test('мобильное меню открывается и содержит н�
   await expect(drawer).toBeVisible();
   await expect(drawer.getByRole('link', { name: 'Счета и тарифы' })).toBeVisible();
 
-  // Переход по пункту меню закрывает drawer и открывает страницу
   await drawer.getByRole('link', { name: 'Инструменты' }).click();
   await expect(page).toHaveURL(/\/instruments/);
 });

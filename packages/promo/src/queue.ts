@@ -9,31 +9,6 @@ import {
 import { PROMO_ENGINE_OPERATOR, REWARD_ACTIONS, type RewardKind } from './actions';
 import type { LinkSignal } from './antifraud';
 
-/**
- * ОЧЕРЕДЬ НАЧИСЛЕНИЙ — единственный путь денег зоны акций (решение владельца
- * 10.11: только через одобрение человеком).
- *
- *   pending ─► approved ─► credited
- *      │          └─► needs_review (терминал отказал) ─► rejected (бюджет освобождён)
- *      │                         └─► approved (повтор после разбора)
- *      └─► rejected
- *
- * **Одобрение** — одна транзакция: строка начисления `FOR UPDATE` (гонка двух
- * одобрений: второе ждёт замок и видит уже `approved` → `wrongState`),
- * резерв бюджета условным UPDATE (`spent + amount ≤ budget`; под READ
- * COMMITTED Postgres перепроверяет условие на свежей версии строки акции,
- * поэтому два параллельных одобрения бюджет не перескочат; CHECK
- * `promotions_budget_not_exceeded` — последний рубеж), журнал той же
- * транзакцией. Затем — зачисление.
- *
- * **Зачисление** (`ensureRewardCredited`, образец `ensureWithdrawalDebited`):
- * терминал `deposit` на реальный счёт с `external_ref` начисления.
- * Ответил — `credited` (повтор ref → тот же seq, идемпотентно). Отказал —
- * `needs_review` (человек разбирается, бюджет остаётся зарезервированным).
- * Не ответил — остаётся `approved` («исход неизвестен»), повтор тем же ref
- * безопасен. Отклонить `approved` нельзя: деньги могли уйти.
- */
-
 export type RewardStatus = 'pending' | 'approved' | 'credited' | 'needs_review' | 'rejected';
 
 export interface RewardDraft {
@@ -46,12 +21,10 @@ export interface RewardDraft {
   amountMinor: number;
   period?: string | null;
   externalRef: string;
-  /** Основание расчёта (формула, факты) — для оператора и аудита. */
   basis: Record<string, unknown>;
   signals: LinkSignal[];
 }
 
-/** Поставить начисление в очередь (идемпотентно по external_ref). Внутри транзакции. */
 export async function enqueueRewardWithinTx(
   tx: Queryable,
   draft: RewardDraft,
@@ -155,7 +128,6 @@ export type ApproveResult =
   | { ok: true; credit: CreditOutcome }
   | { ok: false; reason: 'missingReason' | 'notFound' | 'wrongState' | 'budgetExceeded' | 'promotionMissing' };
 
-/** Одобрить начисление (admin / finance_operator — проверка роли у вызывающего). */
 export async function approveReward(
   pool: PoolLike,
   terminal: Pick<TerminalMoneyClient, 'deposit'>,
@@ -220,10 +192,6 @@ export async function approveReward(
   return { ok: true, credit };
 }
 
-/**
- * Довести одобренное начисление до известного исхода. Уже `credited` —
- * возвращается без вызова. Безопасно звать повторно (повтор ref идемпотентен).
- */
 export async function ensureRewardCredited(
   pool: PoolLike,
   terminal: Pick<TerminalMoneyClient, 'deposit'>,
@@ -310,10 +278,6 @@ export type RejectResult =
   | { ok: true; releasedMinor: number }
   | { ok: false; reason: 'missingReason' | 'notFound' | 'wrongState' };
 
-/**
- * Отклонить: `pending` (бюджет не трогался) или `needs_review` (бюджет
- * освобождается — терминал деньги не зачислил). `approved` отклонить нельзя.
- */
 export async function rejectReward(
   pool: PoolLike,
   input: { rewardId: string; operatorId: string; reason: string },
@@ -375,11 +339,6 @@ export type RetryResult =
   | { ok: true; credit: CreditOutcome }
   | { ok: false; reason: 'missingReason' | 'notFound' | 'wrongState' };
 
-/**
- * Повторить зачисление: `approved` (исход неизвестен) — просто довести;
- * `needs_review` (после разбора отказа) — вернуть в `approved` с основанием и
- * довести. Бюджет при этом уже зарезервирован.
- */
 export async function retryRewardCredit(
   pool: PoolLike,
   terminal: Pick<TerminalMoneyClient, 'deposit'>,

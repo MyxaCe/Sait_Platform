@@ -1,15 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { getChromeBrand, resolveBrandName } from './chrome';
 
-/**
- * Хром кабинета при переезде на CMS v2 (Р-040).
- *
- * Проверяется одно утверждение, и оно про соседние поля: отсутствие
- * необязательного `primaryColor` не доказывает отсутствия бренда.
- * Прежнее условие требовало строки, и после переезда кабинет потерял бы
- * заодно имя, логотип и соцсети — из-за пустого цвета.
- */
-
 const BRAND_V2 = {
   name: 'Apex Capital',
   primaryColor: null,
@@ -36,13 +27,9 @@ describe('цвет не задан', () => {
     stubFetch(BRAND_V2);
 
     return getChromeBrand('ru').then((brand) => {
-      // Мутация «вернуть `typeof data.primaryColor === 'string'` в
-      // условие» красит этот тест: бренд целиком становится `null`.
       expect(brand?.name).toBe('Apex Capital');
       expect(brand?.logo?.url).toBe('http://cms.test/logo.png');
       expect(brand?.socials).toHaveLength(1);
-      // Цвет при этом честно отсутствует, а не подменён пустой строкой:
-      // акцент тогда не инжектируется и действует палитра токенов.
       expect(brand?.primaryColor).toBeNull();
     });
   });
@@ -62,10 +49,6 @@ describe('бренда нет', () => {
   });
 });
 
-/**
- * Имя бренда без строки бренда в коде (10.11): CMS → окружение ячейки
- * `SITE_BRAND_NAME` (мост) → нейтральная метка интерфейса.
- */
 describe('resolveBrandName', () => {
   afterEach(() => vi.unstubAllEnvs());
   const fromCms = { name: 'Из CMS', primaryColor: null, logo: null, socials: [] };

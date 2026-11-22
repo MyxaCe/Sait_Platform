@@ -1,4 +1,3 @@
-// Atoms
 export { Button, type ButtonProps } from './atoms/Button/Button';
 export { Badge, type BadgeProps, type BadgeVariant } from './atoms/Badge/Badge';
 export { Money, type MoneyProps, formatMinor, formatMoney } from './atoms/Money/Money';
@@ -16,7 +15,6 @@ export { Input, type InputProps } from './atoms/Input/Input';
 export { Select, type SelectProps } from './atoms/Select/Select';
 export { Checkbox, type CheckboxProps } from './atoms/Checkbox/Checkbox';
 
-// Molecules
 export { StatCounter, type StatCounterProps } from './molecules/StatCounter/StatCounter';
 export { FormField, type FormFieldProps } from './molecules/FormField/FormField';
 export { KpiTile, type KpiTileProps, type KpiTone } from './molecules/KpiTile/KpiTile';
@@ -46,7 +44,6 @@ export {
   type LanguageOption,
 } from './molecules/LanguageSwitcher/LanguageSwitcher';
 
-// Organisms
 export { TickerTape, type TickerTapeProps, type TickerItem } from './organisms/TickerTape/TickerTape';
 export {
   PricingTable,
@@ -72,10 +69,8 @@ export { Pagination, type PaginationProps } from './organisms/Pagination/Paginat
 export { Timeline, type TimelineProps, type TimelineItem } from './organisms/Timeline/Timeline';
 export { ReasonForm, type ReasonFormProps } from './organisms/ReasonForm/ReasonForm';
 
-// Layout
 export { Container, type ContainerProps } from './layout/Container/Container';
 export { Section } from './layout/Section/Section';
 
-// Utils
 export { cn } from './lib/cn';
 export { SiteFooter, type SiteFooterProps, type FooterLink } from './organisms/SiteFooter/SiteFooter';

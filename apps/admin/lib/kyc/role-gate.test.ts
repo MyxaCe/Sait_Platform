@@ -1,11 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { OperatorRole } from '../auth/session';
 
-/**
- * Server actions KYC/AML — роль-гейт по матрице разделов. Action можно вызвать
- * POST-ом на любую разрешённую роли страницу, поэтому middleware его не ловит:
- * отказ обязан случиться в самом action, ДО чтения базы и подписи ссылки.
- */
 const session = vi.hoisted(() => ({ role: 'admin' as OperatorRole | null }));
 const query = vi.hoisted(() => vi.fn());
 const issueViewUrl = vi.hoisted(() => vi.fn(async () => 'https://signed.example/x'));

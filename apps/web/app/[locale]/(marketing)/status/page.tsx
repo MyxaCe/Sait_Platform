@@ -22,8 +22,6 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 export default async function StatusPage({ params }: PageProps) {
   setRequestLocale(params.locale);
   const t = await getTranslations('status');
-  // Статусы из CMS/status-сервиса (тег cms:system-status, revalidate 60 c);
-  // строка quotes-ws подменяется live-состоянием на клиенте
   const { services, incidents } = await getCms('system-status', {
     locale: pageLocale(params.locale),
     revalidate: 60,

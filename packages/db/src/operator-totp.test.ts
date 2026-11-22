@@ -2,20 +2,6 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-/**
- * ADM-13 · второй фактор (TOTP) добавляется отдельной миграцией, оба столбца
- * nullable (Р-454 III-3, Р-394).
- *
- * Живого наката в прогоне нет (как у соседних миграций зоны): тест читает текст
- * миграции и стережёт то, что меняет смысл безопасности:
- *
- *  - колонки ДОБАВЛЯЮТСЯ (ALTER), а не вписаны в прежнюю миграцию;
- *  - `totp_secret` NULLABLE — NULL это «2FA не настроена» (суперадмин «с
- *    первого дня» входит по паролю и ведётся на enrollment), а не включённый
- *    второй фактор с пустым секретом;
- *  - никакой денежной колонки (Р-396).
- */
-
 const MIGRATION = path.resolve(__dirname, '../migrations/1793881440000_operator_totp.sql');
 
 function sql(): string {

@@ -2,11 +2,6 @@ import os from 'node:os';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { buildFingerprint, configFingerprint, instanceIdentity } from './instance';
 
-/**
- * B-019: health-ручка обязана называть ЭКЗЕМПЛЯР, а не приложение, и
- * сообщать, ЧТО задано, никогда не сообщая, что именно в нём лежит.
- */
-
 afterEach(() => {
   vi.unstubAllEnvs();
   vi.restoreAllMocks();
@@ -23,7 +18,6 @@ describe('instanceIdentity · признак, который экземпляр 
   });
 
   it('startedAt считается из uptime, а не замерзает на сборке (B-010)', () => {
-    // Значение обязано ехать вместе с процессом: при разном uptime — разное
     vi.spyOn(process, 'uptime').mockReturnValue(10);
     const early = instanceIdentity().startedAt;
     vi.spyOn(process, 'uptime').mockReturnValue(10_000);
@@ -37,7 +31,6 @@ describe('instanceIdentity · признак, который экземпляр 
     const a = instanceIdentity();
     vi.spyOn(os, 'hostname').mockReturnValue('host-b');
     const b = instanceIdentity();
-    // Ровно то, чего не хватало: service у обоих был бы одинаков
     expect(`${a.host}:${a.pid}`).not.toBe(`${b.host}:${b.pid}`);
   });
 });
@@ -70,7 +63,6 @@ describe('configFingerprint · отпечаток, а не значения', ()
     for (const value of Object.values(secrets)) {
       expect(serialized).not.toContain(value);
     }
-    // и ни одного фрагмента: пароль из DATABASE_URL тоже не должен светиться
     expect(serialized).not.toContain('hunter2');
   });
 
@@ -82,14 +74,6 @@ describe('configFingerprint · отпечаток, а не значения', ()
   });
 
   it('список отпечатка закреплён — расширяется только осознанно', () => {
-    // Покрыты РАНТАЙМОВЫЕ переменные из таблицы docs/Локальный запуск.md.
-    // Вне списка сознательно: всё, что действует по природе сборки
-    // (FRAME_ANCESTORS, BUILD_STANDALONE и NEXT_PUBLIC_*, впекаемые в
-    // браузерный бандл), — их снимок живёт в configBuild, а здесь
-    // отпечаток соврал бы «не задано» о действующем значении (B-030).
-    // SENTRY_ENV — косметика; CABINET_URL/TERMINAL_URL/MDS_E2E — только e2e.
-    // Новая рантаймовая переменная обязана попасть и сюда, и в таблицу —
-    // падение этого теста и есть напоминание
     const keys = Object.keys(configFingerprint()).sort();
     expect(keys).toEqual(
       [
@@ -109,11 +93,6 @@ describe('configFingerprint · отпечаток, а не значения', ()
   });
 
   it('РАСТЯЖКА: сборочных переменных в рантаймовом отпечатке нет ни одной', () => {
-    // Именно это и было дефектом B-030: поле отпечатка утверждало «нет»
-    // про значение, вшитое в бандл. Тот, кто решит «вернуть полезное
-    // поле», увидит здесь причину, по которой его там быть не может:
-    // чтение тут динамическое, компилятор его не инлайнит, и увидеть
-    // сборочное значение этот список НЕ МОЖЕТ в принципе.
     const keys = Object.keys(configFingerprint());
 
     for (const buildScoped of [
@@ -127,10 +106,6 @@ describe('configFingerprint · отпечаток, а не значения', ()
     }
   });
 });
-
-/* ------------------------------------------------------------------ */
-/* Отпечаток СБОРКИ (WEB-09, B-030)                                     */
-/* ------------------------------------------------------------------ */
 
 describe('buildFingerprint · факт сборки отдаётся как факт сборки', () => {
   afterEach(() => {
@@ -150,9 +125,6 @@ describe('buildFingerprint · факт сборки отдаётся как фа
   });
 
   it('снимка нет → null, а НЕ пустой объект', () => {
-    // «Образ собран без снимка» (старая сборка) и «на сборке ничего не
-    // было задано» — разные факты. Пустой объект выдал бы первое за
-    // второе, то есть повторил бы ровно тот дефект, который чиним.
     vi.stubEnv('BUILD_CONFIG_FINGERPRINT', '');
 
     expect(buildFingerprint()).toBeNull();
@@ -165,8 +137,6 @@ describe('buildFingerprint · факт сборки отдаётся как фа
     ['JSON, но null', 'null'],
     ['значение не булево', '{"NEXT_PUBLIC_CABINET_URL":"true"}'],
   ])('%s → null: непонятое не превращается в «не задано»', (_name, raw) => {
-    // Строка "true" — не булево. Мягкое приведение здесь дало бы
-    // правдоподобный ответ про значение, которого мы не поняли.
     vi.stubEnv('BUILD_CONFIG_FINGERPRINT', raw);
 
     expect(buildFingerprint()).toBeNull();

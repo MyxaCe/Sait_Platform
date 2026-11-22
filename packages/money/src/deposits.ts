@@ -7,23 +7,6 @@ import { externalRef } from './terminal-contract';
 import type { TerminalMoneyClient, MoneyMoveOutcome } from './terminal-money';
 import { normalizeTxHash } from './tron';
 
-/**
- * Депозиты USDT TRC20 (дизайн §1). Все переходы статуса — с гардом
- * состояния в WHERE, журнал — той же транзакцией.
- *
- *   claimed ──► credited          (наблюдатель: сеть подтвердила)
- *      └──────► rejected          (не тот получатель/токен/неуспешна/нет в сети)
- *   unidentified ──► credited     (оператор привязал к клиенту)
- *   unidentified ──► claimed      (клиент заявил хэш позже, чем его увидела сеть)
- *
- * **Деньги двигает только терминал** (`deposit`, external_ref `tron:<hash>`).
- * Порядок «заблокировать строку (FOR UPDATE) → вызвать терминал → сменить
- * статус → журнал → COMMIT»: пока строка заперта, никто другой (клиент,
- * оператор, второй тик) не может её перехватить. Если COMMIT не прошёл после
- * успешного вызова — строка осталась в прежнем статусе, следующий проход
- * вызовет терминал с ТЕМ ЖЕ ref, и терминал ответит повтором (идемпотентно).
- */
-
 export type DepositStatus = 'claimed' | 'credited' | 'rejected' | 'unidentified';
 
 export type DepositRejectReason =
@@ -38,13 +21,6 @@ export type ClaimResult =
   | { ok: false; reason: 'invalidHash' | 'alreadyClaimed' | 'usedByWithdrawal' }
   | { ok: false; reason: 'policy'; policyReasons: MoneyPolicyReason[] };
 
-/**
- * Клиент заявляет хэш. Один хэш — одна заявка навсегда (UNIQUE tx_hash).
- * Гонка двух заявок одного хэша разрешается базой: `ON CONFLICT` второй
- * вставки ждёт первую и видит строку уже `claimed` → отказ.
- * Неопознанное поступление (наблюдатель видел, никто не заявил) превращается
- * в заявку этого клиента атомарно — тем же `ON CONFLICT … WHERE`.
- */
 export async function claimDeposit(
   pool: PoolLike,
   input: { userId: string; txHash: string },
@@ -90,7 +66,6 @@ export async function claimDeposit(
   });
 }
 
-/** Подтверждённый сетью перевод (то, что вернула сверка). */
 export interface VerifiedTransfer {
   amountRaw: bigint;
   fromAddress: string;
@@ -111,11 +86,6 @@ function journalMoney(outcome: MoneyMoveOutcome): Record<string, unknown> {
     : {};
 }
 
-/**
- * Зачислить заявленный депозит, который сеть подтвердила (наблюдатель).
- * Сумма: сырые единицы USDT → центы, дробь меньше цента вниз (записывается).
- * Ноль центов — `below_minimum` (зачислять нечего).
- */
 export async function creditClaimedDeposit(
   pool: PoolLike,
   terminal: TerminalMoneyClient,
@@ -156,7 +126,6 @@ export async function creditClaimedDeposit(
       return { state: 'terminal-refused', code: outcome.code };
     }
     if (outcome.state === 'unavailable') {
-      // Исход неизвестен — откатываемся; следующий проход повторит тем же ref.
       return rollback<CreditResult>({ state: 'terminal-unavailable' });
     }
 
@@ -237,7 +206,6 @@ async function setRejected(
   await tx.query(`UPDATE crypto_deposits SET last_journal_seq = $2 WHERE id = $1`, [depositId, seq]);
 }
 
-/** Отклонить заявку (сеть опровергла). Только из `claimed`. */
 export async function rejectClaimedDeposit(
   pool: PoolLike,
   input: {
@@ -273,7 +241,6 @@ async function noteDeposit(tx: Queryable, depositId: string, note: string): Prom
   );
 }
 
-/** Заметка «почему ещё ждём» — без смены статуса и без журнала (не переход). */
 export async function noteDepositCheck(db: Queryable, depositId: string, note: string): Promise<void> {
   await noteDeposit(db, depositId, note);
 }
@@ -286,11 +253,6 @@ export interface IncomingTransfer {
   blockTime: Date;
 }
 
-/**
- * Неопознанное поступление: наблюдатель видит входящий USDT, на который никто
- * не заявил хэш. Вставка идемпотентна (`ON CONFLICT DO NOTHING`): заявленный
- * клиентом хэш (любой статус) не трогается. Журнал — только при вставке.
- */
 export async function recordUnidentified(pool: PoolLike, t: IncomingTransfer): Promise<boolean> {
   const txHash = normalizeTxHash(t.txHash);
   if (!txHash) return false;
@@ -334,12 +296,6 @@ export type BindResult =
     }
   | { ok: false; reason: 'terminalRefused'; code: string };
 
-/**
- * Оператор привязывает неопознанное поступление к клиенту с основанием:
- * терминал `deposit(tron:<hash>)` → `credited`, журнал `crypto.deposit.bound`.
- * Строка заперта на всё время вызова: параллельная заявка клиента на тот же
- * хэш дождётся и увидит, что поступление уже не неопознанное.
- */
 export async function bindUnidentifiedDeposit(
   pool: PoolLike,
   terminal: TerminalMoneyClient,

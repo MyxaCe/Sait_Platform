@@ -1,16 +1,9 @@
 import { getPool, type Queryable } from '../db';
 import type { PortfolioLeverage, ClientLeverageOverride } from './resolve';
 
-/**
- * Чтения зоны «Риск/плечо» (Р-446, §3.8/3.9). Серверные компоненты читают
- * базу напрямую; чтения НЕ журналируются (журналируем только изменяющее).
- */
-
-/** Портфель + его class-override'ы + сколько клиентов в нём (для §3.9). */
 export interface PortfolioRow extends PortfolioLeverage {
   readonly isDefault: boolean;
   readonly clientCount: number;
-  /** Тариф портфеля (б.п., 0..500) и условия типа счёта для /accounts. */
   readonly markupBps: number;
   readonly commissionBps: number;
   readonly instruments: string | null;
@@ -20,14 +13,11 @@ export interface PortfolioRow extends PortfolioLeverage {
 function asDenominator(value: unknown): number {
   const n = Number(value);
   if (!Number.isInteger(n) || n < 1) {
-    // База/планка плеча вне [1, …] — это не «0 по умолчанию», а испорченная
-    // строка; лучше громко упасть, чем тихо выдать бессмысленное плечо.
     throw new Error(`плечо должно быть целым ≥ 1, получено: ${String(value)}`);
   }
   return n;
 }
 
-/** Ставка тарифа (б.п.): колонка NOT NULL 0..500; иное — испорченная строка, громко. */
 function asBps(value: unknown): number {
   const n = Number(value);
   if (value === null || value === undefined || !Number.isInteger(n) || n < 0) {
@@ -36,11 +26,6 @@ function asBps(value: unknown): number {
   return n;
 }
 
-/**
- * Все портфели с планками по классам и числом клиентов. Один проход: портфели
- * слева, class-override'ы и счётчик клиентов — агрегатами, чтобы не ходить в
- * базу по разу на портфель.
- */
 export async function listPortfolios(db: Queryable = getPool()): Promise<PortfolioRow[]> {
   const portfolios = await db.query(
     `SELECT p.key, p.title, p.base_leverage, p.is_default, p.sort_order,
@@ -81,7 +66,6 @@ export async function listPortfolios(db: Queryable = getPool()): Promise<Portfol
   }));
 }
 
-/** Один портфель по ключу (для резолва/снимка), или `null`. */
 export async function getPortfolio(
   key: string,
   db: Queryable = getPool(),
@@ -90,18 +74,12 @@ export async function getPortfolio(
   return all.find((p) => p.key === key) ?? null;
 }
 
-/** Плечо одного клиента: портфель, override (если есть), «сырой» ряд. */
 export interface ClientLeverageView {
   readonly userId: string;
   readonly portfolioKey: string;
   readonly override: (ClientLeverageOverride & { byName: string | null; at: string }) | null;
 }
 
-/**
- * Плечо клиента. Строки может ещё не быть (клиент не привязан явно) — тогда
- * `null`: вызывающий показывает портфель по умолчанию. Строку заводит первое
- * назначение портфеля/override оператором.
- */
 export async function getClientLeverage(
   userId: string,
   db: Queryable = getPool(),
@@ -134,7 +112,6 @@ export async function getClientLeverage(
   };
 }
 
-/** Ключ портфеля по умолчанию (новый клиент попадает в него). */
 export async function getDefaultPortfolioKey(db: Queryable = getPool()): Promise<string | null> {
   const res = await db.query(
     `SELECT key FROM leverage_portfolios WHERE is_default ORDER BY key LIMIT 1`,

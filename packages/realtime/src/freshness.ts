@@ -1,61 +1,23 @@
 import { pausedMarket } from './quote-reasons';
 import type { ConnStatus, Quote, QuoteMarket } from './types';
 
-/**
- * Что именно видит посетитель на месте цены. Три РАЗНЫХ сообщения, и
- * склеивать их нельзя — соблазн свести первые два в одно «плохо» велик,
- * но посетителю они говорят разное:
- *
- *  - `live`        — данные настоящие и свежие;
- *  - `simulated`   — данные не настоящие (мок, случайное блуждание): цифра
- *                    есть, но к рынку отношения не имеет (B-018);
- *  - `unavailable` — данных нет: символ объявлен протухшим, не пришёл вовсе
- *                    или это стартовый снапшот. Показывать вместо него
- *                    последнюю известную цену нельзя — она неотличима от
- *                    текущей и читается как «рынок стоит».
- *
- * Отсутствие данных выбрано отсутствием цены, а не полем возраста рядом с
- * ценой: поле, которое потребитель может проигнорировать, он проигнорирует.
- */
 export type QuoteState = 'live' | 'simulated' | 'unavailable' | 'closed' | 'halted';
 
 export interface FreshnessInput {
-  /** Состояние фида целиком. */
   feedStatus: ConnStatus;
-  /**
-   * Символы, которые ИСТОЧНИК объявил протухшими. Пустое множество — не
-   * «всё свежо», а «источник ничего не сказал»: судить об этом за него
-   * нельзя, поэтому вердикт даёт только `staleAfterMs`.
-   */
   staleSymbols?: ReadonlySet<string>;
   markets?: ReadonlyMap<string, QuoteMarket>;
-  /**
-   * Порог возраста котировки, мс. Приходит СНАРУЖИ и намеренно не имеет
-   * значения по умолчанию: у источника он свой, а выдуманный здесь порог
-   * начнёт молча расходиться с тем, по которому источник считает сам.
-   * Не задан → по возрасту не судим.
-   */
   staleAfterMs?: number;
-  /** Инъекция времени — для тестов. */
   now?: number;
 }
 
-/**
- * Вердикт по одному символу. Порядок правил — от более сильного знания к
- * более слабому: чем данные являются, важнее того, сколько им лет.
- */
 export function quoteState(quote: Quote | undefined, input: FreshnessInput): QuoteState {
   const { feedStatus, staleSymbols, markets, staleAfterMs, now = Date.now() } = input;
 
-  // Ненастоящие данные остаются ненастоящими независимо от свежести:
-  // спрашивать «не протухло ли случайное блуждание» бессмысленно.
   if (feedStatus === 'simulated') return 'simulated';
 
   if (!quote) return 'unavailable';
 
-  // ts === 0 — стартовый снапшот справочника (createInitialQuotes): это
-  // зашитая базовая цена, а не котировка. Раньше она рисовалась наравне
-  // с живыми — тот же класс, что B-018, только до первого тика.
   if (quote.ts === 0) return 'unavailable';
 
   const market = pausedMarket(quote.market ?? markets?.get(quote.symbol));
@@ -63,9 +25,6 @@ export function quoteState(quote: Quote | undefined, input: FreshnessInput): Quo
 
   if (staleSymbols?.has(quote.symbol)) return 'unavailable';
 
-  // Фид отвалился — новых цен не будет, и последняя известная неотличима
-  // от текущей. «Отсутствие события не является событием»: молчание
-  // выглядит как тихий рынок, поэтому цену снимаем, а не оставляем.
   if (feedStatus === 'offline') return 'unavailable';
 
   if (staleAfterMs !== undefined && now - quote.ts > staleAfterMs) return 'unavailable';

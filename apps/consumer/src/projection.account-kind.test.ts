@@ -1,12 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { applyTerminalEvent, classifyMessage, type Querier } from './projection.js';
 
-/**
- * Демо и реальный счёт разделены (09.11). Событие без `accountKind` —
- * старое — идёт в demo_* прежним путём; `real` — только в real_*; у real
- * свой accountSeq. Причина изменения баланса разбирается терпимо.
- */
-
 function fakeDb(opts: { realRowCount?: number } = {}) {
   const calls: { sql: string; params: unknown[] }[] = [];
   const db: Querier = {

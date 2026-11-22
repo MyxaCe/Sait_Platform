@@ -4,14 +4,6 @@ import type { Queryable } from '@broker/money';
 import { getPool } from '@/lib/db';
 import type { RegisterPrefill } from './RegisterForm';
 
-/**
- * Регистрация по приглашению перевода с другой платформы группы (ветка
- * client-transfer). Ссылка из письма платформы-цели: `/register?invite=…`.
- * Поля формы предзаполняются ТОЛЬКО тем, что передано с согласия клиента;
- * клиент может их исправить и регистрируется сам. Сбой базы — обычная
- * регистрация без приглашения (не отказ).
- */
-
 export type InviteState =
   | { state: 'none' }
   | { state: 'ok'; prefill: RegisterPrefill; number: string; sourceName: string }

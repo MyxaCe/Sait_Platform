@@ -1,11 +1,3 @@
-/**
- * Базовый Tailwind-preset платформы.
- * Все цвета — через CSS-переменные (RGB-каналы), поэтому переключение
- * темы происходит на уровне [data-theme] без пересборки классов,
- * а модификаторы прозрачности (bg-accent/10) продолжают работать.
- * Источник значений: @broker/ui/tokens.css
- */
-
 /** @type {Omit<import('tailwindcss').Config, 'content'>} */
 const preset = {
   darkMode: ['selector', '[data-theme="dark"]'],
@@ -35,7 +27,6 @@ const preset = {
       },
       fontFamily: {
         sans: ['var(--font-sans)', 'system-ui', 'sans-serif'],
-        // Хэши, адреса, id, seq — моноширинный СИСТЕМНЫЙ стек (без загрузки шрифтов).
         mono: [
           'ui-monospace',
           '"Cascadia Mono"',

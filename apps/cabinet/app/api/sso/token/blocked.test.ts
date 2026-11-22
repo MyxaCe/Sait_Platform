@@ -1,14 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-/**
- * ADM-02 · заблокированный клиент НЕ получает токен терминала.
- *
- * Соседний `route.test.ts` подменяет `getSessionUser` целиком — там барьер
- * «нет сессии → нет токена». Здесь сессия НАСТОЯЩАЯ (подменена только база и
- * кука): проверяем всю цепочку «строка `client_blocks.blocked` → сессия не
- * признана → токен не выпущен». Барьер, а не статус: решает то, что
- * `issueHandoffToken` не вызывался.
- */
 vi.setConfig({ testTimeout: 20_000 });
 
 const issueHandoffToken = vi.hoisted(() =>
@@ -43,7 +34,6 @@ vi.mock('@/lib/db', () => ({
   }),
 }));
 
-// Плечо (claim `leverage`) этот набор не проверяет — см. `route.test.ts`.
 vi.mock('@/lib/leverage', () => ({ terminalLeverageFor: async () => null }));
 
 vi.mock('next/headers', () => ({

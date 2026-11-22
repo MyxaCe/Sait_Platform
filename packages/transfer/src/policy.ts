@@ -1,22 +1,8 @@
 import type { GroupPlatform } from './registry';
 
-/**
- * Допустимость направления «источник → цель» по профилям юрисдикций
- * (§2.4–2.5 проекта). Чистые функции — все комбинации проверяются тестами.
- *
- * Два уровня:
- *  - ЗАПРЕТ (blocker) — перевод провести нельзя: страна клиента запрещена в
- *    цели или цель её не обслуживает, цель не принимает переводы, у цели нет
- *    канала/ключа, цель = источник. Тот же расчёт делает и ЦЕЛЬ при приёме
- *    пакета (по своему профилю) — одна сторона не верит другой на слово;
- *  - ПОДСКАЗКА (hint) — решение не блокирует, но менеджер видит её в форме, а
- *    admin — в «Переводах клиентов» (список пишется в перевод и журнал).
- */
-
 export const EU_EEA_COUNTRIES: ReadonlySet<string> = new Set([
   'AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 'DE', 'GR', 'HU', 'IE', 'IT', 'LV', 'LT', 'LU',
   'MT', 'NL', 'PL', 'PT', 'RO', 'SK', 'SI', 'ES', 'SE',
-  // ЕЭЗ
   'IS', 'LI', 'NO',
 ]);
 
@@ -46,10 +32,6 @@ export function normalizeCountry(raw: string | null | undefined): string | null 
   return /^[A-Z]{2}$/.test(c) ? c : null;
 }
 
-/**
- * Обслуживает ли профиль страну. `null` — страны нет: запрещено, только если
- * у профиля есть закрытый список обслуживаемых (иначе неизвестно, но не нарушено).
- */
 export function countryVerdict(
   profile: Pick<GroupPlatform, 'servedCountries' | 'forbiddenCountries'>,
   country: string | null,
@@ -93,10 +75,6 @@ export function checkDirection(input: {
   return { blockers, hints };
 }
 
-/**
- * Проверка ЦЕЛИ при приёме пакета — по своему профилю. Возвращает код отказа
- * или `null` (принимаем).
- */
 export function targetAcceptance(
   self: GroupPlatform | null,
   clientCountry: string | null,
@@ -110,17 +88,8 @@ export function targetAcceptance(
   return null;
 }
 
-/**
- * Анти-массовость (§2.1(3), §2.4): менеджер не проводит больше N переводов за
- * сутки. Перевод — индивидуальное действие по заявлению клиента; поток
- * переводов от одного человека — признак предложения, а не инициативы.
- */
 export const MANAGER_DAILY_TRANSFER_LIMIT = 5;
 
-/**
- * Алерт отчёта (информационно): у менеджера за 30 дней больше
- * `ALERT_ABSOLUTE_30D` переводов или больше удвоенной медианы коллег (при ≥3).
- */
 export const ALERT_ABSOLUTE_30D = 10;
 
 export function median(values: number[]): number {
@@ -137,12 +106,6 @@ export function managerAlert(count30d: number, allCounts: number[]): 'absolute' 
   return null;
 }
 
-/**
- * Лёгкий линтер «предложения перевода» (§2.4): текст шаблона поддержки или
- * основания, упоминающий другую платформу группы (имя или домен кабинета).
- * Шаблоны поддержки с таким текстом не сохраняются (нет инструментов
- * предложения), основание перевода — допускается (это описание заявления).
- */
 export function mentionsOtherPlatform(text: string, platforms: Pick<GroupPlatform, 'slug' | 'name' | 'cabinetUrl'>[], selfSlug: string): string | null {
   const lower = text.toLowerCase();
   for (const p of platforms) {

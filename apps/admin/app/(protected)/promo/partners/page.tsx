@@ -9,11 +9,6 @@ import { PromoHeader } from '../_components/PromoHeader';
 import { REAL_ACCOUNT_CURRENCY } from '@broker/money/display-currency';
 import { PartnerForm, RevshareForm, SyncForm, type PartnerInitial } from '../_components/PromoForms';
 
-/**
- * IB-партнёры (решение владельца №5): CPA за квалифицированного клиента ИЛИ
- * доля дохода платформы (наценка + комиссия) с привлечённых. Партнёр —
- * клиент платформы; привлекает по своему реф-коду; выплаты — через очередь.
- */
 export const dynamic = 'force-dynamic';
 
 const usd = (m: unknown) => (typeof m === 'number' ? (m / 100).toFixed(2) : '');

@@ -3,19 +3,6 @@ import { logoutAction } from '@/lib/auth/logout';
 import type { OperatorRole, OperatorSession } from '@/lib/auth/session';
 import { HealthIndicator } from './HealthIndicator';
 
-/**
- * Шапка консоли (концепция §8.2). Слева — быстрый поиск клиента (обычная
- * GET-форма на `/clients?q=`, работает без JS, ничего не меняет). Справа —
- * здоровье платформы, (позже) счётчик «ждёт меня», оператор с ролью и выход.
- *
- * Счётчик «ждёт меня» СКРЫТ по решению владельца (09.11.2026), пока нет
- * очереди второго подтверждения (dual control, `/money/pending`, Р-452):
- * вечный «0» на показе читается как «не сделано». Код оставлен за флагом —
- * включить = `SHOW_WAITING_FOR_ME = true` и подставить реальный источник.
- *
- * На узкой ширине (≈1024) поле поиска не сжимается в «Клиент:»: подпись
- * здоровья и строка роли прячутся до xl, у поиска — минимальная ширина.
- */
 const SHOW_WAITING_FOR_ME = false;
 
 const ROLE_LABEL: Record<OperatorRole, string> = {
@@ -26,7 +13,7 @@ const ROLE_LABEL: Record<OperatorRole, string> = {
 };
 
 export function TopBar({ operator }: { operator: OperatorSession }) {
-  const waitingForMe = 0; // TODO(деньги/Р-452): реальный счётчик dual-control-очереди.
+  const waitingForMe = 0;
 
   return (
     <header className="border-border bg-elevated/95 sticky top-0 z-20 flex h-14 shrink-0 items-center justify-between gap-4 border-b px-6 backdrop-blur-sm xl:gap-6">

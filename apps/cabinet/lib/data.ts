@@ -1,7 +1,5 @@
 import { getPool } from './db';
 
-/** Чтения кабинета. Все — по userId из СЕССИИ, никогда из входных данных. */
-
 export interface DemoAccount {
   balanceCents: number;
   currency: string;
@@ -26,7 +24,6 @@ export interface OpenPosition {
   entryPrice: number;
 }
 
-/** Открытые позиции демо-счёта — проекция событий терминала (Т3). Пусто до подключения шины. */
 export async function getOpenPositions(userId: string): Promise<OpenPosition[]> {
   const r = await getPool().query(
     `SELECT symbol, side, volume, entry_price FROM demo_positions WHERE user_id = $1 ORDER BY symbol`,
@@ -42,12 +39,10 @@ export async function getOpenPositions(userId: string): Promise<OpenPosition[]> 
 
 export interface ApplicationStatus {
   submittedAt: Date;
-  /** Событие ушло в шину платформы (релей отметил published_at) */
   dispatchedAt: Date | null;
   accountType: string | null;
 }
 
-/** Статус заявки на счёт: лид + факт публикации события в шину. */
 export async function getApplicationStatus(email: string): Promise<ApplicationStatus | null> {
   const r = await getPool().query(
     `SELECT l.created_at,

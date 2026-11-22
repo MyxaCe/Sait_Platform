@@ -3,16 +3,6 @@ import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { sentryEnvironment, UNKNOWN_ENVIRONMENT } from './env';
 
-/**
- * WEB-32 · ненастроенный контур не выдаёт себя за тестовый.
- *
- * Умолчание `'test'` не пустая строка и не ноль — оно хуже:
- * **осмысленное утверждение о том, чего мы не знаем**. Ненастроенный
- * прод отчитывался как тестовый, а «тестовые» ошибки смотрят
- * последними или не смотрят вовсе: отказ получал вид, по которому его
- * не станут разбирать.
- */
-
 describe('WEB-32 · окружение трекера', () => {
   it('задано — проходит как есть', () => {
     expect(sentryEnvironment('production')).toBe('production');
@@ -27,19 +17,10 @@ describe('WEB-32 · окружение трекера', () => {
   });
 
   it('пробельное значение не становится именем окружения', () => {
-    // Иначе в трекере завелась бы корзина с именем из пробелов.
     expect(sentryEnvironment(' production ')).toBe('production');
   });
 });
 
-/**
- * Сторож: умолчание не возвращается ни в одно из мест, где трекер
- * настраивается.
- *
- * Мест было восемь, и каждое повторяло одно и то же — поправив семь,
- * восьмое не заметишь. Проверка смотрит на **все** настройки трекера,
- * а не на известный список: новый файл попадает под неё сам.
- */
 const ROOT = path.resolve(__dirname, '../../..');
 const SKIP = new Set(['node_modules', '.next', '.turbo', 'dist', 'coverage']);
 
@@ -54,7 +35,6 @@ function sentryConfigs(dir: string): string[] {
   return out;
 }
 
-/** Строка, назначающая окружение трекера. */
 export function assignsEnvironment(line: string): boolean {
   return /environment:\s*/.test(line) && /SENTRY_ENV/.test(line);
 }
@@ -100,7 +80,6 @@ describe('WEB-32 · умолчание не возвращается', () => {
       true,
     );
 
-    // Чужое `environment` не считается: у vitest оно про среду прогона.
     expect(assignsEnvironment("    environment: 'node',")).toBe(false);
   });
 });

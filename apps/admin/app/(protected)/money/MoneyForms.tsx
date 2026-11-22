@@ -6,13 +6,6 @@ import { bindUnidentifiedAction, withdrawalDecisionAction } from '@/lib/crypto/a
 import { ActionForm, ConfirmFacts } from '../_money/ActionForm';
 import { GroupedMono, TronRef } from '../_money/tron';
 
-/**
- * Формы раздела «Деньги» (только вид; actions, имена полей и решения —
- * прежние: `withdrawalDecisionAction` с `decision` = approve | reject | sent |
- * settle, `bindUnidentifiedAction` с `depositId` + `client`). Каждое денежное
- * действие — два шага: на втором крупно сумма, адрес и клиент.
- */
-
 export interface WithdrawalFacts {
   id: string;
   status: string;
@@ -77,8 +70,6 @@ function Hidden({ id, decision }: { id: string; decision: string }) {
     </>
   );
 }
-
-/* ─── Подана: одобрить / отклонить ─────────────────────────────────── */
 
 function ApproveForm({ w }: { w: WithdrawalFacts }) {
   return (
@@ -147,8 +138,6 @@ function RefundForm({
     </ActionForm>
   );
 }
-
-/* ─── Одобрена: внести хэш отправки ────────────────────────────────── */
 
 const HASH_RE = /^[0-9a-fA-F]{64}$/;
 
@@ -221,8 +210,6 @@ function SentForm({ w }: { w: WithdrawalFacts }) {
   );
 }
 
-/* ─── На проверке: исполнена вручную ──────────────────────────────── */
-
 function SettleForm({ w }: { w: WithdrawalFacts }) {
   return (
     <ActionForm
@@ -247,7 +234,6 @@ function SettleForm({ w }: { w: WithdrawalFacts }) {
   );
 }
 
-/** Действия по заявке на вывод — только допустимые из текущего состояния. */
 export function WithdrawalActions({ w }: { w: WithdrawalFacts }) {
   if (w.status === 'requested') {
     return (
@@ -305,8 +291,6 @@ export function WithdrawalActions({ w }: { w: WithdrawalFacts }) {
   }
   return null;
 }
-
-/* ─── Неопознанное поступление: привязать к клиенту ───────────────── */
 
 export function BindForm({
   depositId,

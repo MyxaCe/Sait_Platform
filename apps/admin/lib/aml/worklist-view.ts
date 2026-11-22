@@ -2,16 +2,6 @@ import { getPool, type Queryable } from '../db';
 import { asState, type VerificationState } from '../clients/verification-state';
 import { AML_STATUSES, asAmlStatus, normalizeSanctionsLists, type AmlStatus, type SanctionsListId } from './lists';
 
-/**
- * Рабочий список AML для страницы `/aml` (редизайн, фаза 2) — только чтение.
- *
- * Та же популяция и тот же порядок срочности, что у `listAmlWorklist`
- * (`queries.ts`, оставлен без изменений): клиенты с заведённой верификацией;
- * сперва эскалации, затем не сверявшиеся (дольше ждущие выше), затем чистые.
- * Сверх него — кто сверял, по каким спискам, KYC-статус и блокировка (колонки
- * таблицы), фильтр по статусу и поиск. Пользовательский текст — параметрами.
- */
-
 export interface AmlListRow {
   userId: string;
   fullName: string;
@@ -44,7 +34,6 @@ export interface AmlCounts {
   escalated: number;
   unscreened: number;
   clear: number;
-  /** Самая давняя сверка среди «чистых» (кандидат на пересверку). */
   oldestClearAt: string | null;
 }
 

@@ -4,15 +4,6 @@ import { initiateCommand, reviewBreakGlass, secondApprove, signCommand } from '.
 import { generateEd25519KeyPair, StaticEd25519KeyProvider } from './signing';
 import type { MoneyCommandState, MoneyCommandType, MoneyInitiatorRole } from './types';
 
-/**
- * Р-452/Р-455/Р-456 · оркестрация dual control на фейковом пуле (БД замокана,
- * как в `bootstrap.test.ts`). Проверяем: каждый переход журналируется, запрет
- * self-approval держится, admin освобождён от второго аппрува ТОЛЬКО в
- * bootstrap-режиме (Р-456 C) с алертом+записью, break-glass только admin с
- * инцидентом и алертом (R-5), reversal требует исходную команду (R-4), в подпись
- * кладутся id аппрувов (R-1). Деньги НЕ двигаются — путь намерения и аудита.
- */
-
 const { privateKey, publicKey } = generateEd25519KeyPair();
 const keyProvider = new StaticEd25519KeyProvider(privateKey, publicKey, 'v1');
 
@@ -21,7 +12,6 @@ interface Call {
   params: unknown[];
 }
 
-/** Строка команды, которую вернёт `SELECT ... FOR UPDATE`. */
 interface FakeRow {
   id: string;
   state: MoneyCommandState;
@@ -41,8 +31,6 @@ interface FakeRow {
 
 function fakePool(opts: { calls: Call[]; row?: FakeRow; updateSignedRows?: number }) {
   let seq = 100;
-  // Р-455 R-1: запрос id аппрувов. Сидируем инициацию; второй аппрув докидывается
-  // при INSERT ... 'second_approval' в этой же сессии.
   const approvals: Array<{ kind: string; id: string }> = [{ kind: 'initiate', id: 'appr-init' }];
   const client = {
     query: async (sql: string, params: unknown[] = []) => {
@@ -69,7 +57,7 @@ function fakePool(opts: { calls: Call[]; row?: FakeRow; updateSignedRows?: numbe
         return { rows: [{ seq: ++seq }] };
       }
       if (/SELECT entry_hash FROM admin_action_journal/i.test(sql)) {
-        return { rows: [] }; // prevHash = null
+        return { rows: [] };
       }
       return { rows: [] };
     },
@@ -138,7 +126,7 @@ describe('initiateCommand', () => {
     const insCmd = calls.find((c) => /INSERT INTO money_commands/i.test(c.sql));
     expect(insCmd!.params).toContain('admin');
     expect(insCmd!.params).toContain('draft');
-    expect(insCmd!.params).toContain(true); // bootstrap_mode зафиксирован на команде
+    expect(insCmd!.params).toContain(true);
   });
 
   it('Р-456 C: admin БЕЗ bootstrap → awaiting_second_approval выше порога (освобождение снято)', async () => {

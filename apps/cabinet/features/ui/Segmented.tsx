@@ -1,11 +1,6 @@
 import { cn } from '@broker/ui';
 import { Link } from '@/i18n/navigation';
 
-/**
- * Сегментный переключатель на ссылках (`?tab=`/`?account=`): работает без JS,
- * переживает перезагрузку и «назад». На телефоне — во всю ширину, сегменты
- * равные, высота 44 px (цель касания).
- */
 export function Segmented({
   items,
   active,
@@ -17,7 +12,6 @@ export function Segmented({
   active: string;
   label: string;
   className?: string;
-  /** ≥ xl — вертикальное меню разделов (подписи слева, во всю ширину). */
   vertical?: boolean;
 }) {
   return (

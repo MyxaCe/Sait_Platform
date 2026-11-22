@@ -8,12 +8,6 @@ vi.mock('../db', () => ({
 
 import { formatMoneyCents, formatPnlCents, getClientTrading } from './trading';
 
-/**
- * «Счёт и торговля» в карточке: чтение проекции торговли (demo_accounts /
- * demo_positions / demo_trades). Проверяем сборку модели из строк, честный
- * «счёт не открыт» и выбор последней активности.
- */
-
 function fakeDb(tables: {
   account?: Record<string, unknown> | null;
   positions?: Record<string, unknown>[];

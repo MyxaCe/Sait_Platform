@@ -1,32 +1,14 @@
-/**
- * АНТИФРОД — сигналы связанности (дизайн §3.8). Для демо все сигналы —
- * ПОДСКАЗКИ оператору в очереди начислений: автоматических отказов нет,
- * решает человек, решение журналируется. Исключение — самореферал при
- * регистрации (`attribution-db.ts`): там атрибуция не ставится.
- *
- * Сигналы считаются чистой функцией над «отпечатками» клиентов; SQL,
- * собирающий отпечатки, — в `reader.ts`.
- */
-
 export type SignalKind =
-  /** Общий кошелёк-отправитель депозита с другим клиентом. */
   | 'shared_deposit_wallet'
-  /** Общий адрес вывода с другим клиентом. */
   | 'shared_withdraw_address'
-  /** Общий IP (сессии / регистрация) с другим клиентом. */
   | 'shared_ip'
-  /** Получатель и второй участник пары (реферер ↔ друг, IB ↔ клиент) связаны. */
   | 'self_referral'
-  /** Страна из формы не совпадает со страной по IP регистрации. */
   | 'country_mismatch'
-  /** Остатка бюджета акции не хватает на это начисление. */
   | 'budget_insufficient';
 
 export interface LinkSignal {
   kind: SignalKind;
-  /** С кем связь (другой клиент). */
   withUserId?: string;
-  /** Общее значение (адрес, IP) — для показа оператору. */
   value?: string;
 }
 
@@ -40,7 +22,6 @@ export interface Fingerprint {
   registrationIpCountry?: string | null;
 }
 
-/** IP, по которым связь не строится: локальные/служебные (прокси, разработка). */
 export function isMeaningfulIp(ip: string | null | undefined): ip is string {
   if (!ip) return false;
   const v = ip.trim().toLowerCase();
@@ -49,7 +30,6 @@ export function isMeaningfulIp(ip: string | null | undefined): ip is string {
   return true;
 }
 
-/** Email к сравнению «тот же человек»: регистр, +метка, точки у gmail. */
 export function normalizeEmail(email: string): string {
   const e = email.trim().toLowerCase();
   const at = e.lastIndexOf('@');
@@ -68,11 +48,6 @@ function shared(a: readonly string[], b: readonly string[]): string[] {
   return [...new Set(b.map((x) => x.trim()).filter((x) => set.has(x)))];
 }
 
-/**
- * Сигналы для получателя `target` относительно всех `others` (клиенты,
- * найденные по общим значениям). `counterpartUserId` — второй участник пары:
- * связь с ним — `self_referral`.
- */
 export function computeLinkSignals(
   target: Fingerprint,
   others: readonly Fingerprint[],
@@ -117,7 +92,6 @@ export function computeLinkSignals(
   return out;
 }
 
-/** Есть ли сигналы, требующие внимания (все, кроме чисто бюджетного). */
 export function hasLinkage(signals: readonly LinkSignal[]): boolean {
   return signals.some((s) => s.kind !== 'budget_insufficient');
 }

@@ -23,7 +23,6 @@ const TEXT: Record<ServiceStatus, string> = {
 };
 
 export interface StatusBoardProps {
-  /** Данные из CMS (тег cms:system-status); сервис id=quotes-ws подменяется live-состоянием */
   services: {
     id: string;
     name: string;
@@ -40,7 +39,6 @@ export function StatusBoard({ services: cmsServices, incidents }: StatusBoardPro
   const intlLocale = intlTag(locale);
 
   const wsStatus = useConnectionStatus();
-  // 'connecting' — нормальное состояние первой загрузки, не тревожим пользователя
   const feedStatus: ServiceStatus =
     wsStatus === 'offline' ? 'outage' : wsStatus === 'reconnecting' ? 'degraded' : 'operational';
 
@@ -60,7 +58,6 @@ export function StatusBoard({ services: cmsServices, incidents }: StatusBoardPro
 
   return (
     <div>
-      {/* Общий баннер */}
       <div
         className={cn(
           'flex items-center gap-3 rounded-2xl border p-5',
@@ -76,7 +73,6 @@ export function StatusBoard({ services: cmsServices, incidents }: StatusBoardPro
         </p>
       </div>
 
-      {/* Сервисы */}
       <ul className="mt-6 divide-y divide-border overflow-hidden rounded-2xl border border-border">
         {services.map((service) => (
           <li key={service.id} className="flex items-center gap-4 bg-card px-5 py-4">
@@ -97,7 +93,6 @@ export function StatusBoard({ services: cmsServices, incidents }: StatusBoardPro
         ))}
       </ul>
 
-      {/* История инцидентов */}
       <h2 className="mt-12 text-xl font-semibold text-primary">{t('incidentsTitle')}</h2>
       <div className="mt-4 space-y-4">
         {incidents.map((incident) => (

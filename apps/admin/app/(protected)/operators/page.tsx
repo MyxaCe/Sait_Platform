@@ -9,26 +9,12 @@ import { CreateOperatorForm } from './_components/CreateOperatorForm';
 import { ChangeRoleForm, DisableOperatorForm } from './_components/OperatorRowActions';
 import { OperatorsTable } from './_components/OperatorsTable';
 import { MANAGER_SCOPE, ROLES, ROLE_LABEL, ROLE_SCOPE } from './_components/roles';
-// ── Менеджеры клиентов (ветка admin-managers) ──
 import { managerClientCounts } from '@/lib/managers/queries';
 import { roleCanManageClients } from '@/lib/managers/policy';
-// ── Переводы клиентов (ветка client-transfer): счётчик возвращённых переводов ──
 import { revokedCountsByInitiator } from '@broker/transfer';
 import { getPool } from '@/lib/db';
 import { ManagerFlagForm } from './_components/ManagerFlagForm';
 
-/**
- * Операторы `/operators` (ADM-04, Р-394, Р-049; концепция §7.1 + боковая колонка).
- *
- * Провижининг: список операторов + завод нового + смена роли/отключение.
- * Роль-гейт admin only, fail-closed (Р-394): не-админ получает 404, экран ему
- * НЕ отрисован (а не «серый и кликабельный»). Авторитетный гейт — middleware +
- * layout; эта проверка — defence-in-depth и источник actorId для «нельзя над
- * собой».
- *
- * Справа — панель выбранного оператора (`?op=id`) или форма завода. Серверный
- * компонент: читает из базы напрямую, действия — через server actions.
- */
 export const dynamic = 'force-dynamic';
 
 export default async function OperatorsPage({
@@ -38,20 +24,14 @@ export default async function OperatorsPage({
 }) {
   const operator = await getOperatorSession();
   if (!operator) redirect(LOGIN_PATH);
-  // Fail-closed: экран операторов виден только админу (Р-394). Не disabled —
-  // именно отсутствует (404), чтобы роль-гейт нельзя было обойти POST-ом в UI.
   if (operator.role !== 'admin') notFound();
 
   const [all, managerClients] = await Promise.all([listOperators(), managerClientCounts()]);
   const revokedTransfers = await revokedCountsByInitiator(getPool()).catch(() => new Map<string, number>());
-  // Служебные учётные записи (`system:*`) подписывают автоматические действия
-  // (кабинет клиента, наблюдатель сети) — войти под ними нельзя. Показываем
-  // их отдельно, чтобы не путать с людьми.
   const system = all.filter((o) => o.login.startsWith('system:'));
   const operators = all.filter((o) => !o.login.startsWith('system:'));
   const active = operators.filter((o) => !o.disabledAt);
   const withTotp = active.filter((o) => o.totpEnrolled).length;
-  // Себя и отключённых не выбираем (над ними действий нет).
   const selected = operators.find(
     (o) => o.id === searchParams.op && o.id !== operator.operatorId && !o.disabledAt,
   );
@@ -173,7 +153,6 @@ export default async function OperatorsPage({
                           'нет'
                         ),
                       },
-                      // ── Переводы клиентов (ветка client-transfer) ──
                       {
                         term: 'Возвращённые переводы',
                         value: revokedTransfers.get(selected.id) ? (

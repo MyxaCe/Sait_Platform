@@ -1,16 +1,6 @@
 import { parseLiveSnapshot, type LiveSnapshot } from '@broker/live-params';
 import { envOr } from '@broker/utils';
 
-/**
- * Настройки платформы для витрины — ТОЛЬКО из админки (решение владельца
- * №9): публичная ручка кабинета `GET /api/public/platform-terms`, поле
- * `live` (у витрины нет базы). Адрес — `CABINET_INTERNAL_URL`, иначе
- * публичный адрес кабинета. Кеш данных Next — 60 с.
- *
- * Кабинет недоступен или ответ не разобран — `null`: страницы честно
- * говорят «временно недоступно», а параметры в текстах становятся «—».
- */
-
 const TIMEOUT_MS = 1_500;
 
 export function platformTermsUrl(): string | null {

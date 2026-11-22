@@ -4,14 +4,6 @@ vi.mock('next/headers', () => ({ draftMode: () => ({ isEnabled: false }) }));
 
 const { hexToRgbChannels, resolvePrimaryColor } = await import('./brand');
 
-/**
- * Фирменный цвет — данные CMS, запасного цвета в коде нет (10.11).
- *
- * Прежде `null` от CMS давал `FALLBACK_PRIMARY_COLOR = '#d4a437'` —
- * значение бренда, зашитое в код. Теперь «не задан» значит «действует
- * дизайн по умолчанию» (токен `--accent`), и это видно по `source`.
- */
-
 describe('цвет от источника', () => {
   it('строка из CMS берётся как есть', () => {
     expect(resolvePrimaryColor('#112233')).toEqual({ color: '#112233', source: 'cms' });

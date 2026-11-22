@@ -1,14 +1,6 @@
 import { USDT_TRC20_CONTRACT, type DepositRejectReason } from '@broker/money';
 import type { SolidTx } from './trongrid';
 
-/**
- * Сверка необратимой транзакции с ожиданием. Чистые функции — проверяются
- * на фикстурах TronGrid.
- *
- * Учитываются только переводы ОФИЦИАЛЬНОГО контракта USDT: токен-подделка с
- * тем же именем «USDT» (спам-контракты на TRON массовые) — `wrong_token`.
- */
-
 export type DepositVerdict =
   | { kind: 'ok'; amountRaw: bigint; fromAddress: string; toAddress: string; blockTime: Date | null }
   | { kind: 'rejected'; reason: Exclude<DepositRejectReason, 'not_found' | 'below_minimum'>; toAddress?: string; amountRaw?: bigint; fromAddress?: string };
@@ -38,7 +30,6 @@ export function verifyDeposit(tx: SolidTx, exchangeAddress: string): DepositVerd
 
 export type PayoutVerdict = { kind: 'ok'; fromAddress: string | null } | { kind: 'mismatch'; reason: string };
 
-/** Выплата сходится, если успешна, это USDT, получатель и сумма совпадают ТОЧНО. */
 export function verifyPayout(tx: SolidTx, expected: { toAddress: string; amountRaw: bigint }): PayoutVerdict {
   if (!tx.success) return { kind: 'mismatch', reason: 'транзакция неуспешна' };
   const usdt = tx.transfers.filter((t) => t.contract === USDT_TRC20_CONTRACT);

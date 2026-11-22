@@ -17,24 +17,6 @@ import { getPool } from '../db';
 import { getTenantStartBalance } from '../tenant';
 import { hashPassword } from './password';
 
-/**
- * Регистрация = открытие счёта (ADR-022, решение 3): в ОДНОЙ транзакции
- * user + lead(account-opening) + outbox lead.submitted (конверт v1 —
- * для CRM ничего не меняется) + welcome-уведомление + демо-счёт на сумму
- * из конфига тенанта.
- *
- * **Сумму назначает владелец в CMS, и если он её не назначил —
- * регистрация отказывает** (Р-040). Своё число не подставляется: клиент
- * получил бы баланс, за который никто не отвечает, и разошёлся бы с
- * терминалом, читающим тот же конфиг.
- *
- * Отказывает именно регистрация целиком, а не «счёт без денег»: по
- * ADR-022 регистрация И ЕСТЬ открытие счёта. Завести пользователя без
- * демо-счёта значило бы впустить его в кабинет, где ничего не работает,
- * а повторная попытка упёрлась бы в «email занят» — отказ, выглядящий
- * как чужая ошибка.
- */
-
 export interface RegisterInput {
   firstName: string;
   lastName: string;
@@ -46,52 +28,23 @@ export interface RegisterInput {
   locale: PlatformLocale;
 }
 
-/**
- * Причина отказа. Их три, и ни одна не сводится к другой: первая — про
- * клиента, вторая — про незаполненную карточку сайта, третья — про
- * недоступный источник. Склеить их в один исход значит отправить
- * человека чинить не то (Р-025, п. 2).
- */
 export type RegisterRefusal =
-  /** Такой email уже зарегистрирован. */
   | { ok: false; reason: 'emailExists' }
   | { ok: false; reason: 'accountTypeUnavailable' }
-  /** CMS ответила `demoStartBalanceCents: null` — владелец сумму не
-   *  назначал. Чинится одним полем карточки сайта. */
   | { ok: false; reason: 'startBalanceUnset' }
-  /** Конфиг тенанта получить не удалось либо в поле мусор. Чинится
-   *  совсем в другом месте. */
   | { ok: false; reason: 'startBalanceUnavailable'; detail: string };
 
 export type RegisterResult = { ok: true; userId: string } | RegisterRefusal;
 
-/**
- * Откуда пришёл человек (дизайн «ДЕМО-акции» §4.1, решение владельца №8):
- * first-click cookie (`bp_ref` / `bp_promo`, ставят middleware витрины и
- * кабинета) и параметры формы, IP запроса и страна по гео-заголовку прокси.
- * Всё необязательно: без этих данных регистрация идёт как раньше.
- */
 export interface RegisterContext {
   cookies?: { ref?: string | null; promo?: string | null };
   params?: { ref?: string | null; promo?: string | null };
   ip?: string | null;
-  /** Страна по IP (ISO-2) из гео-заголовка прокси; `null` — заголовка нет. */
   ipCountry?: string | null;
   now?: Date;
-  /**
-   * Токен приглашения по переводу с другой платформы группы (ветка
-   * client-transfer). Связь «приглашение → новый клиент» пишется той же
-   * транзакцией; неверный/использованный токен регистрацию не ломает.
-   */
   invite?: string | null;
 }
 
-/**
- * Атрибуция по cookie/параметрам. Срок — из настроек платформы
- * (`platform_promo_settings.attribution_window_days`); настроек нет или они
- * не читаются — атрибуции нет (fail-closed: чужой срок не выдумываем), а
- * регистрация НЕ отказывает — источник клиента не стоит его счёта.
- */
 async function resolveRegistrationAttribution(ctx: RegisterContext): Promise<ResolvedAttribution | null> {
   const any = ctx.cookies?.ref || ctx.cookies?.promo || ctx.params?.ref || ctx.params?.promo;
   if (!any) return null;
@@ -129,42 +82,9 @@ export async function registerUser(input: RegisterInput, ctx: RegisterContext = 
   const userId = randomUUID();
   const leadId = randomUUID();
   const occurredAt = new Date().toISOString();
-  /*
-    Стартовый демо-баланс — из конфига тенанта CMS (единый источник с
-    терминалом). Сеть ДО транзакции и ДО создания пользователя: отказ
-    обязан случиться раньше, чем появится что-то, что придётся
-    убирать. И раньше хеширования пароля: отказ не должен стоить
-    секунды работы.
 
-    **АВТОРИТЕТ ЗДЕСЬ БОЛЬШЕ НЕ НАШ** (решение штаба, 25.10).
-
-    Барьер стоял как защита записи: кабинет собирался записать это
-    число в счёт, а записать сумму, которой никто не назначал, — то
-    же, что открыть счёт от чужого имени. Теперь счёт открывает
-    терминал, он же читает **то же поле** карточки площадки, и
-    настоящий отказ — его: названный, при открытии счёта.
-
-    **Здесь осталась ранняя проверка того же поля, и это не второй
-    писатель.** Источник один, читателей два: кто владеет значением и
-    кто его показывает — разные вещи.
-
-    **Зачем она, если авторитет у соседа.** Без неё человек
-    зарегистрировался бы успешно и упёрся позже — при первом входе в
-    терминал, где про сумму не думал и причины не поймёт. Ошибку
-    показывают там, где она понятна, а держат там, где она
-    авторитетна.
-
-    Следствие, которое стоит помнить при правке: эта проверка может
-    разойтись с терминальной во времени — мы спрашиваем при
-    регистрации, он при открытии счёта. Расхождение безопасно
-    **только в одну сторону**: мы пропустили, он отказал. Обратное —
-    мы отказали, он бы пропустил — стоит человеку регистрации, и
-    потому порог здесь не должен быть строже.
-  */
   const startBalance = await getTenantStartBalance();
   if (startBalance.state !== 'set') {
-    // Отказ без следа непроверяем: наружу уходит ключ объяснения, в лог —
-    // то, по чему дежурный поймёт, куда идти.
     console.error(
       `[register] отказ: стартовый демо-баланс не назначен (${startBalance.state})`,
       { state: startBalance.state, reason: 'reason' in startBalance ? startBalance.reason : null },
@@ -186,7 +106,6 @@ export async function registerUser(input: RegisterInput, ctx: RegisterContext = 
     country: input.country,
     accountType: leadAccountType(input.accountType ?? null),
     locale: legacyLocale(input.locale),
-    // Источник: слаг акции из ссылки (`?promo=`), иначе — прежняя метка.
     source: { promo: attribution?.promo?.value ?? 'cabinet-registration' },
   };
   const envelope = buildLeadSubmittedEnvelope(randomUUID(), occurredAt, leadData);
@@ -217,7 +136,6 @@ export async function registerUser(input: RegisterInput, ctx: RegisterContext = 
         passwordHash,
         `${input.firstName} ${input.lastName}`,
         input.locale,
-        // Страна клиента — из формы (комплаенс: профиль юрисдикции акций).
         iso2(input.country),
         ctx.ip?.trim() || null,
         iso2(ctx.ipCountry),
@@ -231,22 +149,7 @@ export async function registerUser(input: RegisterInput, ctx: RegisterContext = 
       `INSERT INTO outbox (event_id, routing_key, payload, occurred_at) VALUES ($1, $2, $3, $4)`,
       [envelope.event_id, LEAD_SUBMITTED_ROUTING_KEY, JSON.stringify(envelope), occurredAt],
     );
-    /*
-      Денежной строки здесь больше нет (WEB-29, решение владельца).
 
-      > Владелец денежного числа — терминал. Кабинет — проекция.
-
-      Счёт заводит терминал — **лениво**, при первой операции
-      пользователя у себя (`ensure_account_opened` на входе общего
-      пути), и сообщает об этом событием `terminal.account.opened`.
-      Строка появляется у нас из проекции консюмера.
-
-      **Следствие названо, а не скрыто:** между регистрацией и первым
-      входом в терминал строки нет вовсе. Это не ноль на счету и не
-      ошибка — счёт ещё не открыт, и `BalanceModule` говорит именно
-      так. Показать здесь сумму значило бы открыть счёт от чужого
-      имени и назвать баланс, которого никто не заводил.
-    */
     if (portfolio && input.accountType) {
       await client.query(`INSERT INTO client_leverage (user_id, portfolio_key) VALUES ($1, $2)`, [userId, portfolio.key]);
     }
@@ -254,12 +157,6 @@ export async function registerUser(input: RegisterInput, ctx: RegisterContext = 
       `INSERT INTO notifications (id, user_id, type, params) VALUES ($1, $2, $3, $4)`,
       [randomUUID(), userId, 'welcome', JSON.stringify({ accountType: portfolio?.title ?? '' })],
     );
-    /*
-      Атрибуция — той же транзакцией: клиент без своей записи «кто привёл»
-      не появляется. Самореферал (тот же IP / email, что у реферера)
-      отсекается внутри: строка `rejected` для аудита, наград по ней нет.
-    */
-    // ── Перевод с другой платформы группы (ветка client-transfer) ──
     if (ctx.invite) {
       await bindInviteWithinTx(client as unknown as Queryable, { token: ctx.invite, userId });
     }

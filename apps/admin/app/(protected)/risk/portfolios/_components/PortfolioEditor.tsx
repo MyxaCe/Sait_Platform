@@ -11,15 +11,6 @@ import {
 } from '@/lib/leverage/actions';
 import { ActionResult, ArmedSubmit, Field, ReasonField } from '@/components/control/forms';
 
-/**
- * Редактор портфеля (§3.9, admin only). Две формы-с-основанием, обе массовые —
- * действуют на всех клиентов портфеля сразу, поэтому обе в два шага (§6.7) и в
- * «опасной» панели:
- *  - базовое плечо портфеля (WEB-47);
- *  - планка класса — задать/снять (WEB-45; пустое плечо = снять).
- * Текст подтверждения говорит, что изменится в терминале. Server actions прежние.
- */
-
 const MESSAGES: Record<string, string> = {
   forbidden: 'Недостаточно прав: изменение плеча — действие администратора.',
   missingReason: 'Нужно указать основание.',
@@ -98,7 +89,6 @@ function BpsInput({ id, name, value, onChange }: { id: string; name: string; val
 const pctOf = (v: string) =>
   v === '' ? '—' : `${(Number(v) / 100).toLocaleString('ru-RU', { maximumFractionDigits: 2 })} %`;
 
-/** Тариф портфеля: наценка + комиссия (уходят в терминал) и условия для /accounts. */
 function FeesForm({
   portfolioKey,
   markupBps,

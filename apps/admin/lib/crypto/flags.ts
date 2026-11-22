@@ -10,19 +10,6 @@ import {
 } from '@broker/money';
 import { moneyPool, terminalMoney } from './runtime';
 
-/**
- * Денежные флаги клиента (дизайн §3): KYC-гейты ввода/вывода (наследовать/
- * да/нет), «Заморозка счёта», «Запрет вывода». Форма-с-основанием; каждое
- * изменённое поле — своя запись журнала, все одной транзакцией.
- *
- * **Заморозка — сначала терминал** (`trading-freeze` реального счёта), потом
- * флаг в базе, и всё внутри одной транзакции с запертой строкой. Терминал
- * отказал или не ответил → флаг НЕ ставится (fail-closed), оператор видит
- * понятную ошибку. Если COMMIT упал после успешного вызова — повтор той же
- * формы снова вызовет `trading-freeze` с тем же значением (операция по смыслу
- * идемпотентна: «заморожен = true»).
- */
-
 export type FlagsResult =
   | { ok: true; changed: string[] }
   | { ok: false; reason: 'missingReason' | 'noClient' | 'noChange' | 'terminalUnavailable' }
@@ -62,8 +49,6 @@ export async function setClientMoneyFlags(
       [input.userId],
     );
     const cur = await tx.query(
-      // Запрет вывода — ДЕЙСТВУЮЩИЙ (истёкший срок не считается запретом):
-      // форма показывает и сравнивает то же, что видит политика денег.
       `SELECT deposit_kyc, withdraw_kyc, frozen, ${activeWithdrawBanSql('f')} AS withdraw_banned
          FROM client_money_flags f WHERE user_id = $1 FOR UPDATE`,
       [input.userId],

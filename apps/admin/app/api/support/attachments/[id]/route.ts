@@ -4,12 +4,6 @@ import { findAttachmentForOperator, recordAttachmentView } from '@broker/support
 import { getPool } from '@/lib/db';
 import { supportActor, supportPool } from '@/lib/support/runtime';
 
-/**
- * Вложение обращения для оператора: проверка прав (finance_operator — только
- * свои тикеты), запись в журнал ДО выдачи ссылки, затем редирект на
- * короткоживущую подписанную ссылку хранилища (5–15 мин). Байты через
- * приложение не проксируются (как KYC, ADM-12).
- */
 export const dynamic = 'force-dynamic';
 
 export async function GET(_req: Request, { params }: { params: { id: string } }) {

@@ -13,13 +13,6 @@ import { getSessionUser } from '@/lib/auth/session';
 import { getPool } from '@/lib/db';
 import { loadWidgetState, sameOrigin, supportPool } from '@/lib/support/state';
 
-/**
- * Чат поддержки кабинета. GET — состояние (опрос раз в 4 с, пока панель
- * открыта); POST — сообщение клиента (multipart: body + необязательный файл).
- * Только для вошедших: личность — из сессии, не из запроса. Route handler, а
- * не server action: у server actions лимит тела 1 МБ, а вложение — до лимита
- * из настроек.
- */
 export const dynamic = 'force-dynamic';
 
 export async function GET(req: Request) {
@@ -53,7 +46,6 @@ export async function POST(req: Request) {
       key = buildPendingAttachmentKey(tenant, user.id, randomUUID());
       await putObject({ key, body: bytes, contentType: file.type });
     } catch {
-      // Хранилище не настроено — файл не принимаем (fail-closed); текст — да.
       return NextResponse.json({ error: 'attachmentsUnavailable' }, { status: 503 });
     }
     attachments.push({

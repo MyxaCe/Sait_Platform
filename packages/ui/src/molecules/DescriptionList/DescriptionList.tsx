@@ -1,21 +1,12 @@
 import type { ReactNode } from 'react';
 import { cn } from '../../lib/cn';
 
-/**
- * Пары «поле — значение» (профиль, правила, реквизиты). Подпись сверху мелко,
- * значение под ней. `columns` — сетка; на узком экране всегда одна колонка.
- * Пустое значение рисуйте «—», не пустой строкой.
- */
 export interface DescriptionItem {
   term: ReactNode;
   value: ReactNode;
-  /** Короткое пояснение под значением (источник, «индивидуально»). */
   hint?: ReactNode;
-  /** Тон значения: `negative` — ограничение/запрет, `warning` — внимание. */
   tone?: 'default' | 'negative' | 'warning' | 'positive';
-  /** Числовое значение (даты, суммы) — табличные цифры. */
   numeric?: boolean;
-  /** Растянуть на всю строку сетки. */
   wide?: boolean;
 }
 

@@ -21,7 +21,6 @@ export function Hero({ background = 'off', symbols = [] }: HeroProps) {
 
   return (
     <section className="relative flex min-h-[calc(100svh-4rem)] items-center overflow-hidden">
-      {/* Фоновое свечение — позже заменится видеофоном с оверлеем */}
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0"
@@ -68,13 +67,6 @@ export function Hero({ background = 'off', symbols = [] }: HeroProps) {
             </CabinetRegisterLink>
           </div>
 
-          {/*
-            Здесь стояли счётчики «1 240 000 трейдеров · 87 млрд $ в месяц ·
-            14 мс». Ни одна цифра не подтверждена: истории оборота и клиентской
-            базы у площадки нет. Перед комплаенсом и инвесторами такая строка —
-            не маркетинг, а заявление, которое нечем доказать. Вместо цифр —
-            факты о продукте, каждый проверяется в нём самом.
-          */}
           <dl className="mt-12 grid grid-cols-2 gap-x-6 gap-y-8 border-t border-border pt-8 sm:grid-cols-3">
             {facts.map((fact, i) => (
               <div

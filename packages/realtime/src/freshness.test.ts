@@ -50,7 +50,7 @@ describe('quoteState · три разных сообщения, а не два',
 
 describe('quoteState · порог возраста приходит снаружи', () => {
   it('без порога возраст не судим — источник о свежести ничего не сказал', () => {
-    const old = quote({ ts: NOW - 86_400_000 }); // сутки
+    const old = quote({ ts: NOW - 86_400_000 });
     expect(quoteState(old, { feedStatus: 'connected', now: NOW })).toBe('live');
   });
 
@@ -88,7 +88,6 @@ describe('quoteState · приоритет вердиктов', () => {
   });
 
   it('пустое множество протухших не означает «всё свежо»', () => {
-    // Источник ничего не сказал — судим только по порогу, а он здесь есть
     const state = quoteState(quote({ ts: NOW - 120_000 }), {
       feedStatus: 'connected',
       staleSymbols: new Set(),

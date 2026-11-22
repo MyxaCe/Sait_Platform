@@ -7,28 +7,6 @@ import { externalRef } from './terminal-contract';
 import type { MoneyMoveOutcome, TerminalMoneyClient } from './terminal-money';
 import { isValidTronAddress, normalizeTxHash } from './tron';
 
-/**
- * Выводы USDT TRC20 (дизайн §2). Ключей на сервере нет — USDT отправляет
- * владелец вручную; система резервирует деньги и сверяет отправку.
- *
- *   requested ─► approved ─► sent ─► settled
- *      │            │          └─► needs_review ─► settled (вручную) | cancelled (возврат)
- *      └─► rejected └─► cancelled (возврат)
- *
- * **Списание — на подаче** (`withdraw`, external_ref `wd:<id>`): деньги
- * зарезервированы сразу, проторговать их или подать вторую заявку на них же
- * нельзя (свободную маржу проверяет терминал). Порядок:
- *  1. транзакция: заявка `requested` (debit_state `pending`) + журнал → COMMIT
- *     — строка существует ДО денежного вызова, сиротского списания не бывает;
- *  2. терминал `withdraw(wd:<id>)`;
- *  3. транзакция: debited | refused (→ `rejected`, деньги не двигались).
- * Терминал не ответил → `pending` остаётся, повтор с тем же ref идемпотентен
- * (наблюдатель и оператор разрешают такие заявки `ensureWithdrawalDebited`).
- *
- * Возврат (`deposit`, `wd-refund:<id>`) — только если списание БЫЛО
- * (`debited`); иначе возврат создал бы деньги из воздуха.
- */
-
 export type WithdrawalStatus =
   | 'requested'
   | 'approved'
@@ -44,9 +22,7 @@ export type RequestResult =
   | { ok: true; withdrawalId: string; debit: 'debited' | 'pending' }
   | { ok: false; reason: 'invalidAddress' | 'belowMinimum' | 'invalidAmount' }
   | { ok: false; reason: 'policy'; policyReasons: MoneyPolicyReason[] }
-  /** Вывод без верификации: сумма больше остатка потолка (`kyc-allowance.ts`). */
   | { ok: false; reason: 'kycLimitExceeded'; limitMinor: number; usedMinor: number; remainingMinor: number }
-  /** Потолок без верификации посчитать не удалось (терминал не дал баланс) — fail-closed. */
   | { ok: false; reason: 'kycLimitUnavailable' }
   | { ok: false; reason: 'terminalRefused'; code: string; withdrawalId: string };
 
@@ -60,7 +36,6 @@ async function bindSeq(tx: Queryable, id: string, seq: number): Promise<void> {
   await tx.query(`UPDATE crypto_withdrawals SET last_journal_seq = $2 WHERE id = $1`, [id, seq]);
 }
 
-/** Клиент подаёт заявку на вывод (кабинет). */
 export async function requestWithdrawal(
   pool: PoolLike,
   terminal: TerminalMoneyClient,
@@ -72,7 +47,6 @@ export async function requestWithdrawal(
     return { ok: false, reason: 'invalidAmount' };
   }
 
-  // 1. Заявка + журнал (политика проверяется в той же транзакции).
   const created = await inTransaction<RequestResult | { id: string }>(pool, async (tx) => {
     const policy = computeMoneyPolicy(await loadMoneyPolicyInputs(tx, input.userId));
     if (!policy.withdrawAllowed) {
@@ -86,9 +60,6 @@ export async function requestWithdrawal(
       return rollback<RequestResult | { id: string }>({ ok: false, reason: 'belowMinimum' });
     }
     if (policy.withdrawKycLimited) {
-      // Заявки одного клиента под потолком — по очереди: вторая параллельная
-      // заявка ждёт COMMIT первой и видит её в «использовано». Ключ блокировки
-      // свой (не журнальный) и берётся ДО журнала — порядок всегда один.
       await tx.query(`SELECT pg_advisory_xact_lock(hashtextextended($1, 0))`, [
         `wd-kyc-allowance:${input.userId}`,
       ]);
@@ -135,7 +106,6 @@ export async function requestWithdrawal(
   });
   if ('ok' in created) return created;
 
-  // 2–3. Списание и его исход.
   const debit = await ensureWithdrawalDebited(pool, terminal, created.id);
   if (debit.state === 'refused') {
     return { ok: false, reason: 'terminalRefused', code: debit.code, withdrawalId: created.id };
@@ -149,11 +119,6 @@ export type DebitOutcome =
   | { state: 'pending' }
   | { state: 'not-found' };
 
-/**
- * Довести списание заявки до известного исхода: `pending` → вызов терминала
- * `withdraw(wd:<id>)` (повтор идемпотентен) → `debited` | `refused`
- * (`rejected`). Уже известный исход возвращается без вызова.
- */
 export async function ensureWithdrawalDebited(
   pool: PoolLike,
   terminal: TerminalMoneyClient,
@@ -253,7 +218,6 @@ export type OperatorResult =
     }
   | { ok: false; reason: 'terminalRefused'; code: string };
 
-/** Одобрить: только `requested` с подтверждённым списанием. */
 export async function approveWithdrawal(
   pool: PoolLike,
   terminal: TerminalMoneyClient,
@@ -262,7 +226,6 @@ export async function approveWithdrawal(
   const reason = input.reason.trim();
   if (!reason) return { ok: false, reason: 'missingReason' };
 
-  // Списание с неизвестным исходом сперва доводим до известного.
   const debit = await ensureWithdrawalDebited(pool, terminal, input.withdrawalId);
   if (debit.state === 'not-found') return { ok: false, reason: 'notFound' };
   if (debit.state === 'pending') return { ok: false, reason: 'debitPending' };
@@ -298,13 +261,6 @@ export async function approveWithdrawal(
   });
 }
 
-/**
- * Отклонить (`requested` → `rejected`) или отменить (`approved` /
- * `needs_review` → `cancelled`) с ВОЗВРАТОМ: `deposit(wd-refund:<id>)`.
- * Возврат только если списание было; если списание `pending` — сперва
- * узнаём исход (повтор `withdraw` идемпотентен): отказ терминала → отклонено
- * без возврата. Отказ/недоступность возврата → ничего не меняем (fail-closed).
- */
 export async function rejectWithdrawal(
   pool: PoolLike,
   terminal: TerminalMoneyClient,
@@ -315,10 +271,8 @@ export async function rejectWithdrawal(
 
   const debit = await ensureWithdrawalDebited(pool, terminal, input.withdrawalId);
   if (debit.state === 'not-found') return { ok: false, reason: 'notFound' };
-  // Терминал сам отказал в списании — заявка уже отклонена, денег не двигали.
   if (debit.state === 'refused') return { ok: true, status: 'rejected' };
   if (debit.state === 'pending') {
-    // Заявка не `requested` (и потому не довелась) либо терминал молчит.
     const st = await pool.query(`SELECT status, debit_state FROM crypto_withdrawals WHERE id = $1`, [
       input.withdrawalId,
     ]);
@@ -396,7 +350,6 @@ export async function rejectWithdrawal(
   });
 }
 
-/** Внести хэш отправки: `approved` → `sent`. Хэш один на всю платформу. */
 export async function markWithdrawalSent(
   pool: PoolLike,
   input: OperatorInput & { txHash: string },
@@ -438,7 +391,6 @@ export async function markWithdrawalSent(
   }
 }
 
-/** Наблюдатель: отправка сошлась (получатель, сумма, успех) → `settled`. */
 export async function settleWithdrawal(
   pool: PoolLike,
   input: { withdrawalId: string; fromAddress: string | null },
@@ -474,7 +426,6 @@ export async function settleWithdrawal(
   });
 }
 
-/** Наблюдатель: отправка НЕ сошлась → `needs_review`. Без авто-возврата. */
 export async function flagWithdrawalForReview(
   pool: PoolLike,
   input: { withdrawalId: string; reason: string },
@@ -504,7 +455,6 @@ export async function flagWithdrawalForReview(
   });
 }
 
-/** Оператор: «на проверке» → «исполнено» вручную (человек сверил сам), с основанием. */
 export async function settleWithdrawalManually(
   pool: PoolLike,
   input: OperatorInput,
@@ -536,7 +486,6 @@ export async function settleWithdrawalManually(
   });
 }
 
-/** Заметка наблюдателя о выплате (ждём подтверждения) — не переход, без журнала. */
 export async function noteWithdrawalCheck(db: Queryable, withdrawalId: string, note: string): Promise<void> {
   await db.query(
     `UPDATE crypto_withdrawals SET check_note = $2, last_checked_at = now() WHERE id = $1`,

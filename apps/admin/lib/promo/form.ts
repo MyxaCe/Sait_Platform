@@ -1,22 +1,11 @@
 import { parseUsdtAmountToCents } from '@broker/money';
 import type { PromotionInput } from '@broker/promo';
 
-/**
- * Форма акции ⇄ правила. Оператор вводит привычное (проценты, USDT, дни),
- * здесь это переводится в форму правил (б.п., минорные единицы) — и обратно
- * для формы изменения. Валидацию правил делает пакет (`parseRules`), здесь —
- * только разбор чисел: нечисло → поле остаётся «плохим», и схема его отвергнет.
- *
- * Даты — UTC (поле `datetime-local` без пояса трактуется как UTC; подпись
- * поля говорит об этом оператору).
- */
-
 type Fd = { get(name: string): FormDataEntryValue | null };
 
 const str = (fd: Fd, k: string) => String(fd.get(k) ?? '').trim();
 const bool = (fd: Fd, k: string) => fd.get(k) === 'on';
 
-/** USDT → центы; '' → 0; мусор → NaN (схема отвергнет). */
 export function usdtField(fd: Fd, k: string): number {
   const v = str(fd, k).replace(/\s/g, '');
   if (v === '' || /^0+(?:[.,]0{0,2})?$/.test(v)) return 0;
@@ -24,7 +13,6 @@ export function usdtField(fd: Fd, k: string): number {
   return p.ok ? p.cents : Number.NaN;
 }
 
-/** «30» / «0,15» (%) → б.п. */
 export function percentField(fd: Fd, k: string): number {
   const v = str(fd, k).replace(',', '.');
   if (v === '') return Number.NaN;
@@ -53,7 +41,6 @@ export function countriesField(fd: Fd, k: string): string[] {
     .filter(Boolean);
 }
 
-/** `datetime-local` (UTC) → ISO; '' → null; мусор → 'invalid' (сломает период). */
 export function dateField(fd: Fd, k: string): string | null {
   const v = str(fd, k);
   if (!v) return null;
@@ -61,7 +48,6 @@ export function dateField(fd: Fd, k: string): string | null {
   return Number.isNaN(t) ? 'invalid' : new Date(t).toISOString();
 }
 
-/** Призы «1: 500» по строкам → [{place, amountMinor}]. */
 export function prizesField(fd: Fd, k: string): { place: number; amountMinor: number }[] {
   return str(fd, k)
     .split(/\n+/)
@@ -148,8 +134,6 @@ export function promotionFromForm(fd: Fd, type: string): PromotionInput {
   };
 }
 
-/* ── Обратно: правила → значения полей формы изменения ─────────────────── */
-
 const usdt = (minor: unknown) => (typeof minor === 'number' ? (minor / 100).toFixed(2) : '');
 const pct = (bps: unknown) => (typeof bps === 'number' ? String(bps / 100) : '');
 const s = (v: unknown) => (v === undefined || v === null ? '' : String(v));
@@ -207,7 +191,6 @@ export function formValuesFromRules(type: string, rules: unknown): FormValues {
   }
 }
 
-/** ISO → значение `datetime-local` (UTC, минуты). */
 export function toLocalInput(iso: string | null): string {
   return iso ? iso.slice(0, 16) : '';
 }

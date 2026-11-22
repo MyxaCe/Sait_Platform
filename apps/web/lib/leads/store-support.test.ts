@@ -3,12 +3,6 @@ import type { Pool } from 'pg';
 import { createTestDb, type TestDb } from '@broker/support/testing';
 import { PgLeadStore } from './store';
 
-/**
- * Форма контактов → тикет поддержки (дефект аудита: обращения уходили
- * событием `lead.submitted` в шину без подписчиков, и их не видел никто).
- * Лид, событие и тикет пишутся ОДНОЙ транзакцией; форма, выключенная в
- * настройках поддержки, не принимает обращение вовсе (ничего не пишется).
- */
 let db: TestDb;
 beforeEach(async () => {
   db = await createTestDb();
@@ -40,7 +34,6 @@ describe('форма контактов → тикет', () => {
       source_lead_id: r.leadId,
     });
     expect((await db.query(`SELECT count(*)::int AS n FROM outbox`)).rows[0]!.n).toBe(1);
-    // Подтверждение гостю — в очереди писем.
     expect((await db.query(`SELECT purpose FROM outbound_mail`)).rows).toEqual([{ purpose: 'support_ack' }]);
   });
 

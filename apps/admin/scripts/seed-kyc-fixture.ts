@@ -2,25 +2,6 @@ import { randomUUID } from 'node:crypto';
 import { readEnv } from '@broker/utils';
 import { getPool } from '../lib/db';
 
-/**
- * ТЕСТОВАЯ фикстура операторского потока KYC (ADM-08). НЕ продовая миграция и
- * НЕ часть схемы: один клиент в состоянии `pending` + пара поданных документов,
- * чтобы прогнать операторский поток «очередь → карточка → решение» на живой
- * базе руками.
- *
- * Почему отдельным скриптом, а не в миграции (граница зоны): клиентскую
- * ЗАГРУЗКУ документов пишет другая зона (кабинет); здесь мы её имитируем
- * ссылками (`storage_key`), чтобы операторская сторона имела что показать и по
- * чему решать. В прод это лить нельзя — это демо-данные.
- *
- * Запуск (из `apps/admin`, DATABASE_URL на схему с применёнными миграциями
- * вплоть до 1793622240000_kyc_documents):
- *
- *   DATABASE_URL=postgres://… pnpm --filter @broker/admin seed:kyc-fixture
- *
- * Идемпотентно по фиксированному user_id: повторный запуск не плодит клиентов.
- */
-
 const FIXTURE_USER_ID = '00000000-0000-4000-8000-0000000a0001';
 
 async function main(): Promise<number> {
@@ -29,7 +10,6 @@ async function main(): Promise<number> {
     return 2;
   }
   if (process.env.NODE_ENV === 'production') {
-    // Fail-closed: демо-данные в прод не льём даже случайно.
     console.error('Фикстура отказана: NODE_ENV=production — это тестовые данные, не для прода.');
     return 2;
   }
@@ -39,7 +19,6 @@ async function main(): Promise<number> {
   try {
     await client.query('BEGIN');
 
-    // Клиент (users). ON CONFLICT DO NOTHING — повторный запуск не падает.
     await client.query(
       `INSERT INTO users (id, email, password_hash, full_name, locale)
        VALUES ($1, $2, $3, $4, 'ru')
@@ -47,7 +26,6 @@ async function main(): Promise<number> {
       [FIXTURE_USER_ID, 'kyc.fixture@example.test', 'x', 'Фикстура Клиентов'],
     );
 
-    // Состояние проверки — pending (ждёт решения оператора).
     await client.query(
       `INSERT INTO client_verification (user_id, state)
        VALUES ($1, 'pending')
@@ -55,8 +33,6 @@ async function main(): Promise<number> {
       [FIXTURE_USER_ID],
     );
 
-    // Пара документов (ссылки на хранилище). Чистим прежние, чтобы повтор не
-    // дублировал.
     await client.query(`DELETE FROM kyc_documents WHERE user_id = $1`, [FIXTURE_USER_ID]);
     const docs: Array<[string, string, string]> = [
       ['identity', `kyc/${FIXTURE_USER_ID}/passport.jpg`, 'image/jpeg'],

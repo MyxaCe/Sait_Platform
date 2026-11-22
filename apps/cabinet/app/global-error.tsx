@@ -3,7 +3,6 @@
 import * as Sentry from '@sentry/nextjs';
 import { useEffect } from 'react';
 
-/** Верхняя граница ошибок кабинета: репортит render-ошибки в GlitchTip. */
 export default function GlobalError({ error }: { error: Error & { digest?: string } }) {
   useEffect(() => {
     Sentry.captureException(error);

@@ -5,24 +5,6 @@ import { readTenantSlug } from '@broker/tenant';
 import { CMS_RESOURCES, cmsTags } from '@/lib/cms';
 import { isDuplicateEvent, verifySignature } from '@/lib/revalidate';
 
-/**
- * Прогрев после деплоя: пересобрать ВСЕ теги CMS и кеш маршрутов.
- *
- * Защита — тот же секрет вебхука CMS (`CMS_WEBHOOK_SECRET`) и та же
- * HMAC-подпись `X-Signature: sha256=<hex>`, что у `POST /api/revalidate`.
- * Тело: `{"event_id": "<uuid>", "issued_at": "<ISO>"}`; подпись старше
- * 5 минут не принимается (повтор перехваченного запроса бесполезен).
- *
- * **CMS проверяется ДО инвалидации.** Сброс тегов при лежащей CMS не дал
- * бы новых данных, а data-cache Next считает сброшенную запись
- * отсутствующей — страницы ушли бы на последнюю сохранённую версию
- * (`lib/cms-last-good.ts`) без всякой пользы. Поэтому CMS не отвечает →
- * 503 и ничего не сбрасываем.
- *
- * Запускается скриптом `scripts/revalidate-all.mjs` изнутри контейнера
- * (см. `deploy/vps/README.md`, «Кэш витрины и прогрев»).
- */
-
 export const dynamic = 'force-dynamic';
 
 const MAX_AGE_MS = 5 * 60_000;
@@ -88,7 +70,6 @@ export async function POST(request: Request) {
 
   const tags = CMS_RESOURCES.flatMap((resource) => cmsTags(resource, slug));
   for (const tag of tags) revalidateTag(tag);
-  // Кеш маршрутов целиком: страницы пересоберутся при следующем запросе
   revalidatePath('/', 'layout');
 
   console.info(`[revalidate-all] event=${parsed.event_id} tags=${tags.length} + все маршруты`);

@@ -8,16 +8,6 @@ import { ATTENTION_POLL_SECONDS, attentionBadgeText } from '@/lib/support/attent
 import { NavIcon } from './NavIcon';
 import { NAV_GROUPS, type NavItem } from './nav-registry';
 
-/**
- * Левый навигационный рельс (концепция §8.1): марка продукта сверху, пункты
- * сгруппированы по задачам оператора (Обзор / Клиенты и комплаенс / Деньги и
- * риск / Контроль). Активный пункт — заливка + акцентная полоска слева
- * (`aria-current="page"`), не только цвет. `danger`-пункт (break-glass)
- * визуально отделён красным.
- *
- * Пункты уже отфильтрованы по роли на сервере (fail-closed, Р-394): клиентский
- * рельс не знает о скрытых разделах вовсе; пустая для роли группа не рисуется.
- */
 function useSupportAttention(enabled: boolean, initial: number | null, pathname: string): number | null {
   const [count, setCount] = useState(initial);
   const mounted = useRef(false);
@@ -69,7 +59,6 @@ export function NavRail({ items, supportAttention = null }: { items: NavItem[]; 
 
   function isActive(item: NavItem): boolean {
     if (item.exact) return pathname === item.href;
-    // /risk/leverage и /risk/portfolios — один раздел «Риск».
     const base = item.href.startsWith('/risk/') ? '/risk' : item.href;
     return pathname === base || pathname.startsWith(`${base}/`);
   }

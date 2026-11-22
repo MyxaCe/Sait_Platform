@@ -2,19 +2,6 @@ import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { ConnectionDot } from './ConnectionDot';
 
-/**
- * CAB-04. Подпись состояния не должна утверждать больше, чем состояние знает.
- *
- * Точка `connected` поднимается по факту открытого сокета браузер→сервис.
- * Про данные это соединение не знает ничего: молчащий, но открытый сокет
- * неотличим от живого фида (родня B-018, где мок называл себя живым сам).
- *
- * Тест-растяжка, а не проверка строки: он существует, чтобы попытка вернуть
- * подпись про данные к состоянию, которое данных не видит, покраснела здесь,
- * а не обнаружилась потом на витрине.
- */
-
-/** Слова, которыми подпись обещает ДАННЫЕ, а не соединение. */
 const DATA_CLAIMS = [/реальн/i, /real[-\s]?time/i, /\bлайв\b/i, /\blive\b/i];
 
 function claimsData(text: string): boolean {
@@ -31,8 +18,6 @@ describe('ConnectionDot · подпись по умолчанию', () => {
   });
 
   it('ни одна подпись оси соединения не обещает настоящих данных', () => {
-    // simulated исключён сознательно: он про подлинность и обязан говорить
-    // о данных — но говорит, что их НЕТ. Проверяем это отдельно ниже.
     for (const status of ['connecting', 'connected', 'reconnecting', 'offline'] as const) {
       const { unmount } = render(<ConnectionDot status={status} />);
       const label = screen.getByRole('status').getAttribute('aria-label') ?? '';

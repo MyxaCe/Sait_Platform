@@ -1,20 +1,8 @@
 import { readEnv } from '@broker/utils';
 
-/**
- * Конфигурация почтового канала из окружения ячейки (одна ячейка = свой домен
- * и свой ящик). Секреты (пароли ящика) — ТОЛЬКО здесь, не в базе и не в UI.
- *
- * Fail-closed по частям: нет SMTP-переменных → исходящие выключены (письма
- * копятся в очереди и уходят, когда ящик настроят); нет IMAP → приём выключен.
- * Остальное (восстановление обращений, автозакрытие) работает всегда. Список
- * недостающих имён (без значений) уходит в `support_mail_status` — админка
- * пишет «почта не настроена: нет …».
- */
-
 export interface SmtpConfig {
   host: string;
   port: number;
-  /** 465 — TLS сразу; иначе — обязательный STARTTLS (без шифрования не шлём). */
   secure: boolean;
   user: string;
   password: string;
@@ -35,14 +23,12 @@ export interface ImapConfig {
 }
 
 export interface MailConfig {
-  /** Адрес ящика поддержки: From, свой адрес (петли), домен Message-ID. */
   address: string | null;
   smtp: SmtpConfig | null;
   imap: ImapConfig | null;
   missing: string[];
   pollIntervalMs: number;
   sendIntervalMs: number;
-  /** Лимит хостинга на отправку (писем в час). */
   sendPerHour: number;
 }
 

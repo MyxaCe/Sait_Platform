@@ -45,13 +45,6 @@ function withLocaleCookie(request: NextRequest, response: NextResponse, locale: 
   return response;
 }
 
-/**
- * Гейт по НАЛИЧИЮ сессионной куки (в middleware нет БД — edge);
- * настоящая валидация сессии — в layout защищённой зоны. Языки — из карточки
- * сайта CMS: язык по умолчанию без префикса, невключённый язык — 404 до гейта
- * (lib/auth/public-paths.ts). Выбор языка — в cookie NEXT_LOCALE на общем
- * с витриной домене.
- */
 export default async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const site = await siteLanguagesForMiddleware();
@@ -65,7 +58,6 @@ export default async function middleware(request: NextRequest) {
   const hasSessionCookie = request.cookies.has(SESSION_COOKIE);
   const isPublic = isPublicAuthPath(pathname);
 
-  // Ссылки из писем (поддержка, 10.11): и гостю, и вошедшему.
   if (isMailLinkPath(pathname)) return intl(request);
 
   if (!hasSessionCookie && !isPublic) {
@@ -84,7 +76,6 @@ export default async function middleware(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // Регистрация по ссылке акции / реф-ссылке: first-click cookie (атрибуция).
   if (isPublic) {
     return applyAttributionCookies(request, intl(request));
   }

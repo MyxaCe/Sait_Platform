@@ -6,24 +6,6 @@ import {
   type TenantAccess,
 } from './tenant';
 
-/**
- * Граница доступа кабинета к инструментам — решения штаба Р-025, Р-029 и
- * Р-040.
- *
- * **Копий больше нет.** Решение переехало в `@broker/tenant` (PKG-04), и
- * этот файл из «парной копии» стал проверкой того, что кабинет границу
- * ВЫЗЫВАЕТ. Таблица «вход → состояние» осталась дословно той же, что у
- * витрины, — теперь она доказывает не соответствие двух реализаций, а
- * то, что обе стороны спрашивают одну.
- *
- * Отдельно проверяется второе поле конфига — стартовый демо-баланс. Его
- * политика ПЕРЕВЁРНУТА решением Р-040: умолчание отменено, `null`
- * означает отказ. Прежнее обоснование («демо-деньги — параметр удобства,
- * умолчание ничего не разрешает») записано в `packages/tenant/src/balance.ts`
- * как отменённое, а не вычеркнуто: отличить отменённое от забытого можно
- * только по записанному намерению.
- */
-
 const ALL_STATES: TenantAccess[] = [
   { state: 'allowed', symbols: new Set(['BTCUSD']) },
   { state: 'empty' },
@@ -34,7 +16,6 @@ const ALL_STATES: TenantAccess[] = [
   { state: 'unavailable', reason: 'expired' },
 ];
 
-/** Сумма, которую подставляла legacy. Ни одно состояние не вправе её дать. */
 const LEGACY_DEFAULT = 1_000_000;
 
 beforeEach(() => {
@@ -81,9 +62,6 @@ describe('список пуст', () => {
 
     const { access } = await getTenantConfig();
 
-    // Прежде это работало «правильно» случайно: `new Set([])` ничего не
-    // пропускал как побочное свойство пустого множества. Теперь это
-    // решение, и мутация «вернуть fail-open на пустом списке» его красит.
     for (const symbol of ['BTCUSD', 'ETHUSD', 'XAUUSD', 'EURUSD', 'AAPL']) {
       expect(isSymbolAllowed(access, symbol)).toBe(false);
     }
@@ -169,16 +147,12 @@ describe('стартовый демо-баланс: отказ вместо ум
       Promise.resolve(Response.json({ demoStartBalanceCents: null, instruments: [] })),
     );
 
-    // Открыть демо-счёт на сумму, которую никто не назначал, хуже, чем не
-    // открыть: за неё никто не отвечает, а терминал читает тот же конфиг.
     expect(await getTenantStartBalance()).toEqual({ state: 'unset' });
   });
 
   it('CMS недоступна → `unavailable`, и это отличимо от «не задан»', async () => {
     stubFetch(() => Promise.reject(new Error('ECONNREFUSED')));
 
-    // Два отказа запрещают одинаково, а чинятся в разных местах: первый —
-    // полем карточки сайта, второй — соседом или сетью.
     expect(await getTenantStartBalance()).toEqual({ state: 'unavailable', reason: 'network' });
   });
 
@@ -187,8 +161,6 @@ describe('стартовый демо-баланс: отказ вместо ум
       Promise.resolve(Response.json({ demoStartBalanceCents: 'NaN', instruments: [] })),
     );
 
-    // «Успешный разбор не означает пригодного значения»: `Number('NaN')`
-    // разбирается, а дальше превращается в ноль. Ноль здесь — счёт без денег.
     expect(await getTenantStartBalance()).toEqual({ state: 'unavailable', reason: 'malformed' });
   });
 

@@ -5,13 +5,6 @@ import type { PoolLike } from '@broker/money';
 import { loadSupportSettings, recoverContactLeads } from '@broker/support';
 import { readEnv } from '@broker/utils';
 
-/**
- * Разовое восстановление потерянных обращений формы контактов (leads → тикеты).
- * Идемпотентно — можно запускать сколько угодно раз; воркер делает то же
- * самое на старте и раз в 10 минут.
- *
- *   DATABASE_URL=… pnpm --filter @broker/support-mail recover-leads
- */
 async function main(): Promise<void> {
   const url = readEnv(process.env.DATABASE_URL);
   if (!url) throw new Error('DATABASE_URL обязателен');

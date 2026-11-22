@@ -2,19 +2,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { TickerGate } from './TickerGate';
 
-/**
- * WEB-38 · шлюз ДОВОДИТ причину до ленты.
- *
- * **Зачем отдельно от проверок ленты.** Те передают причину пропом
- * сами — и остаются зелёными, даже если шлюз её не передаёт. Мутация
- * «убрать `unavailableReasons` из вызова» не покрасила ни одной из
- * пятидесяти четырёх: правило верное, а того, что его зовут, ничто не
- * доказывало. Это место, где у меня дыра появляется чаще всего,
- * поэтому закрыто проверкой самого шлюза.
- */
-
 const answers = {
-  // `allowed`, а не `available`: у границы доступа свой перечень.
   '/api/tenant/access': { state: 'allowed', symbols: ['BTCUSD'] },
   '/api/quotes/catalog': { state: 'available', symbols: ['BTCUSD'] },
   '/api/quotes/state': {
@@ -74,7 +62,6 @@ describe('WEB-38 · причина доходит от ручки до разм�
   it('источник назвал причину → она видна человеку', async () => {
     render(<TickerGate {...props} />);
 
-    // Весь путь: ответ ручки → карта причин → лента → подпись.
     await waitFor(() => expect(screen.getAllByText('shortLimited').length).toBeGreaterThan(0));
   });
 

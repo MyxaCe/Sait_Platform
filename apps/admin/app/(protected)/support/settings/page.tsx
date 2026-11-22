@@ -17,11 +17,6 @@ import { MailStatusCallout } from '../_components/MailStatus';
 import { SupportSettingsForm } from '../_components/SettingsForms';
 import { SupportNav } from '../_components/SupportNav';
 
-/**
- * Настройки поддержки (только admin): каналы, часы, SLA, автоответы, лимиты,
- * тексты RU/EN — ничего не хардкодим. Изменение — с основанием, в журнал
- * «до/после». Секреты ящика здесь не живут (env ячейки).
- */
 export const dynamic = 'force-dynamic';
 
 const DAY_LABEL: Record<string, string> = { mon: 'Пн', tue: 'Вт', wed: 'Ср', thu: 'Чт', fri: 'Пт', sat: 'Сб', sun: 'Вс' };

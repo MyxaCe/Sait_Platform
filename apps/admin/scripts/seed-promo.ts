@@ -17,26 +17,12 @@ import {
 } from '@broker/promo';
 import { getPool } from '../lib/db';
 
-/**
- * ДЕМО-НАБОР зоны «Акции и партнёры» (dev-only, НЕ миграция). Запускается
- * ПОСЛЕ `seed:demo` на ту же базу:
- *
- *   DATABASE_URL=postgres://… pnpm --filter @broker/admin seed:promo
- *
- * Fail-closed: отказывает при NODE_ENV=production, без клиентов seed:demo и
- * при непустой `promotions`. Всё, что пишет журнал, идёт через функции
- * `@broker/promo` (та же транзакция, валидная хеш-цепочка). Деньги НЕ
- * двигаются: решения по очереди принимаются против ЗАГЛУШКИ терминала
- * (ниже), настоящий терминал не вызывается.
- */
-
 const DAY = 86_400_000;
 const NOW = Date.now();
 const ago = (days: number, minutes = 0) => new Date(NOW - days * DAY - minutes * 60_000);
 const ADMIN = '00000000-0000-4000-8000-00000000a001';
 const FINANCE = '00000000-0000-4000-8000-00000000a003';
 
-/** Заглушка терминала: исход задаётся явно. Только для сида. */
 function stubTerminal(outcome: 'ok' | 'refused' | 'unavailable') {
   let seq = 9_000;
   return {
@@ -83,7 +69,6 @@ async function main(): Promise<number> {
     const ANNA = u('anna.belova@example.ru');
     const MARCO = u('m.bianchi@bianchi-trade.it');
 
-    // ── Отпечатки: у seed:demo все сессии на двух IP — развести (иначе «общий IP» у всех).
     await pool.query(
       `WITH n AS (SELECT id, row_number() OVER (ORDER BY user_id, created_at) AS k FROM sessions)
        UPDATE sessions s SET ip = '198.51.100.' || (n.k % 250 + 1) FROM n WHERE n.id = s.id AND s.ip IS NOT NULL AND s.ip <> '127.0.0.1'`,
@@ -97,18 +82,16 @@ async function main(): Promise<number> {
       [IGOR, 'CY', 'CY', '203.0.113.15'],
       [AISHA, 'AE', 'AE', '203.0.113.16'],
       [CHEN, 'SG', 'SG', '203.0.113.17'],
-      [ANNA, 'CY', 'CY', '203.0.113.10'], // тот же IP регистрации, что у Морозова — самореферал
+      [ANNA, 'CY', 'CY', '203.0.113.10'],
     ];
     for (const [id, c, ipc, ip] of countries) {
       await pool.query(`UPDATE users SET country = $2, registration_ip_country = $3, registration_ip = $4 WHERE id = $1`, [id, c, ipc, ip]);
     }
 
-    // ── Тарифы портфелей (в демо — прямо в базе; в жизни — форма «Риск и плечо → Портфели»).
     await pool.query(`UPDATE leverage_portfolios SET markup_bps = 15, commission_bps = 0, instruments = 'Криптовалютные пары Binance (спот-котировки)', description = 'Для старта: без комиссии, стоимость — в спреде.' WHERE key = 'standard'`);
     await pool.query(`UPDATE leverage_portfolios SET markup_bps = 5, commission_bps = 4, instruments = 'Криптовалютные пары Binance (спот-котировки)', description = 'Для активной торговли: меньше наценка, небольшая комиссия.' WHERE key = 'pro'`);
     await pool.query(`UPDATE leverage_portfolios SET markup_bps = 0, commission_bps = 3, instruments = 'Криптовалютные пары Binance (спот-котировки)', description = 'Для крупных объёмов: чистый спред, только комиссия.' WHERE key = 'enc_prime'`);
 
-    // ── Акции (решения владельца 10.11 — числа здесь как ВВОД админки, не код платформы).
     const reason = 'Решение владельца 10.11 (демо-набор)';
     async function promo(input: PromotionInput, activate = true): Promise<string> {
       const r = await createPromotion(P, { operatorId: ADMIN, reason, promotion: input });
@@ -215,7 +198,6 @@ async function main(): Promise<number> {
       false,
     );
 
-    // ── Сделки реального счёта (с наценкой/комиссией — поля terminal demo-fees).
     let ev = 0;
     async function realTrip(user: string, startDaysAgo: number, holdSec: number, qty: number, price: number, fees = { c: 0, m: 0 }) {
       const open = ago(startDaysAgo);
@@ -233,7 +215,6 @@ async function main(): Promise<number> {
       }
     }
 
-    // Бонус на депозит: участия задним числом + сделки после вступления.
     const enroll = async (promotion: string, user: string, daysAgo: number) =>
       pool.query(
         `INSERT INTO promo_participations (promotion_id, user_id, status, enrolled_at) VALUES ($1,$2,'enrolled',$3)`,
@@ -246,10 +227,8 @@ async function main(): Promise<number> {
     await enroll(WELCOME, IGOR, 2);
     for (let k = 0; k < 4; k++) await realTrip(HERO, 11 - k, 600, 0.05, 68_000, { c: 140, m: 510 });
     for (let k = 0; k < 3; k++) await realTrip(SERGEY, 8 - k, 900, 0.05, 68_000, { c: 140, m: 510 });
-    for (let k = 0; k < 12; k++) await realTrip(OLGA, 5 - k * 0.2, 30, 0.05, 68_000, { c: 140, m: 510 }); // короткие — не в зачёт
+    for (let k = 0; k < 12; k++) await realTrip(OLGA, 5 - k * 0.2, 30, 0.05, 68_000, { c: 140, m: 510 });
     await realTrip(NATALIA, 3, 400, 0.02, 68_000, { c: 55, m: 205 });
-    // Лукас Вебер — участник «в процессе» (кабинет: прогресс по условиям): KYC пройден,
-    // первый депозит после вступления, оборот выполнен частично, вывода нет.
     await enroll(WELCOME, LUKAS, 6);
     await pool.query(`UPDATE client_verification SET state = 'verified' WHERE user_id = $1`, [LUKAS]);
     await pool.query(
@@ -259,15 +238,12 @@ async function main(): Promise<number> {
     );
     await realTrip(LUKAS, 4, 600, 0.025, 68_000, { c: 70, m: 255 });
 
-    // Общий кошелёк-отправитель: депозит Ольги — с кошелька Волкова.
     const sw = await pool.query(`SELECT from_address FROM crypto_deposits WHERE user_id = $1 AND from_address IS NOT NULL LIMIT 1`, [SERGEY]);
     await pool.query(
       `UPDATE crypto_deposits SET from_address = $2 WHERE id = (SELECT id FROM crypto_deposits WHERE user_id = $1 AND status = 'credited' LIMIT 1)`,
       [OLGA, sw.rows[0]?.from_address],
     );
 
-    // ── Рефералы: Морозов привёл Кузнецову и Смирнова (депозит Смирнова — с кошелька Морозова: самореферал-сигнал);
-    // Белова с тем же IP — отсечена при регистрации.
     const heroCode = await ensureReferralCode(P, HERO);
     await ensureReferralCode(P, SERGEY);
     const attrib = async (referee: string, referrer: string | null, daysAgo: number, extra: { status?: string; reason?: string; ib?: string | null; code?: string | null; promo?: string | null } = {}) =>
@@ -286,11 +262,9 @@ async function main(): Promise<number> {
        VALUES ($1, md5(random()::text) || md5(random()::text), 'credited', $2, 'TXyQ8cG6rWwP3b1hT9cTn2mE5sTq4xYb7K', 6000000000, 60000, $3, $3, $3, $3)`,
       [IGOR, heroWallet.rows[0]?.from_address, ago(1.8)],
     );
-    // Смирнов прошёл KYC (для показа), пополнил с кошелька Морозова и проторговал.
     await pool.query(`UPDATE client_verification SET state = 'verified' WHERE user_id = $1`, [IGOR]);
     for (const d of [1.5, 1.0]) await realTrip(IGOR, d, 300, 0.08, 68_000, { c: 220, m: 815 });
 
-    // ── IB-партнёры: Fischer — CPA, Волков — revshare.
     const ibCpa = await createIbPartner(P, {
       operatorId: ADMIN,
       reason: 'Договор IB №14/11, условия согласованы',
@@ -309,7 +283,6 @@ async function main(): Promise<number> {
     await attrib(CHEN, ELENA, 6, { ib: ibCpa.id, code: (await ensureReferralCode(P, ELENA)) });
     await attrib(AISHA, ELENA, 15, { ib: ibCpa.id, code: (await ensureReferralCode(P, ELENA)) });
     await attrib(MARCO, SERGEY, 50, { ib: ibRev.id, code: (await ensureReferralCode(P, SERGEY)) });
-    // Aisha выполняет CPA-условия: депозит + оборот (KYC у неё на проверке → верифицируем для показа).
     await pool.query(`UPDATE client_verification SET state = 'verified' WHERE user_id = $1`, [AISHA]);
     await pool.query(
       `INSERT INTO crypto_deposits (user_id, tx_hash, status, from_address, to_address, amount_raw, amount_minor, block_time, credited_at, claimed_at, updated_at)
@@ -318,7 +291,6 @@ async function main(): Promise<number> {
     );
     for (let k = 0; k < 2; k++) await realTrip(AISHA, 12 - k, 900, 0.05, 68_000, { c: 140, m: 510 });
 
-    // ── Кешбэк: участники с прошлого месяца, сделки с комиссией и наценкой в прошлом месяце.
     const prev = periodOf(new Date(Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth() - 1, 15)));
     const prevMid = (Date.now() - Date.parse(`${prev}-15T12:00:00Z`)) / DAY;
     await enroll(CASHBACK, HERO, prevMid + 10);
@@ -326,11 +298,9 @@ async function main(): Promise<number> {
     await enroll(CASHBACK, SERGEY, prevMid + 5);
     for (let k = 0; k < 6; k++) await realTrip(HERO, prevMid - k, 1200, 0.2, 67_000, { c: 540, m: 2_010 });
     for (let k = 0; k < 4; k++) await realTrip(ELENA, prevMid - k, 1800, 0.3, 67_000, { c: 800, m: 3_015 });
-    await realTrip(SERGEY, prevMid, 600, 0.01, 67_000); // без полей комиссии — кешбэк 0
-    // Revshare: клиент партнёра Волкова торговал в прошлом месяце.
+    await realTrip(SERGEY, prevMid, 600, 0.01, 67_000);
     for (let k = 0; k < 3; k++) await realTrip(MARCO, prevMid - k, 900, 0.5, 67_000, { c: 1_340, m: 5_025 });
 
-    // ── Конкурсы: участники, база после сброса демо, закрытые демо-сделки в окне.
     async function contest(promotion: string, entries: [string, string, number, number[]][], windowStartDaysAgo: number) {
       for (const [user, status, baseline, pnls] of entries) {
         await pool.query(
@@ -363,7 +333,6 @@ async function main(): Promise<number> {
       [NATALIA, 'active', 1_000_000, [-20_000, 6_000, 1_000]],
     ], 35);
 
-    // ── Движок: пересчёт очереди, итоги октября, кешбэк и revshare за прошлый месяц.
     const s1 = await syncPromotionQueue(P, WELCOME);
     const s2 = await syncPromotionQueue(P, REFERRAL);
     const s3 = await syncIbCpa(P);
@@ -371,7 +340,6 @@ async function main(): Promise<number> {
     const cb = await accrueCashback(P, { promotionId: CASHBACK, period: prev, operatorId: ADMIN, reason: 'Ежемесячный кешбэк' });
     const rs = await accrueIbRevshare(P, { partnerId: ibRev.id, period: prev, operatorId: ADMIN, reason: 'Ежемесячный расчёт по договору' });
 
-    // ── Решения по очереди (против заглушки терминала): зачислено / отказ терминала / исход неизвестен / отклонено.
     const pick = async (kind: string, extra = '') =>
       (await pool.query(`SELECT id::text AS id FROM promo_rewards WHERE kind = $1 AND status = 'pending' ${extra} ORDER BY created_at LIMIT 1`, [kind])).rows[0]?.id as string | undefined;
     const login = 'm.orlova';

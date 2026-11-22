@@ -6,12 +6,6 @@ import { Button, Callout, Checkbox, Input, Panel, Select, Textarea, cn } from '@
 import type { SupportActionState } from '@/lib/support/actions';
 import { SETTINGS_ERROR_TEXT, supportErrorText } from '@/lib/support/labels';
 
-/**
- * Формы администрирования поддержки (admin): настройки и шаблоны ответов.
- * Имена полей разбирает `formToSettings` (lib/support/actions.ts); строгая
- * проверка — в пакете (`validateSettings`), ошибки возвращаются по полям.
- */
-
 type Action = (s: SupportActionState, fd: FormData) => Promise<SupportActionState>;
 
 function Submit({ label, disabled }: { label: string; disabled?: boolean }) {
@@ -207,8 +201,6 @@ export function SupportSettingsForm({ action, initial, mailInfo }: { action: Act
     </form>
   );
 }
-
-/* ─── Шаблон ответа ─────────────────────────────────────────────────── */
 
 export interface TemplateFormValues {
   id: string | null;

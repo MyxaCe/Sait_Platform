@@ -24,17 +24,6 @@ import { JournalFeed, type JournalViewRow } from './_components/JournalFeed';
 import { ChainStatus } from './_components/ChainStatus';
 import { ExportButton } from './_components/ExportButton';
 
-/**
- * Журнал/аудит `/journal` (ADM-06, § 3.10; концепция §7.1).
- *
- * Серверный компонент: читает журнал напрямую из базы под роль-видимость
- * (operator — свои + общие; admin — все). Фильтры и страница живут в URL.
- * Проверку цепочки и выгрузку (admin-only) показываем только администратору
- * (fail-closed в UI: не отрисовано, а не «серое»; Р-394).
- *
- * Доступ к самому экрану закрыт гейтом `(protected)` (middleware + layout);
- * сессию здесь перечитываем ради роли и operatorId.
- */
 export const dynamic = 'force-dynamic';
 
 const PAGE_SIZE = 50;
@@ -60,7 +49,6 @@ export default async function JournalPage({ searchParams }: { searchParams: Sear
   if (!operator) redirect(LOGIN_PATH);
   const isAdmin = operator.role === 'admin';
 
-  // Фильтры из query-строки (в том виде, как показываем в форме).
   const filters: JournalFilters = {
     operatorId: one(searchParams.operatorId),
     action: one(searchParams.action),
@@ -72,7 +60,6 @@ export default async function JournalPage({ searchParams }: { searchParams: Sear
   const active = Object.values(filters).some(Boolean);
   const requestedPage = Math.max(1, Math.floor(Number(one(searchParams.page) ?? '1')) || 1);
 
-  // Эффективный фильтр для запроса: голую дату `по` делаем включающей (конец дня).
   const queryFilters: JournalFilters = { ...filters };
   if (queryFilters.to && /^\d{4}-\d{2}-\d{2}$/.test(queryFilters.to)) {
     queryFilters.to = `${queryFilters.to}T23:59:59.999Z`;

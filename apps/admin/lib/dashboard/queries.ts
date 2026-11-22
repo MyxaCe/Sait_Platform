@@ -1,12 +1,5 @@
 import { getPool, type Queryable } from '../db';
 
-/**
- * Сводка дашборда (ТОЛЬКО ЧТЕНИЕ). Агрегаты по тем же таблицам, что читают
- * разделы: клиенты/KYC/AML/блокировки и денежные очереди. Ничего не пишет,
- * журнал не трогает. Денежная часть отдельной функцией — её зовут только для
- * ролей с доступом к деньгам (fail-closed: оператор её не получает вовсе).
- */
-
 export interface ClientsSummary {
   total: number;
   verified: number;
@@ -40,7 +33,6 @@ export async function getClientsSummary(db: Queryable = getPool()): Promise<Clie
 }
 
 export interface MoneySummary {
-  /** Выводы, ждущие решения оператора (подана + на проверке). */
   withdrawalsPending: number;
   withdrawalsPendingMinor: number;
   needsReview: number;
@@ -114,7 +106,6 @@ export interface RecentAction {
   operatorName: string | null;
   subjectKind: string;
   subjectId: string;
-  /** Имя клиента, если субъект — клиент. */
   subjectName: string | null;
   basis: string | null;
 }

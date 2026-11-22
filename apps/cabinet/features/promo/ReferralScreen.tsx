@@ -11,11 +11,6 @@ import { CopyRow, ShareButton } from './ShareLink';
 import { bpsPercent, formatDate, formatPeriod, holdParts, PROMO_CURRENCY } from './format';
 import { moneyFormat } from '@/features/ui/money-format';
 
-/**
- * «Пригласи друга» (дизайн §4.1). Ссылка и код, «Поделиться» (Web Share на
- * телефоне), QR, условия программы — из данных, приглашённые с этапом и
- * наградой, итоги. IB-партнёр видит свой договор вместо обычной программы.
- */
 export function ReferralScreen({
   data,
   qrSvg,
@@ -63,10 +58,6 @@ function Body({
         <Callout tone="info">{t(`disabled.${r.disabledReason}`)}</Callout>
       ) : null}
 
-      {/*
-        ≥ xl: слева ссылка/QR и условия (5 из 12, липкая колонка), справа
-        итоги и приглашённые (7). Ниже xl — прежний порядок.
-      */}
       <div className="space-y-6 xl:grid xl:grid-cols-12 xl:items-start xl:gap-5 xl:space-y-0">
       <div className="space-y-4 xl:sticky xl:top-6 xl:col-span-5 xl:space-y-5">
       <div className="grid gap-4 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] lg:gap-5 xl:grid-cols-1">
@@ -143,7 +134,6 @@ function InviteCard({ r, qrSvg, brand }: { r: MyReferralView; qrSvg: string | nu
               role="img"
               aria-label={t('qrLabel')}
               className="size-40 rounded-xl bg-white p-2"
-              // SVG сгенерирован на сервере из ссылки клиента (код — [A-Z0-9]), ввода пользователя в нём нет.
               dangerouslySetInnerHTML={{ __html: qrSvg }}
             />
             <p className="text-center text-xs text-muted">{t('qrHint')}</p>
@@ -354,7 +344,6 @@ function Totals({ r }: { r: MyReferralView }) {
 
 const STEPS = ['registered', 'kyc', 'deposit', 'turnover'] as const;
 
-/** Сколько этапов пройдено: 1 — зарегистрирован … 4 — оборот выполнен. */
 export function stepsDone(stage: InviteeStage): number {
   switch (stage) {
     case 'registered':

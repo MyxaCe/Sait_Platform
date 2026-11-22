@@ -1,38 +1,20 @@
 import type { Queryable } from '@broker/money';
 import { normalizeMessageId } from './text';
 
-/**
- * Очередь исходящих писем (`outbound_mail`). Письмо пишется в той же
- * транзакции, что и его причина (ответ оператора, сброс пароля) — дух
- * ADR-018; отправляет отдельный воркер (`apps/support-mail`) через SMTP
- * cPanel, отмечая `sent` или `failed` с повтором по нарастающей паузе.
- * Оператор видит состояние доставки у своего ответа.
- */
-
 export type MailPurpose =
   | 'support_reply'
   | 'support_ack'
   | 'password_reset'
   | 'email_verify'
-  // ── Правка учётных данных менеджером (ветка admin-credentials): уведомление клиенту. ──
   | 'credentials_notice'
-  // ── Перевод на другую платформу группы (ветка client-transfer): приглашение
-  //    цели (одноразовая ссылка) и уведомление о возврате перевода. ──
   | 'transfer_invite'
   | 'transfer_notice';
 
-/**
- * Служебные письма доступа к аккаунту (без копии в «Отправленные»).
- * `credentials_notice` — уведомление клиенту о правке учётных данных
- * менеджером (ветка admin-credentials, 10.11).
- */
 export const AUTH_MAIL_PURPOSES: readonly MailPurpose[] = ['password_reset', 'email_verify', 'credentials_notice'];
 export type MailStatus = 'queued' | 'sending' | 'sent' | 'failed' | 'cancelled';
 
-/** Письма с одноразовыми ссылками — тело стирается после отправки. */
 export const SECRET_BODY_PURPOSES: readonly MailPurpose[] = ['password_reset', 'email_verify', 'transfer_invite'];
 
-/** Системные письма (не переписка): уходят всегда, даже когда почтовый канал поддержки выключен. */
 export const SYSTEM_MAIL_PURPOSES: readonly MailPurpose[] = [
   'password_reset',
   'email_verify',
@@ -86,21 +68,12 @@ export interface ClaimedMail {
   attempts: number;
 }
 
-/** Максимум попыток; после — `failed` (оператор видит «не доставлено»). */
 export const MAX_ATTEMPTS = 8;
 
-/** Пауза перед повтором: 1, 2, 4 … мин, не больше часа. */
 export function backoffMs(attempts: number): number {
   return Math.min(60, 2 ** Math.max(0, attempts - 1)) * 60_000;
 }
 
-/**
- * Забрать письма к отправке. `FOR UPDATE SKIP LOCKED` — два воркера не возьмут
- * одно письмо; «зависшие» в `sending` дольше 10 минут (воркер упал посреди
- * отправки) возвращаются в очередь. Message-ID назначается при первой попытке
- * и не меняется: повтор — то же письмо, получатель склеит дубль.
- * Истёкшие (`expires_at`) отменяются, не уходя.
- */
 export async function claimDueMail(
   db: Queryable,
   opts: { limit: number; domain: string; purposes?: readonly MailPurpose[]; now?: Date },
@@ -161,10 +134,6 @@ export async function markMailSent(
   );
 }
 
-/**
- * Сбой отправки: повтор по нарастающей паузе; после `MAX_ATTEMPTS` или при
- * постоянной ошибке (адрес отвергнут — 5xx) — `failed`.
- */
 export async function markMailFailed(
   db: Queryable,
   mail: { id: string; attempts: number; purpose: MailPurpose },
@@ -188,7 +157,6 @@ export async function markMailFailed(
   return give ? 'failed' : 'retry';
 }
 
-/** Повторить недоставленное вручную (оператор, кнопка «Отправить ещё раз»). */
 export async function requeueMail(db: Queryable, id: string): Promise<boolean> {
   const r = await db.query(
     `UPDATE outbound_mail SET status = 'queued', attempts = 0, next_attempt_at = now(), last_error = NULL

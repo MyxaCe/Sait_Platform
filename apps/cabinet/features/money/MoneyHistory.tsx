@@ -6,22 +6,10 @@ import { NavIcon } from '@/features/shell/NavIcon';
 import { REAL_ACCOUNT_CURRENCY } from '@broker/money/display-currency';
 import { MachineValue } from './TxLink';
 
-/**
- * Денежные операции реального счёта (ввод/вывод USDT) — ОДНА лента (r2:
- * «Кошелёк» и «История» показывают её одинаково).
- *
- * Строка: слева — тип (иконка + «Пополнение»/«Вывод»), дата и машинные строки
- * (хэш/адрес моноширинно, укорочены посередине, копирование, хэш → Tronscan);
- * справа — сумма со знаком направления над статус-бейджем. Цвет статуса — из
- * единого словаря `STATUS_DICTIONARY` (подпись клиентская, из каталога).
- * Отклонённая/отменённая сумма зачёркнута: денег не было.
- */
-
 export type MoneyOp =
   | { kind: 'deposit'; at: Date; item: DepositView }
   | { kind: 'withdrawal'; at: Date; item: WithdrawalView };
 
-/** Ввод и вывод — в одну ленту, новые сверху. */
 export function toMoneyOps(deposits: DepositView[], withdrawals: WithdrawalView[]): MoneyOp[] {
   return [
     ...deposits.map((d) => ({ kind: 'deposit' as const, at: d.claimedAt, item: d })),
@@ -31,14 +19,12 @@ export function toMoneyOps(deposits: DepositView[], withdrawals: WithdrawalView[
 
 const VOID = new Set(['rejected', 'cancelled']);
 
-/** Готовит отрисовщик строки операции (тексты и форматтер — один раз на список). */
 export async function moneyOpRenderer() {
   const t = await getTranslations('money');
   const tc = await getTranslations('common');
   const format = await getFormatter();
   const when = (d: Date) => format.dateTime(d, { dateStyle: 'short', timeStyle: 'short' });
   const status = (domain: 'deposit' | 'withdrawal', s: string) => {
-    // У вывода («заявка») — свой род: «Отклонена», не «Отклонено».
     const own = `status.${domain}_${s}`;
     const label = t.has(own) ? t(own) : t.has(`status.${s}`) ? t(`status.${s}`) : s;
     const key = statusKeyOf(`${domain}_${s}`);
@@ -118,7 +104,6 @@ export async function moneyOpRenderer() {
   };
 }
 
-/** «История операций» кошелька: ввод и вывод вместе. */
 export async function OperationsHistory({
   deposits,
   withdrawals,
@@ -126,7 +111,6 @@ export async function OperationsHistory({
 }: {
   deposits: DepositView[];
   withdrawals: WithdrawalView[];
-  /** id заголовка — уникален, когда лента на странице дважды (телефон/десктоп). */
   titleId?: string;
 }) {
   const t = await getTranslations('money');

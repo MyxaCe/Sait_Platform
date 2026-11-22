@@ -10,7 +10,6 @@ const KYC: Record<VerificationStatus, { tone: StatusTone; key: 'kycVerified' | '
   rejected: { tone: 'negative', key: 'kycRejected' },
 };
 
-/** Модуль «Профиль»: монограмма, имя, UID, VIP и статус верификации. */
 export async function ProfileModule({
   user,
   verification,
@@ -38,7 +37,6 @@ export async function ProfileModule({
       <div className="min-w-0">
         <h1 className="truncate text-xl font-semibold tracking-tight">{user.fullName}</h1>
         <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-secondary">
-          {/* Прочерк, а не ноль: «UID 0» выглядит как настоящий номер. */}
           <span className="inline-flex h-[22px] items-center rounded-md bg-primary/[0.06] px-2 tabular-nums">
             UID {user.uid ?? '—'}
           </span>

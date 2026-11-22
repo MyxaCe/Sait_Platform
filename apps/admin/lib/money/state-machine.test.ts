@@ -1,11 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { initialStateFor, transition } from './state-machine';
 
-/**
- * Р-452 · стейт-машина dual control: переходы, порог, запрет self-approval.
- * Порог задаём env, чтобы «ниже/выше порога» были детерминированы.
- */
-
 beforeEach(() => {
   process.env.MONEY_DUAL_CONTROL_THRESHOLD_MINOR = '1000';
 });

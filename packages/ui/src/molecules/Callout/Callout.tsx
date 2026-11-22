@@ -1,12 +1,6 @@
 import type { ReactNode } from 'react';
 import { cn } from '../../lib/cn';
 
-/**
- * Встроенное уведомление (концепция §6.8): состояние объекта или результат
- * действия, которое оператор ДОЛЖЕН увидеть рядом с местом работы («Клиент
- * заблокирован…», «Терминал недоступен…», «Флаги сохранены»). Не исчезает само
- * (в отличие от тоста). `role` — alert для negative/warning, status для прочих.
- */
 export type CalloutTone = 'info' | 'positive' | 'warning' | 'negative' | 'neutral';
 
 const TONE: Record<CalloutTone, string> = {
@@ -59,7 +53,6 @@ export interface CalloutProps {
   tone?: CalloutTone;
   title?: ReactNode;
   children?: ReactNode;
-  /** Действия справа (ссылка/кнопка). */
   actions?: ReactNode;
   className?: string;
 }

@@ -15,13 +15,6 @@ import {
 } from '@/lib/clients/trading';
 import { fmtDate, fmtDateTime } from '@/lib/ui/format';
 
-/**
- * Счёт и торговля клиента (вкладка «Торговля» и сводка на «Обзоре»). Только
- * чтение проекции торговли (`lib/clients/trading.ts`) + живые цифры терминала
- * (`GET …/accounts`), если он ответил. Equity из проекции не считаем — текущих
- * цен в ней нет, выдумывать их нельзя: equity/маржа — только от терминала.
- */
-
 function num(value: number, max = 8): string {
   return value.toLocaleString('ru-RU', { maximumFractionDigits: max });
 }
@@ -61,7 +54,6 @@ function tradeColumns(currency: string): DataTableColumn<TradingTrade>[] {
   ];
 }
 
-/** Живые цифры счёта из терминала (`GET …/accounts`); null — терминал не ответил. */
 export interface LiveAccount {
   equityMinor: number | null;
   freeMarginMinor: number | null;
@@ -79,7 +71,6 @@ function Stat({ label, children, hint }: { label: string; children: React.ReactN
   );
 }
 
-/** Строка ключевых цифр счёта: баланс / equity / свободная маржа / P&L. */
 export function AccountStats({
   trading,
   kind,
@@ -121,7 +112,6 @@ export function TradingSection({
   trading: ClientTrading;
   title: string;
   kind: 'demo' | 'real';
-  /** undefined — не запрашивали; null — терминал не ответил. */
   live?: LiveAccount | null;
 }) {
   const currency = trading.account?.currency ?? (kind === 'real' ? 'USDT' : 'USD');

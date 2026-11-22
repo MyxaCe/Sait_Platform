@@ -15,7 +15,6 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function GlossaryPage({ params }: PageProps) {
   setRequestLocale(params.locale);
-  // Глоссарий из CMS (тег cms:academy)
   const { glossary } = await getCms('academy', {
     locale: pageLocale(params.locale),
   });

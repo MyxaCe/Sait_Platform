@@ -5,19 +5,12 @@ import { Input, Select } from '@broker/ui';
 import { setClientWithdrawLimitAction } from '@/lib/crypto/actions';
 import { ActionForm } from '../../../_money/ActionForm';
 
-/**
- * Лимит вывода без верификации — переопределение у клиента (admin и
- * finance_operator, как денежные флаги). «Наследовать» — процент из настроек
- * платформы; «Свой» — процент для этого клиента (0 — без верификации вывода
- * нет). Форма-с-основанием, запись в журнал (до/после).
- */
 export function WithdrawLimitPanel({
   userId,
   overridePct,
   platformPct,
 }: {
   userId: string;
-  /** Своё значение клиента в процентах строкой; `null` — наследует. */
   overridePct: string | null;
   platformPct: string;
 }) {

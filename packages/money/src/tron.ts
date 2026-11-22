@@ -1,16 +1,5 @@
 import { createHash } from 'node:crypto';
 
-/**
- * Адреса и хэши сети TRON. Без сетевых вызовов — чистые функции.
- *
- * Адрес TRON: base58check от 25 байт = префикс 0x41 + 20 байт адреса +
- * 4 байта контрольной суммы (первые 4 байта sha256(sha256(21 байт))). В
- * строковом виде всегда начинается с «T» и имеет 34 символа. Проверяем
- * именно контрольную сумму, а не регэксп: опечатка в одном символе адреса
- * вывода — это деньги, отправленные в никуда.
- */
-
-/** Официальный контракт USDT TRC20 (основная сеть). */
 export const USDT_TRC20_CONTRACT = 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t';
 
 const ALPHABET = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
@@ -58,7 +47,6 @@ function checksum(payload: Uint8Array): Uint8Array {
   return sha256(sha256(payload)).subarray(0, 4);
 }
 
-/** Адрес TRON валиден: 34 символа base58, префикс 0x41 («T»), верная контрольная сумма. */
 export function isValidTronAddress(address: string): boolean {
   if (typeof address !== 'string' || address.length !== 34 || address[0] !== 'T') return false;
   const bytes = base58Decode(address);
@@ -67,10 +55,6 @@ export function isValidTronAddress(address: string): boolean {
   return sum.every((b, i) => b === bytes[21 + i]);
 }
 
-/**
- * Hex-адрес → base58. Принимает 21 байт с префиксом 41 («41…», 42 hex) или
- * 20 байт без префикса (40 hex, так приходят адреса в логах событий EVM).
- */
 export function tronHexToBase58(hex: string): string {
   let h = hex.toLowerCase().replace(/^0x/, '');
   if (h.length === 40) h = `41${h}`;
@@ -82,29 +66,19 @@ export function tronHexToBase58(hex: string): string {
   return base58Encode(full);
 }
 
-/** Тема события (32 байта hex) → адрес base58 (последние 20 байт). */
 export function topicToTronAddress(topic: string): string {
   const h = topic.toLowerCase().replace(/^0x/, '');
   if (!/^[0-9a-f]{64}$/.test(h)) throw new Error(`не тема события: ${topic}`);
   return tronHexToBase58(h.slice(24));
 }
 
-/** Хэш транзакции: 64 hex, без 0x, в нижнем регистре; иначе null. */
 export function normalizeTxHash(input: string): string | null {
   const h = input.trim().toLowerCase().replace(/^0x/, '');
   return /^[0-9a-f]{64}$/.test(h) ? h : null;
 }
 
-/** Сигнатура события ERC20/TRC20 Transfer(address,address,uint256). */
 export const TRANSFER_TOPIC = 'ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef';
 
-/**
- * Годится ли адрес как КОШЕЛЁК БИРЖИ для приёма. Кроме контрольной суммы
- * отсекает адрес самого контракта USDT: он валиден по base58check, но USDT,
- * отправленные на контракт, сгорают навсегда. 09.11.2026 этот адрес
- * почти попал в EXCHANGE_TRON_ADDRESS на стенде («адрес USDT» спутан с
- * адресом кошелька) — урок: проверка формата не равна проверке смысла.
- */
 export function isUsableExchangeAddress(address: string): boolean {
   return isValidTronAddress(address) && address !== USDT_TRC20_CONTRACT;
 }

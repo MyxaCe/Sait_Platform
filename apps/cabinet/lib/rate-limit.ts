@@ -1,7 +1,3 @@
-/**
- * Скользящее окно в памяти процесса — копия lib/rate-limit сайта
- * (унификация в packages/utils — тех. долг TD-011).
- */
 const buckets = new Map<string, number[]>();
 
 export function isRateLimited(key: string, limit = 5, windowMs = 60_000, now = Date.now()): boolean {

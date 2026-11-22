@@ -32,17 +32,12 @@ describe('PriceChange', () => {
     });
 
     it('не выводит «0.00%» — это утверждение «цена не изменилась»', () => {
-      // Поведение до правки: обе проверки порога для null ложны, а
-      // `Math.abs(null)` даёт 0 — на экране появлялось уверенное «0.00%».
       render(<PriceChange value={null} />);
 
       expect(screen.queryByText(/%/)).toBeNull();
     });
 
     it('отличимо от настоящего нуля — иначе третье состояние незаметно', () => {
-      // Главное свойство задачи. «Цена не изменилась» и «изменение
-      // неизвестно» — разные утверждения, и посетитель должен видеть разное.
-      // Пока они рисуются одинаково, MDS обнулять поле небезопасно.
       const empty = render(<PriceChange value={null} />).container.textContent;
       const zero = render(<PriceChange value={0} />).container.textContent;
 

@@ -7,18 +7,9 @@ import { LOGIN_PATH } from '../auth/constants';
 import { assignClientManagers, setClientManagerFlag } from './assign';
 import { canAssignManagers } from './policy';
 
-/**
- * Server actions «менеджеров клиентов». Тот же выбор, что у блокировки
- * (`lib/clients/actions.ts`): POST в защищённый роут, `/api` не расширяем.
- *
- * Роль-гейт — только admin, fail-closed: остальные получают `forbidden`, до
- * транзакции дело не доходит (в UI форм у них и так нет). Автор — из сессии.
- */
-
 export interface ManagerActionState {
   error?: string;
   ok?: boolean;
-  /** Сколько клиентов фактически сменили менеджера / уже были за ним. */
   changed?: number;
   unchanged?: number;
 }
@@ -56,7 +47,6 @@ async function runAssign(userIds: string[], formData: FormData): Promise<Manager
   return { ok: true, changed: result.changed, unchanged: result.unchanged };
 }
 
-/** Карточка клиента: назначить / сменить / снять менеджера одного клиента. */
 export async function assignClientManagerAction(
   _prev: ManagerActionState,
   formData: FormData,
@@ -66,7 +56,6 @@ export async function assignClientManagerAction(
   return runAssign([userId], formData);
 }
 
-/** Реестр: массовое назначение отмеченным клиентам (`userIds` — чекбоксы строк). */
 export async function bulkAssignManagerAction(
   _prev: ManagerActionState,
   formData: FormData,
@@ -75,7 +64,6 @@ export async function bulkAssignManagerAction(
   return runAssign(userIds, formData);
 }
 
-/** Экран «Операторы»: выдать / снять флаг «менеджер клиентов». */
 export async function setManagerFlagAction(
   _prev: ManagerActionState,
   formData: FormData,

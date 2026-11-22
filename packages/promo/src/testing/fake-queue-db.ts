@@ -1,17 +1,5 @@
 import type { PoolLike, Queryable, TxClient } from '@broker/money';
 
-/**
- * In-memory фейк базы для очереди начислений (`queue.ts`). Понимает РОВНО
- * запросы очереди; неизвестный SQL — исключение (новый запрос не пройдёт тест
- * молча).
- *
- * Главное, ради чего он есть, — семантика ЗАМКОВ строк, как у Postgres:
- * `SELECT … FOR UPDATE` по начислению и `UPDATE promotions` берут замок строки
- * до COMMIT/ROLLBACK своей транзакции; чужая транзакция ЖДЁТ (асинхронно), а
- * после освобождения видит уже закоммиченное. Так тест гонки двух одобрений —
- * настоящая гонка, а не последовательный вызов. Откат — журнал отмены.
- */
-
 export interface FakeReward {
   id: string;
   kind: string;
@@ -141,7 +129,6 @@ export class FakeQueueDb implements PoolLike {
   ): Promise<{ rows: Record<string, unknown>[]; rowCount?: number }> {
     const one = (row: Record<string, unknown> | null | undefined) => (row ? { rows: [row], rowCount: 1 } : { rows: [], rowCount: 0 });
 
-    // ── журнал ──
     if (s.includes('pg_advisory_xact_lock')) {
       await take('journal');
       return { rows: [{}] };
@@ -167,7 +154,6 @@ export class FakeQueueDb implements PoolLike {
       return one(this.journal.find((j) => j.entry_hash === p[0]) as unknown as Record<string, unknown>);
     }
 
-    // ── начисления ──
     if (s.startsWith('INSERT INTO promo_rewards')) {
       const ref = p[8] as string;
       if ([...this.rewards.values()].some((r) => r.external_ref === ref)) return { rows: [] };
@@ -241,7 +227,6 @@ export class FakeQueueDb implements PoolLike {
       return { rows: [] };
     }
 
-    // ── участие ──
     if (s.startsWith('UPDATE promo_participations SET status = ')) {
       const part = this.participations.get(p[0] as string);
       const to = /status = '(\w+)'/.exec(s)![1]!;
@@ -253,7 +238,6 @@ export class FakeQueueDb implements PoolLike {
       return { rows: [] };
     }
 
-    // ── бюджет акции ──
     if (s.startsWith('UPDATE promotions SET spent_minor = spent_minor + $2')) {
       const id = p[0] as string;
       await take(`promotion:${id}`);
@@ -262,7 +246,6 @@ export class FakeQueueDb implements PoolLike {
       if (!promo || promo.spent_minor + amount > promo.budget_minor) return { rows: [], rowCount: 0 };
       this.snapshot(undo, promo);
       promo.spent_minor += amount;
-      // CHECK promotions_budget_not_exceeded — последний рубеж.
       if (promo.spent_minor > promo.budget_minor) throw Object.assign(new Error('check'), { code: '23514' });
       return one({ budget_minor: promo.budget_minor, spent_minor: promo.spent_minor });
     }
@@ -284,5 +267,4 @@ export class FakeQueueDb implements PoolLike {
   }
 }
 
-/** Пул-обёртка — тип `Queryable` для вызовов вне транзакции. */
 export type { Queryable };

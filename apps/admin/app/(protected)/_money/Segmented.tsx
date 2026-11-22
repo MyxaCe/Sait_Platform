@@ -1,11 +1,6 @@
 import Link from 'next/link';
 import { cn } from '@broker/ui';
 
-/**
- * Фильтр-переключатель внутри вкладки (GET-ссылки, работает без JS, значение
- * — в URL). Плотный, 32 px, со счётчиком. Кандидат в @broker/ui
- * (`FilterChips`) — пока локально, пакет UI в фазе 2 не трогаем.
- */
 export interface SegmentItem {
   key: string;
   label: string;

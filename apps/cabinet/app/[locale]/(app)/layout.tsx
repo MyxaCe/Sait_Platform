@@ -15,7 +15,6 @@ import { getChromeBrand, getChromeFooter, siteHref, resolveBrandName } from '@/l
 import { countUnread } from '@/lib/data';
 import { hasLiveContest } from '@/features/promo/format';
 import { loadContests } from '@/lib/promo';
-// ── Поддержка (ветка demo-support) ──
 import { countClientUnread, loadSupportSettings } from '@broker/support';
 import { SupportWidget } from '@/features/support/SupportWidget';
 import { getPool } from '@/lib/db';
@@ -25,14 +24,12 @@ interface LayoutProps {
   params: { locale: string };
 }
 
-/** Защищённая зона: настоящая валидация сессии (middleware проверяет только куку). */
 export default async function AppLayout({ children, params }: LayoutProps) {
   setRequestLocale(params.locale);
   const user = await getSessionUser();
   if (!user) {
     redirect(await localeHref('/login', params.locale));
   }
-  // Временный пароль от менеджера: пока свой не задан — только смена пароля.
   if (user.mustChangePassword) {
     redirect(await localeHref('/change-password', params.locale));
   }
@@ -43,20 +40,14 @@ export default async function AppLayout({ children, params }: LayoutProps) {
     countUnread(user.id),
     getChromeBrand(params.locale),
     getChromeFooter(params.locale),
-    // «Конкурс» в меню — только если есть идущий или будущий (сбой чтения — пункта нет).
     loadContests(user.id, params.locale),
     getSiteLanguages(),
   ]);
   const brandName = resolveBrandName(brand, tCommon('cabinet'));
-  // Поддержка: бейдж кнопки и вкл/выкл канала чата — из базы (настройки админки).
-  // Сбой чтения не роняет кабинет: кнопки просто нет (fail-closed для виджета).
   const support = await Promise.all([loadSupportSettings(getPool()), countClientUnread(getPool(), user.id)])
     .then(([s, n]) => ({ enabled: s.channels.chat, unread: n }))
     .catch(() => ({ enabled: false, unread: 0 }));
 
-  // Навигация (r2): 4 раздела счёта + аккаунт. Кошелёк = пополнение и вывод,
-  // Профиль = личные данные, верификация, безопасность и документы.
-  // Бонусы: акции, приглашения, конкурс (ДЕМО-акции 10.11).
   const accountNav: NavItem[] = [
     { href: '/', label: tNav('dashboard'), icon: 'home' },
     { href: '/trade', label: tNav('trade'), icon: 'trade' },
@@ -75,7 +66,6 @@ export default async function AppLayout({ children, params }: LayoutProps) {
       ? [{ href: '/contest', label: tNav('contest'), icon: 'trophy' as const }]
       : []),
   ];
-  // Телефон: 4 главных + «Ещё». Короткие подписи — чтобы влезали в 390 px.
   const mobilePrimary: NavItem[] = [
     { href: '/', label: tNav('short.dashboard'), icon: 'home' },
     { href: '/trade', label: tNav('short.trade'), icon: 'trade' },
@@ -86,12 +76,10 @@ export default async function AppLayout({ children, params }: LayoutProps) {
 
   return (
     <div className="flex min-h-svh flex-col">
-      {/* Шапка ЛК: бренд-зона как у сайта + пользователь (ADR-026) */}
       <div className="hidden lg:block">
         <CabinetHeader brand={brand} user={user} locale={params.locale} />
       </div>
 
-      {/* Мобильная шапка: бренд + уведомления. Выход — в «Ещё». */}
       <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-border bg-elevated/95 px-4 backdrop-blur lg:hidden">
         <Link href="/" className="flex min-w-0 items-center gap-2 font-semibold">
           {brand?.logo ? (
@@ -147,7 +135,6 @@ export default async function AppLayout({ children, params }: LayoutProps) {
         <div className="flex min-w-0 flex-1 flex-col">
           <main className="flex-1 px-4 pb-[calc(5.5rem+env(safe-area-inset-bottom))] pt-5 sm:px-6 lg:px-10 lg:pb-8 lg:pt-8">{children}</main>
 
-          {/* Общий футер платформы (ADR-025): те же данные CMS, что у сайта */}
           {footer && (
             <div className="hidden lg:block">
               <SiteFooter

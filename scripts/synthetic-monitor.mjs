@@ -1,11 +1,3 @@
-/**
- * Синтетический мониторинг (этап 3, риск R-14): проверяет цикл
- * «публикация → вебхук → обновление страницы» на живом сайте.
- *
- * Запуск: node scripts/synthetic-monitor.mjs [--base http://localhost:3000]
- * Секрет вебхука: env CMS_WEBHOOK_SECRET (без него — только health-часть).
- * Код выхода != 0 — авария (для cron/CI-алертов).
- */
 import { createHmac, randomUUID } from 'node:crypto';
 
 const args = process.argv.slice(2);
@@ -33,7 +25,6 @@ async function getRenderedAt() {
   return { status: res.status, renderedAt: match?.[1] ?? null };
 }
 
-// 1. Health
 try {
   const health = await fetch(`${base}/api/health`);
   health.ok ? pass('health') : fail('health', `HTTP ${health.status}`);
@@ -46,7 +37,6 @@ try {
   fail('health', String(error));
 }
 
-// 2. Возраст контента
 let before = null;
 try {
   before = await getRenderedAt();
@@ -57,7 +47,6 @@ try {
   fail('rendered-at', String(error));
 }
 
-// 3. Полный цикл инвалидации (только при наличии секрета)
 if (secret && before?.renderedAt) {
   const bodyText = JSON.stringify({ event_id: randomUUID(), tags: ['cms:brand'] });
   const signature = `sha256=${createHmac('sha256', secret).update(bodyText, 'utf8').digest('hex')}`;
@@ -72,8 +61,6 @@ if (secret && before?.renderedAt) {
       fail('webhook', `HTTP ${webhook.status}`);
     } else {
       pass('webhook', 'accepted');
-      // stale-while-revalidate: первый запрос может отдать старую версию,
-      // опрашиваем до смены rendered-at
       let updated = false;
       while (Date.now() - started < INVALIDATION_TIMEOUT_MS) {
         await new Promise((r) => setTimeout(r, POLL_MS));

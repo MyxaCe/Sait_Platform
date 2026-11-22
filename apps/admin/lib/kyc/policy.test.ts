@@ -6,11 +6,6 @@ import {
 } from './jurisdiction';
 import { ADDRESS_PROOF_MAX_AGE_DAYS, isDocumentOlderThan } from './queries';
 
-/**
- * ADM-11 (Р-454 I-2) — порог «источник средств» — и I-3 (Р-454 I-3) — свежесть
- * адреса. Оба правила — чистые функции; проверяем их на границах.
- */
-
 describe('ADM-11 · порог источника средств', () => {
   it('порог по умолчанию — $10 000', () => {
     expect(DEFAULT_JURISDICTION_PROFILE.sourceOfFundsThresholdUsd).toBe(10_000);

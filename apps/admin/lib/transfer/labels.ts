@@ -1,7 +1,5 @@
 import type { StatusTone } from '@broker/ui';
 
-/** Подписи перевода между платформами группы (статусы, подсказки, ошибки). */
-
 export const TRANSFER_STATUS: Record<string, { label: string; tone: StatusTone }> = {
   sent: { label: 'Отправлен, ждёт доставки', tone: 'info' },
   delivered: { label: 'Принят целью', tone: 'info' },
@@ -114,7 +112,6 @@ const PLATFORM_FIELD: Record<string, string> = {
 
 export function transferErrorText(error: string, detail?: string): string {
   if (error === 'fundsOrPositions' && detail) {
-    // detail = «balanceMinor,equityMinor,openPositions»
     const [bal, eq, pos] = detail.split(',').map(Number);
     const usdt = (Math.max(bal ?? 0, eq ?? 0) / 100).toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     return `Нельзя закрыть счёт. Сначала клиент выводит средства (${usdt} USDT) и закрывает позиции${pos ? ` (открыто: ${pos})` : ''}.`;

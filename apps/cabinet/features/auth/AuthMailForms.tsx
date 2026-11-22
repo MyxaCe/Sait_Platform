@@ -14,8 +14,6 @@ import {
 } from '@/lib/support/auth-actions';
 import { FormMessage, useFieldError } from './FormMessage';
 
-/** Формы auth-писем: «забыли пароль», новый пароль по ссылке, подтверждение email. */
-
 function Submit({ label, size = 'lg', full = true }: { label: string; size?: 'lg' | 'md' | 'sm'; full?: boolean }) {
   const { pending } = useFormStatus();
   return (
@@ -118,7 +116,6 @@ export function ConfirmEmailForm({ token }: { token: string }) {
   );
 }
 
-/** Профиль: «email не подтверждён — отправить письмо». */
 export function RequestVerifyEmail() {
   const t = useTranslations('authMail');
   const [state, action] = useFormState<AuthMailState>(requestEmailVerifyAction, {});
@@ -135,7 +132,6 @@ export function RequestVerifyEmail() {
   );
 }
 
-/** Обязательная смена временного пароля (выдан менеджером). */
 export function ForcedPasswordForm() {
   const t = useTranslations('authMail');
   const fieldError = useFieldError();

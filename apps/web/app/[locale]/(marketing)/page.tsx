@@ -8,7 +8,6 @@ import { readHeroBackground } from '@/features/hero-backdrop/mode';
 import { getCms } from '@/lib/cms';
 
 export default async function HomePage({ params }: { params: { locale: string } }) {
-  // Обязательно для статического рендеринга: Hero/Advantages используют переводы на сервере
   setRequestLocale(params.locale);
   const locale = pageLocale(params.locale);
   const [brand, instruments] = await Promise.all([

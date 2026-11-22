@@ -42,41 +42,27 @@ async function loadRealBlock(userId: string, locale: string): Promise<RealAccoun
   };
 }
 
-/**
- * Главная кабинета (ADR-026): модули из per-site конфига CMS —
- * порядок, включённость и подпункты решает редактор.
- * Реестр «тип → компонент»; неизвестный тип пропущен ещё парсером.
- */
 export default async function HomePage({ params }: { params: { locale: string } }) {
   setRequestLocale(params.locale);
   const user = await requireSessionUser(params.locale);
   const modules = await getHomeModules(params.locale);
 
-  // Данные тянем только для включённых модулей
   const needs = (type: CabinetHomeModule['type']) =>
     modules.some((m) => m.type === type && m.enabled);
 
   const [demo, verification, markets, promos, startBalance, realForSteps] = await Promise.all([
     needs('balance') ? getDemoAccount(user.id) : null,
-    // Статус KYC нужен и шапке профиля (бейдж), и онбордингу.
     getVerificationStatus(user.id),
     needs('markets') ? getMarketInstruments() : null,
-    // Акции — живые данные @broker/promo (участия, прогресс), не витрина CMS.
     needs('promotions') ? loadClientPromotions(user.id, params.locale) : null,
-    // Состояние стартовой суммы нужно самому модулю: кнопка сброса
-    // обязана объяснить, почему не работает, а не исчезнуть.
     getTenantStartBalance(),
     needs('onboarding') ? getRealAccount(user.id) : null,
   ]);
 
-  // Реальный счёт (09.11): проекция + политика + живые цифры терминала.
-  // Терминал недоступен — главная всё равно рисуется (свой failure domain).
   const real: RealAccountBlock | undefined = needs('balance')
     ? await loadRealBlock(user.id, params.locale)
     : undefined;
 
-  // Десктоп-раскладка (≥ xl): данные для «Последних операций» и мини-карточки
-  // «Пригласи друга» — только чтение, те же источники, что у их разделов.
   const [recent, deposits, withdrawals, referral] = await Promise.all([
     getAccountHistory(user.id, 'real', '30d').catch(() => null),
     listMyDeposits(user.id),
@@ -92,18 +78,6 @@ export default async function HomePage({ params }: { params: { locale: string } 
   const marketsM = mod('markets');
   const promotionsM = mod('promotions');
 
-  /*
-   * Раскладка (замечание владельца 10.11 — «на ПК всё по центру в один
-   * столбец»). Порядок в DOM = порядок на телефоне (не меняется):
-   * профиль → шаги → счета → рынки → операции → акции → пригласи друга.
-   * На ≥ xl блоки встают в сетку 12 колонок:
-   *   ряд 1 — счета (8) | «Следующие шаги» колонкой (4, только ≥ 2xl;
-   *           на 1280–1535 шаги остаются рядом из трёх над счетами);
-   *   ряд 2 — рынки (6 → 5) | последние операции (6 → 4) |
-   *           акции + пригласи друга (на 2xl — колонка 3).
-   * Набор модулей и их включение — по-прежнему из CMS; порядок внутри
-   * сетки задаёт раскладка (рядом встают только «соседи по смыслу»).
-   */
   return (
     <div className={cn(PAGE, 'flex flex-col gap-4 lg:gap-5')}>
       {profileM ? <ProfileModule user={user} verification={verification} /> : null}
@@ -128,7 +102,6 @@ export default async function HomePage({ params }: { params: { locale: string } 
 
       <div className={GRID}>
         {marketsM && markets ? (
-          // Модуль не исчезает ни в одном состоянии данных (Р-025, п. 3).
           <div className="xl:col-span-6 2xl:col-span-5 xl:[&>section]:h-full">
             <MarketsModule config={marketsM} data={markets} />
           </div>

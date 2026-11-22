@@ -16,12 +16,6 @@ import { Segmented } from '../_money/Segmented';
 import { TronRef } from '../_money/tron';
 import { DEPOSIT_STUCK_MINUTES, asDepositFilter, filterDeposits, hoursSince, moneyHref } from './view';
 
-/**
- * Вкладка «Депозиты»: заявки клиентов «я отправил, вот хэш». Проверку в сети
- * и зачисление делает наблюдатель — у оператора здесь действий нет, это
- * реестр для сверки (хэш и отправитель — со ссылкой в Tronscan).
- */
-
 const stuck = (d: DepositRowView) =>
   d.status === 'claimed' && hoursSince(d.claimedAt) * 60 > DEPOSIT_STUCK_MINUTES;
 

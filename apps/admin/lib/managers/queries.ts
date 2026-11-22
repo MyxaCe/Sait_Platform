@@ -1,13 +1,6 @@
 import { getPool, type Queryable } from '../db';
 import { asState, type VerificationState } from '../clients/verification-state';
 
-/**
- * Чтения «менеджеров клиентов» (ТОЛЬКО ЧТЕНИЕ, не журналируются — как реестр).
- * Пригодный менеджер = флаг `is_client_manager`, не отключён, не `system:*`,
- * роль видит раздел «Клиенты» (admin/operator/finance_operator — см. policy.ts;
- * в SQL тот же перечень, тест сверяет).
- */
-
 export const MANAGER_ROLES_SQL = `('admin','operator','finance_operator')`;
 
 export interface ManagerOption {
@@ -17,7 +10,6 @@ export interface ManagerOption {
   clients: number;
 }
 
-/** Пригодные менеджеры с числом закреплённых клиентов — для фильтров и форм назначения. */
 export async function listClientManagers(db: Queryable = getPool()): Promise<ManagerOption[]> {
   const r = await db.query(
     `SELECT o.id, o.display_name, o.role,
@@ -35,13 +27,11 @@ export async function listClientManagers(db: Queryable = getPool()): Promise<Man
   }));
 }
 
-/** Число закреплённых клиентов по каждому оператору (экран «Операторы»). */
 export async function managerClientCounts(db: Queryable = getPool()): Promise<Map<string, number>> {
   const r = await db.query(`SELECT manager_id, count(*)::int AS n FROM client_managers GROUP BY manager_id`);
   return new Map(r.rows.map((row) => [String(row.manager_id), Number(row.n)]));
 }
 
-/** Помечен ли оператор как менеджер клиентов (по этому — «Мои клиенты» по умолчанию). */
 export async function isClientManager(operatorId: string, db: Queryable = getPool()): Promise<boolean> {
   const r = await db.query(
     `SELECT 1 FROM operators WHERE id = $1 AND is_client_manager AND disabled_at IS NULL`,
@@ -83,14 +73,10 @@ export interface MyClientsSummary {
   total: number;
   kycPending: number;
   kycNotStarted: number;
-  /** Зачисленные депозиты моих клиентов за 7 дней: штук и сумма (минорные USDT). */
   deposits7d: number;
   deposits7dMinor: number;
-  /** Выводы моих клиентов, ждущие решения. */
   withdrawalsPending: number;
-  /** Входили в кабинет за 7 дней. */
   active7d: number;
-  /** Не входили 30 дней или никогда. */
   dormant30d: number;
 }
 
@@ -136,14 +122,9 @@ export interface MyClientRow {
   kyc: VerificationState;
   lastLoginAt: string | null;
   balanceMinor: number | null;
-  /** Последний зачисленный депозит. */
   lastDepositAt: string | null;
 }
 
-/**
- * «Мои клиенты» для дашборда: сначала те, кто ждёт действия (KYC на проверке,
- * затем не начат), внутри — по последней активности.
- */
 export async function listMyClients(managerId: string, limit = 8, db: Queryable = getPool()): Promise<MyClientRow[]> {
   const r = await db.query(
     `SELECT u.id, u.full_name, u.email, u.last_login_at,

@@ -6,12 +6,6 @@ import { Button, Callout, Checkbox, Select, Textarea, cn } from '@broker/ui';
 import type { SupportActionState } from '@/lib/support/actions';
 import { supportErrorText } from '@/lib/support/labels';
 
-/**
- * Формы экрана обращения. Server actions — `lib/support/actions.ts`;
- * личность и права — на сервере. Итог — Callout у формы (концепция §6.6),
- * без тостов.
- */
-
 type Action = (s: SupportActionState, fd: FormData) => Promise<SupportActionState>;
 
 function Submit({ label, variant = 'primary', disabled, size = 'compact' }: { label: string; variant?: 'primary' | 'secondary' | 'danger' | 'danger-outline'; disabled?: boolean; size?: 'compact' | 'xs' }) {
@@ -29,12 +23,9 @@ function Result({ state, ok }: { state: SupportActionState; ok?: string }) {
   return null;
 }
 
-/* ─── Ответ / заметка ───────────────────────────────────────────────── */
-
 export interface TemplateOption {
   key: string;
   title: string;
-  /** Уже с подставленными переменными тикета. */
   text: string;
 }
 
@@ -148,8 +139,6 @@ export function Composer({
   );
 }
 
-/* ─── Назначение ────────────────────────────────────────────────────── */
-
 export function AssignForm({
   action,
   ticketId,
@@ -187,8 +176,6 @@ export function AssignForm({
   );
 }
 
-/* ─── Смена статуса ─────────────────────────────────────────────────── */
-
 export function StatusForm({
   action,
   ticketId,
@@ -222,8 +209,6 @@ export function StatusForm({
     </form>
   );
 }
-
-/* ─── Спам (опасная зона, два шага) ─────────────────────────────────── */
 
 export function SpamForm({ action, ticketId, ticketNumber, email }: { action: Action; ticketId: string; ticketNumber: number; email: string }) {
   const [state, formAction] = useFormState(action, {});
@@ -267,8 +252,6 @@ export function SpamForm({ action, ticketId, ticketNumber, email }: { action: Ac
   );
 }
 
-/* ─── Склейка гостя с клиентом ──────────────────────────────────────── */
-
 export function LinkClientForm({
   action,
   ticketId,
@@ -299,8 +282,6 @@ export function LinkClientForm({
     </form>
   );
 }
-
-/* ─── Повтор недоставленного письма ─────────────────────────────────── */
 
 export function RequeueButton({ action, outboundId, ticketNumber }: { action: Action; outboundId: string; ticketNumber: number }) {
   const [state, formAction] = useFormState(action, {});

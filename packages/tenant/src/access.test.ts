@@ -7,15 +7,6 @@ import {
   type TenantAccess,
 } from './access';
 
-/**
- * Граница доступа — решения штаба Р-025 и Р-029.
- *
- * Это проверка ЕДИНИЦЫ: сама функция решения. Она не доказывает, что
- * границу кто-то вызывает, — это измерено отдельно и доказуемо только на
- * уровне связки (`config.test.ts`, мутация «срок не применяется»:
- * ноль красных модульных и два красных на связке).
- */
-
 const ALL_STATES: TenantAccess[] = [
   { state: 'allowed', symbols: new Set(['BTCUSD']) },
   { state: 'empty' },
@@ -45,9 +36,6 @@ describe('разбор того, что сказал источник', () => {
     ['поле null', null],
     ['поле — объект', { BTCUSD: true }],
   ])('%s → unavailable:malformed, а НЕ empty', (_name, raw) => {
-    // Умолчание — утверждение о том, чего мы не знаем. «Поля нет» значит
-    // «источник ничего не сказал», а не «разрешено ничего»: первое чинят
-    // в контракте CMS, второе — выбором инструментов владельцем.
     expect(readAccess(raw)).toEqual({ state: 'unavailable', reason: 'malformed' });
   });
 });
@@ -56,8 +44,6 @@ describe('растяжки на сам барьер', () => {
   it('РАСТЯЖКА: пустой список не разрешает ничего. Fail-open тут был дефектом', () => {
     const access = readAccess([]);
 
-    // До Р-025 пустой список давал `null`, и витрина показывала ВСЁ.
-    // Мутация «вернуть fail-open на пустом списке» красит этот тест.
     for (const symbol of ['BTCUSD', 'ETHUSD', 'XAUUSD', 'EURUSD', 'AAPL']) {
       expect(isSymbolAllowed(access, symbol)).toBe(false);
     }
@@ -88,15 +74,10 @@ describe('закрытая граница объясняет себя', () => {
         expect(notice).toBeNull();
         continue;
       }
-      // Исчезновение без объяснения запрещено: нет состояния, в котором
-      // граница закрыта, а сказать нечего (Р-025, п. 3).
       expect(notice).not.toBeNull();
       expect(notice!.titleKey).toBeTruthy();
       expect(notice!.textKey).toBeTruthy();
       expect(notice!.stripKey).toBeTruthy();
-      // Состояние едет в разметку как есть, а не выводится из наличия
-      // причины: «причины нет → значит пусто» снова склеило бы два
-      // состояния, теперь уже в вёрстке.
       expect(notice!.state).toBe(access.state);
     }
   });

@@ -18,19 +18,13 @@ const buttonVariants = cva(
         secondary: 'border border-border bg-card text-primary hover:bg-elevated',
         ghost: 'text-primary hover:bg-primary/5',
         danger: 'bg-negative text-on-negative hover:bg-negative/90',
-        // Спокойный триггер опасного действия (первый шаг двухшагового
-        // подтверждения): не кричит красной заливкой, пока действие не взведено.
         'danger-outline':
           'border border-negative/40 bg-transparent text-negative hover:bg-negative/10',
       },
       size: {
-        // min-h — touch-target ≥ 44px на всех размерах
         sm: 'min-h-[40px] px-4 text-sm',
         md: 'min-h-[44px] px-5 text-sm',
-        // 16px — `text-[16px]`, НЕ `text-base`: тот же класс красит текст в цвет
-        // фона `base` (коллизия имени цвета и размера, аудит С2).
         lg: 'min-h-[52px] px-7 text-[16px]',
-        // Плотные размеры операторского периметра (десктоп, мышь): 32/36px.
         xs: 'h-8 min-h-0 rounded-md px-3 text-[13px]',
         compact: 'h-9 min-h-0 rounded-md px-3.5 text-sm',
       },

@@ -1,12 +1,5 @@
 import { getPool, type Queryable } from '@/lib/db';
 
-/**
- * Чтения для экранов «Риск и плечо», которых нет в `lib/leverage/queries.ts`:
- * кто из клиентов имеет явные настройки плеча (портфель или индивидуальное
- * плечо) — со справочными именами для таблицы. Только чтение, не журналируется
- * (чтения зоны риска не журналируем, §3.8).
- */
-
 export interface ClientLeverageRow {
   userId: string;
   fullName: string;
@@ -43,7 +36,6 @@ export async function listClientLeverageSettings(
   }));
 }
 
-/** Имя и email клиента по id (для шапки выбранного клиента), или `null`. */
 export async function getClientBrief(
   userId: string,
   db: Queryable = getPool(),
@@ -54,11 +46,6 @@ export async function getClientBrief(
   return r ? { fullName: String(r.full_name), email: String(r.email) } : null;
 }
 
-/**
- * Клиенты без строки `client_leverage` — они сидят в портфеле по умолчанию
- * (см. `readTerminalLeverage` в @broker/money). Нужны, чтобы счётчик клиентов
- * портфеля по умолчанию был честным, а не «0».
- */
 export async function countClientsInDefaultImplicitly(db: Queryable = getPool()): Promise<number> {
   const res = await db.query(
     `SELECT COUNT(*)::int AS n FROM users u

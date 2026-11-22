@@ -1,14 +1,6 @@
 import type { Queryable } from '@broker/money';
 import type { MessageKind } from './envelope';
 
-/**
- * Содержимое межплатформенных сообщений (контракт v1).
- *
- * Пакет — МИНИМУМ по согласию клиента: ФИО, email, страна, язык, статус и
- * дата KYC источника, хеш доказательства инициативы, время и версия
- * согласия. Без балансов, без документов KYC, без данных оператора.
- */
-
 export interface PackageData {
   number: string;
   sourcePlatform: string;
@@ -40,12 +32,10 @@ export interface StatusData {
   };
 }
 
-/** Ключ идемпотентности факта: повторная доставка того же факта — «дубликат». */
 export function dedupeKey(transferId: string, kind: MessageKind, event?: string): string {
   return `${transferId}:${kind}${event ? `:${event}` : ''}`;
 }
 
-/** Поставить сообщение в очередь доставки (та же транзакция, что и факт). */
 export async function enqueueMessage(
   tx: Queryable,
   m: { transferId: string; to: string; kind: MessageKind; data: object; event?: string },

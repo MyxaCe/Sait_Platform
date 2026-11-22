@@ -1,13 +1,5 @@
 import { randomUUID } from 'node:crypto';
 
-/**
- * Ключи объектов поддержки в хранилище (MinIO/S3), как у KYC — каждый
- * сегмент проверяется, недопустимый — отказ (fail-closed), а не «очистим молча»:
- *   вложение — `support/{tenant}/{ticketId}/{uuid}`;
- *   сырое письмо — `support-raw/{tenant}/{yyyy-mm}/{uuid}.eml`.
- * Префиксы отдельные от `kyc/`: своя политика бакета и lifecycle (срок
- * хранения — 5 лет, как AML-записи, настраивается на бакете).
- */
 export const SUPPORT_KEY_PREFIX = 'support';
 export const SUPPORT_RAW_PREFIX = 'support-raw';
 
@@ -27,7 +19,6 @@ export function buildRawMailKey(tenant: string, at: Date, uuid: string = randomU
   return [SUPPORT_RAW_PREFIX, seg('tenant', tenant), ym, `${seg('uuid', uuid)}.eml`].join('/');
 }
 
-/** Ключ для загрузки клиентом ещё до появления тикета (черновик вложения). */
 export function buildPendingAttachmentKey(tenant: string, userId: string, uuid: string = randomUUID()): string {
   return [SUPPORT_KEY_PREFIX, seg('tenant', tenant), 'u', seg('user', userId), seg('uuid', uuid)].join('/');
 }

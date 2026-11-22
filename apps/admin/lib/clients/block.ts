@@ -2,49 +2,19 @@ import type { PoolClient } from 'pg';
 import { getPool, type Queryable } from '../db';
 import { appendJournalEntry } from '../journal/journal';
 
-/**
- * Блокировка / разблокировка клиента (ADM-02, Р-049, Р-394).
- *
- * Образец — `lib/kyc/decide.ts`: одно решение = одна транзакция, и в ней ДВА
- * неразделимых факта:
- *  1. смена `client_blocks.blocked` (первая блокировка создаёт строку);
- *  2. запись в неизменяемый журнал через `appendJournalEntry` (кто/когда/
- *     основание/клиент) и привязка `last_journal_seq` к ней.
- * Либо оба, либо ни одного (BEGIN/COMMIT): состояние без записи — решение без
- * следа, запись без состояния — след без решения.
- *
- * Основание ОБЯЗАТЕЛЬНО и для блока, и для разблока (danger-операция меняет
- * доступ клиента — Р-394 требует основание у любого значимого действия).
- *
- * Разрешён только СОДЕРЖАТЕЛЬНЫЙ переход: заблокировать уже заблокированного
- * или разблокировать не заблокированного — `alreadyInState`, ничего не пишем
- * (идемпотентно и без шумных пустых записей в журнал).
- *
- * `operatorId` берётся из СЕССИИ вызывающим server action-ом, НЕ из формы
- * (Р-451). Роль-гейт (блокировка — только admin) — тоже на стороне action-а
- * (fail-closed): этот модуль — транзакционное ядро, личность и право проверены
- * до входа сюда.
- */
-
 export type BlockAction = 'block' | 'unblock';
 
 export interface BlockInput {
-  /** `operators.id` автора решения — из серверной сессии, НЕ из формы. */
   operatorId: string;
-  /** `users.id` клиента, о котором решение. */
   userId: string;
   action: BlockAction;
-  /** Основание — обязательно и непустое для обоих переходов. */
   reason: string;
 }
 
 export type BlockResult =
   | { ok: true; blocked: boolean; journalSeq: number }
-  /** Нет основания — fail-closed, ничего не пишем. */
   | { ok: false; reason: 'missingReason' }
-  /** Нет такого клиента (`users`). */
   | { ok: false; reason: 'noClient' }
-  /** Клиент уже в целевом состоянии — содержательного перехода нет. */
   | { ok: false; reason: 'alreadyInState' };
 
 const ACTIONS: Record<BlockAction, string> = {
@@ -52,53 +22,21 @@ const ACTIONS: Record<BlockAction, string> = {
   unblock: 'client.unblock',
 };
 
-/**
- * Исход транзакционного ядра блокировки. `applied: false` — содержательного
- * перехода не было (клиент уже в целевом состоянии): ничего не записано, и
- * вызывающий сам решает, ошибка это (ручной блок — `alreadyInState`) или
- * идемпотентный no-op (авто-блок при AML-эскалации на уже заблокированном).
- */
 export type BlockTxOutcome =
   | { applied: true; blocked: boolean; journalSeq: number; sessionsRevoked: number }
   | { applied: false; reason: 'alreadyInState' };
 
-/**
- * Гашение кабинетных сессий клиента ВНУТРИ уже открытой транзакции.
- *
- * Сессии кабинета — строки `sessions` (в куке opaque-токен, в базе его хеш,
- * ADR-022), поэтому удаление строки = немедленный выход: следующий запрос
- * кабинета не найдёт сессию и уведёт на вход, а `/api/sso/token` не выдаст
- * терминалу новый токен — терминал разлогинится не позже своего TTL (кабинет
- * не продлит ему сессию). Возвращает число погашенных сессий (для журнала).
- */
 export async function revokeClientSessionsWithinTx(db: Queryable, userId: string): Promise<number> {
   const res = await db.query(`DELETE FROM sessions WHERE user_id = $1 RETURNING id`, [userId]);
   return res.rows.length;
 }
 
-/**
- * Транзакционное ядро блокировки ВНУТРИ уже открытой транзакции (ADM-02).
- *
- * Вынесено из `setClientBlock`, чтобы смежная зона могла сделать блокировку
- * ЧАСТЬЮ СВОЕЙ транзакции, не дублируя схему `client_blocks`: ADM-14
- * (AML-эскалация → авто-блок) журналирует `client.aml_escalated` и
- * `client.block` одним BEGIN/COMMIT. `setClientBlock` теперь тонкая обёртка
- * над этим ядром — её SQL, поведение и контракт не изменились.
- *
- * Предусловия (на вызывающем): `reason` непустой; клиент существует (проверен
- * или поймает FK). Делает ровно то же, что делал встроенный код: `SELECT …
- * FOR UPDATE`, upsert `client_blocks`, append в журнал той же транзакцией,
- * привязка `last_journal_seq`. Содержательного перехода нет → `applied: false`
- * без единой записи.
- */
 export async function applyClientBlockWithinTx(
   db: Queryable,
   input: { operatorId: string; userId: string; action: BlockAction; reason: string },
 ): Promise<BlockTxOutcome> {
   const targetBlocked = input.action === 'block';
 
-  // Текущее состояние: нет строки — не заблокирован. Содержательный переход
-  // обязателен (идемпотентность + защита от гонки: строку держит FOR UPDATE).
   const cur = await db.query(`SELECT blocked FROM client_blocks WHERE user_id = $1 FOR UPDATE`, [
     input.userId,
   ]);
@@ -118,12 +56,8 @@ export async function applyClientBlockWithinTx(
     [input.userId, targetBlocked, input.reason, input.operatorId],
   );
 
-  // Блокировка действует по-настоящему: кабинетные сессии клиента гасятся
-  // ТОЙ ЖЕ транзакцией (и ручной блок, и AML авто-блок идут через это ядро).
-  // Разблокировка сессий не возвращает — клиент просто снова может войти.
   const sessionsRevoked = targetBlocked ? await revokeClientSessionsWithinTx(db, input.userId) : 0;
 
-  // Запись решения — ТОЙ ЖЕ транзакцией (журнал неизменяем базой, Р-049).
   const entry = await appendJournalEntry(
     {
       operatorId: input.operatorId,
@@ -159,7 +93,6 @@ export async function setClientBlock(
 ): Promise<BlockResult> {
   const reason = input.reason?.trim() ?? '';
   if (reason.length === 0) {
-    // Блок/разблок без основания не пишется (Р-394), fail-closed.
     return { ok: false, reason: 'missingReason' };
   }
 
@@ -167,8 +100,6 @@ export async function setClientBlock(
   try {
     await client.query('BEGIN');
 
-    // Клиент обязан существовать: FK это и так бы поймал, но вернуть понятный
-    // отказ лучше, чем ловить нарушение ограничения.
     const exists = await client.query(`SELECT 1 FROM users WHERE id = $1`, [input.userId]);
     if (exists.rows.length === 0) {
       await client.query('ROLLBACK');
@@ -197,10 +128,8 @@ export async function setClientBlock(
 }
 
 export interface RevokeSessionsInput {
-  /** `operators.id` — из серверной сессии, НЕ из формы. */
   operatorId: string;
   userId: string;
-  /** Основание — обязательно (Р-394). */
   reason: string;
 }
 
@@ -209,12 +138,6 @@ export type RevokeSessionsResult =
   | { ok: false; reason: 'missingReason' }
   | { ok: false; reason: 'noClient' };
 
-/**
- * «Погасить сессии» клиента (ADM-02): РЕАЛЬНОЕ удаление кабинетных сессий +
- * запись `client.sessions_revoked` в журнал — одной транзакцией. Прежде
- * действие только журналировало намерение. Блокировку не меняет: клиент
- * может войти снова (это «выйти везде», а не «закрыть доступ»).
- */
 export async function revokeClientSessions(
   input: RevokeSessionsInput,
   pool: { connect(): Promise<PoolClient> } = getPool(),

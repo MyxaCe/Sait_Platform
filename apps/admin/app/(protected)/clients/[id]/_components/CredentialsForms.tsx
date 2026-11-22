@@ -15,14 +15,6 @@ import {
 import { credentialErrorText, maskAddress, type ChecklistItem } from '@/lib/credentials/policy';
 import { ActionForm, ConfirmFacts } from '../../../_money/ActionForm';
 
-/**
- * Формы вкладки «Учётные данные» (функция 3, решения владельца 10.11).
- * Рисуются ТОЛЬКО тому, кто может править (admin или менеджер этого клиента),
- * — в «Опасной зоне». Каждая правка: основание + чек-лист проверки личности
- * (настраиваемый) + номер тикета (необязателен) → двухшаговое подтверждение
- * со сводкой «что именно» (концепция §6.6–6.7). Сервер перепроверяет права.
- */
-
 export interface CredentialsFormsProps {
   userId: string;
   email: string;
@@ -43,8 +35,6 @@ const usdt = (minor: number) =>
   `${(minor / 100).toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT`;
 
 const when = (iso: string) => new Date(iso).toLocaleString('ru-RU', { dateStyle: 'short', timeStyle: 'short' });
-
-/* ─── Проверка личности + тикет (общие поля правки) ──────────────────── */
 
 function useChecks(items: ChecklistItem[], minChecked: number) {
   const [checked, setChecked] = useState<string[]>([]);
@@ -117,8 +107,6 @@ function Section({ title, hint, children }: { title: string; hint: string; child
   );
 }
 
-/* ─── Email ──────────────────────────────────────────────────────────── */
-
 function EmailForm(p: CredentialsFormsProps) {
   const checks = useChecks(p.checklist, p.minChecked);
   const [email, setEmail] = useState('');
@@ -165,8 +153,6 @@ function EmailForm(p: CredentialsFormsProps) {
   );
 }
 
-/* ─── Пароль ─────────────────────────────────────────────────────────── */
-
 function ResetLinkForm(p: CredentialsFormsProps) {
   const checks = useChecks(p.checklist, p.minChecked);
   return (
@@ -202,10 +188,6 @@ function Submit({ label, variant, disabled }: { label: string; variant: 'danger'
   );
 }
 
-/**
- * Временный пароль: показывается менеджеру ОДИН раз — только в ответе действия,
- * в состоянии этой формы. После обновления страницы его не восстановить.
- */
 function TempPasswordForm(p: CredentialsFormsProps) {
   const checks = useChecks(p.checklist, p.minChecked);
   const [state, action] = useFormState<TempPasswordState, FormData>(issueTempPasswordAction, {});
@@ -282,8 +264,6 @@ function TempPasswordForm(p: CredentialsFormsProps) {
   );
 }
 
-/* ─── Адрес в заявке на вывод ────────────────────────────────────────── */
-
 function AddressForm(p: CredentialsFormsProps) {
   const checks = useChecks(p.checklist, p.minChecked);
   const [wid, setWid] = useState(p.withdrawals[0]?.id ?? '');
@@ -343,8 +323,6 @@ function AddressForm(p: CredentialsFormsProps) {
     </ActionForm>
   );
 }
-
-/* ─── Заморозка вывода ───────────────────────────────────────────────── */
 
 function HoldForm(p: CredentialsFormsProps) {
   const [mode, setMode] = useState<'hours' | 'until' | 'indefinite'>('hours');
@@ -432,8 +410,6 @@ function LiftForm(p: CredentialsFormsProps) {
     </ActionForm>
   );
 }
-
-/* ─── Сборка ─────────────────────────────────────────────────────────── */
 
 export function CredentialsForms(p: CredentialsFormsProps) {
   const credentialsHold = p.hold.active && p.hold.kind !== 'money_flags';

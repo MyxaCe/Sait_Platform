@@ -4,11 +4,6 @@ import type { PublicRules } from '@broker/promo';
 import { bpsPercent, holdParts, PROMO_CURRENCY } from './format';
 import { moneyFormat } from '@/features/ui/money-format';
 
-/**
- * Числа правил человеческими словами: ВСЁ — из `PublicRules` (админка).
- * Возвращает список строк — тот же источник для карточки («ключевое условие»
- * — первые строки) и для раскрывающихся полных условий.
- */
 export function useRuleLines(rules: PublicRules | null): string[] {
   const fmt = moneyFormat(useLocale());
   const t = useTranslations('promo.rules');
@@ -50,7 +45,6 @@ export function useRuleLines(rules: PublicRules | null): string[] {
   }
 }
 
-/** Маркированный список правил. */
 export function RulesList({ lines, className }: { lines: string[]; className?: string }) {
   if (lines.length === 0) return null;
   return (
@@ -65,7 +59,6 @@ export function RulesList({ lines, className }: { lines: string[]; className?: s
   );
 }
 
-/** Полные условия: правила + текст из админки. Раскрывающийся блок (без JS). */
 export function FullTerms({ lines, terms, label }: { lines: string[]; terms: string; label: string }) {
   if (lines.length === 0 && !terms.trim()) return null;
   return (

@@ -14,17 +14,6 @@ import { UnidentifiedView } from './UnidentifiedView';
 import { listManualCredits } from '@/lib/money/credit-queries';
 import { ManualCreditsTable, PendingCreditCard, needsRetry } from '../_money/ManualCredits';
 
-/**
- * Раздел «Деньги» (дизайн §4, концепция §7.1/§7.4): очередь выводов (таблица
- * + панель решения справа), депозиты, неопознанные поступления. Деньги
- * реальные — USDT в сети TRON (TRC20). Роли — admin и finance_operator (без
- * второго аппрува); у остальных раздела нет (404, пункта в рельсе нет).
- * Ключей на сервере нет: USDT на вывод отправляет владелец вручную со своего
- * кошелька и вносит хэш здесь.
- *
- * Фаза 2 — только представление: чтения, server actions, переходы статусов и
- * роль-гейт прежние. Выбор заявки и фильтры — в URL (работают без JS).
- */
 export const dynamic = 'force-dynamic';
 
 const TAB_KEYS: MoneyTab[] = ['withdrawals', 'deposits', 'unidentified', 'credits'];

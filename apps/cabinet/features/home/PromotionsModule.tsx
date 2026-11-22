@@ -8,12 +8,6 @@ import { participationBadge } from '@/features/promo/PromoCards';
 import { RulesList, useRuleLines } from '@/features/promo/RulesSummary';
 import { pickHomePromos, PROMO_CURRENCY, type HomePromo } from '@/features/promo/format';
 
-/**
- * Модуль «Акции» на главной — РЕАЛЬНЫЕ данные `@broker/promo` (раньше —
- * витринные карточки CMS). 1–2 самые релевантные: мои участия с прогрессом,
- * иначе доступные к вступлению. Выключено / не загрузилось — короткое
- * честное сообщение со ссылкой на раздел (модуль не исчезает молча).
- */
 export function PromotionsModule({
   view,
   now,
@@ -21,7 +15,6 @@ export function PromotionsModule({
 }: {
   view: ClientPromotionsView | null;
   now?: Date;
-  /** Узкая колонка десктоп-главной (≥ 2xl): карточки столбиком. */
   compact?: boolean;
 }) {
   const t = useTranslations('promo');

@@ -1,36 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { accessNotice, getTenantAccess, isSymbolAllowed, type TenantAccess } from './tenant';
 
-/**
- * Граница доступа витрины к инструментам (ADR-028) — решения штаба Р-025,
- * Р-029 и Р-030.
- *
- * **Что здесь проверяется после выноса в `@broker/tenant`.** Решение
- * живёт в пакете и покрыто там своими тестами; этот файл проверяет, что
- * витрина его ВЫЗЫВАЕТ и вызывает со своими параметрами. Разница не
- * умозрительная: класс «написано и не вызывается» модульными тестами не
- * ловится в принципе — функция-то исправна. Парная копия кабинета
- * (`apps/cabinet/lib/tenant.test.ts`) делает то же со своей стороны,
- * только теперь она стережёт вызов, а не вторую реализацию.
- *
- * Проверяется ТРИ состояния по отдельности, и в каждом два вопроса:
- * «что именно произошло» (состояния обязаны быть различимы) и «снята ли
- * граница» (нигде и никогда). Третий вопрос — «видно ли это человеку» —
- * закрыт `accessNotice`: исчерпывающий разбор, в котором каждому закрытому
- * состоянию соответствует своё объяснение.
- *
- * Мутации, от которых набор обязан покраснеть (прогнаны, см. ADR-029 и
- * ADR-030):
- *   1. `length === 0 → null` (fail-open на пустом списке — исходный дефект);
- *   2. `isSymbolAllowed` разрешает при `state !== 'allowed'`;
- *   3. отсутствующее `instruments` считается пустым списком;
- *   4. `empty` и `unavailable` снова сливаются в одно значение;
- *   5. недоступность границы перестаёт кричать в лог;
- *   6. адаптер витрины не передаёт теги ревалидации (вебхук перестаёт
- *      работать, поведение при этом выглядит прежним);
- *   7. срок годности от источника не применяется.
- */
-
 const ALL_STATES: TenantAccess[] = [
   { state: 'allowed', symbols: new Set(['BTCUSD']) },
   { state: 'empty' },
@@ -59,10 +29,6 @@ function stubFetch(impl: () => Promise<Response>) {
   return mock;
 }
 
-/* ------------------------------------------------------------------ */
-/* Состояние 1 — список непустой                                       */
-/* ------------------------------------------------------------------ */
-
 describe('список непустой', () => {
   it('разрешено ровно перечисленное, остальное — нет', async () => {
     stubFetch(() => Promise.resolve(Response.json({ instruments: ['BTCUSD', 'ETHUSD'] })));
@@ -72,16 +38,10 @@ describe('список непустой', () => {
     expect(access.state).toBe('allowed');
     expect(isSymbolAllowed(access, 'BTCUSD')).toBe(true);
     expect(isSymbolAllowed(access, 'ETHUSD')).toBe(true);
-    // Символ вне списка не проходит — иначе граница не граница
     expect(isSymbolAllowed(access, 'XAUUSD')).toBe(false);
-    // Граница открыта — объяснять нечего
     expect(accessNotice(access)).toBeNull();
   });
 });
-
-/* ------------------------------------------------------------------ */
-/* Состояние 2 — список пуст                                           */
-/* ------------------------------------------------------------------ */
 
 describe('список пуст', () => {
   it('это СОСТОЯНИЕ empty, а не «списка нет»', async () => {
@@ -90,8 +50,6 @@ describe('список пуст', () => {
     const access = await getTenantAccess();
 
     expect(access).toEqual({ state: 'empty' });
-    // Пустой список — настройка владельца, а не инцидент: в лог ошибок
-    // ему попадать незачем, иначе дежурный пойдёт чинить исправное
     expect(console.error).not.toHaveBeenCalled();
   });
 
@@ -100,9 +58,6 @@ describe('список пуст', () => {
 
     const access = await getTenantAccess();
 
-    // Ни один символ вселенной: до Р-025 пустой список давал `null`, и
-    // витрина показывала ВСЁ. Мутация «вернуть fail-open на пустом
-    // списке» красит именно этот тест.
     for (const symbol of ['BTCUSD', 'ETHUSD', 'XAUUSD', 'EURUSD', 'AAPL']) {
       expect(isSymbolAllowed(access, symbol)).toBe(false);
     }
@@ -114,13 +69,9 @@ describe('список пуст', () => {
     const notice = accessNotice(await getTenantAccess());
 
     expect(notice?.titleKey).toBe('accessEmptyTitle');
-    expect(notice?.reason).toBeUndefined(); // причины нет: ничего не сломалось
+    expect(notice?.reason).toBeUndefined();
   });
 });
-
-/* ------------------------------------------------------------------ */
-/* Состояние 3 — CMS недоступна                                        */
-/* ------------------------------------------------------------------ */
 
 describe('CMS недоступна', () => {
   it('соединение отклонено → unavailable:network, граница закрыта, в логе крик', async () => {
@@ -128,10 +79,9 @@ describe('CMS недоступна', () => {
 
     const access = await getTenantAccess();
 
-    expect(fetchMock).toHaveBeenCalled(); // сходили и узнали по факту
+    expect(fetchMock).toHaveBeenCalled();
     expect(access).toEqual({ state: 'unavailable', reason: 'network' });
     expect(isSymbolAllowed(access, 'BTCUSD')).toBe(false);
-    // Фолбэк без алерта — скрытая авария (R-15)
     expect(console.error).toHaveBeenCalled();
   });
 
@@ -164,8 +114,6 @@ describe('CMS недоступна', () => {
     expect(access).toEqual({ state: 'unavailable', reason: 'not-configured' });
     expect(fetchMock).not.toHaveBeenCalled();
     expect(isSymbolAllowed(access, 'BTCUSD')).toBe(false);
-    // Ненастроенная CMS — конфигурация контура, а не происшествие: сигнал
-    // для машины даёт отпечаток конфигурации /api/health (B-019)
     expect(console.error).not.toHaveBeenCalled();
   });
 
@@ -174,16 +122,9 @@ describe('CMS недоступна', () => {
 
     const access = await getTenantAccess();
 
-    // У терминала «нет тенанта → полный список» законно: `?site=` не задан,
-    // юрисдикции нет. Сайт — всегда витрина конкретного тенанта, и
-    // «переменную забыли» это самый частый способ потерять границу.
     expect(isSymbolAllowed(access, 'BTCUSD')).toBe(false);
   });
 });
-
-/* ------------------------------------------------------------------ */
-/* Молчание источника — не пустой список                               */
-/* ------------------------------------------------------------------ */
 
 describe('CMS ответила, но про инструменты ничего не сказала', () => {
   it.each([
@@ -195,9 +136,6 @@ describe('CMS ответила, но про инструменты ничего 
 
     const access = await getTenantAccess();
 
-    // Умолчание — утверждение о том, чего мы не знаем. «Поля нет» значит
-    // «источник ничего не сказал», а не «разрешено ничего»: первое чинят
-    // в контракте CMS, второе — выбором инструментов владельцем.
     expect(access).toEqual({ state: 'unavailable', reason: 'malformed' });
     expect(console.error).toHaveBeenCalled();
   });
@@ -208,10 +146,6 @@ describe('CMS ответила, но про инструменты ничего 
     expect((await getTenantAccess()).state).toBe('unavailable');
   });
 });
-
-/* ------------------------------------------------------------------ */
-/* Растяжки на сам механизм                                            */
-/* ------------------------------------------------------------------ */
 
 describe('механизм границы', () => {
   it('РАСТЯЖКА: разрешает ТОЛЬКО state === allowed', () => {
@@ -238,15 +172,10 @@ describe('механизм границы', () => {
       if (access.state === 'allowed') {
         expect(notice).toBeNull();
       } else {
-        // Исчезновение без объяснения запрещено: нет состояния, в котором
-        // граница закрыта, а сказать нечего (Р-025, п. 3)
         expect(notice).not.toBeNull();
         expect(notice!.titleKey).toBeTruthy();
         expect(notice!.textKey).toBeTruthy();
         expect(notice!.stripKey).toBeTruthy();
-        // Состояние едет в разметку как есть, а не выводится из наличия
-        // причины: «причины нет → значит пусто» снова склеило бы два
-        // состояния, теперь уже в вёрстке
         expect(notice!.state).toBe(access.state);
       }
     }
@@ -261,12 +190,7 @@ describe('механизм границы', () => {
   });
 });
 
-/* ------------------------------------------------------------------ */
-/* Срок годности списка — от источника (Р-030)                         */
-/* ------------------------------------------------------------------ */
-
 describe('срок годности списка приходит от источника', () => {
-  /** Ответ с заголовками: `Date` — якорь срока, он от источника. */
   function withAge(ageSeconds: number, cacheControl: string) {
     const date = new Date(Date.now() - ageSeconds * 1000).toUTCString();
     return () =>
@@ -280,12 +204,8 @@ describe('срок годности списка приходит от исто�
 
     const access = await getTenantAccess();
 
-    // «Продолжаем по последнему известному» запрещено: список меняется
-    // ровно потому, что меняются разрешения. Мутация «не применять срок»
-    // красит этот тест и ни одного модульного в пакете.
     expect(access).toEqual({ state: 'unavailable', reason: 'expired' });
     expect(isSymbolAllowed(access, 'BTCUSD')).toBe(false);
-    // Закрытая граница объясняет себя — и `expired` отличим от прочих причин
     expect(accessNotice(access)?.reason).toBe('expired');
   });
 
@@ -296,19 +216,11 @@ describe('срок годности списка приходит от исто�
   });
 
   it('сегодняшний источник срока не называет (`no-store`) → действует наше окно', async () => {
-    // Так отвечает legacy на `/v1/cms/sites/{slug}`; v2 на доставке
-    // отвечает `private, no-cache`. Обе директивы — про переиспользование
-    // ответа посредником, а не про срок действия разрешений, и читать их
-    // как срок нельзя. Пункт Р-030 закрыт наполовину, см. TD-015.
     stubFetch(withAge(10 ** 6, 'no-store'));
 
     expect(isSymbolAllowed(await getTenantAccess(), 'BTCUSD')).toBe(true);
   });
 });
-
-/* ------------------------------------------------------------------ */
-/* Адаптер витрины: свои параметры запроса                             */
-/* ------------------------------------------------------------------ */
 
 describe('витрина вызывает границу со своими параметрами', () => {
   it('теги инвалидации карточки сайта доходят до запроса', async () => {
@@ -316,8 +228,6 @@ describe('витрина вызывает границу со своими па�
 
     await getTenantAccess();
 
-    // Без тегов вебхук CMS перестаёт обновлять границу, а поведение
-    // выглядит прежним до первой правки allow-list.
     const init = (mock.mock.calls[0] as unknown[])[1] as {
       next?: { tags?: string[]; revalidate?: number };
     };

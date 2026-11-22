@@ -13,20 +13,12 @@ import { dedupeKey, enqueueMessage, type PackageData, type RevokeData, type Stat
 import { targetAcceptance } from './policy';
 import { getGroupPlatform, type GroupPlatform } from './registry';
 
-/**
- * Цель: входящий перевод — ПРИГЛАШЕНИЕ, а не счёт. Клиент получает письмо от
- * бренда цели со ссылкой регистрации (предзаполнение только согласованных
- * полей), сам принимает оферту и проходит KYC заново. Статусы уходят
- * источнику подписанными сообщениями `transfer.status`.
- */
-
 export const INVITE_TTL_DAYS = 30;
 
 export function hashInviteToken(token: string): string {
   return createHash('sha256').update(token, 'utf8').digest('hex');
 }
 
-/** Ссылка регистрации: next-intl, ru — без префикса, en — `/en`. */
 export function inviteLink(cabinetUrl: string, locale: 'ru' | 'en', token: string): string {
   const base = cabinetUrl.replace(/\/+$/, '');
   return `${base}${locale === 'en' ? '/en' : ''}/register?invite=${encodeURIComponent(token)}`;
@@ -79,7 +71,6 @@ export type ReceivePackageOutcome =
   | { result: 'accepted' | 'duplicate' }
   | { result: 'refused'; code: string; retryable?: boolean };
 
-/** Приём пакета внутри транзакции приёмника (подпись/nonce уже проверены). */
 export async function receivePackageWithinTx(
   tx: Queryable,
   input: { transferId: string; from: string; data: PackageData; packageSha256: string; selfSlug: string; now: Date },
@@ -88,7 +79,6 @@ export async function receivePackageWithinTx(
   if (d.sourcePlatform !== input.from) return { result: 'refused', code: 'senderMismatch' };
   if (!d.client?.email || !d.client?.fullName || !d.number) return { result: 'refused', code: 'malformedPackage' };
 
-  // Возврат пришёл раньше пакета (гонка доставки) — пакет не принимаем.
   const tomb = await tx.query(`SELECT 1 FROM platform_transfer_inbox WHERE dedupe_key = $1`, [
     dedupeKey(input.transferId, 'transfer.revoke'),
   ]);
@@ -201,15 +191,6 @@ function noticeMail(locale: 'ru' | 'en', self: GroupPlatform, number: string): {
   };
 }
 
-/**
- * Возврат перевода в цели (сообщение `transfer.revoke` от источника).
- *  - клиент не зарегистрирован → приглашение отзывается (статус revoked — ссылка недействительна, письмо
- *    в очереди отменено);
- *  - зарегистрирован → счёт замораживается (заморозка + запрет вывода, те же
- *    флаги и коды журнала, что у формы «Деньги»), торговля — через терминал
- *    повтором воркера, клиенту письмо; если были зачисления — задача менеджеру
- *    цели «вернуть средства выводом». Деньги автоматически не двигаются.
- */
 export async function receiveRevokeWithinTx(
   tx: Queryable,
   input: { transferId: string; from: string; data: RevokeData; selfSlug: string; now: Date },
@@ -227,8 +208,6 @@ export async function receiveRevokeWithinTx(
     detail: {},
   };
   if (!row) {
-    // Пакета не было (или он ещё в пути): надгробие в inbox уже записано —
-    // пришедший позже пакет будет отвергнут.
     status.detail = { stage: 'unknown_transfer' };
     await enqueueMessage(tx, { transferId: input.transferId, to: input.from, kind: 'transfer.status', data: status, event: 'revoke_applied' });
     return { result: 'accepted', stage: 'unknown_transfer' };
@@ -297,8 +276,6 @@ export async function receiveRevokeWithinTx(
   return { result: 'accepted', stage: 'after_registration' };
 }
 
-/* ── Регистрация по приглашению (кабинет цели) ────────────────────────── */
-
 export interface InvitePrefill {
   transferId: string;
   number: string;
@@ -344,12 +321,6 @@ export async function inspectInvite(db: Queryable, token: string, now = new Date
   };
 }
 
-/**
- * Связать нового клиента с приглашением — В ТОЙ ЖЕ транзакции, что и создание
- * пользователя. Токен одноразовый (условие в WHERE). Источнику уходит статус
- * `registered`. Неверный/использованный токен регистрацию не ломает —
- * клиент просто регистрируется без связи (возвращается `false`).
- */
 export async function bindInviteWithinTx(
   tx: Queryable,
   input: { token: string; userId: string; now?: Date },
@@ -379,8 +350,6 @@ export async function bindInviteWithinTx(
   return true;
 }
 
-/* ── Наблюдения воркера цели ──────────────────────────────────────────── */
-
 async function emitInboundEvent(
   pool: PoolLike,
   sql: string,
@@ -407,7 +376,6 @@ async function emitInboundEvent(
   });
 }
 
-/** Письмо-приглашение ушло (воркер почты отметил `sent`) → `invited`. */
 export function detectInvitesSent(pool: PoolLike): Promise<number> {
   return emitInboundEvent(
     pool,
@@ -421,7 +389,6 @@ export function detectInvitesSent(pool: PoolLike): Promise<number> {
   );
 }
 
-/** Клиент цели прошёл KYC (решение KYC цели) → `kyc_passed`. */
 export function detectKycPassed(pool: PoolLike): Promise<number> {
   return emitInboundEvent(
     pool,
@@ -435,7 +402,6 @@ export function detectKycPassed(pool: PoolLike): Promise<number> {
   );
 }
 
-/** Срок приглашения истёк без регистрации → `expired`. */
 export function expireInvites(pool: PoolLike, now = new Date()): Promise<number> {
   return emitInboundEvent(
     pool,
@@ -448,7 +414,6 @@ export function expireInvites(pool: PoolLike, now = new Date()): Promise<number>
   );
 }
 
-/** Возврат после регистрации: заморозить торговлю в терминале (повтор до успеха). */
 export async function applyPendingFreezes(pool: PoolLike, terminal: TransferTerminalPort): Promise<number> {
   const r = await pool.query(
     `SELECT transfer_id, number, registered_user_id FROM platform_transfers_inbound
@@ -466,7 +431,6 @@ export async function applyPendingFreezes(pool: PoolLike, terminal: TransferTerm
   return done;
 }
 
-/** Менеджер цели вернул средства клиенту (обычным выводом) — задача закрыта. */
 export async function completeRefundTask(
   pool: PoolLike,
   input: { operatorId: string; transferId: string; note: string },

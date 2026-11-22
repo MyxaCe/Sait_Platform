@@ -22,12 +22,6 @@ const PHASE_TONE: Record<ContestSummary['phase'], StatusTone> = {
 
 const TAB_ORDER = { running: 0, upcoming: 1, finished: 2 } as const;
 
-/**
- * «Конкурс» (решение владельца №4): турнир на демо-счетах. Вкладки
- * идущих/будущих/завершённых, правила и призы — из данных, лидерборд с
- * маскированными именами и закреплённым «моим местом», «Участвовать» с
- * предупреждением о сбросе демо.
- */
 export function ContestScreen({
   contests,
   selected,
@@ -77,13 +71,6 @@ export function ContestScreen({
             />
           ) : null}
 
-          {/*
-            ≥ lg: слева шапка и лидерборд (8 из 12), справа закреплённая
-            колонка «Моё место» → призы → правила (4). На телефоне порядок
-            прежний (шапка → моё место → лидерборд → призы → правила): обе
-            колонки там `display: contents`, а порядок задаёт `order-*`.
-            «Моё место» в DOM одно (тесты и скринридер видят один блок).
-          */}
           <div className="flex flex-col gap-4 lg:grid lg:grid-cols-12 lg:items-start lg:gap-5">
             <div className="contents lg:col-span-8 lg:block lg:min-w-0 lg:space-y-5">
               <div className="order-1 min-w-0">
@@ -238,7 +225,6 @@ function Leaderboard({ board }: { board: ContestLeaderboard }) {
   const t = useTranslations('contest');
   const locale = useLocale();
   const rows = [...board.rows];
-  // Моё место вне выдачи (ниже лимита) — дописываем в конец, чтобы клиент себя видел.
   if (board.me && board.me.place !== null && !rows.some((r) => r.isMe)) rows.push(board.me);
   if (rows.length === 0) return <EmptyState size="compact" title={t('leaderboardEmpty')} className="px-4" />;
 

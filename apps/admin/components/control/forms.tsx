@@ -4,16 +4,6 @@ import { useState, type ReactNode } from 'react';
 import { useFormStatus } from 'react-dom';
 import { Button, Callout, Textarea, cn } from '@broker/ui';
 
-/**
- * Локальные примитивы форм-с-основанием зоны «Контроль» (операторы, риск).
- * Повторяют образцы фазы 1 (`clients/[id]/_components/BlockPanel.tsx`):
- * подпись сверху `text-xs`, контрол `compact`, основание — Textarea с
- * подсказкой «пишется в неизменяемый журнал», опасное — в два шага.
- *
- * Кандидаты в @broker/ui (Field, ReasonField, ArmedSubmit) — пакет в фазе 2
- * не трогаем, поэтому живут здесь.
- */
-
 export function Field({
   label,
   htmlFor,
@@ -46,7 +36,6 @@ export function Field({
   );
 }
 
-/** «Основание» — обязательное поле каждого изменяющего действия (§6.6). */
 export function ReasonField({
   id,
   value,
@@ -77,7 +66,6 @@ export function ReasonField({
   );
 }
 
-/** Submit формы с индикатором отправки (спиннер, а не «…»). */
 export function SubmitButton({
   children,
   variant = 'primary',
@@ -104,11 +92,6 @@ export function SubmitButton({
   );
 }
 
-/**
- * Двухшаговое подтверждение опасного действия внутри формы (§6.7): первый шаг —
- * спокойная `danger-outline`; после клика — текст последствий и `danger`
- * «Да, …» + «Отмена». `resetKey` — смена основания снимает взвод.
- */
 export function ArmedSubmit({
   idle,
   confirm,
@@ -152,7 +135,6 @@ export function ArmedSubmit({
   );
 }
 
-/** Результат действия — Callout над формой (§6.6), не исчезает сам. */
 export function ActionResult({
   state,
   okText,

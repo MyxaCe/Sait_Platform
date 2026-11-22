@@ -5,20 +5,6 @@ import {
   tronHexToBase58,
 } from '@broker/money';
 
-/**
- * Тонкий адаптер к TronGrid — ВСЕ ответы сети проходят здесь и превращаются
- * в нейтральные структуры. Наблюдатель и сверка работают только с ними,
- * поэтому тестируются на фикстурах настоящих ответов без сети.
- *
- * Необратимость: `walletsolidity/*` отвечает только по SOLIDIFIED блокам
- * (~1 мин). Пустой ответ `{}` = «ещё не необратима или не существует»;
- * `wallet/gettransactionbyid` различает эти два случая.
- *
- * **Сбой сети ≠ «транзакции нет».** Любая ошибка транспорта/HTTP — это
- * `ChainUnavailableError`, а не `null`: иначе наблюдатель отклонил бы
- * настоящий платёж из-за моргнувшего TronGrid.
- */
-
 export interface TokenTransfer {
   contract: string;
   from: string;
@@ -42,11 +28,8 @@ export interface IncomingUsdt {
 }
 
 export interface ChainReader {
-  /** Необратимая (solidified) транзакция или null — ещё нет / не существует. */
   getSolidTx(txHash: string): Promise<SolidTx | null>;
-  /** Известна ли сети вообще (в т.ч. ещё не необратимая). */
   txExists(txHash: string): Promise<boolean>;
-  /** Подтверждённые входящие USDT на адрес с момента `sinceMs`. */
   listIncomingUsdt(address: string, sinceMs: number): Promise<IncomingUsdt[]>;
 }
 
@@ -57,7 +40,6 @@ export class ChainUnavailableError extends Error {
   }
 }
 
-/** Разбор `walletsolidity/gettransactioninfobyid`. `{}` → null. */
 export function parseSolidTxInfo(txHash: string, json: unknown): SolidTx | null {
   const j = json as Record<string, unknown> | null;
   if (!j || typeof j !== 'object' || typeof j.id !== 'string') return null;
@@ -77,13 +59,11 @@ export function parseSolidTxInfo(txHash: string, json: unknown): SolidTx | null 
         amountRaw: BigInt(`0x${String(log.data || '0')}`),
       });
     } catch {
-      // Битый лог чужого контракта не должен ронять разбор остальных.
     }
   }
   return { txHash, success, blockTime: Number.isFinite(ts) && ts > 0 ? new Date(ts) : null, transfers };
 }
 
-/** Разбор `/v1/accounts/{addr}/transactions/trc20` — только входящие USDT Transfer. */
 export function parseIncomingUsdt(address: string, json: unknown): IncomingUsdt[] {
   const data = (json as { data?: unknown } | null)?.data;
   if (!Array.isArray(data)) throw new ChainUnavailableError('ответ trc20 без data');

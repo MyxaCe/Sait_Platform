@@ -15,40 +15,22 @@ import type { RealAccountView } from '@/lib/money';
 
 type BalanceConfig = Extract<CabinetHomeModule, { type: 'balance' }>;
 
-/** Живые цифры одного счёта из терминала; `null` поля — терминал их не знает. */
 export interface LiveAccountFigures {
   equityMinor: number | null;
   freeMarginMinor: number | null;
   leverage: number | null;
 }
 
-/** Реальный счёт на главной (демо и реальный счёт разделены, решение владельца 09.11). */
 export interface RealAccountBlock {
   account: RealAccountView | null;
   policy: MoneyPolicy;
-  /** Живые цифры терминала; null — терминал не ответил / не настроен / счёта нет. */
   live: LiveAccountFigures | null;
-  /** Терминал ответил — иначе показываем «данные счёта временно недоступны». */
   terminalOk: boolean;
-  /** Живые цифры ДЕМО-счёта из того же ответа терминала; null — нет. */
   demoLive: LiveAccountFigures | null;
-  /** Адрес биржи для ввода настроен (env). Нет — пополнение честно недоступно. */
   depositAddressReady: boolean;
   locale: string;
 }
 
-/**
- * Модуль «Счета» (фаза 2): РЕАЛЬНЫЙ счёт (USDT, ввод/вывод, торговля) и
- * ДЕМО-счёт (учебные деньги, сброс) — две карточки, различимые с первого
- * взгляда: бейдж «Реальный» на золотой рамке против нейтрального «Демо».
- *
- * Суммы — только `<Money>` (табличные цифры, валюта явно). Недоступная по
- * политике кнопка остаётся на месте, а под ней — человеческое объяснение и
- * действие («Пройти верификацию»), без машинных кодов (аудит К6/К7).
- *
- * Сброс демо-счёта без назначенной стартовой суммы (Р-040) — кнопка на месте
- * и говорит, почему не работает.
- */
 export async function BalanceModule({
   config,
   demo,
@@ -79,11 +61,6 @@ export async function BalanceModule({
           </h2>
           <ToneBadge tone="neutral">{t('badgeDemo')}</ToneBadge>
         </div>
-        {/*
-          Строки счёта может не быть вовсе, и после WEB-29 это обычное
-          состояние каждого нового пользователя: счёт заводит терминал
-          при первом входе туда, а не сайт при регистрации.
-        */}
         <p className="mt-3 text-xs text-muted">{t('balanceLabel')}</p>
         {demo ? (
           <p className="mt-0.5 text-[28px] font-semibold leading-9 tracking-tight">
@@ -114,8 +91,6 @@ export async function BalanceModule({
           <TerminalLink account="demo" className={linkButton('secondary', 'w-full sm:w-auto')}>
             {t('tradeDemo')}
           </TerminalLink>
-          {/* Сброс демо-счёта к стартовому балансу (server action). Сумму
-              назначает владелец в CMS; не назначена — об этом написано рядом. */}
           {demo &&
             (startBalance.state === 'set' ? (
               <DemoResetForm
@@ -177,10 +152,8 @@ async function RealAccountCard({
   const { policy } = real;
   const currency = realMoneyCurrency(real.account?.currency);
 
-  // Заморозку объясняет свой Callout выше кнопок — в списке причин она не повторяется.
   const notFrozen = (r: MoneyPolicyReason) => !(policy.frozen && r === 'frozen');
   const withdrawReasons = showWithdraw ? policy.withdrawReasons.filter(notFrozen) : [];
-  // Причина, общая для ввода и вывода, показывается один раз.
   const depositReasons = showDeposit
     ? policy.depositReasons.filter(notFrozen).filter((r) => !withdrawReasons.includes(r))
     : [];
@@ -264,7 +237,6 @@ async function RealAccountCard({
             )}
           </div>
         ) : null}
-        {/* Заморозку проверяет терминал: замороженный должен иметь возможность закрыть позиции. */}
         {!policy.blocked ? (
           <TerminalLink account="real" className={linkButton('secondary', 'px-2')}>
             {t('btnTrade')}

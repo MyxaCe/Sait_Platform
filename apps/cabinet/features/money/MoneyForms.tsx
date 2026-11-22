@@ -14,16 +14,6 @@ import { REAL_ACCOUNT_CURRENCY } from '@broker/money/display-currency';
 import { looksLikeTronAddress, looksLikeTxHash } from './tronscan';
 import { moneyFormat } from '@/features/ui/money-format';
 
-/**
- * Формы ввода/вывода USDT. Исход действия виден человеку всегда (успех,
- * отказ политики человеческим текстом, ошибка суммы/адреса) — молчащая
- * кнопка на реальных деньгах недопустима (урок WEB-42).
- *
- * Проверки формата здесь — подсказка до отправки (хэш 64 hex, адрес «T…»,
- * сумма в пределах доступного). Окончательно всё проверяет сервер и
- * терминал: экшены и их логика не менялись.
- */
-
 const inputCls =
   'h-12 w-full rounded-xl border bg-sunken px-3.5 text-[16px] text-primary outline-none transition-colors placeholder:text-muted focus:border-accent disabled:opacity-60';
 
@@ -85,7 +75,6 @@ export function DepositClaimForm({ disabled }: { disabled: boolean }) {
   const valid = looksLikeTxHash(hash);
   const showError = touched && hash.trim() !== '' && !valid;
 
-  // Принятый хэш — поле очищается: повторно его не отправят.
   useEffect(() => {
     if (state.ok) {
       setHash('');
@@ -130,7 +119,6 @@ export function WithdrawForm({
   minMinor,
 }: {
   disabled: boolean;
-  /** Сколько можно вывести (свободная маржа терминала или баланс); null — неизвестно. */
   availableMinor: number | null;
   minMinor: number;
 }) {
@@ -166,7 +154,6 @@ export function WithdrawForm({
       setTouched({ address: false, amount: false });
       setConfirming(false);
     } else if (state.error) {
-      // Отказ сервера — назад к правке: человек видит причину над формой.
       setConfirming(false);
     }
   }, [state]);
@@ -287,7 +274,6 @@ export function WithdrawForm({
         </div>
       )}
 
-      {/* Значения уходят в экшен из этих полей (в конце формы — не сдвигают отступы). */}
       <input type="hidden" name="address" value={address.trim()} />
       <input type="hidden" name="amount" value={amount.trim()} />
     </form>

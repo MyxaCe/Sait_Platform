@@ -1,9 +1,3 @@
-/**
- * Коды журнала зоны «Акции и партнёры». Литералами — их находит сторож
- * подписей админки (`apps/admin/lib/journal/labels.test.ts`): у каждого кода
- * обязана быть человекочитаемая подпись.
- */
-
 export const PROMO_ACTIONS = {
   created: 'promo.created',
   updated: 'promo.updated',
@@ -88,5 +82,4 @@ export const IB_ACTIONS = {
 
 export const PROMO_SETTINGS_ACTION = 'platform.promo_settings.updated';
 
-/** Системный автор переходов движка (миграция 1794800000000). */
 export const PROMO_ENGINE_OPERATOR = '00000000-0000-4000-8000-00000000c0b3';

@@ -1,11 +1,6 @@
 import type { ElementType } from 'react';
 import { cn } from '../../lib/cn';
 
-/**
- * Хлебные крошки (концепция §6.10). Последний элемент — текущая страница, не
- * ссылка (`aria-current`). Ссылку отдаёт потребитель (`linkComponent` =
- * next/link) — пакет остаётся без next-зависимостей.
- */
 export interface Crumb {
   label: string;
   href?: string;

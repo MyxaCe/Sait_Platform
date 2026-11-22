@@ -6,31 +6,14 @@ import {
   type SanctionsListId,
 } from './lists';
 
-/**
- * Чтения операторской поверхности AML (ADM-14, Р-395).
- *
- * Читаем из клиентской `users` ровно то, что нужно опознать человека и
- * показать его AML-статус (id, имя, email) — не больше (Р-395: оператор ≠
- * клиент). Чтение НЕ журналируется (шум); журналируются только скрининги
- * (`screening.ts`). Население рабочего списка — клиенты, у которых заведена
- * верификация (`client_verification`): AML идёт рука об руку с KYC.
- */
-
 export interface AmlWorklistRow {
   userId: string;
   fullName: string;
   email: string;
   status: AmlStatus;
-  /** Когда сведён последний результат (null — ещё не сводили). */
   screenedAt: string | null;
 }
 
-/**
- * Рабочий список AML: клиенты с заведённой верификацией, статус AML подтянут
- * LEFT JOIN-ом (нет строки → `unscreened`). Порядок — по срочности: сперва
- * `escalated` (найдено, требует действия), затем `unscreened` (не сверялись),
- * затем `clear`; внутри группы — кто дольше ждёт/раньше сведён.
- */
 export async function listAmlWorklist(db: Queryable = getPool()): Promise<AmlWorklistRow[]> {
   const result = await db.query(
     `SELECT u.id,
@@ -74,14 +57,11 @@ export interface AmlCard {
   fullName: string;
   email: string;
   status: AmlStatus;
-  /** Основание последнего скрининга. */
   reason: string | null;
   listsChecked: SanctionsListId[];
   screenedAt: string | null;
   screenedByName: string | null;
-  /** Заблокирован ли клиент сейчас (чтение состояния зоны ADM-02). */
   blocked: boolean;
-  /** Основание текущей блокировки (для «эскалация → авто-блок» — AML-причина). */
   blockReason: string | null;
   history: AmlScreeningHistoryEntry[];
 }
@@ -93,11 +73,6 @@ function asHistoryOutcome(action: string): AmlStatus {
   return 'unscreened';
 }
 
-/**
- * Карточка AML клиента: текущий статус (из `client_aml_screening`, COALESCE к
- * `unscreened`) и ПОЛНАЯ история скринингов — срез журнала по действиям
- * `client.aml_*` ровно по этому субъекту. `null`, если такого `users` нет.
- */
 export async function getAmlCard(
   userId: string,
   db: Queryable = getPool(),

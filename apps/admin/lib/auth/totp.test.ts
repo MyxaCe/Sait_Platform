@@ -8,15 +8,6 @@ import {
   verifyTotp,
 } from './totp';
 
-/**
- * ADM-13 · TOTP на чистом `node:crypto` (Р-454 III-3, Р-453 — без нативного).
- *
- * Корректность HMAC/усечения проверяется ОФИЦИАЛЬНЫМИ векторами RFC 6238
- * (SHA1, секрет ASCII "12345678901234567890"): если считалка разойдётся со
- * стандартом, приложение-аутентификатор перестанет совпадать — ловим здесь.
- */
-
-// RFC 6238, Appendix B: тот самый общий секрет, в base32.
 const RFC_SECRET = base32Encode(Buffer.from('12345678901234567890', 'ascii'));
 
 describe('TOTP · векторы RFC 6238 (SHA1, 6 цифр)', () => {
@@ -46,24 +37,24 @@ describe('base32 (RFC 4648)', () => {
 });
 
 describe('verifyTotp · окно дрейфа ±1 (Р-454)', () => {
-  const now = 59_000; // counter = 1
+  const now = 59_000;
 
   it('текущий код принят', () => {
     expect(verifyTotp(RFC_SECRET, '287082', {}, now)).toBe(true);
   });
 
   it('код предыдущего шага (−1) принят', () => {
-    const prevStep = generateTotp(RFC_SECRET, {}, 29_000); // counter 0
+    const prevStep = generateTotp(RFC_SECRET, {}, 29_000);
     expect(verifyTotp(RFC_SECRET, prevStep, {}, now)).toBe(true);
   });
 
   it('код следующего шага (+1) принят', () => {
-    const nextStep = generateTotp(RFC_SECRET, {}, 89_000); // counter 2
+    const nextStep = generateTotp(RFC_SECRET, {}, 89_000);
     expect(verifyTotp(RFC_SECRET, nextStep, {}, now)).toBe(true);
   });
 
   it('код за пределами окна (+10 шагов) отвергнут', () => {
-    const farStep = generateTotp(RFC_SECRET, {}, now + 10 * 30_000); // drift +10, вне ±1
+    const farStep = generateTotp(RFC_SECRET, {}, now + 10 * 30_000);
     expect(verifyTotp(RFC_SECRET, farStep, {}, now)).toBe(false);
   });
 

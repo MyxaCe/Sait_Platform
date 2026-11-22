@@ -1,6 +1,5 @@
 import { Pool } from 'pg';
 
-/** Пул к Postgres платформы (broker_site) — общий failure domain с сайтом (ADR-022). */
 const globalStore = globalThis as unknown as { __cabinetPool?: Pool };
 
 export function getPool(): Pool {

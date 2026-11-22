@@ -14,20 +14,6 @@ import { enqueueMessage, type PackageData, type RevokeData, type StatusData } fr
 import { MANAGER_DAILY_TRANSFER_LIMIT, checkDirection, type DirectionBlocker, type DirectionHint } from './policy';
 import { getGroupPlatform } from './registry';
 
-/**
- * Источник: перевод проводит МЕНЕДЖЕР клиента сам (решение владельца 10.11 —
- * одобрения admin нет). Барьеры, которые держит система:
- *  1. отдельная кнопка и отдельная страница (не форма в общей панели);
- *  2. только закреплённый менеджер этого клиента (флаг is_client_manager +
- *     client_managers.manager_id = оператор). Admin перевод НЕ проводит — он
- *     контролирует постфактум и может «Вернуть перевод»;
- *  3. обязательное доказательство инициативы — тикет, первое сообщение
- *     которого от клиента; согласие — сообщение клиента в нём;
- *  4. жёсткие запреты направления по профилям юрисдикций;
- *  5. анти-массовость: не больше N переводов у менеджера за сутки.
- * Всё — одной транзакцией с журналом и постановкой пакета в очередь.
- */
-
 export type TransferStatus =
   | 'sent'
   | 'delivered'
@@ -79,7 +65,6 @@ export async function createTransfer(
 
   return inTransaction<CreateTransferResult>(pool, async (tx) => {
     const fail = (r: CreateTransferResult) => rollback<CreateTransferResult>(r);
-    // Клиент и его состояние; строка клиента — под замком (гонка двух переводов).
     const u = await tx.query(
       `SELECT u.id, u.full_name, u.email, u.country, u.locale,
               COALESCE(b.blocked, false) AS blocked,
@@ -94,7 +79,6 @@ export async function createTransfer(
     const user = u.rows[0];
     if (!user) return fail({ ok: false, reason: 'noClient' });
 
-    // Только закреплённый менеджер этого клиента с действующим флагом.
     const m = await tx.query(
       `SELECT 1 FROM client_managers cm JOIN operators o ON o.id = cm.manager_id
         WHERE cm.user_id = $1 AND cm.manager_id = $2 AND o.is_client_manager AND o.disabled_at IS NULL`,
@@ -211,24 +195,10 @@ export async function createTransfer(
   });
 }
 
-/* ── Возврат перевода (admin, постфактум) ─────────────────────────────── */
-
 export type RevokeResult =
   | { ok: true; stage: 'before_registration' | 'after_registration'; messageQueued: boolean; restorePending: boolean }
   | { ok: false; reason: 'missingReason' | 'notAdmin' | 'notFound' | 'notRevocable' };
 
-/**
- * «Вернуть перевод» — admin с основанием. Поведение по стадии:
- *  - до регистрации клиента в цели: цель отзывает приглашение (ссылка
- *    недействительна) — подписанным сообщением `transfer.revoke`; если пакет
- *    ещё не доставлен, он снимается с очереди;
- *  - после регистрации: то же сообщение — цель замораживает счёт клиента,
- *    пишет ему письмо и, если он уже пополнил счёт, ставит задачу вернуть
- *    средства выводом. Деньги автоматически не двигаются.
- * В источнике клиент восстанавливается: если счёт закрывали по переводу и до
- * этого он не был заморожен — заморозка снимается (терминал — сразу или
- * повтором воркера).
- */
 export async function revokeTransfer(
   pool: PoolLike,
   input: { operatorId: string; transferId: string; basis: string; now?: Date },
@@ -251,7 +221,6 @@ export async function revokeTransfer(
     if (!LIVE_STATUSES.includes(status)) return fail({ ok: false, reason: 'notRevocable' });
     const stage = ['registered', 'kyc_passed', 'source_closed'].includes(status) ? 'after_registration' : 'before_registration';
 
-    // Пакет ещё в очереди и не уходил — снимаем; иначе цели нужен отзыв.
     const cancelled = await tx.query(
       `UPDATE platform_transfer_outbox SET state = 'cancelled', last_error = 'перевод возвращён до доставки'
         WHERE transfer_id = $1 AND kind = 'transfer.package' AND state IN ('queued', 'failed') AND attempts = 0
@@ -264,15 +233,12 @@ export async function revokeTransfer(
       messageQueued =
         (await enqueueMessage(tx, { transferId: input.transferId, to: String(tr.target_platform), kind: 'transfer.revoke', data })) !==
         null;
-      // Пакет в повторах (цель была недоступна) — новых попыток не нужно.
       await tx.query(
         `UPDATE platform_transfer_outbox SET state = 'cancelled' WHERE transfer_id = $1 AND kind = 'transfer.package' AND state IN ('queued', 'failed')`,
         [input.transferId],
       );
     }
 
-    // Восстановление источника: закрытие по переводу снимается, если до него
-    // счёт не был заморожен (чужую заморозку не трогаем).
     let restorePending = false;
     if (status === 'source_closed' && tr.source_close_prev_frozen === false) {
       await setMoneyFlagsWithinTx(tx, {
@@ -316,8 +282,6 @@ export async function revokeTransfer(
   });
 }
 
-/* ── Закрытие счёта в источнике (менеджер/admin, с основанием) ────────── */
-
 export type CloseResult =
   | { ok: true }
   | { ok: false; reason: 'fundsOrPositions'; balanceMinor: number; equityMinor: number; openPositions: number }
@@ -334,12 +298,6 @@ export type CloseResult =
         | 'terminalRefused';
     };
 
-/**
- * «Закрыть счёт по переводу»: клиент зарегистрировался в цели, баланс
- * реального счёта в источнике нулевой → торговля замораживается (флаг
- * заморозки + терминал), вход в кабинет остаётся. Это закрытие по запросу
- * клиента; деньги не двигаются.
- */
 export async function closeSourceAccount(
   pool: PoolLike,
   terminal: TransferTerminalPort,
@@ -357,8 +315,6 @@ export async function closeSourceAccount(
     if (!m.rows.length) return { ok: false, reason: 'notAllowed' };
   }
   if (!['registered', 'kyc_passed'].includes(String(tr.status))) return { ok: false, reason: 'notReady' };
-  // Деньги и позиции — fail-closed: закрыть можно только пустой счёт без
-  // открытых позиций и без незавершённых заявок ввода/вывода на сайте.
   const pending = await pool.query(
     `SELECT (SELECT count(*)::int FROM crypto_withdrawals
               WHERE user_id = $1 AND status NOT IN ('settled', 'rejected', 'cancelled')) AS w,
@@ -419,7 +375,6 @@ export async function closeSourceAccount(
   });
 }
 
-/** Воркер: снять заморозку торговли в терминале у возвращённых переводов. */
 export async function applyPendingRestores(pool: PoolLike, terminal: TransferTerminalPort): Promise<number> {
   const r = await pool.query(
     `SELECT id, number, user_id FROM platform_transfers WHERE restore_state = 'pending' ORDER BY revoked_at LIMIT 20`,
@@ -442,8 +397,6 @@ export async function applyPendingRestores(pool: PoolLike, terminal: TransferTer
   }
   return done;
 }
-
-/* ── Исходы доставки и статусы от цели ────────────────────────────────── */
 
 export async function markPackageDeliveredWithinTx(tx: Queryable, transferId: string, at: Date): Promise<void> {
   const r = await tx.query(
@@ -493,11 +446,6 @@ const EVENT_STATUS: Partial<Record<StatusData['event'], TransferStatus>> = {
   kyc_passed: 'kyc_passed',
 };
 
-/**
- * Статус от цели (`transfer.status`). Отправитель обязан быть целью ЭТОГО
- * перевода. Статус двигается только вперёд; у возвращённого перевода
- * принимается лишь подтверждение возврата (`revoke_applied`).
- */
 export async function applyTargetStatusWithinTx(
   tx: Queryable,
   input: { transferId: string; from: string; data: StatusData; now: Date },
@@ -541,8 +489,6 @@ export async function applyTargetStatusWithinTx(
     await tx.query(`UPDATE platform_transfers SET status = 'expired', updated_at = $2 WHERE id = $1`, [input.transferId, input.now]);
   } else {
     const next = EVENT_STATUS[ev]!;
-    // Время фиксируем всегда (даже если события пришли не по порядку),
-    // статус — только вперёд и не поверх «закрыт в источнике».
     const forward = ORDER.indexOf(next) > ORDER.indexOf(status) && status !== 'source_closed';
     await tx.query(
       `UPDATE platform_transfers SET ${timeCol[ev]} = COALESCE(${timeCol[ev]}, $2),
@@ -572,7 +518,6 @@ export async function applyTargetStatusWithinTx(
   return 'applied';
 }
 
-/** Ручной повтор доставки (admin/менеджер): сброс счётчика упавших сообщений перевода. */
 export async function retryDelivery(pool: PoolLike, input: { operatorId: string; transferId: string }): Promise<number> {
   return inTransaction(pool, async (tx) => {
     const r = await tx.query(
@@ -596,7 +541,6 @@ export async function retryDelivery(pool: PoolLike, input: { operatorId: string;
   });
 }
 
-/** Admin просмотрел переводы — уведомление гаснет (журнал: кто и сколько). */
 export async function markTransfersSeen(pool: PoolLike, operatorId: string): Promise<number> {
   return inTransaction(pool, async (tx) => {
     const r = await tx.query(

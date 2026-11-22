@@ -9,24 +9,6 @@ import {
 } from 'node:crypto';
 import { canonicalize } from '@broker/money';
 
-/**
- * Межплатформенное сообщение и его подпись (Ed25519, `node:crypto`).
- *
- * Модель доверия:
- *  - приватный ключ платформы — ТОЛЬКО в env её ячейки
- *    (`PLATFORM_TRANSFER_SIGNING_KEY_PEM_B64`), не в базе и не в CMS;
- *  - публичные ключи соседей — в реестре платформ группы (`group_platforms`),
- *    их вносит admin с основанием и записью в журнал;
- *  - подписывается КАНОНИЧЕСКАЯ форма конверта (рекурсивно отсортированные
- *    ключи — тот же `canonicalize`, что у хеш-цепочки журнала), поэтому
- *    перестановка полей при сериализации подпись не ломает;
- *  - защита от повтора: случайный `nonce` (одноразовый у получателя) и
- *    `issuedAt` в окне ±5 минут; идемпотентность по смыслу — `transferId` +
- *    тип + событие (повторная доставка того же факта — «дубликат», не ошибка).
- *
- * Нативных аддонов нет (урок Р-453: `.node` ломают `next build`).
- */
-
 export const PROTOCOL_VERSION = 1 as const;
 export const MAX_CLOCK_SKEW_MS = 5 * 60_000;
 export const MESSAGES_PATH = '/api/platform-transfer/v1/messages';
@@ -37,7 +19,6 @@ export const MESSAGE_KINDS: readonly MessageKind[] = ['transfer.package', 'trans
 export interface Envelope<D = unknown> {
   v: typeof PROTOCOL_VERSION;
   kind: MessageKind;
-  /** id строки outbox отправителя (для трассировки, не для идемпотентности). */
   messageId: string;
   from: string;
   to: string;
@@ -49,7 +30,6 @@ export interface Envelope<D = unknown> {
 
 export interface SignedMessage<D = unknown> {
   envelope: Envelope<D>;
-  /** base64 подписи Ed25519 над `canonicalize(envelope)`. */
   signature: string;
 }
 
@@ -57,7 +37,6 @@ export function sha256Hex(input: string | Buffer): string {
   return createHash('sha256').update(input).digest('hex');
 }
 
-/** Хеш содержимого по канонической форме (пакет, доказательство). */
 export function canonicalSha256(value: unknown): string {
   return sha256Hex(canonicalize(value));
 }
@@ -75,7 +54,6 @@ export function signEnvelope<D>(envelope: Envelope<D>, privateKey: KeyObject): S
   return { envelope, signature };
 }
 
-/** Любая ошибка (битый ключ, битая base64) — «подпись неверна», не авария. */
 export function verifyEnvelope(message: SignedMessage, publicKeyPem: string): boolean {
   try {
     const key = createPublicKey(publicKeyPem);
@@ -88,11 +66,6 @@ export function verifyEnvelope(message: SignedMessage, publicKeyPem: string): bo
 
 export const SIGNING_KEY_ENV = 'PLATFORM_TRANSFER_SIGNING_KEY_PEM_B64';
 
-/**
- * Приватный ключ платформы из env (PKCS8 PEM в base64). Нет ключа — `null`:
- * отправка сообщений невозможна (fail-closed), админка показывает «ключ не
- * задан», а приём (проверка чужих подписей) продолжает работать.
- */
 export function loadSigningKey(env: Record<string, string | undefined> = process.env): KeyObject | null {
   const b64 = env[SIGNING_KEY_ENV]?.trim();
   if (!b64) return null;
@@ -108,7 +81,6 @@ export function publicKeyPemOf(privateKey: KeyObject): string {
   return createPublicKey(privateKey).export({ type: 'spki', format: 'pem' }).toString().trim();
 }
 
-/** Короткий отпечаток ключа для журнала и сверки глазами (sha256 SPKI DER, 16 hex). */
 export function keyFingerprint(publicKeyPem: string | null | undefined): string | null {
   if (!publicKeyPem) return null;
   try {
@@ -130,7 +102,6 @@ export function isValidEd25519PublicKeyPem(pem: string): boolean {
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const SLUG = /^[a-z0-9][a-z0-9-]{1,31}$/;
 
-/** Строгая проверка формы входящего сообщения (производитель строг, потребитель — тоже: это граница доверия). */
 export function parseSignedMessage(raw: unknown): SignedMessage | null {
   if (!raw || typeof raw !== 'object') return null;
   const m = raw as Record<string, unknown>;

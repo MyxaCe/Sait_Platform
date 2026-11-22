@@ -1,23 +1,13 @@
 import type { DepositRowView, WithdrawalRowView } from '@/lib/crypto/queries';
 
-/**
- * Представление раздела «Деньги»: порядок очереди, фильтры, ссылки. Чтения
- * (`lib/crypto/queries.ts`) не меняются — здесь только сортировка и отбор уже
- * прочитанных строк для показа.
- */
-
 export type MoneyTab = 'withdrawals' | 'deposits' | 'unidentified' | 'credits';
 
-/** Подана дольше — «просрочена» (подсветка возраста в очереди). */
 export const WITHDRAWAL_SLA_HOURS = 24;
-/** Ждёт сети дольше — подсветка (наблюдатель обычно зачисляет за минуты). */
 export const DEPOSIT_STUCK_MINUTES = 60;
 
-/** Порядок «что делать первым»: на проверке → подана → одобрена (ждёт хэша) → отправлена. */
 const OPEN_ORDER: Record<string, number> = { needs_review: 0, requested: 1, approved: 2, sent: 3 };
 
 export const isOpenWithdrawal = (status: string) => status in OPEN_ORDER;
-/** Ждёт решения оператора (тон warning по словарю). */
 export const awaitsOperator = (status: string) => status === 'requested' || status === 'needs_review';
 
 export type WithdrawalFilter = 'open' | 'closed' | 'all';
@@ -26,7 +16,6 @@ export function asWithdrawalFilter(v: string | undefined): WithdrawalFilter {
   return v === 'closed' || v === 'all' ? v : 'open';
 }
 
-/** Открытые — по срочности, внутри — старейшие сверху; закрытые — новые сверху. */
 export function orderWithdrawals(rows: WithdrawalRowView[], f: WithdrawalFilter): WithdrawalRowView[] {
   const open = rows
     .filter((w) => isOpenWithdrawal(w.status))
@@ -54,7 +43,6 @@ export function filterDeposits(rows: DepositRowView[], f: DepositFilter): Deposi
   return f === 'all' ? rows : rows.filter((d) => d.status === f);
 }
 
-/** Ссылка внутри раздела: только непустые параметры, вкладка по умолчанию — без `tab`. */
 export function moneyHref(params: {
   tab?: MoneyTab;
   f?: string;
@@ -77,11 +65,6 @@ export function sumMinor(rows: Array<{ amountMinor: number | null }>): number {
   return rows.reduce((s, r) => s + (r.amountMinor ?? 0), 0);
 }
 
-/**
- * «Ждут вашей отправки» (волна 3): одобрены, хэша выплаты ещё нет — следующий
- * шаг за оператором (отправить USDT с кошелька биржи и внести хэш). Старейшие
- * первыми: их клиент ждёт дольше всех.
- */
 export interface AwaitingSend {
   count: number;
   totalMinor: number;
@@ -95,7 +78,6 @@ export function awaitingSend(rows: WithdrawalRowView[]): AwaitingSend {
   return { count: list.length, totalMinor: sumMinor(list), oldest: list[0] ?? null };
 }
 
-/** «1 заявка», «2 заявки», «5 заявок». */
 export function requestsWord(n: number): string {
   const m10 = n % 10;
   const m100 = n % 100;

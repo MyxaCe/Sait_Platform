@@ -6,12 +6,6 @@ import type { ClientPromotionsView } from '@broker/promo';
 import { AvailablePromoCard, CARD, ParticipationCard } from './PromoCards';
 import { RewardList } from './RewardList';
 
-/**
- * Экран «Акции» (синхронный — рисуется и в тесте с пустыми/частичными данными).
- * Порядок по важности для клиента: мои участия → доступные → начисления.
- * Выключено (`enabled=false`) — честная причина; раздел не исчезает, деньги
- * клиента (начисления) и его участия видны всегда.
- */
 export function PromotionsScreen({ view, now }: { view: ClientPromotionsView | null; now?: Date }) {
   const t = useTranslations('promo');
 
@@ -39,7 +33,6 @@ export function PromotionsScreen({ view, now }: { view: ClientPromotionsView | n
               <SectionTitle id="promo-mine" count={view.participating.length}>
                 {t('participatingTitle')}
               </SectionTitle>
-              {/* ≥ xl — широкие карточки: прогресс слева, условия справа. */}
               <div className="grid gap-3 lg:grid-cols-2 lg:gap-4 xl:grid-cols-1 xl:gap-5 2xl:grid-cols-2">
                 {view.participating.map((p) => (
                   <ParticipationCard key={p.promotionId} p={p} now={now} />

@@ -12,10 +12,6 @@ export interface StatCounterProps {
   className?: string;
 }
 
-/**
- * Анимированный счётчик: запускается один раз при появлении во вьюпорте,
- * уважает prefers-reduced-motion (показывает значение сразу).
- */
 export function StatCounter({
   value,
   label,
@@ -45,7 +41,6 @@ export function StatCounter({
         const start = performance.now();
         const tick = (now: number) => {
           const progress = Math.min((now - start) / durationMs, 1);
-          // easeOutExpo — быстрый разгон, мягкое торможение
           const eased = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
           setDisplay(Math.round(value * eased));
           if (progress < 1) requestAnimationFrame(tick);

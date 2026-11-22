@@ -20,7 +20,6 @@ const KNOWN = new Set([
   'unavailable',
 ]);
 
-/** Ключ подписи исхода «Участвовать». Незнакомая причина — общий текст. */
 export function enrollMessageKey(o: EnrollOutcome): string | null {
   switch (o.state) {
     case 'idle':

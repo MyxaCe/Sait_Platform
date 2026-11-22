@@ -1,20 +1,4 @@
 #!/usr/bin/env node
-/*
- * Прогрев витрины после деплоя (запускается ВНУТРИ контейнера web):
- *
- *   docker compose exec -T web node apps/web/scripts/revalidate-all.mjs
- *
- * 1. POST /api/revalidate/all с HMAC-подписью секретом вебхука CMS
- *    (`CMS_WEBHOOK_SECRET` из окружения контейнера) — сбрасывает все теги
- *    CMS и кеш маршрутов. CMS не отвечает → маршрут отвечает 503 и НИЧЕГО
- *    не сбрасывает; скрипт выходит с кодом 1.
- * 2. Обходит страницы из /sitemap.xml (ru и en), чтобы они собрались из
- *    свежих данных CMS сейчас, а не у первого посетителя. Деталки
- *    инструментов пропускаются: они динамические, кеша у них нет.
- *
- * Окружение: CMS_WEBHOOK_SECRET (обязательно), PORT (по умолчанию 3000),
- * WARM_ORIGIN (по умолчанию http://127.0.0.1:$PORT), WARM=0 — без обхода.
- */
 import { createHmac, randomUUID } from 'node:crypto';
 
 const secret = process.env.CMS_WEBHOOK_SECRET?.trim();

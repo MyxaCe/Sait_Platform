@@ -2,13 +2,6 @@ import type { StatusKey } from '@broker/ui';
 import type { AmlStatus } from '@/lib/aml/lists';
 import type { FilterOption } from './FilterBar';
 
-/**
- * Подписи и опции фильтров зоны «Клиенты и комплаенс». Тон/подпись статусов —
- * из `STATUS_DICTIONARY` (@broker/ui); здесь только привязка AML-статуса БД к
- * ключу словаря и короткие подписи для колонки «AML» (префикс «AML:» в
- * колонке с заголовком AML — лишний).
- */
-
 export const AML_KEY: Record<AmlStatus, StatusKey> = {
   unscreened: 'aml_unscreened',
   clear: 'aml_clear',

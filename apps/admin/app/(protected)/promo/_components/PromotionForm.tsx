@@ -7,13 +7,6 @@ import type { FormValues } from '@/lib/promo/form';
 import { TYPE_LABELS } from '@/lib/promo/labels';
 import { CheckCard, FieldBox, PromoActionForm, UsdtInput } from './PromoForms';
 
-/**
- * Форма акции (создание — черновик; изменение — черновик или пауза). Поля
- * правил зависят от типа; числа вводятся привычно (%, USDT, дни) и
- * переводятся в правила на сервере, где их проверяет одна схема пакета.
- * Тексты для клиента (ru/en) — здесь же: кабинет берёт их отсюда.
- */
-
 export interface PromotionInitial {
   id?: string;
   type: string;

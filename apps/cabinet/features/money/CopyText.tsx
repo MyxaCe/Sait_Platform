@@ -27,10 +27,6 @@ function Glyph({ done }: { done: boolean }) {
   );
 }
 
-/**
- * Крупная кнопка «Скопировать адрес» (телефон: палец, а не мышь). Только
- * буфер обмена; подтверждение — смена подписи на 2 с, `aria-live`.
- */
 export function CopyButtonLarge({
   value,
   label,
@@ -64,7 +60,6 @@ export function CopyButtonLarge({
   );
 }
 
-/** Иконка-копирование рядом с хэшем/адресом в истории (цель касания 32 px). */
 export function CopyIcon({ value, label, doneLabel }: { value: string; label: string; doneLabel: string }) {
   const [done, setDone] = useState(false);
   return (

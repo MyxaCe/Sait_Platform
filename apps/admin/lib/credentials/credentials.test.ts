@@ -24,12 +24,6 @@ import {
 } from './policy';
 import { getCredentialsAlerts, getCredentialsView } from './queries';
 
-/**
- * Правка учётных данных — на НАСТОЯЩЕМ Postgres (PGlite, все миграции):
- * проверяются права в базе, CHECK-и, уникальность email, очередь писем,
- * гашение сессий и денежная политика тем же SQL, что в проде.
- */
-
 const link = (path: string, token: string, locale: string) => `https://cab.test/${locale}${path}?token=${token}`;
 const fastHash = (p: string) => bcrypt.hash(p, 4);
 const ADDR_A = tronHexToBase58('41' + '11'.repeat(20));
@@ -91,14 +85,11 @@ beforeEach(async () => {
   await assign(client, manager);
   await assign(foreignClient, otherManager);
   await db.query(`UPDATE users SET email_verified_at = now() WHERE id = $1`, [client]);
-  // KYC пройден — иначе вывод закрыт и по KYC-гейту, и тест не отличит причину.
   await db.query(`INSERT INTO client_verification (user_id, state) VALUES ($1, 'verified')`, [client]);
 });
 afterEach(async () => db.close());
 
 const editBase = (actorId: string, userId = client) => ({ actorId, userId, basis: 'Клиент потерял доступ к почте, звонок', ticket: '#1042', checks: CHECKS });
-
-/* ─── Политика (чистые функции) ──────────────────────────────────────── */
 
 describe('учётные данные · правила', () => {
   it('матрица: admin — любой клиент; менеджер — только закреплённый; остальные — нет', () => {
@@ -147,14 +138,11 @@ describe('учётные данные · правила', () => {
   });
 });
 
-/* ─── Права ──────────────────────────────────────────────────────────── */
-
 describe('учётные данные · права (в базе, под транзакцией)', () => {
   it('менеджер — своего клиента можно, чужого нельзя; admin — любого', async () => {
     expect((await sendPasswordResetLink(editBase(manager), { pool: db, link })).ok).toBe(true);
     expect(await sendPasswordResetLink(editBase(manager, foreignClient), { pool: db, link })).toEqual({ ok: false, reason: 'forbidden' });
     expect((await sendPasswordResetLink(editBase(admin, foreignClient), { pool: db, link })).ok).toBe(true);
-    // finance_operator-менеджер — своего клиента (решение владельца 10.11: финансист может быть менеджером).
     expect((await sendPasswordResetLink(editBase(otherManager, foreignClient), { pool: db, link })).ok).toBe(true);
   });
 
@@ -163,12 +151,10 @@ describe('учётные данные · права (в базе, под тра�
     const before = (await journalRows()).length;
     expect(await setWithdrawHold({ actorId: plainOperator, userId: client, basis: 'x', until: null }, { pool: db })).toEqual({ ok: false, reason: 'forbidden' });
     expect(await setWithdrawHold({ actorId: support, userId: client, basis: 'x', until: null }, { pool: db })).toEqual({ ok: false, reason: 'forbidden' });
-    // Флаг снят, а строка закрепления осталась — не менеджер.
     await db.query(`UPDATE operators SET is_client_manager = false WHERE id = $1`, [manager]);
     expect(await changeClientEmail({ ...editBase(manager), newEmail: 'new@mail.test' }, { pool: db, link })).toEqual({ ok: false, reason: 'forbidden' });
     await db.query(`UPDATE operators SET is_client_manager = true, disabled_at = now() WHERE id = $1`, [manager]);
     expect(await issueTemporaryPassword(editBase(manager), { pool: db, hash: fastHash })).toEqual({ ok: false, reason: 'forbidden' });
-    // Мусорный id автора — отказ без запроса к базе.
     expect(await liftWithdrawHold({ actorId: 'x', userId: client, basis: 'x' }, { pool: db })).toEqual({ ok: false, reason: 'forbidden' });
     expect((await journalRows()).length).toBe(before);
     expect(await mails()).toEqual([]);
@@ -189,8 +175,6 @@ describe('учётные данные · права (в базе, под тра�
     expect(j.at(-1)!.payload.ticket).toBeNull();
   });
 });
-
-/* ─── Email ──────────────────────────────────────────────────────────── */
 
 describe('учётные данные · смена email', () => {
   it('сразу меняет email, новый — неподтверждённый; письмо подтверждения на новый и уведомление на старый', async () => {
@@ -253,8 +237,6 @@ describe('учётные данные · смена email', () => {
   });
 });
 
-/* ─── Пароль ─────────────────────────────────────────────────────────── */
-
 describe('учётные данные · пароль', () => {
   it('ссылка сброса — существующий механизм auth_mail_tokens, на текущий email; лимит частоты', async () => {
     const r = await sendPasswordResetLink(editBase(manager), { pool: db, link });
@@ -265,7 +247,6 @@ describe('учётные данные · пароль', () => {
     expect(m[0]!.body).toContain('https://cab.test/ru/reset-password?token=');
     const t = await db.query(`SELECT purpose, token_hash FROM auth_mail_tokens WHERE user_id = $1`, [client]);
     expect(t.rows).toHaveLength(1);
-    // Ещё две — в лимите (3 в час), четвёртая — отказ.
     await sendPasswordResetLink(editBase(manager), { pool: db, link });
     await sendPasswordResetLink(editBase(manager), { pool: db, link });
     expect(await sendPasswordResetLink(editBase(manager), { pool: db, link })).toEqual({ ok: false, reason: 'rateLimited' });
@@ -298,8 +279,6 @@ describe('учётные данные · пароль', () => {
   });
 });
 
-/* ─── Заморозка вывода ───────────────────────────────────────────────── */
-
 describe('учётные данные · заморозка вывода (флаг «Запрет вывода» + resolveMoneyPolicy)', () => {
   it('менеджер замораживает со сроком и снимает вручную; политика денег это видит', async () => {
     const until = new Date(Date.now() + 48 * 3_600_000);
@@ -331,7 +310,6 @@ describe('учётные данные · заморозка вывода (фла
     await db.query(`INSERT INTO client_money_flags (user_id, withdraw_banned, withdraw_ban_kind) VALUES ($1, true, 'money_flags')`, [client]);
     expect(await setWithdrawHold({ actorId: manager, userId: client, basis: 'x', until: null }, { pool: db })).toEqual({ ok: false, reason: 'bannedByFinance' });
     expect(await liftWithdrawHold({ actorId: admin, userId: client, basis: 'x' }, { pool: db })).toEqual({ ok: false, reason: 'notCredentialsHold' });
-    // Старая строка без kind (до миграции) — тоже «денежные флаги».
     await db.query(`UPDATE client_money_flags SET withdraw_ban_kind = NULL WHERE user_id = $1`, [client]);
     expect(await liftWithdrawHold({ actorId: manager, userId: client, basis: 'x' }, { pool: db })).toEqual({ ok: false, reason: 'notCredentialsHold' });
   });
@@ -369,8 +347,6 @@ describe('учётные данные · заморозка вывода (фла
   });
 });
 
-/* ─── Адрес в заявке на вывод ────────────────────────────────────────── */
-
 describe('учётные данные · адрес в заявке на вывод', () => {
   it('requested и approved без хэша — правится; журнал до/после маскированно', async () => {
     const w1 = await addWithdrawal(client, 'requested');
@@ -399,7 +375,6 @@ describe('учётные данные · адрес в заявке на выв�
     for (const id of [sent, settled, rejected]) {
       expect(await fixWithdrawalAddress({ ...editBase(manager), withdrawalId: id, newAddress: ADDR_B }, { pool: db })).toEqual({ ok: false, reason: 'withdrawalNotEditable' });
     }
-    // Чужая заявка через своего клиента — «не найдена»; через чужого клиента — нет прав.
     expect(await fixWithdrawalAddress({ ...editBase(manager), withdrawalId: foreign, newAddress: ADDR_B }, { pool: db })).toEqual({ ok: false, reason: 'noWithdrawal' });
     expect(await fixWithdrawalAddress({ ...editBase(manager, foreignClient), withdrawalId: foreign, newAddress: ADDR_B }, { pool: db })).toEqual({ ok: false, reason: 'forbidden' });
     expect((await journalRows()).length).toBe(0);
@@ -414,8 +389,6 @@ describe('учётные данные · адрес в заявке на выв�
     expect(await fixWithdrawalAddress({ ...editBase(manager), withdrawalId: w, newAddress: ADDR_A }, { pool: db })).toEqual({ ok: false, reason: 'sameAddress' });
   });
 });
-
-/* ─── Журнал и сигналы ───────────────────────────────────────────────── */
 
 describe('учётные данные · журнал и алерты', () => {
   it('в журнале нет полного email, полного адреса и пароля — только маски', async () => {

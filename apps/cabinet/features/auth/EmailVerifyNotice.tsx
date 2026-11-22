@@ -2,10 +2,6 @@ import { getTranslations } from 'next-intl/server';
 import { getPool } from '@/lib/db';
 import { RequestVerifyEmail } from './AuthMailForms';
 
-/**
- * Профиль: email не подтверждён → письмо со ссылкой (почта поддержки).
- * Подтверждённый — ничего не рисуем (недоступное/ненужное не отрисовано).
- */
 export async function EmailVerifyNotice({ userId }: { userId: string }) {
   const r = await getPool()
     .query(`SELECT email_verified_at FROM users WHERE id = $1`, [userId])

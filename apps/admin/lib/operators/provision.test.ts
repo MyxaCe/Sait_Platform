@@ -1,8 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { PoolClient } from 'pg';
 
-// argon2 нативный тут не нужен — провижининг тестирует ЛОГИКУ и журнал, а не
-// сам хеш; подменяем hashPassword на детерминированную строку.
 vi.mock('../auth/password', () => ({
   hashPassword: vi.fn(async () => '$argon2id$v=19$m=65536,t=3,p=4$c2FsdA$aGFzaA'),
 }));
@@ -21,7 +19,6 @@ interface JournalRow {
   entry_hash: string;
 }
 
-/** Фейк одной строки `operators` + журнала-массива в одной транзакции. */
 function fakePool(opts: {
   row?: { role: string; login: string; disabledAt: string | null } | null;
   insertFails?: boolean;

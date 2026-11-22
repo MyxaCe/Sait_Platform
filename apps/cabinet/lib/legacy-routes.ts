@@ -1,10 +1,5 @@
 import { PLATFORM_LOCALES } from '@broker/utils/locales';
 
-/**
- * Старые адреса (r2: кошелёк и профиль объединены, терминал — на весь экран)
- * → новое место, настоящим 307 до рендера (страницы-заглушки остаются
- * запасным путём). Закладки и ссылки из писем продолжают работать.
- */
 const LEGACY: Record<string, string> = {
   deposit: '/wallet?tab=deposit',
   withdraw: '/wallet?tab=withdraw',

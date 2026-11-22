@@ -1,20 +1,6 @@
 import { z } from 'zod';
 import { isoDateTimeSchema } from './common';
 
-/**
- * События ТЕРМИНАЛА в шину платформы (ADR-023 фаза Т3, обратный контур
- * демо-торговли). Конверт — тот же платформенный event-envelope.v1, но
- * `source` здесь произвольный (терминал — не `site-web`), поэтому для
- * ПОТРЕБЛЕНИЯ используем ослабленный `incomingEnvelopeSchema`, а не
- * строгий продюсерский из events.ts.
- *
- * ЧЕРНОВИК для совместного согласования с командой терминала: конверт —
- * наш (готов), payload'ы — предложение платформы. Суммы — в ЦЕНТАХ (int),
- * как `demo_accounts.balance_cents`; объём/цена — number.
- * Ключ счёта — `(tenant, userId)`: tenant = slug сайта, userId = их `sub`.
- */
-
-/** Входящий конверт (потребитель): source не фиксирован. Дедуп по event_id. */
 export const incomingEnvelopeSchema = z.object({
   event_id: z.string().uuid(),
   event: z.string().min(1),
@@ -27,37 +13,14 @@ export const incomingEnvelopeSchema = z.object({
 });
 export type IncomingEnvelope = z.infer<typeof incomingEnvelopeSchema>;
 
-/** Общий ключ счёта во всех событиях терминала. */
 const accountKey = {
   tenant: z.string().min(1),
   userId: z.string().min(1),
-  /**
-   * `accountSeq` — порядковый номер последней записи журнала счёта на момент
-   * операции (КОНТРАКТЫ §5, Р-441). Упорядочивает ОПЕРАЦИИ: события одной
-   * пачки несут один номер. Проекция остатка перезаписывает значение только
-   * при строго большем номере — этим лечится расхождение в тринадцать копеек
-   * (WEB-43), где порядок записи оказался обратен порядку журнала.
-   *
-   * По договору поле обязательное. В КОДЕ пока `optional` — порядок ввода по
-   * Р-277: поле новое, незнакомое потребитель срезает молча, поэтому терминал
-   * вправе начать слать номер ДО того, как витрина включит отбрасывание;
-   * строгим оно станет шагом 3, когда номер поедет на всех событиях (TRM-60).
-   * Строгое сейчас уронило бы разбор событий, уже лежащих в очереди без него.
-   */
   accountSeq: z.number().int().nonnegative().optional(),
-  /**
-   * Счёт события (09.11: демо и реальный разделены). Аддитивное поле:
-   * отсутствие = демо (старые события и старый терминал). Неизвестное
-   * значение НЕ превращается в демо — событие отвергается целиком: деньги
-   * чужого счёта в демо-проекции хуже, чем пропущенное событие (оно уходит в
-   * разбор как malformed).
-   */
   accountKind: z.enum(['demo', 'real']).optional(),
-  /** Идентификатор счёта у терминала (аддитивное поле). */
   accountId: z.string().min(1).optional(),
 };
 
-/** Открытая позиция (снапшот) — для проекции «баланс + открытые позиции». */
 export const terminalPositionSchema = z.object({
   symbol: z.string().min(1),
   side: z.enum(['buy', 'sell']),
@@ -66,7 +29,6 @@ export const terminalPositionSchema = z.object({
 });
 export type TerminalPosition = z.infer<typeof terminalPositionSchema>;
 
-/* terminal.account.opened — терминал завёл демо-счёт пользователя */
 export const terminalAccountOpenedSchema = z.object({
   ...accountKey,
   currency: z.string().length(3),
@@ -75,60 +37,28 @@ export const terminalAccountOpenedSchema = z.object({
   currencyMinorUnits: z.number().int().nonnegative().optional(),
 });
 
-/* terminal.balance.changed — новый реализованный баланс (+ снапшот позиций) */
 export const terminalBalanceChangedSchema = z.object({
   ...accountKey,
   balanceCents: z.number().int(),
-  /**
-   * Денежная тройка (шаг 2). **Пока необязательна** — старое поле ещё
-   * шлётся, и снимет его терминал только после нашего шага 3. Строгое
-   * поле сейчас уронило бы разбор событий, уже лежащих в очереди, и
-   * вместе с суммой потерялось бы всё событие.
-   *
-   * `currencyMinorUnits` — сколько младших единиц в одной основной.
-   * Для доллара два, для иены ноль, для динара три. Именно поэтому
-   * «центы» не универсальны: зашитая сотня врёт на обеих сторонах
-   * этого ряда.
-   */
   balanceMinor: z.number().int().optional(),
   currency: z.string().length(3).optional(),
   currencyMinorUnits: z.number().int().nonnegative().optional(),
-  /*
-   * Причина изменения — ТЕРПИМЫЙ разбор: незнакомое значение → null, событие
-   * не роняется. Иначе новая причина у терминала (так было с `withdrawal`)
-   * делала событие о деньгах «сломанным», и баланс не доезжал.
-   */
   reason: z
     .enum(['trade', 'deposit', 'withdrawal', 'reset', 'adjustment'])
     .nullable()
     .optional()
     .catch(null),
-  /** Полный снапшот открытых позиций на момент события (опционально) */
   positions: z.array(terminalPositionSchema).optional(),
 });
 
-/* terminal.margin.called — предупреждение о марже, до принудительного закрытия */
 export const terminalMarginCalledSchema = z.object({
   ...accountKey,
-  /** Достигнутый уровень маржи, целые проценты. */
   marginLevelPct: z.number().int(),
-  /**
-   * Уровень принудительного закрытия, целые проценты. **Опционально.**
-   *
-   * Порог может быть не задан вовсе — тогда закрытия нет, и сказать
-   * «до закрытия осталось столько-то» нечего. Это **не ноль процентов**:
-   * ноль означал бы «закроют при нулевой марже», то есть конкретную и
-   * очень плохую новость. Отсутствие и значение — разные утверждения
-   * (Р-118, и то же правило про пустую строку из WEB-21).
-   */
   stopOutLevelPct: z.number().int().optional(),
-  /** Средства счёта, целые центы. */
   equityCents: z.number().int(),
-  /** Задействованная маржа, целые центы. */
   usedMarginCents: z.number().int(),
 });
 
-/* terminal.trade.executed — исполненная сделка (для ленты и P&L) */
 export const terminalTradeExecutedSchema = z.object({
   ...accountKey,
   tradeId: z.string().min(1),
@@ -138,61 +68,16 @@ export const terminalTradeExecutedSchema = z.object({
   price: z.number().nonnegative(),
   executedAt: isoDateTimeSchema,
   realizedPnlCents: z.number().int().optional(),
-  /**
-   * Денежная тройка (шаг 2). **Пока необязательна** — старое поле ещё
-   * шлётся, и снимет его терминал только после нашего шага 3. Строгое
-   * поле сейчас уронило бы разбор событий, уже лежащих в очереди, и
-   * вместе с суммой потерялось бы всё событие.
-   *
-   * `currencyMinorUnits` — сколько младших единиц в одной основной.
-   * Для доллара два, для иены ноль, для динара три. Именно поэтому
-   * «центы» не универсальны: зашитая сотня врёт на обеих сторонах
-   * этого ряда.
-   */
   realizedPnlMinor: z.number().int().optional(),
   currency: z.string().length(3).optional(),
   currencyMinorUnits: z.number().int().nonnegative().optional(),
-  /**
-   * Уровень, который ставил человек — стоп, тейк или лимит (Р-193).
-   *
-   * Разница с `price` и есть проскальзывание. **Опционально:** у
-   * рыночного закрытия уровня нет вовсе, и строгое поле обнулило бы
-   * разбор событий, лежащих в очереди и проекциях.
-   *
-   * Число с дробной частью, как и `price`: на ШИНЕ цены десятичные.
-   * (В ручке `/deals/closed` они целые, в единицах `price_decimals`, —
-   * это другая поверхность, и путать их нельзя: целое, прошедшее сюда,
-   * показало бы цену в сто раз больше при двух зелёных сторонах.)
-   */
   level: z.number().nonnegative().optional(),
-  /**
-   * Ряд цены был разорван на момент срабатывания.
-   *
-   * **Трёхзначно:** `true` — разрыв был, `false` — проверяли, не было,
-   * **поля нет — неизвестно**. Последнее стоит у сделок, закрытых до
-   * появления признака: `false` там утверждал бы, что разрыва не было,
-   * то есть отвечал бы за прошлое, которого мы не видели.
-   *
-   * Имя `acrossGap` — кодировка на границе: внутри терминала поле зовётся
-   * `across_gap`, и отображение делает публикующий (§5). Каждая сторона,
-   * переводящая сама, — уже второе имя.
-   */
   acrossGap: z.boolean().optional(),
-  /*
-   * Доход платформы со сделки (решение владельца 10.11, ветка терминала
-   * `demo-fees`). Шлются на ЗАКРЫТИИ, числа — за всю сделку (открытие +
-   * доливки + закрытие), в минорных единицах `currency`. **Опционально и
-   * терпимо**: старые события их не несут — это «не знаем», не ноль;
-   * мусор в поле не роняет событие (`.catch(undefined)`), как у `reason`.
-   * `marketPrice` — рыночная цена закрытия ДО наценки.
-   * `realizedPnlMinor` при этом GROSS (без комиссии).
-   */
   commissionMinor: z.number().int().nonnegative().optional().catch(undefined),
   markupMinor: z.number().int().nonnegative().optional().catch(undefined),
   marketPrice: z.number().nonnegative().optional().catch(undefined),
 });
 
-/** Реестр «routing key → схема payload» терминальных событий (версия v1). */
 export const TERMINAL_EVENT_SCHEMAS = {
   'terminal.account.opened': terminalAccountOpenedSchema,
   'terminal.balance.changed': terminalBalanceChangedSchema,
@@ -215,11 +100,6 @@ export type ParsedTerminalEvent =
   | { name: 'terminal.trade.executed'; data: TerminalTradeExecuted }
   | { name: 'terminal.margin.called'; data: TerminalMarginCalled };
 
-/**
- * Лениво парсит терминальное событие из конверта: неизвестный `event`
- * или невалидный payload → null (потребитель пропускает, не падает —
- * та же двухуровневая модель, что у cabinet-home).
- */
 export function parseTerminalEvent(envelope: IncomingEnvelope): ParsedTerminalEvent | null {
   const name = envelope.event as TerminalEventName;
   const schema = TERMINAL_EVENT_SCHEMAS[name];

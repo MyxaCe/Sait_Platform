@@ -4,14 +4,6 @@ import type { ConnStatus, FeedDriver, Quote } from '../types';
 const TICK_INTERVAL_MS = 800;
 const CONNECT_DELAY_MS = 400;
 
-/**
- * Мок-фид: случайное блуждание цен вокруг базовых значений.
- * Повторяет контракт боевого socket.io-драйвера везде, КРОМЕ статуса:
- * достигать `connected` он не имеет права — цены синтетические, и выдавать
- * их за рыночные нельзя (B-018). Раньше повторял и статус тоже, отчего был
- * неотличим от боевого фида. Гарантия при этом не здесь, а в RealtimeService:
- * что драйвер сообщает о себе сам — не доказательство.
- */
 export function createMockDriver(): FeedDriver {
   const defs = new Map(SYMBOL_UNIVERSE.map((d) => [d.symbol, d]));
   const state = new Map<string, { price: number; open: number }>();
@@ -32,11 +24,6 @@ export function createMockDriver(): FeedDriver {
       digits: def.digits,
       price: Number(s.price.toFixed(def.digits)),
       changePercent: (s.price / s.open - 1) * 100,
-      // Мок книгу заявок не моделирует: у случайного блуждания нет
-      // ни покупателя, ни продавца. `null` — честный ответ, а
-      // выдуманный спред вокруг выдуманной цены был бы вторым слоем
-      // выдумки, который к тому же выглядел бы как настоящая книга
-      // (WEB-36).
       bid: null,
       ask: null,
       ts: Date.now(),
@@ -47,8 +34,6 @@ export function createMockDriver(): FeedDriver {
     if (state.has(symbol)) return;
     const def = defs.get(symbol);
     if (!def) return;
-    // День уже "идёт": открытие чуть в стороне от текущей цены,
-    // чтобы changePercent не был нулевым у всех инструментов
     const drift = 1 + (Math.random() - 0.5) * 0.02;
     state.set(symbol, { price: def.basePrice, open: def.basePrice / drift });
   };
@@ -56,7 +41,6 @@ export function createMockDriver(): FeedDriver {
   const tick = () => {
     const batch: Quote[] = [];
     for (const symbol of subscribed) {
-      // Не каждый инструмент тикает каждый интервал — как в реальном фиде
       if (Math.random() > 0.65) continue;
       const def = defs.get(symbol);
       const s = state.get(symbol);
@@ -75,7 +59,6 @@ export function createMockDriver(): FeedDriver {
       emitStatus('connecting');
       setTimeout(() => {
         emitStatus?.('simulated');
-        // Мгновенный снапшот всех подписок, дальше — тики
         const snapshot = [...subscribed].map(toQuote).filter((q): q is Quote => q !== null);
         if (snapshot.length) emitBatch?.(snapshot);
         timer = setInterval(tick, TICK_INTERVAL_MS);

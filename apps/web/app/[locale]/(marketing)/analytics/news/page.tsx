@@ -21,11 +21,9 @@ export default async function NewsPage({ params }: PageProps) {
   const tCommon = await getTranslations('common');
   const locale = params.locale;
   const intlLocale = intlTag(locale);
-  // Подпись рубрики — UI-словарь; незнакомая рубрика из CMS показывается как есть
   const categoryLabel = (category: string) =>
     t.has(`categories.${category}`) ? t(`categories.${category}`) : category;
 
-  // Новости из CMS (тег cms:articles, условно-динамические → revalidate 60 c)
   const { items } = await getCms('articles', {
     locale: pageLocale(locale),
     revalidate: 60,
@@ -41,7 +39,6 @@ export default async function NewsPage({ params }: PageProps) {
 
   return (
     <div>
-      {/* Главная новость */}
       <Link
         href={`/analytics/news/${featured.slug}`}
         className="group block overflow-hidden rounded-3xl border border-border bg-card p-6 transition-colors hover:border-accent/40 sm:p-8 lg:p-10"
@@ -63,7 +60,6 @@ export default async function NewsPage({ params }: PageProps) {
         <span className="mt-5 inline-block text-sm font-medium text-accent">{t('readFull')}</span>
       </Link>
 
-      {/* Остальные новости */}
       <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 lg:gap-6">
         {rest.map((article) => (
           <Link

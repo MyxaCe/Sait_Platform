@@ -5,12 +5,6 @@ import { getPool } from '@/lib/db';
 import { fmtDateTime } from '@/lib/ui/format';
 import { inboundStatus, transferStatus } from '@/lib/transfer/labels';
 
-/**
- * Карточка клиента, вкладка «Обзор»: перевод на другую платформу группы
- * (ветка client-transfer). Исходящие переводы клиента и, если клиент пришёл
- * сюда по переводу, — откуда. Кнопка «Перевести…» — в шапке карточки,
- * только у закреплённого менеджера.
- */
 export async function TransferPanel({ userId, canTransfer }: { userId: string; canTransfer: boolean }) {
   const db = getPool();
   const [outgoing, inbound] = await Promise.all([getClientTransfers(db, userId), getInboundForUser(db, userId)]);

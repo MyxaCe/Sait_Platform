@@ -2,29 +2,6 @@ import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-/**
- * Контента в коде нет (решение владельца 10.11, `_brain/ДЕМО-контент-из-CMS-аудит.md`).
- *
- * **Что было.** Здесь жил тест «no-unverifiable-claims»: он искал
- * запрещённые утверждения (лицензии, регуляторы, «млн трейдеров», «с 2009»)
- * в data-файлах контента. Data-файлы удалены, и тест смотрел бы в пустые
- * места — зелёный по неверной причине. Сам контент теперь живёт в CMS, а
- * проверка запрещённых утверждений должна жить там же, где контент:
- *
- *   ЗАМЕТКА ДЛЯ CMS v2: валидатор уже есть — `cms/src/modules/design/forbidden-claims.ts`
- *   (хук на сохранение). В legacy CMS его нет: тексты, которые этот тест
- *   запрещал, в базе legacy лежат до сих пор (аудит, §0 п.2). Перенос
- *   словаря `BANNED_CLAIMS` ниже в валидатор v2 — задача OPS-10.
- *
- * **Что проверяется теперь.**
- *  1. Data-файлов контента нет — ни прежних, ни новых по тому же образцу.
- *  2. Подмены фикстурами нет: ни `cms-mock`, ни mock-API `/api/cms/*`.
- *  3. Контентных ключей нет в словарях интерфейса (`messages`).
- *  4. Строки бренда нет в исходниках витрины и кабинета (кроме тестов).
- *  5. Остаток: SEO- и страничные тексты пока в `messages` (до CMS v2) —
- *     на них старый словарь запрещённых утверждений продолжает действовать.
- */
-
 const WEB = path.resolve(__dirname, '..');
 const CABINET = path.resolve(WEB, '../cabinet');
 const SKIP_DIRS = new Set(['node_modules', '.next', '.turbo', 'coverage', 'e2e', 'playwright-report', 'test-results', 'public']);
@@ -72,8 +49,6 @@ describe('data-файлов контента в коде нет', () => {
   });
 
   it('словари messages не импортируются кодом напрямую (так строились фикстуры)', () => {
-    // Законный путь к словарям — next-intl (`i18n/request.ts`). Прямой
-    // импорт JSON был способом собрать из словаря «ответ CMS».
     const offenders = sourceFiles(WEB)
       .filter((f) => !isTest(f) && /\.[cm]?[tj]sx?$/.test(f))
       .filter((f) => rel(f) !== 'i18n/request.ts')
@@ -84,7 +59,6 @@ describe('data-файлов контента в коде нет', () => {
 });
 
 describe('контентных ключей в словарях интерфейса нет', () => {
-  // Ресурсы CMS, которые прежде дублировались в messages и служили фикстурами
   const CONTENT_KEYS = [
     'footer.columns',
     'footer.riskWarning',
@@ -141,10 +115,6 @@ describe('строки бренда в коде нет — бренд прихо
   });
 });
 
-/**
- * Остаток до CMS v2: тексты страниц и SEO пока в `messages`. Словарь —
- * прежний; когда тексты уедут в CMS v2, он переезжает в её валидатор.
- */
 const BANNED_CLAIMS: RegExp[] = [
   /лиценз/i,
   /licen[cs]e/i,

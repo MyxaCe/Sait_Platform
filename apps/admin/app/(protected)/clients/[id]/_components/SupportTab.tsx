@@ -4,10 +4,6 @@ import type { QueueRow } from '@broker/support';
 import { CHANNEL_SHORT, STATUS_KEY } from '@/lib/support/labels';
 import { fmtDateTime } from '@/lib/ui/format';
 
-/**
- * Вкладка «Поддержка» карточки клиента: обращения клиента (и гостевые с его
- * email — кандидаты на склейку). Ссылка ведёт в экран обращения.
- */
 const COLUMNS: DataTableColumn<QueueRow>[] = [
   {
     key: 'ticket',

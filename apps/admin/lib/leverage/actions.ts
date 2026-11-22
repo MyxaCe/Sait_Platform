@@ -7,30 +7,11 @@ import { LOGIN_PATH } from '../auth/constants';
 import { changePortfolioLeverage, setClassOverride } from './portfolio';
 import { setClientPortfolio, setClientOverride, clearClientOverride } from './client';
 
-/**
- * Серверные экшены зоны «Риск/плечо» (WEB-45/46/47, Р-446, Р-049, Р-451).
- *
- * **server actions, не `/api`.** Та же причина, что у KYC и клиентов: `/api`
- * закрыт по умолчанию (Р-451 п.3); action — POST в уже защищённый
- * `(protected)`-роут, новой публичной поверхности не заводит.
- *
- * **Автор — из сессии, НЕ из формы (Р-451).** `operatorId` из
- * `getOperatorSession()`. Нет сессии → на вход (defense in depth).
- *
- * **Роль-гейт fail-closed (§3.8/§3.9, Р-446): admin ПИШЕТ, operator — ТОЛЬКО
- * просмотр.** operator (и любой без роли admin) получает `forbidden` до
- * транзакции. В UI форм у него нет (не отрисованы) — это второй рубеж на сервере.
- */
-
 export interface LeverageActionState {
   error?: string;
   ok?: boolean;
 }
 
-/**
- * Исход ядра → состояние формы. Отказ терминала по существу несёт код
- * (`terminalRefused`); в форме — общий текст, код — в логе сервера.
- */
 function toState(result: { ok: true } | { ok: false; reason: string; code?: string }): LeverageActionState {
   if (result.ok) return { ok: true };
   if (result.reason === 'terminalRefused') {
@@ -53,7 +34,6 @@ function intField(formData: FormData, name: string): number | null {
   return Number.isFinite(n) ? n : NaN;
 }
 
-/** §3.9 · сменить базовое плечо портфеля глобально (WEB-47). */
 export async function changePortfolioLeverageAction(
   _prev: LeverageActionState,
   formData: FormData,
@@ -80,7 +60,6 @@ export async function changePortfolioLeverageAction(
   return { ok: true };
 }
 
-/** §3.9 · задать/снять планку класса внутри портфеля (WEB-45). */
 export async function setClassOverrideAction(
   _prev: LeverageActionState,
   formData: FormData,
@@ -92,7 +71,6 @@ export async function setClassOverrideAction(
   if (!portfolioKey) return { error: 'noPortfolio' };
   const instrumentClass = String(formData.get('instrumentClass') ?? '').trim();
   const reason = String(formData.get('reason') ?? '');
-  // Пустое поле плеча = снять планку (null); иначе — число.
   const raw = intField(formData, 'leverage');
   if (raw !== null && Number.isNaN(raw)) return { error: 'invalidLeverage' };
 
@@ -110,7 +88,6 @@ export async function setClassOverrideAction(
   return { ok: true };
 }
 
-/** §3.8 · назначить клиенту портфель (WEB-44, атрибут клиента). */
 export async function setClientPortfolioAction(
   _prev: LeverageActionState,
   formData: FormData,
@@ -137,7 +114,6 @@ export async function setClientPortfolioAction(
   return { ok: true };
 }
 
-/** §3.8 · выдать клиенту override по заявке (WEB-46, journaled). */
 export async function setClientOverrideAction(
   _prev: LeverageActionState,
   formData: FormData,
@@ -166,7 +142,6 @@ export async function setClientOverrideAction(
   return { ok: true };
 }
 
-/** §3.8 · снять override клиента — вернуть к портфелю (WEB-46, journaled). */
 export async function clearClientOverrideAction(
   _prev: LeverageActionState,
   formData: FormData,

@@ -35,34 +35,11 @@ import {
   type CredentialSettings,
 } from './policy';
 
-/**
- * Правка учётных данных клиента — транзакционное ядро (функция 3, решения
- * владельца 10.11). Образец — `lib/clients/block.ts` и `lib/managers/assign.ts`:
- * одно действие = одна транзакция «смена состояния + письма в очередь + запись
- * в неизменяемый журнал». Письма (`outbound_mail`) пишутся в той же
- * транзакции: откат правки — нет и письма.
- *
- * Кто может (`authorize`, fail-closed, перепроверка В БАЗЕ под транзакцией):
- *  - admin — любого клиента;
- *  - менеджер клиента: роль раздела «Клиенты» + флаг `is_client_manager` +
- *    клиент закреплён именно за ним (`client_managers`);
- *  - остальные — `forbidden`. Автор — из серверной сессии (Р-451).
- *
- * Что пишется в журнал: основание, номер тикета (если указан), снимок
- * чек-листа (формулировки + отметки), значения до/после ТОЛЬКО маскированно.
- * Пароль не попадает никуда, кроме bcrypt-хеша в `users` и одного ответа
- * действию — менеджер видит временный пароль ровно один раз.
- */
-
-/* ─── Общие типы ─────────────────────────────────────────────────────── */
-
 export interface CredentialEditBase {
-  /** `operators.id` автора — из серверной сессии, НЕ из формы. */
   actorId: string;
   userId: string;
   basis: string;
   ticket?: string | null;
-  /** id отмеченных пунктов чек-листа проверки личности. */
   checks?: readonly string[];
 }
 
@@ -86,11 +63,6 @@ interface ClientRow {
   emailVerified: boolean;
 }
 
-/**
- * Кто правит: admin или менеджер ЭТОГО клиента; иначе отказ. Строка клиента
- * блокируется (`FOR UPDATE`) — две параллельные правки одного клиента идут
- * по очереди.
- */
 async function authorize(tx: Queryable, actorId: string, userId: string): Promise<{ ok: true; actor: Actor; client: ClientRow } | Fail<AuthFail>> {
   if (!UUID_RE.test(actorId) || !UUID_RE.test(userId)) return { ok: false, reason: 'forbidden' };
   const o = await tx.query(
@@ -130,8 +102,6 @@ async function authorize(tx: Queryable, actorId: string, userId: string): Promis
   };
 }
 
-/* ─── Настройки ──────────────────────────────────────────────────────── */
-
 export async function readCredentialSettings(db: Queryable): Promise<CredentialSettings> {
   const r = await db.query(
     `SELECT checklist, min_checked, auto_hold_enabled, auto_hold_hours, alert_per_operator_day, temp_password_hours
@@ -149,8 +119,6 @@ export async function readCredentialSettings(db: Queryable): Promise<CredentialS
     tempPasswordHours: Number(row.temp_password_hours),
   };
 }
-
-/* ─── Общий пролог правки ────────────────────────────────────────────── */
 
 interface Prologue {
   actor: Actor;
@@ -185,8 +153,6 @@ async function prologue(tx: Queryable, input: CredentialEditBase, withChecklist:
 function journal(tx: Queryable, actorId: string, action: string, userId: string, payload: Record<string, unknown>): Promise<number> {
   return appendJournalSeqWithinTx({ operatorId: actorId, action, subjectKind: 'client', subjectId: userId, payload }, tx);
 }
-
-/* ─── Заморозка вывода (тот же флаг «Запрет вывода») ──────────────────── */
 
 interface BanRow {
   active: boolean;
@@ -226,11 +192,6 @@ async function writeBan(
   );
 }
 
-/**
- * Автозаморозка вывода после смены email / временного пароля — если включена
- * в настройках. Существующий запрет не СОКРАЩАЕТСЯ: бессрочный или более
- * долгий остаётся как есть (в журнал — что автозаморозка не понадобилась).
- */
 async function applyAutoHold(
   tx: Queryable,
   settings: CredentialSettings,
@@ -259,18 +220,10 @@ async function applyAutoHold(
   return { until: until.toISOString(), applied: true };
 }
 
-/* ─── Смена email ────────────────────────────────────────────────────── */
-
 export type EmailChangeResult =
   | { ok: true; autoHoldUntil: string | null }
   | Fail<CommonFail | 'invalidEmail' | 'sameEmail' | 'emailTaken' | 'linkUnavailable'>;
 
-/**
- * Менеджер меняет email СРАЗУ (владелец доверяет менеджеру, ожидания клика
- * клиента нет). Новый адрес — неподтверждённый, на него уходит письмо
- * подтверждения; на СТАРЫЙ — уведомление «email изменён менеджером». Живые
- * ссылки сброса/подтверждения, ушедшие на старый адрес, гасятся.
- */
 export async function changeClientEmail(
   input: CredentialEditBase & { newEmail: string },
   deps: { pool: PoolLike; link: LinkBuilder | null; now?: Date },
@@ -289,7 +242,6 @@ export async function changeClientEmail(
       if (taken.rows.length > 0) return rollback<EmailChangeResult>({ ok: false, reason: 'emailTaken' });
 
       await tx.query(`UPDATE users SET email = $2, email_verified_at = NULL WHERE id = $1`, [client.id, newEmail]);
-      // Ссылки, ушедшие на прежний адрес, больше не действуют.
       const revoked = await tx.query(
         `UPDATE auth_mail_tokens SET used_at = $2 WHERE user_id = $1 AND used_at IS NULL AND token_hash IS NOT NULL RETURNING id`,
         [client.id, now],
@@ -320,17 +272,13 @@ export async function changeClientEmail(
       return { ok: true, autoHoldUntil: hold?.applied ? hold.until : null };
     });
   } catch (error) {
-    // Гонка: тот же email заняли между проверкой и UPDATE (уникальный индекс).
     if (isUniqueViolation(error)) return { ok: false, reason: 'emailTaken' };
     throw error;
   }
 }
 
-/* ─── Ссылка сброса пароля ───────────────────────────────────────────── */
-
 export type ResetLinkResult = { ok: true; sentTo: string } | Fail<CommonFail | 'linkUnavailable' | 'rateLimited'>;
 
-/** Существующий механизм сброса (`auth_mail_tokens`): ссылка уходит на текущий email клиента. */
 export async function sendPasswordResetLink(
   input: CredentialEditBase,
   deps: { pool: PoolLike; link: LinkBuilder | null; now?: Date },
@@ -359,9 +307,6 @@ export async function sendPasswordResetLink(
   });
 }
 
-/* ─── Временный пароль ───────────────────────────────────────────────── */
-
-/** Без похожих символов (0/O, 1/l/I): менеджер диктует пароль по телефону. */
 const TEMP_ALPHABET = 'abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 
 export function generateTempPassword(length = 12): string {
@@ -376,12 +321,6 @@ export type TempPasswordResult =
   | { ok: true; password: string; expiresAt: string; sessionsRevoked: number; autoHoldUntil: string | null }
   | Fail<CommonFail>;
 
-/**
- * Временный пароль: генерирует система, показывается менеджеру ОДИН раз
- * (возвращается только из этого вызова). Клиент обязан сменить его при входе
- * (`password_must_change`), срок — из настроек; все сессии гасятся, живые
- * ссылки сброса — тоже. Хеш считает вызывающий тем же алгоритмом, что кабинет.
- */
 export async function issueTemporaryPassword(
   input: CredentialEditBase,
   deps: { pool: PoolLike; hash: (password: string) => Promise<string>; now?: Date; generate?: () => string },
@@ -424,18 +363,10 @@ export async function issueTemporaryPassword(
   });
 }
 
-/* ─── Адрес в заявке на вывод ────────────────────────────────────────── */
-
 export type AddressFixResult =
   | { ok: true; before: string; after: string }
   | Fail<CommonFail | 'invalidAddress' | 'contractAddress' | 'noWithdrawal' | 'withdrawalNotEditable' | 'sameAddress'>;
 
-/**
- * Исправить адрес получателя в заявке на вывод, которая ещё не ушла в сеть
- * (`requested`/`approved`, хэша отправки нет) — типичный случай «клиент ошибся
- * адресом». Адресной книги нет (решение владельца 10.11): адрес живёт только
- * в заявке. Проверка — base58check TRON и запрет адреса контракта USDT.
- */
 export async function fixWithdrawalAddress(
   input: CredentialEditBase & { withdrawalId: string; newAddress: string },
   deps: { pool: PoolLike },
@@ -475,13 +406,10 @@ export async function fixWithdrawalAddress(
   });
 }
 
-/* ─── Заморозка вывода по распоряжению менеджера ─────────────────────── */
-
 export const MAX_HOLD_DAYS = 366;
 
 export type HoldSetResult = { ok: true; until: string | null } | Fail<AuthFail | 'missingReason' | 'invalidUntil' | 'bannedByFinance'>;
 
-/** Заморозить вывод: срок (`until`) или бессрочно (`null`). Повтор — продлевает/меняет срок. */
 export async function setWithdrawHold(
   input: { actorId: string; userId: string; basis: string; until: Date | null; ticket?: string | null },
   deps: { pool: PoolLike; now?: Date },
@@ -495,7 +423,6 @@ export async function setWithdrawHold(
     if (!pr.ok) return rollback<HoldSetResult>(pr as Fail<AuthFail | 'missingReason'>);
     const { client, common } = pr.p;
     const ban = await lockBan(tx, client.id);
-    // Бессрочный запрет финансов не перекрываем сроком — иначе он «истёк» бы сам.
     if (ban.active && ban.kind === 'money_flags') return rollback<HoldSetResult>({ ok: false, reason: 'bannedByFinance' });
     await writeBan(tx, client.id, input.actorId, { banned: true, until: input.until, kind: 'credentials_manual', reason: common.basis });
     const seq = await journal(tx, input.actorId, CREDENTIAL_ACTIONS.holdSet, client.id, {
@@ -512,10 +439,6 @@ export async function setWithdrawHold(
 
 export type HoldLiftResult = { ok: true } | Fail<AuthFail | 'missingReason' | 'noHold' | 'notCredentialsHold'>;
 
-/**
- * Снять заморозку вручную (своё распоряжение или автозаморозку). Запрет из
- * денежных флагов (финансы/комплаенс) отсюда не снимается — только там.
- */
 export async function liftWithdrawHold(
   input: { actorId: string; userId: string; basis: string; ticket?: string | null },
   deps: { pool: PoolLike },
@@ -539,8 +462,6 @@ export async function liftWithdrawHold(
     return { ok: true };
   });
 }
-
-/* ─── Настройки (только admin; роль проверяет action) ─────────────────── */
 
 export type SettingsResult = { ok: true } | Fail<'missingReason' | 'invalidSettings' | 'noChange'>;
 

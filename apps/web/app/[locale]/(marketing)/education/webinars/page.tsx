@@ -16,7 +16,6 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   return { title: t('webinarsMetaTitle'), description: t('webinarsMetaDescription') };
 }
 
-// Расписание пересчитывается раз в час
 export const revalidate = 3600;
 
 interface WebinarView {
@@ -93,7 +92,6 @@ export default async function WebinarsPage({ params }: PageProps) {
   const locale = pageLocale(params.locale);
   const intlLocale = intlTag(locale);
 
-  // Вебинары и стримы из CMS (теги cms:academy / cms:streams)
   const [{ webinars }, streams] = await Promise.all([
     getCms('academy', { locale }),
     getCms('streams', { locale, revalidate: 60 }),

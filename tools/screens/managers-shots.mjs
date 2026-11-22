@@ -1,9 +1,3 @@
-// Скрины «Менеджеры клиентов» (ветка admin-managers), 1440.
-//   ADMIN_URL=http://127.0.0.1:3491 node tools/screens/managers-shots.mjs <outDir>
-// Нужны: миграции + seed:demo (+ seed:support-demo) на ПУСТОЙ локальной базе.
-// Сцена: admin делает Д. Соколова менеджером → массово закрепляет за ним
-// клиентов из реестра → карточка с панелью «Менеджер» → Соколов видит
-// «Мои клиенты» в реестре (по умолчанию) и на дашборде.
 import { createRequire } from 'node:module';
 import { mkdirSync } from 'node:fs';
 import { join, resolve } from 'node:path';
@@ -52,7 +46,6 @@ const shot = async (page, name, full = true) => {
   console.log('ok', name);
 };
 
-// ── admin: флаг «менеджер клиентов» Соколову и Орловой ──
 const admin = await ctxFor('admin');
 let p = await admin.newPage();
 for (const [id, reason] of [
@@ -70,7 +63,6 @@ for (const [id, reason] of [
 await go(p, `/operators?op=${SOKOLOV}`);
 await shot(p, 'm02-operators-flag-set');
 
-// ── admin: массовое назначение из реестра ──
 await go(p, '/clients?mgr=none');
 const boxes = p.locator('input[type="checkbox"][name="userIds"]');
 const n = Math.min(6, await boxes.count());
@@ -81,7 +73,6 @@ await shot(p, 'm03-registry-bulk-selected', false);
 await p.getByRole('button', { name: /^Назначить/ }).click();
 await p.waitForTimeout(2000);
 await shot(p, 'm04-registry-bulk-done', false);
-// Двое оставшихся «без менеджера» — Орловой.
 await go(p, '/clients?mgr=none');
 const rest = p.locator('input[type="checkbox"][name="userIds"]');
 for (let i = 0; i < Math.min(2, await rest.count()); i++) await rest.nth(i).check();
@@ -92,7 +83,6 @@ await p.waitForTimeout(2000);
 await go(p, '/clients');
 await shot(p, 'm05-registry-all-manager-column');
 
-// ── admin: карточка — смена менеджера с основанием ──
 await go(p, `/clients/${HERO}`);
 await shot(p, 'm06-card-manager-panel-admin');
 const opt = await p.locator('#managerId option').nth(1).getAttribute('value');
@@ -108,7 +98,6 @@ await go(p, '/journal');
 await shot(p, 'm08-journal-managers', false);
 await admin.close();
 
-// ── менеджер (operator): реестр по умолчанию «Мои клиенты», дашборд, карточка без формы ──
 const op = await ctxFor('operator');
 p = await op.newPage();
 await go(p, '/');

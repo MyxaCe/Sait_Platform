@@ -3,17 +3,10 @@ import { FakeTerminal } from '@broker/money/testing';
 import { approveReward, ensureRewardCredited, enqueueRewardWithinTx, rejectReward, retryRewardCredit } from './queue';
 import { FakeQueueDb } from './testing/fake-queue-db';
 
-/**
- * Очередь начислений: деньги только через одобрение, бюджет не превышается
- * (в транзакции), начисление идемпотентно по external_ref, гонка двух
- * одобрений — ровно одно зачисление.
- */
-
 const OP = { operatorId: '00000000-0000-4000-8000-00000000a001', operatorLogin: 'i.kovaleva' };
 const USER = '00000000-0000-4000-8000-0000000c0001';
 const PROMO = '00000000-0000-4000-8000-0000000f0001';
 
-/** Терминал с задержкой — чтобы вызовы реально перекрывались во времени. */
 class SlowTerminal extends FakeTerminal {
   override async deposit(userId: string, body: { amount_minor: number; external_ref: string }) {
     await new Promise((r) => setTimeout(r, 5));
@@ -105,17 +98,15 @@ describe('очередь начислений', () => {
   it('терминал не ответил: остаётся approved; повтор тем же ref — одна проводка (идемпотентно)', async () => {
     const { db, terminal } = setup();
     const r = db.addReward({ kind: 'referral', promotion_id: PROMO, user_id: USER, amount_minor: 2_500, external_ref: 'ref:f:referee' });
-    terminal.next.push('apply-then-unavailable'); // деньги легли, ответ потерян
+    terminal.next.push('apply-then-unavailable');
     const out = await approveReward(db, terminal, { ...OP, rewardId: r.id, reason: 'ok' });
     expect(out).toMatchObject({ ok: true, credit: { state: 'pending' } });
     expect(db.rewards.get(r.id)!.status).toBe('approved');
-    // Отклонить «исход неизвестен» нельзя — деньги могли уйти.
     expect(await rejectReward(db, { ...OP, rewardId: r.id, reason: 'x' })).toEqual({ ok: false, reason: 'wrongState' });
     const again = await ensureRewardCredited(db, terminal, r.id, OP.operatorLogin);
     expect(again).toMatchObject({ state: 'credited', replay: true });
     expect(terminal.balances.get(USER)).toBe(2_500);
     expect(db.rewards.get(r.id)!.status).toBe('credited');
-    // Ещё повтор — без вызова терминала.
     const calls = terminal.calls.length;
     expect(await ensureRewardCredited(db, terminal, r.id, OP.operatorLogin)).toMatchObject({ state: 'credited' });
     expect(terminal.calls.length).toBe(calls);

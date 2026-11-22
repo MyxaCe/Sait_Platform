@@ -9,18 +9,10 @@ import {
 } from '@broker/money';
 import { moneyPool } from './runtime';
 
-/**
- * «Настройки платформы» — денежные (дизайн §3): KYC-гейты ввода/вывода,
- * минимумы и доля вывода без верификации (б.п., ветка demo-withdraw-limits). Строка-синглтон `platform_money_settings`. Изменение — только с
- * основанием, журнал `platform.money_settings.updated` (до/после) той же
- * транзакцией. Пустое изменение не пишется.
- */
-
 export type SettingsResult =
   | { ok: true; journalSeq: number }
   | { ok: false; reason: 'missingReason' | 'invalidMinimum' | 'invalidPercent' | 'noChange' };
 
-/** Предел минимума — 1 млн USDT (защита от опечатки «лишние нули»). */
 const MAX_MIN = 100_000_000;
 
 export async function updatePlatformMoneySettings(

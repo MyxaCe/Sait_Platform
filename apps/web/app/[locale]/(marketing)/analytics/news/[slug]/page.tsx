@@ -13,7 +13,6 @@ interface PageParams {
   params: { locale: string; slug: string };
 }
 
-/** Одна выборка для страницы и метаданных: Next дедуплицирует одинаковый fetch. */
 async function findNews(locale: string, slug: string) {
   const { items } = await getCms('articles', {
     locale: pageLocale(locale),
@@ -23,7 +22,6 @@ async function findNews(locale: string, slug: string) {
   return items.find((a) => a.slug === slug) ?? null;
 }
 
-// Список статей — из CMS; нет CMS на сборке → пусто, страницы по первому запросу
 export function generateStaticParams({ params }: { params: { locale: string } }) {
   return staticParamsFromCms(async () => {
     const { items } = await getCms('articles', {
@@ -54,7 +52,6 @@ export default async function NewsArticlePage({ params }: PageParams) {
   setRequestLocale(params.locale);
   const locale = pageLocale(params.locale);
 
-  // Статья из CMS (теги cms:articles, cms:articles:<сайт>)
   const article = await findNews(locale, params.slug);
   if (!article) notFound();
   const publisher = await brandName(locale);
@@ -65,7 +62,6 @@ export default async function NewsArticlePage({ params }: PageParams) {
     ? t(`categories.${article.category}`)
     : article.category;
 
-  // Микроразметка NewsArticle для поисковиков
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'NewsArticle',

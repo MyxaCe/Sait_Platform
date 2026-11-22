@@ -6,12 +6,6 @@ import { FakeDb, FakeTerminal } from '@broker/money/testing';
 import { ChainUnavailableError, parseIncomingUsdt, parseSolidTxInfo, type ChainReader, type SolidTx } from './trongrid';
 import { runTick } from './watcher';
 
-/**
- * Проход наблюдателя целиком: фейковая база `@broker/money`, фейковый
- * терминал (идемпотентный по external_ref), сеть — фикстуры TronGrid.
- * Сетевых вызовов нет.
- */
-
 const fx = (name: string): unknown =>
   JSON.parse(readFileSync(path.join(__dirname, 'fixtures', name), 'utf8'));
 const ADDR = fx('addresses.json') as { exchange: string; from: string; other: string };
@@ -19,7 +13,6 @@ const H = (c: string) => c.repeat(64);
 const U = 'user-1';
 const T0 = Date.parse('2025-11-09T10:00:00Z');
 
-/** Подставная сеть: хэш → необратимая транзакция | 'pending' | 'missing' | 'down'. */
 function chain(map: Record<string, SolidTx | 'pending' | 'missing' | 'down'>, incoming: unknown = { data: [] }): ChainReader {
   return {
     async getSolidTx(h) {
@@ -41,7 +34,6 @@ function setup() {
   db.clients.set(U, { kycState: 'verified' });
   db.settings.min_deposit_minor = 1000;
   const term = new FakeTerminal();
-  // FakeDb не знает SELECT-ов наблюдателя — отвечаем из его же состояния.
   const pool = {
     connect: () => db.connect(),
     query: async (sql: string, p: unknown[] = []) => {
@@ -125,7 +117,6 @@ describe('наблюдатель · заявленные депозиты', () =
     await claimDeposit(db, { userId: U, txHash: H('6') });
     const lines: { msg: string; detail: Record<string, unknown> }[] = [];
     const c = chain({ [H('5')]: 'down' });
-    // Второй хэш: сеть бросает не-Error с секретом в тексте — причина есть, секрета нет.
     const orig = c.getSolidTx;
     c.getSolidTx = async (h) => {
       if (h === H('6')) throw new TypeError('fetch failed', { cause: new Error('ECONNRESET apikey=SECRETKEY123') });
@@ -163,8 +154,7 @@ describe('наблюдатель · заявленные депозиты', () =
 describe('наблюдатель · неопознанные', () => {
   it('входящий USDT без заявки старше 10 мин → unidentified; моложе — ждём; заявленный — не трогаем', async () => {
     const { db, term, pool } = setup();
-    await claimDeposit(db, { userId: U, txHash: H('7') }); // клиент заявил сам
-    // 7… пришёл в T0 (заявлен клиентом), 8… — в T0+9 мин: через 12 мин ему 3 мин.
+    await claimDeposit(db, { userId: U, txHash: H('7') });
     const now = T0 + 12 * 60_000;
     const s = await runTick({
       pool,

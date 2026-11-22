@@ -6,14 +6,6 @@ import { cn } from '@broker/ui';
 import { NavIcon } from './NavIcon';
 import { CountBadge, isActive, type NavItem } from './NavLink';
 
-/**
- * Нижняя навигация телефона (аудит К1/К2): 4 главных раздела + «Ещё».
- * «Ещё» открывает шторку со всеми остальными разделами, «На сайт» и выходом.
- *
- * Панель — 64 px + отступ под жестовую полосу (`env(safe-area-inset-bottom)`,
- * работает при `viewport-fit=cover` в корневом layout). Контент страницы
- * получает такой же нижний отступ в layout — панель его не перекрывает.
- */
 export function MobileNav({
   primary,
   more,
@@ -23,7 +15,6 @@ export function MobileNav({
   primary: NavItem[];
   more: NavItem[];
   labels: { more: string; close: string; sheetTitle: string; nav: string };
-  /** Низ шторки: «На сайт» и выход (серверные ссылки/формы). */
   footer?: React.ReactNode;
 }) {
   const pathname = usePathname();
@@ -32,7 +23,6 @@ export function MobileNav({
   const moreActive = more.some((i) => isActive(pathname, i.href));
   const moreBadge = more.reduce((n, i) => n + (i.badge ?? 0), 0);
 
-  // Переход по пункту закрывает шторку.
   useEffect(() => setOpen(false), [pathname]);
 
   useEffect(() => {

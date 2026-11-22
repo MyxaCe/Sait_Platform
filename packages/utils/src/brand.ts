@@ -1,7 +1,3 @@
-/**
- * '#d4a437' → '212 164 55' (формат RGB-каналов наших CSS-токенов).
- * Используется сайтом и кабинетом для инжекции акцента бренда из CMS.
- */
 export function hexToRgbChannels(hex: string): string | null {
   const match = /^#([0-9a-fA-F]{6})$/.exec(hex);
   if (!match) return null;

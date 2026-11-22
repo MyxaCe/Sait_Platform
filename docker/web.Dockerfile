@@ -1,5 +1,3 @@
-# Production-образ сайта (Next.js standalone).
-# Сборка из корня монорепо: docker build -f docker/web.Dockerfile .
 FROM node:22-alpine AS base
 RUN corepack enable && corepack prepare pnpm@9.15.0 --activate
 WORKDIR /repo
@@ -23,26 +21,10 @@ RUN pnpm install --frozen-lockfile
 FROM deps AS build
 COPY . .
 ENV BUILD_STANDALONE=1
-# Кто может встраивать сайт в iframe (Preview-вкладка админки CMS);
-# headers() Next фиксируются на сборке — на VPS передать реальный origin CMS
-# Список встраивающих — тоже в рантайм (WEB-23, Р-224), и плейсхолдер
-# здесь безопасен сам по себе: промах подстановки никого не пускает.
 ENV FRAME_ANCESTORS=https://runtime-frame-ancestors.invalid
-# Публичные адреса в сборку НЕ попадают (WEB-22, Р-220).
-#
-# Next впекает `NEXT_PUBLIC_*` в бандл. Пока адреса приходили аргументами
-# сборки, образ знал домен — и тег по хешу коммита переставал означать
-# «эта ревизия кода»: он означал «эта ревизия И этот домен». Домен
-# временный, его сменят, а пересборка ради смены адреса обесценивает тег.
-#
-# Поэтому собираемся с плейсхолдерами, а настоящие адреса подставляет
-# `docker/runtime-config.sh` при запуске, из окружения контейнера.
-# Обязательные без значения не дают стартовать; `WS_URL` необязателен —
-# пустой означает «живого фида нет, работает мок», и это законный режим.
 ENV NEXT_PUBLIC_SITE_URL=https://runtime-site-url.invalid
 ENV NEXT_PUBLIC_CABINET_URL=https://runtime-cabinet-url.invalid
 ENV NEXT_PUBLIC_WS_URL=https://runtime-ws-url.invalid
-# GlitchTip клиентский DSN (site-web, проект /1) — вшивается в браузерный бандл
 ARG NEXT_PUBLIC_SENTRY_DSN=""
 ENV NEXT_PUBLIC_SENTRY_DSN=$NEXT_PUBLIC_SENTRY_DSN
 RUN pnpm --filter @broker/web build
@@ -54,16 +36,9 @@ RUN addgroup -S app && adduser -S app -G app
 COPY --from=build --chown=app:app /repo/apps/web/.next/standalone ./
 COPY --from=build --chown=app:app /repo/apps/web/.next/static ./apps/web/.next/static
 COPY --from=build --chown=app:app /repo/apps/web/public ./apps/web/public
-# Точка запуска: 503 вместо 500, когда CMS недоступна и показать нечего
-# (`apps/web/server-entry.cjs`), и прогрев после деплоя (`scripts/revalidate-all.mjs`).
 COPY --chown=app:app apps/web/server-entry.cjs ./apps/web/server-entry.cjs
 COPY --chown=app:app apps/web/scripts/revalidate-all.mjs ./apps/web/scripts/revalidate-all.mjs
-# Кэш витрины (data-cache Next + последняя удачная версия ответов CMS)
-# монтируется томом сюда. Каталог создаётся заранее и принадлежит `app`:
-# именованный том при первом подключении наследует владельца из образа,
-# иначе Next не смог бы писать кэш (root-owned точка монтирования).
 RUN mkdir -p /app/apps/web/.next/cache && chown -R app:app /app/apps/web/.next
-# Подстановка адресов из окружения — до старта сервера (WEB-22).
 COPY --chown=app:app docker/runtime-config.sh /usr/local/bin/runtime-config
 RUN chmod +x /usr/local/bin/runtime-config
 USER app

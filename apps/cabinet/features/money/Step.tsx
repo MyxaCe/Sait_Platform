@@ -1,4 +1,3 @@
-/** Пронумерованный шаг денежного сценария (ввод: адрес → хэш → история). */
 export function Step({
   n,
   title,
@@ -9,7 +8,6 @@ export function Step({
   n: number;
   title: string;
   children: React.ReactNode;
-  /** Шаг недоступен сейчас — номер серый. */
   muted?: boolean;
   className?: string;
 }) {

@@ -21,21 +21,12 @@ import {
 } from './core';
 import { checklistFromText } from './policy';
 
-/**
- * Server actions вкладки «Учётные данные» (функция 3). Роль-гейт — двойной:
- * здесь отсекаются роли, которым правка недоступна в принципе (support и т.п.
- * до карточки не доходят, матрица `sections.ts`), а флаг менеджера и
- * закрепление клиента ядро перепроверяет в базе внутри транзакции
- * (`core.ts → authorize`). Автор — только из сессии (Р-451).
- */
-
 export interface CredentialActionState {
   error?: string;
   detail?: string;
   ok?: boolean;
 }
 
-/** Ответ «временный пароль»: пароль — только в этом ответе, один раз. */
 export interface TempPasswordState extends CredentialActionState {
   password?: string;
   expiresAt?: string;
@@ -49,10 +40,6 @@ async function requireOperator() {
   return operator;
 }
 
-/**
- * Ссылка в письме — ТОЛЬКО от адреса кабинета из окружения (как в кабинете,
- * защита от reset-link poisoning). Не задан → письма не ставятся (fail-closed).
- */
 function linkBuilder(): LinkBuilder | null {
   const base = readEnv(process.env.CABINET_PUBLIC_URL) ?? readEnv(process.env.NEXT_PUBLIC_CABINET_URL);
   if (!base) return null;
@@ -112,7 +99,6 @@ export async function issueTempPasswordAction(_prev: TempPasswordState, fd: Form
   const op = await requireOperator();
   return guarded(async () => {
     const input = base(fd, op.operatorId);
-    // Тот же алгоритм и цена, что у кабинета (`apps/cabinet/lib/auth/password.ts`).
     const r = await issueTemporaryPassword(input, { pool: moneyPool(), hash: (p) => bcrypt.hash(p, 12) });
     if (!r.ok) return { error: r.reason };
     done(input.userId);
@@ -138,7 +124,6 @@ export async function fixWithdrawalAddressAction(_prev: CredentialActionState, f
   });
 }
 
-/** Поле срока: `datetime-local` (UTC-наивная строка трактуется как время сервера) или пусто = бессрочно. */
 function untilOf(fd: FormData): Date | null | 'invalid' {
   if (str(fd, 'mode') === 'indefinite') return null;
   const hours = Number(str(fd, 'hours'));
@@ -181,7 +166,6 @@ export async function liftHoldAction(_prev: CredentialActionState, fd: FormData)
   });
 }
 
-/** Настройки платформы → «Безопасность учётных данных» (только admin). */
 export async function updateCredentialSettingsAction(_prev: CredentialActionState, fd: FormData): Promise<CredentialActionState> {
   const op = await requireOperator();
   if (op.role !== 'admin') return { error: 'forbidden' };

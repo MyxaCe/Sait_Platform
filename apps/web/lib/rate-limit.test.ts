@@ -21,7 +21,6 @@ describe('isRateLimited', () => {
   it('окно истекает — запросы снова проходят', () => {
     const key = `w-${Math.random()}`;
     for (let i = 0; i < 3; i++) isRateLimited(key, { max: 2, windowMs: 1 });
-    // после истечения окна в 1 мс счётчик обнуляется
     return new Promise<void>((resolve) => {
       setTimeout(() => {
         expect(isRateLimited(key, { max: 2, windowMs: 1 })).toBe(false);

@@ -19,12 +19,6 @@ import { BLOCKER_TEXT, HINT_TEXT, transferStatus } from '@/lib/transfer/labels';
 import { selfSlug, signingKey } from '@/lib/transfer/runtime';
 import { TransferForm, type TargetOption, type TicketOption } from '../../_components/transfer/TransferForm';
 
-/**
- * «Перевести клиента на другую платформу группы» — отдельная страница,
- * открывается отдельной кнопкой карточки (барьер «случайного перевода»).
- * Провести может только закреплённый менеджер клиента; остальные видят
- * объяснение. Admin перевод не проводит — он контролирует постфактум.
- */
 export const dynamic = 'force-dynamic';
 
 export default async function TransferClientPage({ params }: { params: { id: string } }) {

@@ -1,11 +1,6 @@
 import Link from 'next/link';
 import { EmptyState, Panel } from '@broker/ui';
 
-/**
- * Отказ по роли для разделов «Деньги» и «Настройки платформы» (их `notFound()`
- * отдаёт 404). Внутри каркаса, по-русски и без подробностей: не подтверждает,
- * что раздел существует, и не рисует ничего из его содержимого (fail-closed).
- */
 export function NotAvailable() {
   return (
     <Panel>

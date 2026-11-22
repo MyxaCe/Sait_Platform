@@ -5,7 +5,6 @@ import { cn } from '../../lib/cn';
 
 export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   invalid?: boolean;
-  /** `compact` — плотный контрол операторского периметра (36px, rounded-md, bg-sunken). */
   controlSize?: 'md' | 'compact';
 }
 
@@ -15,7 +14,6 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
       ref={ref}
       aria-invalid={invalid || undefined}
       className={cn(
-        // min-h 44px — touch-target
         'border-border bg-card text-primary h-11 w-full rounded-xl border px-4 text-sm',
         'placeholder:text-secondary/60',
         'focus:border-accent/60 focus:ring-accent/20 transition-colors focus:outline-none focus:ring-2',

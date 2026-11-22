@@ -1,42 +1,24 @@
-/**
- * Причина ошибки прохода — в лог, БЕЗ секретов (волна 3).
- *
- * Раньше сводка прохода показывала только счётчик `errors:1`: при
- * не-Error исключении, пустом сообщении или `fetch failed` (настоящая
- * причина — в `cause`: ECONNRESET, ENOTFOUND, таймаут) причина терялась.
- * Теперь на каждую ошибку — строка с этапом, заявкой (id и хэш), типом,
- * сообщением и кодом/причиной. Секреты вырезаются: значения из окружения
- * (ключ TronGrid, токен терминала, пароль базы), Bearer-токены, пароли в
- * URL подключения, query-параметры с ключами.
- */
-
 export interface ErrorInfo {
-  /** Имя класса/тип: ChainUnavailableError, TypeError, string… */
   type: string;
   message: string;
-  /** Системный/HTTP код, если есть (ECONNRESET, 23505…). */
   code?: string;
-  /** Причина из `cause` (fetch failed → ECONNREFUSED 127.0.0.1:443). */
   cause?: string;
 }
 
 const MAX_LEN = 300;
 
-/** Значения env, которые нельзя печатать, — берутся из окружения процесса. */
 export function secretsFromEnv(env: NodeJS.ProcessEnv = process.env): string[] {
   const out: string[] = [];
   for (const k of ['TRONGRID_API_KEY', 'INTERNAL_MONEY_TOKEN', 'DATABASE_URL']) {
     const v = env[k]?.trim();
     if (v && v.length >= 6) out.push(v);
   }
-  // Пароль из DATABASE_URL — отдельно (он может всплыть без остального URL).
   const db = env.DATABASE_URL;
   if (db) {
     try {
       const pw = decodeURIComponent(new URL(db).password);
       if (pw.length >= 4) out.push(pw);
     } catch {
-      /* не URL — нечего вырезать */
     }
   }
   return out;
@@ -90,7 +72,6 @@ export function describeError(e: unknown, secrets: readonly string[] = []): Erro
   return { type: e === null ? 'null' : typeof e, message: r(text) };
 }
 
-/** Одна строка лога: `тип: сообщение [код] (причина: …)`. */
 export function formatError(info: ErrorInfo): string {
   let s = `${info.type}: ${info.message}`;
   if (info.code) s += ` [${info.code}]`;

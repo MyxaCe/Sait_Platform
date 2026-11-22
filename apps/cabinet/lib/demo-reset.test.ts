@@ -1,22 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-/**
- * Сброс демо-счёта — операция ТЕРМИНАЛА (WEB-29).
- *
- * **Предмет проверки сменился целиком.** Прежде здесь доказывалось,
- * что кабинет не запишет в баланс число, которого никто не назначал
- * (CAB-08, Р-040). Теперь кабинет **не пишет баланс вообще**, и
- * доказывать надо другое: что он зовёт терминал и **не трогает
- * таблицу ни в одном исходе** — ни при успехе, ни при отказе.
- *
- * Прежний сброс ломался тише, чем выглядел: кабинет правил свою
- * копию, а следующее же событие о балансе возвращало прежнюю сумму —
- * **сброс отменялся сам**, и ничем это не краснело.
- *
- * Барьер проверяется здесь, а не в интерфейсе: кнопка задизейблена с
- * подписью, но серверный экшен вызывается запросом, а не кнопкой.
- */
-
 const queries: { sql: string; params: unknown[] }[] = [];
 
 vi.mock('next/cache', () => ({ revalidatePath: () => {} }));
@@ -79,7 +62,6 @@ describe('WEB-29 · сброс идёт через терминал', () => {
     const { resetDemoAccountAction } = await import('./actions');
     await resetDemoAccountAction(IDLE);
 
-    // Из сессии, не из входных данных: иначе сброс чужого счёта.
     expect(reset.calls).toEqual(['user-1']);
   });
 
@@ -87,8 +69,6 @@ describe('WEB-29 · сброс идёт через терминал', () => {
     const { resetDemoAccountAction } = await import('./actions');
     await resetDemoAccountAction(IDLE);
 
-    // Новая сумма приедет событием. Записать её здесь значило бы
-    // утверждать результат, которого мы не видели.
     expect(touchesMoney()).toBeUndefined();
   });
 
@@ -104,7 +84,6 @@ describe('WEB-29 · сброс идёт через терминал', () => {
     await resetDemoAccountAction(IDLE);
 
     expect(touchesMoney()).toBeUndefined();
-    // Молчать нельзя: человек нажал и ждёт.
     expect(console.error).toHaveBeenCalled();
   });
 
@@ -120,24 +99,15 @@ describe('WEB-29 · сброс идёт через терминал', () => {
     await resetDemoAccountAction(IDLE);
     const second = vi.mocked(console.error).mock.calls.map(String).join(' ');
 
-    // Схлопнутые, они отправляют чинить наугад (Р-070).
     expect(first).not.toBe(second);
     expect(second).toContain('account_not_flat');
   });
 });
 
 describe('WEB-42 · исход виден ЧЕЛОВЕКУ, а не только логу', () => {
-  /*
-   * Прежде действие возвращало пустоту: нажатие не давало отклика
-   * вообще, а отказ терминала уходил в серверный лог. Для человека
-   * успех и отказ выглядели одинаково — наш основной класс в
-   * единственном месте, куда мы не смотрели: там, где нажимают
-   * кнопку.
-   */
   const IDLE = { state: 'idle' } as const;
 
   it('принято — это «принято», а НЕ «сброшено»', async () => {
-    // Сумма приедет событием; утверждать результат здесь нельзя.
     const { resetDemoAccountAction } = await import('./actions');
 
     expect(await resetDemoAccountAction(IDLE)).toEqual({ state: 'accepted' });
@@ -155,7 +125,6 @@ describe('WEB-42 · исход виден ЧЕЛОВЕКУ, а не только
   });
 
   it('незнакомая причина → отказ назван отказом, причина пустая', async () => {
-    // Терминал мог завести причину раньше, чем мы о ней узнали.
     reset.outcome = { state: 'refused', reason: null, raw: 'nechto_novoe' };
 
     const { resetDemoAccountAction } = await import('./actions');
@@ -174,11 +143,6 @@ describe('WEB-42 · исход виден ЧЕЛОВЕКУ, а не только
   });
 
   it('слишком часто → НАЗВАНО, а не третья тишина подряд', async () => {
-    /*
-     * Человек жмёт второй раз именно потому, что первый не ответил.
-     * Молчащее ограничение поверх молчащего отказа — худшее из
-     * сочетаний.
-     */
     const { resetDemoAccountAction } = await import('./actions');
 
     for (let i = 0; i < 5; i += 1) await resetDemoAccountAction(IDLE);

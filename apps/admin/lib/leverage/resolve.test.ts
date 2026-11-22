@@ -7,12 +7,6 @@ import {
   type ClientLeverageOverride,
 } from './resolve';
 
-/**
- * Р-446 · приоритет разрешения плеча: override клиента › override класса ›
- * портфель. Проверяем каждую ветку и — отдельно — что override клиента НЕ
- * подчинён классу (адресное решение важнее планки класса).
- */
-
 const STANDARD: PortfolioLeverage = {
   key: 'standard',
   title: 'Standard',

@@ -3,16 +3,6 @@ import type { PoolClient } from 'pg';
 import { decideClientVerification } from './decide';
 import type { VerificationState } from './queries';
 
-/**
- * ADM-08 · state-machine решения по KYC (Р-451 п.4, Р-049).
- *
- * База не поднимается — её роль играет in-memory фейк-клиент, который ведёт
- * себя как `client_verification` + `admin_action_journal` в одной транзакции:
- * UPDATE с гардом `WHERE state='pending'`, append в журнал, выборка seq,
- * привязка last_journal_seq. Проверяем разрешённые/запрещённые переходы и что
- * КАЖДОЕ успешное решение попадает в журнал.
- */
-
 const USER = '22222222-2222-2222-2222-222222222222';
 const OP = '11111111-1111-1111-1111-111111111111';
 
@@ -25,7 +15,6 @@ interface JournalRow {
   entry_hash: string;
 }
 
-/** Фейк пула: один клиент, одна строка client_verification, журнал-массив. */
 function fakePool(initialState: VerificationState) {
   const state = { value: initialState, lastJournalSeq: null as number | null };
   const journal: JournalRow[] = [];
@@ -48,14 +37,11 @@ function fakePool(initialState: VerificationState) {
         return { rows: [], rowCount: 0 };
       }
       if (/UPDATE client_verification\s+SET state/i.test(sql)) {
-        // Гард: обновляем только из pending.
         if (state.value !== 'pending') return { rows: [], rowCount: 0 };
         state.value = params[1] as VerificationState;
         return { rows: [{ user_id: params[0] }], rowCount: 1 };
       }
       if (/pg_advisory_xact_lock/i.test(sql)) {
-        // Сериализация аппендов журнала (ADM-09): appendJournalEntry берёт
-        // advisory-lock перед чтением prev_hash. Фейку достаточно принять запрос.
         return { rows: [{ pg_advisory_xact_lock: '' }], rowCount: 1 };
       }
       if (/SELECT entry_hash FROM admin_action_journal/i.test(sql)) {

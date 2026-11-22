@@ -7,11 +7,6 @@ import {
   SANCTIONS_LISTS,
 } from './lists';
 
-/**
- * ADM-14 · словарь AML — чистые помощники. Источник правды о множестве —
- * CHECK в схеме; эти функции приводят вход к известному значению fail-closed.
- */
-
 describe('ADM-14 · asAmlStatus', () => {
   it('принимает известные статусы', () => {
     expect(asAmlStatus('unscreened')).toBe('unscreened');

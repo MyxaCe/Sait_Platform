@@ -38,11 +38,6 @@ import {
   SignalBadges,
 } from '../_components/badges';
 
-/**
- * Карточка акции (концепция §7.2): правила, бюджет, участники с прогрессом,
- * начисления акции; справа — статус, пересчёт, кешбэк за период. Изменение
- * условий — `?edit=1`, только черновик/пауза, только admin.
- */
 export const dynamic = 'force-dynamic';
 
 const partColumns: DataTableColumn<ParticipantRow>[] = [

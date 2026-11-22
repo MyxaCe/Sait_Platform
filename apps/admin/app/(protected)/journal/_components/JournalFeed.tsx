@@ -5,22 +5,9 @@ import Link from 'next/link';
 import { CopyButton, Mono, cn, type StatusTone } from '@broker/ui';
 import { ToneMark } from '@/components/control/ToneMark';
 
-/**
- * Лента журнала (ADM-06, концепция §6.1/§6.13) — плотная таблица записей с
- * раскрытием. Строка отвечает «что, над кем, кто, когда, на каком основании»
- * человеческим языком; раскрытие — доказательная часть: точное время UTC,
- * код действия, полный payload и звенья хеш-цепочки (entry_hash ← prev_hash).
- *
- * Чистое отображение: строки уже отобраны по роли и отформатированы на
- * сервере (даты — серверной функцией, чтобы не было рассинхрона часовых
- * поясов при гидрации). Клиентская часть — только раскрытие строки.
- */
-
 export interface JournalViewRow {
   seq: number;
-  /** «09.11.2026, 21:43». */
   time: string;
-  /** Точное время записи, ISO UTC (как входит в хеш). */
   occurredAt: string;
   action: string;
   label: string;
@@ -32,9 +19,7 @@ export interface JournalViewRow {
   subjectKindLabel: string;
   subjectId: string;
   subjectName: string | null;
-  /** Карточка субъекта (клиент), если есть. */
   subjectHref: string | null;
-  /** Все записи по субъекту. */
   subjectJournalHref: string;
   payload: Record<string, unknown>;
   entryHash: string;

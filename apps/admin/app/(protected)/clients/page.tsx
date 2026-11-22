@@ -21,25 +21,11 @@ import {
 import { fmtDate, fmtDateTime } from '@/lib/ui/format';
 import { FilterBar } from './_components/FilterBar';
 import { AML_SHORT, ACCESS_OPTIONS, AML_OPTIONS, KYC_OPTIONS, amlKey } from './_components/compliance-labels';
-// ── Менеджеры клиентов (ветка admin-managers) ──
 import { requireSection } from '@/lib/auth/section-guard';
 import { isClientManager, listClientManagers, type ManagerOption } from '@/lib/managers/queries';
 import { canAssignManagers, managerFilterValue } from '@/lib/managers/policy';
 import { BulkAssignBar, RowCheckbox, SelectAllOnPage } from './_components/managers/BulkAssignBar';
 
-/**
- * Реестр клиентов `/clients` (ADM-02, §3.1; концепция §7.1 «страница-список»).
- * Найти клиента и сразу оценить его состояние: KYC, AML, доступ, реальный
- * счёт. Фильтры и сортировка — в URL (GET-форма и ссылки в заголовках колонок),
- * пагинация по 50 — серверная. Строка с ограничением доступа помечена полосой.
- *
- * Только чтение (`lib/clients/registry.ts`), чтение не журналируется (§3.1).
- * Доступ — operator+admin, гейт в middleware + layout `(protected)`.
- *
- * Менеджеры клиентов (ветка admin-managers): колонка «Менеджер», фильтр `?mgr=`
- * (менеджеру по умолчанию — «Мои клиенты»), у admin — чекбоксы строк и
- * массовое назначение (`BulkAssignBar`, форма связана с чекбоксами атрибутом `form`).
- */
 export const dynamic = 'force-dynamic';
 
 function accessBadges(c: RegistryRow) {
@@ -166,7 +152,6 @@ export default async function ClientsRegistryPage({
   searchParams: Record<string, string | string[] | undefined>;
 }) {
   const operator = await requireSection('clients');
-  // Менеджер клиентов открывает реестр на «Моих клиентах»; «Все» — одним выбором.
   let viewerIsManager = false;
   let managers: ManagerOption[] = [];
   try {
@@ -198,7 +183,6 @@ export default async function ClientsRegistryPage({
   ];
   const mineView = query.mgr === 'mine';
 
-  // Валюта в заголовке колонки, если на странице она одна (концепция §4.2).
   const currencies = new Set((data?.rows ?? []).filter((r) => r.balanceMinor !== null).map((r) => r.currency));
   const currency = currencies.size === 1 ? ([...currencies][0] ?? null) : null;
 

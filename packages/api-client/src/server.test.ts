@@ -2,14 +2,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
 import { cmsFetch, CmsError } from './server';
 
-/**
- * Тесты слоёв изоляции cmsFetch (риск R-06).
- *
- * С 10.11 подмены фикстурами нет: CMS лежит / отвечает мусором / 5xx →
- * `CmsError` наружу. Что показать вместо — последний удачный ответ CMS
- * или честную заглушку — решает потребитель (`apps/web/lib/cms.ts`).
- */
-
 const schema = z.object({ name: z.string() });
 
 beforeEach(() => {

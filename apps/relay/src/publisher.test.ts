@@ -2,34 +2,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { EventEnvelope } from '@broker/api-client';
 import { FakeBroker } from './testing/fake-broker.js';
 
-/**
- * Издатель релея: REL-03 (пассивное объявление) и REL-04 (порядок
- * навешивания слушателей).
- *
- * **REL-03 — два следствия, и второе важнее первого:**
- *  1. `exchange.declare` требует `configure` всегда, даже когда обменник уже
- *     есть — с ним честный publish-only невозможен;
- *  2. пропавшая инфраструктура становится немедленным отказом вместо тихого
- *     пересоздания. `assertExchange` создал бы обменник заново, и исчезновение
- *     шины прошло бы незамеченным.
- *
- * **REL-04 — у отказа спрашивают не «виден ли он», а в каком из двух мест
- * он виден.** В логе процесса он был виден всегда; в состоянии строки
- * outbox — ни разу, потому что слушатель ошибок канала навешивался ПОСЛЕ
- * первого топологического вызова, и процесс умирал раньше, чем `catch`
- * запишет попытку. Здесь проверяется первая половина — «бросок не уходит в
- * процесс»; вторая половина — «строка получает `attempts` и текст ошибки» —
- * в `outbox.test.ts`. Уровни разные намеренно: покрытие единицы покрытием
- * пути не является.
- *
- * **Почему двойник переписан на `EventEmitter`.** Прежний хранил
- * обработчики в `Map`: `on()` у него был учётом, а не подпиской, и
- * «слушателя нет» ничем не отличалось от «слушатель есть». То есть
- * двойник был верен контракту по сигнатурам и слеп ровно к тому свойству,
- * которое здесь проверяется, — поэтому пять зелёных тестов жили рядом с
- * дефектом. Разбор — `testing/fake-broker.ts`.
- */
-
 const connect = vi.fn();
 vi.mock('amqplib', () => ({ default: { connect: (...a: unknown[]) => connect(...a) } }));
 
@@ -53,7 +25,6 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-/** Брокер с обменником (по умолчанию) или без него (`[]`). */
 function broker(exchanges: string[] = ['platform.events']) {
   const b = new FakeBroker(exchanges);
   connect.mockImplementation(b.connectFn);
@@ -73,7 +44,6 @@ describe('AmqpPublisher · пассивное объявление обменн�
 
     const channel = b.channelsOpened[0]!;
     expect(channel.calls.checkExchange).toBe(1);
-    // Ровно то, из-за чего publish-only был невозможен
     expect(channel.calls.assertExchange).toBe(0);
     expect(b.published).toHaveLength(1);
   });
@@ -84,21 +54,18 @@ describe('AmqpPublisher · пассивное объявление обменн�
     const publisher = await newPublisher();
     await expect(publisher.publish('lead.submitted', ENVELOPE)).rejects.toThrow(/NOT_FOUND/);
 
-    // Главное: обменник не создан и сообщение не отправлено «в никуда»
     expect(b.exchanges.has('platform.events')).toBe(false);
     expect(b.channelsOpened[0]!.calls.assertExchange).toBe(0);
     expect(b.published).toHaveLength(0);
   });
 
   it('после отказа канал не кешируется — следующая попытка переподключается', async () => {
-    // Отказ, проявляющийся только при переподключении, тише отказа при старте:
-    // мёртвый канал в поле давал бы вечный посторонний отказ
     const b = broker([]);
 
     const publisher = await newPublisher();
     await expect(publisher.publish('lead.submitted', ENVELOPE)).rejects.toThrow();
 
-    b.exchanges.add('platform.events'); // владелец шины завёл обменник
+    b.exchanges.add('platform.events');
     await publisher.publish('lead.submitted', ENVELOPE);
 
     expect(b.connects).toBe(2);
@@ -122,7 +89,7 @@ describe('AmqpPublisher · пассивное объявление обменн�
 
     const publisher = await newPublisher();
     await publisher.publish('lead.submitted', ENVELOPE);
-    b.channelsOpened[0]!.killByBroker(); // брокер закрыл канал
+    b.channelsOpened[0]!.killByBroker();
 
     await publisher.publish('lead.submitted', ENVELOPE);
 
@@ -139,16 +106,10 @@ describe('AmqpPublisher · слушатель ошибок до первого �
     const publisher = await newPublisher();
     await expect(publisher.publish('lead.submitted', ENVELOPE)).rejects.toThrow(/NOT_FOUND/);
 
-    // В этом и была разница между «отказ виден в логе» и «отказ обработан»:
-    // без слушателя бросок из `emit` уходил мимо промиса и убивал процесс
-    // раньше, чем вызывающий записал попытку.
     expect(b.died).toBeNull();
   });
 
   it('слушатели канала навешаны ДО топологического вызова, а не после', async () => {
-    // Проверяется БАРЬЕР (слушатель поставлен вовремя), а не его следствие
-    // (сегодня отказ никого не разбудил). Иначе тест остался бы зелёным на
-    // исправном брокере при вернувшемся дефекте.
     const b = broker();
     const publisher = await newPublisher();
 
@@ -160,8 +121,6 @@ describe('AmqpPublisher · слушатель ошибок до первого �
   });
 
   it('у соединения тоже есть слушатель ошибок', async () => {
-    // Соединение — тот же EventEmitter: ошибка его уровня без слушателя
-    // убила бы процесс так же, как ошибка канала.
     const b = broker();
     const publisher = await newPublisher();
     await publisher.publish('lead.submitted', ENVELOPE);

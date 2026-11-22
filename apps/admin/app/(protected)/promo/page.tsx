@@ -10,10 +10,6 @@ import { BudgetBar, PromoStatusBadge, TypeLabel } from './_components/badges';
 import { REAL_ACCOUNT_CURRENCY } from '@broker/money/display-currency';
 import { SyncForm } from './_components/PromoForms';
 
-/**
- * «Акции и партнёры» — список акций (концепция §7.1). Роли — admin и
- * finance_operator (у остальных раздела нет: 404). Создание — только admin.
- */
 export const dynamic = 'force-dynamic';
 
 function period(p: PromotionListRow) {

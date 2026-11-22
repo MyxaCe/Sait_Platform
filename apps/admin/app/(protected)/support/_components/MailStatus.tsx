@@ -3,10 +3,6 @@ import { Callout, Mono } from '@broker/ui';
 import type { MailChannelState } from '@broker/support';
 import { fmtDateTime } from '@/lib/ui/format';
 
-/**
- * Состояние почтового канала (пишет воркер support-mail). Почта без env —
- * fail-closed: канал выключен, остальное работает; здесь — понятная причина.
- */
 export function MailStatusCallout({
   state,
   emailEnabled,

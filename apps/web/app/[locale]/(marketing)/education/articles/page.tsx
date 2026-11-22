@@ -17,7 +17,6 @@ export default async function EducationArticlesPage({ params }: PageProps) {
   setRequestLocale(params.locale);
   const t = await getTranslations('education');
   const tCommon = await getTranslations('common');
-  // Обучение из CMS (тег cms:academy)
   const { articles } = await getCms('academy', {
     locale: pageLocale(params.locale),
   });

@@ -9,16 +9,6 @@ import { createTronGridReader } from './trongrid';
 import { runTick } from './watcher';
 import { describeError, formatError, secretsFromEnv } from './errors';
 
-/**
- * Наблюдатель сети TRON (chain-watcher): свой контейнер, свой failure domain.
- * Ключей нет — кошелёк биржи только наблюдается (дизайн §0 п.3). Деньги
- * двигает терминал через internal-маршруты.
- *
- * Fail-closed на старте: без базы, без валидного адреса биржи, без слага
- * тенанта, без отстающей схемы — не стартуем (лучше упасть громко, чем
- * молча не зачислять).
- */
-
 function fatal(msg: string): never {
   console.error(`[chain-watcher] ${msg}`);
   process.exit(1);
@@ -61,7 +51,6 @@ async function loop(): Promise<void> {
     const busy = Object.values(s).some((v) => v > 0);
     if (busy) console.info(`[chain-watcher] проход: ${JSON.stringify(s)}`);
   } catch (error) {
-    // Причина целиком (тип, сообщение, код/cause), секреты вырезаны.
     console.error(`[chain-watcher] проход упал: ${formatError(describeError(error, secretsFromEnv()))}`);
   }
   if (!stopping) timer = setTimeout(() => void loop(), intervalMs);

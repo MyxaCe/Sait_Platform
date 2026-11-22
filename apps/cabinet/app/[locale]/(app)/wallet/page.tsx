@@ -18,19 +18,8 @@ import { NavIcon } from '@/features/shell/NavIcon';
 import { realMoneyCurrency } from '@broker/money/display-currency';
 import { Segmented } from '@/features/ui/Segmented';
 import { PAGE_NARROW } from '@/features/ui/page';
-// ── Перевод на другую платформу группы (ветка client-transfer) ──
 import { TransferNotice } from '@/features/transfer/TransferNotice';
 
-/**
- * «Кошелёк» (r2, замечание владельца): пополнение и вывод — одна страница.
- *
- *   сверху  — баланс реального счёта и «доступно к выводу» (свободная маржа);
- *   затем   — переключатель «Пополнить | Вывести» (`?tab=`, работает без JS);
- *   внизу   — общая история операций (ввод и вывод одной лентой).
- *
- * По умолчанию — «Пополнить»: это первое действие нового клиента. Старые
- * `/deposit` и `/withdraw` ведут сюда на нужную вкладку.
- */
 export const dynamic = 'force-dynamic';
 
 export default async function WalletPage({
@@ -58,10 +47,8 @@ export default async function WalletPage({
   const real = live.state === 'ok' ? live.accounts.find((a) => a.kind === 'real') : undefined;
   const freeMargin = real?.opened ? real.freeMarginMinor : null;
   const balance = account?.balanceCents ?? 0;
-  // Доступно = свободная маржа (не больше баланса); терминал молчит — баланс.
   const available = freeMargin !== null ? Math.max(0, Math.min(freeMargin, balance)) : balance;
   const currency = realMoneyCurrency(account?.currency);
-  // Лимит вывода без верификации (ветка demo-withdraw-limits): только на вкладке «Вывести».
   const kycAllowance =
     tab === 'withdraw' && policy.withdrawKycLimited ? await getKycAllowance(user.id, policy, live) : null;
 
@@ -98,14 +85,6 @@ export default async function WalletPage({
     </section>
   );
 
-  /*
-   * Раскладка (десктоп, 10.11). Телефон и < xl — прежняя колонка.
-   * ≥ xl: слева действие (переключатель + форма), справа колонка «счёт +
-   * история операций» (липкая). ≥ 2xl: форма | инструкция/QR | история —
-   * форма и инструкция делят левую часть (см. DepositPanel/WithdrawPanel).
-   * Баланс и история на десктопе выведены в правую колонку отдельной копией
-   * (только чтение): так порядок на телефоне не меняется.
-   */
   return (
     <div className={cn(PAGE_NARROW, 'xl:grid xl:grid-cols-12 xl:items-start xl:gap-5')}>
       <div className="space-y-4 sm:space-y-5 xl:col-span-7 2xl:col-span-8">

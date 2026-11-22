@@ -30,20 +30,6 @@ import { AML_SHORT, amlKey } from '../../clients/_components/compliance-labels';
 import { DecisionForm } from './DecisionForm';
 import { DocumentReview } from './_components/DocumentReview';
 
-/**
- * Решение по заявке KYC `/kyc/[userId]` (ADM-08, Р-451 п.4; концепция §7.4).
- *
- * Сетка 2:1. Слева — материалы: документы с просмотром рядом (каждый просмотр
- * журналируется прежним action-ом), правило «источник средств», история
- * решений и просмотров. Справа — липкая панель «Решение»: статус, итог
- * проверок, форма с основанием (подтвердить — primary; переподача; отклонить —
- * через подтверждение).
- *
- * Решать можно лишь pending-клиента; у остальных состояний формы нет
- * (fail-closed переходами — `decide.ts`). Роль: operator+admin, как раньше.
- * Только представление: чтения — прежние (`getClientVerificationCard`,
- * `getClientCard`, `getAmlCard`), экшены — прежние.
- */
 export const dynamic = 'force-dynamic';
 
 const REQUIRED_KINDS: KycDocKind[] = ['identity', 'selfie_liveness', 'address_proof', 'source_of_funds'];
@@ -65,8 +51,6 @@ export default async function KycDecisionPage({ params }: { params: { userId: st
   const missing = REQUIRED_KINDS.filter((k) => !kinds.has(k));
   const address = card.documents.find((d) => d.kind === 'address_proof');
   const addressStale = address ? isDocumentOlderThan(address.submittedAt, ADDRESS_PROOF_MAX_AGE_DAYS) : false;
-  // ADM-11 (Р-454 I-2): сумм депозитов в операторке нет — режим «сумм нет»:
-  // отсутствие документа даёт консервативный флаг «проверь вручную».
   const sof = sourceOfFundsStatus(kinds.has('source_of_funds'));
   const amlStatus = aml?.status ?? 'unscreened';
   const blocked = client?.block.blocked ?? false;

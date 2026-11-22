@@ -20,7 +20,6 @@ describe('registerLeadSchema', () => {
     const result = registerLeadSchema.safeParse({ ...validLead, email: 'not-an-email' });
     expect(result.success).toBe(false);
     if (!result.success) {
-      // Сообщение — ключ из namespace validation, перевод происходит в UI
       expect(result.error.issues[0]?.message).toBe('invalidEmail');
     }
   });

@@ -21,12 +21,6 @@ import { HINT_TEXT, deliveryCodeText, transferStatus } from '@/lib/transfer/labe
 import { canReviewTransfers } from '@/lib/transfer/runtime';
 import { CloseSourceForm, RetryDeliveryForm, RevokeTransferForm } from '../../_components/transfer/TransferActions';
 
-/**
- * Перевод (источник): путь по шагам, доказательство инициативы (тикет и
- * сообщение-согласие), подсказки юрисдикций, сообщения канала, действия:
- * «Вернуть перевод» (admin), «Закрыть счёт здесь» (менеджер/admin),
- * «Повторить доставку».
- */
 export const dynamic = 'force-dynamic';
 
 const KIND: Record<string, string> = {

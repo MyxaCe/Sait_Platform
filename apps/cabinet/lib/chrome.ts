@@ -1,11 +1,3 @@
-/**
- * Хром кабинета из CMS (ADR-025 / вариант A): бренд (имя, логотип, акцент)
- * и футер — те же данные, что у сайта, тот же тенант (SITE_SLUG).
- * CMS недоступна → null: кабинет рендерит статический фолбэк
- * (буква-логотип, палитра токенов, без футерных колонок) — рабочий,
- * просто без брендирования. Обновление — revalidate 5 мин.
- */
-
 import { readTenantSlug } from '@broker/tenant';
 import { envOr, readEnv } from '@broker/utils';
 import { isPlatformLocale, localizedPath } from '@broker/utils/locales';
@@ -13,11 +5,6 @@ import { withLiveParams } from './live-params';
 
 export interface ChromeBrand {
   name: string;
-  /**
-   * `null` — цвет не задан. В CMS v2 это штатное значение (Р-040), и
-   * кабинет остаётся на палитре токенов: акцент не инжектируется вовсе.
-   * Решение, а не побочное свойство — см. `app/[locale]/layout.tsx`.
-   */
   primaryColor: string | null;
   logo: { url: string; width: number; height: number; alt: string } | null;
   socials: { name: string; url: string }[];
@@ -34,9 +21,6 @@ function cmsUrl(): string | null {
 }
 
 function siteSlug(): string | null {
-  // Слага может не быть на сборке — тогда хрома из CMS нет и кабинет
-  // рисует свой статический фолбэк. Подставлять чужой слаг нельзя:
-  // кабинет показал бы чужой бренд (PKG-05).
   return readTenantSlug(process.env.SITE_SLUG);
 }
 
@@ -44,11 +28,6 @@ export async function cmsGet(resource: string, locale: string): Promise<unknown 
   const base = cmsUrl();
   if (!base) return null;
 
-  // АДРЕС БЕЗ СЛАГА НЕ СОБИРАЕТСЯ ВОВСЕ (PKG-05, приём `terminal`).
-  // `?site=` — не «без фильтра», а «сайт по умолчанию»: CMS ответила бы
-  // 200 с чужим брендом, и кабинет показал бы его как свой. Строка
-  // запроса, собранная из пустого значения, выглядит исправной — это и
-  // делает её опасной.
   const slug = siteSlug();
   if (slug === null) {
     console.error(
@@ -78,11 +57,6 @@ export async function cmsGet(resource: string, locale: string): Promise<unknown 
 
 export async function getChromeBrand(locale: string): Promise<ChromeBrand | null> {
   const data = (await cmsGet('brand', locale)) as Record<string, unknown> | null;
-  // Незаданный цвет НЕ отменяет бренд целиком. Прежде отменял: условие
-  // требовало строки, и после переезда на v2 (`primaryColor: null` —
-  // штатное значение) кабинет потерял бы заодно имя, логотип и соцсети.
-  // Отсутствие одного необязательного поля не доказывает отсутствия
-  // остальных.
   if (!data || typeof data.name !== 'string') return null;
   const logo = data.logo as ChromeBrand['logo'] | null;
   return {
@@ -93,12 +67,6 @@ export async function getChromeBrand(locale: string): Promise<ChromeBrand | null
   };
 }
 
-/**
- * Имя бренда для хрома кабинета. Строки бренда в коде нет (10.11):
- * CMS (`cms:brand`) → окружение ячейки `SITE_BRAND_NAME` (временный мост,
- * пока у кабинета нет своей «последней версии» ответа CMS) → нейтральная
- * метка интерфейса («Личный кабинет»), а не чужое или выдуманное имя.
- */
 export function resolveBrandName(brand: ChromeBrand | null, neutral: string): string {
   return brand?.name ?? readEnv(process.env.SITE_BRAND_NAME) ?? neutral;
 }
@@ -109,9 +77,7 @@ export async function getChromeFooter(locale: string): Promise<ChromeFooter | nu
   return data.footer;
 }
 
-/** Абсолютная ссылка футера кабинета на страницу САЙТА (с учётом локали). */
 export function siteHref(href: string, locale: string, defaultLanguage: string): string {
-  // Пустая строка — не отсутствие (WEB-21).
   const site = envOr(process.env.NEXT_PUBLIC_SITE_URL, 'http://localhost:3000').replace(/\/$/, '');
   if (/^[a-z][a-z0-9+.-]*:/i.test(href) || href.startsWith('//')) return href;
   return `${site}${localizedPath(href || '/', locale, defaultLanguage)}`;

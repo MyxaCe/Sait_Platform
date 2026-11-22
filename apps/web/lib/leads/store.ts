@@ -7,15 +7,6 @@ import {
   type LeadSubmittedData,
 } from '@broker/api-client';
 
-/**
- * Хранилище лидов (ADR-018): сайт — source of truth, клиент никогда
- * не ждёт CRM. Лид + событие пишутся В ОДНОЙ транзакции (transactional
- * outbox); релей (apps/relay) публикует события в шину платформы.
- *
- * Без DATABASE_URL (локальный dev/e2e без Docker) работает MemoryLeadStore —
- * то же поведение, события уходят в лог.
- */
-
 export type LeadDraft = Omit<Extract<LeadSubmittedData, { kind: 'account-opening' }>, 'leadId'>
   | Omit<Extract<LeadSubmittedData, { kind: 'contact' }>, 'leadId'>;
 
@@ -41,9 +32,6 @@ export class PgLeadStore implements LeadStore {
     const client = await this.pool.connect();
     try {
       await client.query('BEGIN');
-      // Поддержка (10.11): обращение с формы контактов — сразу тикет `web_form`
-      // в той же транзакции, что лид и событие. Раньше событие `lead.submitted`
-      // уходило в шину без единой привязки, и обращения не видел никто.
       const settings = draft.kind === 'contact' ? await loadSupportSettings(client) : null;
       if (settings && !settings.channels.webForm) {
         await client.query('ROLLBACK');
@@ -84,7 +72,6 @@ export class PgLeadStore implements LeadStore {
   }
 }
 
-/** Тема формы → тема тикета и категория поддержки (ключи категорий — из настроек по умолчанию). */
 const TOPIC_SUBJECT: Record<string, { ru: string; en: string }> = {
   general: { ru: 'Общий вопрос', en: 'General question' },
   account: { ru: 'Счёт и верификация', en: 'Account and verification' },
@@ -97,7 +84,6 @@ function topicSubject(topic: string, locale: 'ru' | 'en'): string {
   return TOPIC_SUBJECT[topic]?.[locale] ?? topic;
 }
 
-/** Dev/e2e-фолбэк без Postgres: та же семантика, события — в лог. */
 export class MemoryLeadStore implements LeadStore {
   private readonly accountEmails = new Set<string>();
 
@@ -118,10 +104,8 @@ export class MemoryLeadStore implements LeadStore {
   }
 }
 
-/* Singleton c переживанием hot-reload в dev */
 const globalStore = globalThis as unknown as { __leadStore?: LeadStore; __pgPool?: Pool };
 
-/** Health-check БД для /api/health/ready. Без DATABASE_URL — 'skipped'. */
 export async function pingDatabase(): Promise<'ok' | 'skipped' | 'failed'> {
   if (!process.env.DATABASE_URL) return 'skipped';
   try {

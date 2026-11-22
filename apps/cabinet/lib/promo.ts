@@ -15,14 +15,6 @@ import { envOr } from '@broker/utils';
 import { getPool } from './db';
 import { getSiteLanguages } from './site-languages';
 
-/**
- * Данные экранов «Акции», «Пригласи друга», «Конкурс», «Условия счетов».
- * Только серверный модуль. Всё — из `@broker/promo`/`@broker/money` (тексты,
- * числа, сроки задаёт админка), здесь лишь доступ к базе и размеченный
- * исход: сбой чтения — `unavailable`, экран объясняет, а не падает
- * (пусто ≠ сломалось).
- */
-
 export type Loaded<T> = { state: 'ok'; data: T } | { state: 'unavailable' };
 
 async function load<T>(what: string, fn: () => Promise<T>): Promise<Loaded<T>> {
@@ -41,11 +33,6 @@ export function loadClientPromotions(userId: string, locale: string): Promise<Lo
   return load('акции', () => getClientPromotions(db(), userId, { locale }));
 }
 
-/**
- * База реферальной ссылки: `REFERRAL_LINK_BASE` (если ссылка должна вести
- * не на главную сайта), иначе публичный адрес сайта — его middleware
- * ставит first-click cookie и ведёт на регистрацию кабинета.
- */
 export function referralLinkBase(locale: string, defaultLanguage: string): string | null {
   const explicit = envOr(process.env.REFERRAL_LINK_BASE, '');
   const site = explicit || envOr(process.env.NEXT_PUBLIC_SITE_URL, '');
@@ -77,7 +64,6 @@ export function loadLeaderboard(promotionId: string, userId: string, locale: str
 
 export interface AccountTermsScreen {
   types: AccountTypeTerms[];
-  /** Тип счёта клиента (портфель); нет строки — тип по умолчанию. `null` — не определён. */
   myKey: string | null;
 }
 

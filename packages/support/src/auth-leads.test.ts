@@ -35,14 +35,12 @@ describe('сброс пароля', () => {
   it('не раскрывает существование email: ответ одинаковый, письмо — только существующему', async () => {
     const known = await requestPasswordReset(db, S, { email: 'anna@client.test', ip: '1.1.1.1', link });
     const unknown = await requestPasswordReset(db, S, { email: 'nobody@client.test', ip: '1.1.1.1', link });
-    // Наружу уходит только `ok: true` — `internal` для лога/тестов, форма его не показывает.
     expect(known.ok).toBe(true);
     expect(unknown.ok).toBe(true);
     expect(known.internal).toBe('sent');
     expect(unknown.internal).toBe('unknownEmail');
     const mails = await db.query(`SELECT to_address, purpose, subject FROM outbound_mail`);
     expect(mails.rows).toEqual([{ to_address: 'anna@client.test', purpose: 'password_reset', subject: 'Сброс пароля' }]);
-    // В базе — только хеш токена.
     const token = await lastToken();
     const stored = await db.query(`SELECT token_hash FROM auth_mail_tokens WHERE user_id = $1`, [userId]);
     expect(stored.rows[0]!.token_hash).not.toBe(token);
@@ -141,7 +139,6 @@ describe('восстановление потерянных обращений (
       { origin_channel: 'web_form', reply_channel: 'email', contact_email: 'p1@client.test', subject: 'Вывод', status: 'new', linked: true, backdated: true },
       { origin_channel: 'web_form', reply_channel: 'email', contact_email: 'p2@client.test', subject: 'Счёт', status: 'new', linked: true, backdated: true },
     ]);
-    // Подтверждение задним числом не шлём.
     expect((await db.query(`SELECT count(*)::int AS n FROM outbound_mail`)).rows[0]!.n).toBe(0);
 
     expect(await recoverContactLeads(db, S)).toEqual({ recovered: 0, numbers: [] });

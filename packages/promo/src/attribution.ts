@@ -1,20 +1,5 @@
-/**
- * АТРИБУЦИЯ (дизайн §4.1, решение владельца №8): first-click, срок — из
- * настроек платформы (`platform_promo_settings.attribution_window_days`),
- * переназначение — только admin с основанием.
- *
- * Этот модуль — ЧИСТЫЙ и без node-зависимостей: его импортируют middleware
- * витрины и кабинета (edge-рантайм) через `@broker/promo/attribution`.
- *
- * Cookie: `<значение>.<unix-секунды первого клика>`. Метка времени в самом
- * значении — чтобы срок проверял СЕРВЕР при регистрации, а не только браузер:
- * max-age cookie — удобство, а не граница (её можно продлить руками или не
- * знать срок, если настройки не прочитались).
- */
-
 export const ATTRIBUTION_COOKIES = { ref: 'bp_ref', promo: 'bp_promo' } as const;
 
-/** Реф-код: латиница и цифры. Слаг акции: как `promotions.slug`. */
 const REF_RE = /^[A-Za-z0-9]{4,32}$/;
 const PROMO_RE = /^[a-z0-9][a-z0-9-]{1,62}$/;
 
@@ -47,9 +32,8 @@ export function decodeClick(raw: string | null | undefined, kind: 'ref' | 'promo
   return { value, at: new Date(sec * 1000) };
 }
 
-/** Клик ещё в сроке? `windowDays = null` — срок неизвестен (настройки не прочитаны). */
 export function withinWindow(click: ClickValue, now: Date, windowDays: number | null): boolean {
-  if (click.at.getTime() > now.getTime() + 5 * 60_000) return false; // из будущего — подделка
+  if (click.at.getTime() > now.getTime() + 5 * 60_000) return false;
   if (windowDays === null) return true;
   return now.getTime() - click.at.getTime() <= windowDays * 86_400_000;
 }
@@ -57,15 +41,9 @@ export function withinWindow(click: ClickValue, now: Date, windowDays: number | 
 export interface CookieToSet {
   name: string;
   value: string;
-  /** Секунды; `null` — сессионная cookie (срок неизвестен, его проверит сервер). */
   maxAge: number | null;
 }
 
-/**
- * Что поставить middleware по `?ref=` / `?promo=`. FIRST-CLICK: действующая
- * cookie не перезаписывается (защита от «перехвата» чужой ссылкой); истёкшая
- * — заменяется новым кликом.
- */
 export function cookiesForClick(input: {
   params: { ref?: string | null; promo?: string | null };
   existing: { ref?: string | null; promo?: string | null };
@@ -102,10 +80,6 @@ export interface ResolvedAttribution {
   promo: ResolvedClick | null;
 }
 
-/**
- * Итог при регистрации: cookie в сроке (первый клик) важнее параметра формы;
- * истёкшая cookie не действует; параметр — клик «сейчас».
- */
 export function resolveAttribution(input: {
   cookies: { ref?: string | null; promo?: string | null };
   params: { ref?: string | null; promo?: string | null };

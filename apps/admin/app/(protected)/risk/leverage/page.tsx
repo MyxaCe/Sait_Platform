@@ -21,19 +21,6 @@ import { RiskHeader } from '../_components/RiskHeader';
 import { getClientBrief, listClientLeverageSettings, type ClientLeverageRow } from '../_components/queries';
 import { ClientLeveragePanel } from './_components/ClientLeveragePanel';
 
-/**
- * Риск/плечо — плечо клиентов `/risk/leverage` (WEB-44/46, Р-446, §3.8).
- *
- * Индивидуальное плечо (override) конкретному клиенту ПО ЗАЯВКЕ (кто/когда/
- * основание/№ заявки), journaled, приоритет над портфелем и классом (Р-446).
- * Плюс назначение клиенту портфеля (атрибут клиента, WEB-44). Клиента находят
- * по имени/email/id (`?q=`) или выбирают из списка клиентов с явными
- * настройками; выбранный — `?userId=`.
- *
- * Роль-гейт (§3.8): просмотр — operator+admin; назначение/выдача/снятие —
- * только admin (формы лишь для admin, fail-closed). Journaled в
- * `admin_action_journal` — override «не тихо в базе» (Р-446).
- */
 export const dynamic = 'force-dynamic';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;

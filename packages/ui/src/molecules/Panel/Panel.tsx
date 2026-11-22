@@ -1,26 +1,14 @@
 import type { ReactNode } from 'react';
 import { cn } from '../../lib/cn';
 
-/**
- * `Panel` — основной контейнер содержимого (концепция §6.3): карточка с
- * шапкой (заголовок + счётчик + описание + действия справа) и телом. Таблица
- * внутри панели рисуется `bare` (без своей рамки), тело — `flush`.
- *
- * `tone="danger"` — зона опасных действий (блокировка и т.п.): красная граница,
- * чтобы опасное было визуально отделено от безопасного.
- */
 export interface PanelProps {
   title?: ReactNode;
-  /** Число рядом с заголовком (кол-во строк и т.п.). */
   count?: ReactNode;
   description?: ReactNode;
-  /** Действия справа в шапке: ссылка «все →», маленькие кнопки. */
   actions?: ReactNode;
   footer?: ReactNode;
-  /** Тело без внутренних отступов (таблицы, списки на всю ширину). */
   flush?: boolean;
   tone?: 'default' | 'danger';
-  /** id для якорей и aria-labelledby. */
   id?: string;
   className?: string;
   bodyClassName?: string;

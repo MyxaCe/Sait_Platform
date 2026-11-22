@@ -9,11 +9,6 @@ import { fmtDateTime } from '@/lib/ui/format';
 import { PromoHeader } from '../_components/PromoHeader';
 import { ReassignForm } from '../_components/PromoForms';
 
-/**
- * Рефералы: кто кого привёл (first-click, срок — из настроек платформы),
- * источник, отсечённые самореферала. Переназначение — только admin, с
- * основанием (решение владельца №8).
- */
 export const dynamic = 'force-dynamic';
 
 function StatusCell({ a }: { a: AttributionRow }) {

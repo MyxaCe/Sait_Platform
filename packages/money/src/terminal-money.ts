@@ -14,17 +14,6 @@ import {
   type TerminalAccount,
 } from './terminal-contract';
 
-/**
- * Клиент внутренних денежных маршрутов терминала. Контракт — в
- * `terminal-contract.ts`; здесь транспорт и классификация исходов. Три
- * исхода, и склеивать их нельзя:
- *  - `ok`          — терминал применил (или это идемпотентный повтор, `replay`);
- *  - `refused`     — отказ по существу (нет свободной маржи, счёт заморожен…);
- *  - `unavailable` — НЕ знаем, применено ли (сеть, 5xx, мусор, ошибка доступа).
- *    Вызывающий считает это «исход неизвестен» и разрешает повтором с тем же
- *    `external_ref`, а не переводит заявку в финальный статус.
- */
-
 export type TerminalUnavailable = 'not-configured' | 'network' | 'http-error' | 'malformed' | 'auth';
 
 export type MoneyMoveOutcome =
@@ -43,10 +32,6 @@ export type FreezeOutcome =
   | { state: 'refused'; code: string; status: number }
   | { state: 'unavailable'; reason: TerminalUnavailable };
 
-/**
- * Исход назначения плеча. `not-opened` — счёта этого рода в терминале нет
- * (человек ни разу не входил): применять нечего, и это НЕ отказ.
- */
 export type LeverageOutcome =
   | { state: 'ok'; leverage: number; previousLeverage: number | null; changed: boolean; seq: number | null }
   | { state: 'not-opened' }
@@ -57,11 +42,9 @@ export type AccountsOutcome =
   | { state: 'ok'; accounts: TerminalAccount[] }
   | { state: 'unavailable'; reason: TerminalUnavailable };
 
-/** Тело движения денег без валюты (валюту подставляет клиент). */
 export interface MoveInput {
   amount_minor: number;
   external_ref: string;
-  /** Кто инициировал: `site:chain-watcher`, логин оператора… */
   operator: string;
   reason: string;
 }
@@ -76,7 +59,6 @@ export interface TerminalMoneyClient {
 export interface TerminalMoneyConfig {
   baseUrl: string | undefined;
   token: string | undefined;
-  /** Слаг сайта (SITE_SLUG) — часть адреса маршрутов. */
   tenant: string | undefined;
   fetchImpl?: typeof fetch;
   timeoutMs?: number;
@@ -125,7 +107,6 @@ export function createTerminalMoneyClient(config: TerminalMoneyConfig): Terminal
     return typeof code === 'string' && code.length > 0 ? code : null;
   }
 
-  /** 4xx → отказ ИЛИ «недоступно» (ошибка доступа / без кода). */
   function classify4xx(status: number, json: unknown):
     | { state: 'refused'; code: string; status: number; detail?: Record<string, unknown> }
     | { state: 'unavailable'; reason: TerminalUnavailable } {
@@ -183,8 +164,6 @@ export function createTerminalMoneyClient(config: TerminalMoneyConfig): Terminal
       }
       if (r.status >= 400 && r.status < 500) {
         const c = classify4xx(r.status, r.json);
-        // 404 С КОДОМ account_not_opened — счёта нет; 404 без кода — маршрута
-        // нет (терминал старой версии или выключен секрет) → «недоступно».
         if (c.state === 'refused' && c.code === 'account_not_opened') return { state: 'not-opened' };
         return c.state === 'refused' ? { state: 'refused', code: c.code, status: c.status } : c;
       }
@@ -200,7 +179,6 @@ export function createTerminalMoneyClient(config: TerminalMoneyConfig): Terminal
   };
 }
 
-/** Клиент из окружения: `TERMINAL_INTERNAL_URL` + `INTERNAL_MONEY_TOKEN` + `SITE_SLUG`. */
 export function terminalMoneyClientFromEnv(env: NodeJS.ProcessEnv = process.env) {
   return createTerminalMoneyClient({
     baseUrl: env.TERMINAL_INTERNAL_URL,

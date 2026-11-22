@@ -1,23 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { parseClosedDeal, parseClosedDeals, unscale } from './closed-deals';
 
-/**
- * CAB-09 · преобразование целых чисел терминала.
- *
- * Проверяется отдельно, потому что это ровно то место, где ошибка **не
- * краснеет нигде**: числа остаются числами, обе стороны зелены, а человек
- * видит цену в сто тысяч раз больше или прибыль в тысячи раз меньше.
- */
-
-/** Ответ ручки как он есть: целые, snake_case, поля могут отсутствовать. */
 const RAW = {
   instrument: 1,
   symbol: 'EURUSD',
   side: 'sell',
-  qty: 10, // 0.10 при qty_decimals = 2
-  entry: 108500, // 1.08500 при price_decimals = 5
+  qty: 10,
+  entry: 108500,
   exit: 108200,
-  pnl: -1234, // центы: −$12.34
+  pnl: -1234,
   level: 108500,
   across_gap: true,
   price_decimals: 5,
@@ -33,16 +24,12 @@ describe('единицы: что чем масштабируется', () => {
   });
 
   it('объём делится на точность ОБЪЁМА, а не цены', () => {
-    // Перепутать две точности легко: обе лежат в одной записи.
     const d = parseClosedDeal(RAW)!;
 
     expect(d.volume).toBe(0.1);
   });
 
   it('`pnl` НЕ масштабируется точностью цены — это центы', () => {
-    // Главная ловушка. `pnl` — деньги, а не котировка. Поделив его на
-    // 10^5, мы показали бы −$0.01 вместо −$12.34 и ничего бы не
-    // покраснело: число осталось числом.
     const d = parseClosedDeal(RAW)!;
 
     expect(d.pnlCents).toBe(-1234);
@@ -73,14 +60,10 @@ describe('три состояния сохраняются', () => {
 
     expect(parseClosedDeal({ ...RAW, across_gap: true })!.acrossGap).toBe(true);
     expect(parseClosedDeal({ ...RAW, across_gap: false })!.acrossGap).toBe(false);
-    // Поля нет — НЕ «разрыва не было»: `false` отвечал бы за прошлое,
-    // которого мы не видели.
     expect(parseClosedDeal(withoutGap)!.acrossGap).toBeNull();
   });
 
   it('`false` не превращается в «неизвестно»', () => {
-    // Растяжка против проверки на истинность: `across_gap: false` —
-    // проверили и разрыва не было, это знание, а не его отсутствие.
     expect(parseClosedDeal({ ...RAW, across_gap: false })!.acrossGap).not.toBeNull();
   });
 });

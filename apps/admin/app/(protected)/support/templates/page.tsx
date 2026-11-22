@@ -10,11 +10,6 @@ import { fmtDateTime } from '@/lib/ui/format';
 import { TemplateForm } from '../_components/SettingsForms';
 import { SupportNav } from '../_components/SupportNav';
 
-/**
- * Шаблоны ответов (CRUD — только admin): операторы выбирают их в ответе,
- * переменные подставляются из обращения. Выключенный шаблон не виден в
- * списке оператора; удаления нет — история в журнале.
- */
 export const dynamic = 'force-dynamic';
 
 export default async function TemplatesPage({ searchParams }: { searchParams: { edit?: string } }) {

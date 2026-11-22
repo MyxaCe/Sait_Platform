@@ -6,12 +6,6 @@ import { setManagerFlagAction, type ManagerActionState } from '@/lib/managers/ac
 import { ActionResult, ReasonField, SubmitButton } from '@/components/control/forms';
 import { MANAGER_ERRORS } from '../../clients/_components/managers/messages';
 
-/**
- * Выдать / снять флаг «менеджер клиентов» (только admin, основание → журнал
- * `operator.client_manager_granted` / `operator.client_manager_revoked`).
- * Снять флаг с менеджера с закреплёнными клиентами нельзя — сервер вернёт
- * `hasClients`, форма заранее предупреждает.
- */
 export function ManagerFlagForm({
   operatorId,
   enabled,

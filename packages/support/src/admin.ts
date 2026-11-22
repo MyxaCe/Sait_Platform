@@ -5,14 +5,8 @@ import { parseSupportSettings, validateSettings, type SettingsError, type Suppor
 import type { Actor } from './tickets';
 import { sanitizeBody } from './text';
 
-/** Администрирование поддержки: настройки, шаблоны, состояние почты. */
-
 export type SaveSettingsResult = { ok: true } | { ok: false; reason: 'forbidden' | 'reasonRequired' | 'invalid'; errors?: SettingsError[] };
 
-/**
- * Сохранить настройки: только admin, с основанием, в журнал «до/после»
- * (как денежные настройки платформы).
- */
 export async function saveSupportSettings(
   db: PoolLike,
   actor: Actor,
@@ -58,8 +52,6 @@ export async function settingsMeta(db: Queryable): Promise<{ updatedAt: string |
     updatedByName: (x?.display_name as string | null) ?? null,
   };
 }
-
-/* ─── Шаблоны ответов ───────────────────────────────────────────────── */
 
 export interface TemplateRow {
   id: string;
@@ -146,14 +138,11 @@ export async function saveTemplate(
   });
 }
 
-/* ─── Состояние почтового канала ────────────────────────────────────── */
-
 export type MailChannelState =
   | { state: 'notConfigured'; missing: string[] }
   | { state: 'workerDown'; lastHeartbeatAt: string | null }
   | { state: 'ok'; mailbox: string | null; imap: boolean; lastInboundOkAt: string | null; lastOutboundOkAt: string | null; lastError: string | null; lastErrorAt: string | null };
 
-/** Воркер считается живым, если отметился за последние 3 минуты. */
 export async function readMailChannelState(db: Queryable, now = new Date()): Promise<MailChannelState & { queue: { queued: number; failed: number } }> {
   const [s, q] = await Promise.all([
     db.query(`SELECT * FROM support_mail_status WHERE id = 1`),
@@ -184,7 +173,6 @@ export async function readMailChannelState(db: Queryable, now = new Date()): Pro
   };
 }
 
-/** Отметка воркера (heartbeat + конфиг без секретов). */
 export async function writeMailHeartbeat(
   db: Queryable,
   s: { smtp: boolean; imap: boolean; missing: string[]; mailbox: string | null },
@@ -211,7 +199,6 @@ export async function writeMailEvent(db: Queryable, kind: 'inboundOk' | 'outboun
   await db.query(`UPDATE support_mail_status SET ${set} WHERE id = 1`, kind === 'error' ? [(error ?? '').slice(0, 500)] : []);
 }
 
-/** Просмотр вложения оператором — в журнал (комплаенс: кто открывал файлы клиента). */
 export async function recordAttachmentView(db: PoolLike, actor: Actor, a: { ticketId: string; attachmentId: string }): Promise<void> {
   await inTransaction(db, async (tx) => {
     await appendJournalWithinTx(

@@ -5,11 +5,6 @@ import type { AccountTypeTerms } from '@broker/money';
 import { CARD } from './PromoCards';
 import { bpsPercent, feeShape } from './format';
 
-/**
- * «Условия счетов» (решение владельца №9): ТОЛЬКО из админки (портфели —
- * плечо, классовые планки, наценка, комиссия, инструменты, описание). Нет
- * данных — честное «временно недоступны», ни одной выдуманной цифры.
- */
 export function AccountsScreen({ data }: { data: { types: AccountTypeTerms[]; myKey: string | null } | null }) {
   const t = useTranslations('accounts');
   return (
@@ -44,7 +39,6 @@ export function AccountsScreen({ data }: { data: { types: AccountTypeTerms[]; my
 export function AccountTypeCard({ a, mine }: { a: AccountTypeTerms; mine: boolean }) {
   const t = useTranslations('accounts');
   const fee = useFeeText(a.markupBps, a.commissionBps);
-  // Подписи классов — из словаря; незнакомый класс показываем ключом (не прячем планку).
   const classNames = (t.raw('classes') ?? {}) as Record<string, string>;
   const classes = Object.entries(a.classOverrides).filter(([, n]) => Number.isFinite(n) && n > 0);
 
@@ -104,7 +98,6 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
   );
 }
 
-/** «Спред + 0,15 %» / «Комиссия 0,03 % от суммы сделки» — из б.п. портфеля. */
 export function useFeeText(markupBps: number, commissionBps: number): string {
   const t = useTranslations('accounts');
   const locale = useLocale();
@@ -121,11 +114,6 @@ export function useFeeText(markupBps: number, commissionBps: number): string {
   }
 }
 
-/**
- * ≥ xl — сравнительная таблица: счета колонками, параметры строками (так
- * сравнивают тарифы на десктопе; карточки остаются для телефона и планшета).
- * Данные — те же `AccountTypeTerms`, только чтение.
- */
 function AccountsCompare({ types, myKey }: { types: AccountTypeTerms[]; myKey: string | null }) {
   const t = useTranslations('accounts');
   const classNames = (t.raw('classes') ?? {}) as Record<string, string>;

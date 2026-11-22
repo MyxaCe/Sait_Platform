@@ -23,10 +23,6 @@ const MGR2 = '00000000-0000-4000-8000-00000000b002';
 const U1 = '00000000-0000-4000-8000-0000000c0001';
 const U2 = '00000000-0000-4000-8000-0000000c0002';
 
-/**
- * Фейковая транзакция: отвечает на запросы ядра по их SQL. Журнал имитируется
- * на уровне SQL `appendJournalWithinTx` (advisory lock / select last / insert).
- */
 function fakePool(state: {
   managers: Record<string, { display_name: string; role: string; is_client_manager: boolean; disabled_at: string | null; login?: string }>;
   users: string[];
@@ -73,12 +69,10 @@ function fakePool(state: {
         state.managers[params[0] as string]!.is_client_manager = params[1] as boolean;
         return { rows: [] };
       }
-      // Журнал (@broker/money appendJournalWithinTx)
       if (s.includes('pg_advisory_xact_lock')) return { rows: [] };
       if (s.includes('FROM admin_action_journal') && s.includes('ORDER BY seq DESC')) return { rows: [] };
       if (s.startsWith('INSERT INTO admin_action_journal')) {
         seq += 1;
-        // (occurred_at, operator_id, action, subject_kind, subject_id, payload, prev_hash, entry_hash)
         journal.push({
           action: String(params[2]),
           subject: String(params[4]),

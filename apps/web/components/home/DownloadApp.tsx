@@ -2,7 +2,6 @@ import { useTranslations } from 'next-intl';
 import { Container, Section } from '@broker/ui';
 import { InstallPWAButton } from '@/features/pwa/InstallPWAButton';
 
-/** Имя бренда — из CMS (`cms:brand`), в коде его нет. */
 export function DownloadApp({ brandName }: { brandName: string }) {
   const t = useTranslations('home.download');
   const features = t.raw('features') as string[];
@@ -33,7 +32,6 @@ export function DownloadApp({ brandName }: { brandName: string }) {
             <InstallPWAButton className="mt-8" />
           </div>
 
-          {/* Стилизованный «телефон» с тикером — без тяжёлых изображений */}
           <div className="mx-auto w-full max-w-[300px] lg:max-w-[340px]" aria-hidden>
             <div className="rounded-[2.5rem] border border-border bg-elevated p-3 shadow-2xl shadow-black/40">
               <div className="rounded-[2rem] bg-base p-4">
@@ -44,26 +42,7 @@ export function DownloadApp({ brandName }: { brandName: string }) {
                   </span>
                   <span className="text-sm font-semibold text-primary">{brandName}</span>
                 </div>
-                {/*
-                  Макет телефона БЕЗ цен (WEB-25).
 
-                  Здесь стояли четыре зашитые котировки с процентами и
-                  цветом — и одна из них промахивалась мимо рынка на 18 %.
-                  Для иллюстрации это обычная декорация, но стоит она на
-                  домене, где сайт называет себя регулируемым брокером, и
-                  в двух сантиметрах от полосы «котировки не показываются».
-                  Человек, знающий рынок, видит расхождение за секунду.
-
-                  Подпись «пример» не спасла бы: правдоподобное число
-                  читается как утверждение независимо от того, что
-                  написано рядом. Это ровно тот довод, по которому мы
-                  весь месяц убирали «0.00%».
-
-                  Поэтому цен нет вовсе — вместо них нейтральные полосы:
-                  каркас интерфейса, который ничего не утверждает о рынке.
-                  Символы оставлены: эти четыре инструмента у нас
-                  действительно есть, проверено по справочнику.
-                */}
                 <div className="mt-4 space-y-2.5">
                   {['EURUSD', 'XAUUSD', 'BTCUSD', 'NAS100'].map((sym) => (
                     <div

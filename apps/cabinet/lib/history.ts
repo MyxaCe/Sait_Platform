@@ -1,13 +1,6 @@
 import { getPool } from './db';
 import { realMoneyCurrency } from '@broker/money/display-currency';
 
-/**
- * История счёта (r2): сделки из проекции терминала (`{demo,real}_trades`,
- * `{demo,real}_positions` — их пишет consumer из событий терминала) за период.
- * Только чтение, только по userId из СЕССИИ. Имя таблицы — из закрытого
- * списка, не из ввода.
- */
-
 export type AccountKind = 'demo' | 'real';
 export type Period = '7d' | '30d' | '90d' | 'all';
 export const PERIODS: readonly Period[] = ['7d', '30d', '90d', 'all'];
@@ -18,14 +11,12 @@ const TABLES: Record<AccountKind, { trades: string; positions: string; accounts:
 };
 
 const DAY = 86_400_000;
-/** Предел строк ленты за период — защита страницы, а не бизнес-правило. */
 export const TRADES_LIMIT = 500;
 
 export function parsePeriod(v: string | undefined): Period {
   return (PERIODS as readonly string[]).includes(v ?? '') ? (v as Period) : '30d';
 }
 
-/** Начало периода; `null` — за всё время. */
 export function periodStart(period: Period, now: Date = new Date()): Date | null {
   const days = period === '7d' ? 7 : period === '30d' ? 30 : period === '90d' ? 90 : null;
   return days === null ? null : new Date(now.getTime() - days * DAY);
@@ -38,7 +29,6 @@ export interface TradeRow {
   side: 'buy' | 'sell';
   volume: number;
   price: number;
-  /** Зафиксированный P&L закрывающей сделки; `null` — открытие позиции. */
   realizedPnlCents: number | null;
   executedAt: Date;
 }
@@ -54,18 +44,13 @@ export interface PositionRow {
 
 export interface TradeSummary {
   trades: number;
-  /** Оборот: Σ объём × цена, в минорных единицах валюты счёта. */
   turnoverMinor: number;
-  /** Зафиксированный P&L за период. */
   pnlMinor: number;
-  /** Закрывающих сделок (у них есть P&L) — база винрейта. */
   closed: number;
   wins: number;
-  /** Доля прибыльных закрытий, 0..1; `null` — закрытий не было. */
   winRate: number | null;
 }
 
-/** Сводка по сделкам периода — чистая функция (тест `history.test.ts`). */
 export function summarizeTrades(rows: readonly Pick<TradeRow, 'volume' | 'price' | 'realizedPnlCents'>[]): TradeSummary {
   let turnover = 0;
   let pnl = 0;
@@ -95,7 +80,6 @@ function side(v: unknown): 'buy' | 'sell' {
 
 export interface AccountHistory {
   currency: string;
-  /** Счёт открыт (есть строка проекции). */
   opened: boolean;
   trades: TradeRow[];
   positions: PositionRow[];

@@ -14,12 +14,6 @@ import {
 import { getPool } from './db';
 import { devFixtureAccounts, devTerminalFixtureEnabled } from './dev-terminal-fixture';
 
-/**
- * Деньги кабинета (USDT TRC20, реальный счёт). Только серверный модуль.
- * Политика — общий резолвер `@broker/money` (тот же, что видит оператор).
- * Все чтения — по userId из СЕССИИ.
- */
-
 export function moneyPool(): PoolLike {
   return getPool() as unknown as PoolLike;
 }
@@ -27,7 +21,6 @@ export function moneyPool(): PoolLike {
 type FullClient = TerminalMoneyClient & { accounts(userId: string): Promise<AccountsOutcome> };
 const store = globalThis as unknown as { __cabinetTerminalMoney?: FullClient; __cabinetTerminalReader?: FullClient };
 
-/** Денежные вызовы (вывод) — обычный таймаут. */
 export function terminalMoney(): FullClient {
   store.__cabinetTerminalMoney ??= createTerminalMoneyClient({
     baseUrl: process.env.TERMINAL_INTERNAL_URL,
@@ -37,7 +30,6 @@ export function terminalMoney(): FullClient {
   return store.__cabinetTerminalMoney;
 }
 
-/** Чтение счетов для главной — короткий таймаут: страница не висит, если терминал лежит. */
 export function terminalReader(): FullClient {
   store.__cabinetTerminalReader ??= createTerminalMoneyClient({
     baseUrl: process.env.TERMINAL_INTERNAL_URL,
@@ -45,7 +37,6 @@ export function terminalReader(): FullClient {
     tenant: process.env.SITE_SLUG,
     timeoutMs: 2_000,
   });
-  // Dev-фикстура чтения счетов (только next dev + явный флаг; см. файл фикстуры).
   if (devTerminalFixtureEnabled()) {
     return { ...store.__cabinetTerminalReader, accounts: devFixtureAccounts };
   }
@@ -56,12 +47,6 @@ export async function getMoneyPolicy(userId: string): Promise<MoneyPolicy> {
   return resolveMoneyPolicy(userId, moneyPool());
 }
 
-/**
- * Остаток лимита вывода без верификации для показа в кошельке — та же формула,
- * что проверяет сервер при подаче (`@broker/money` kyc-allowance). Баланс —
- * из уже прочитанных счетов терминала (`accounts`): `null` — терминал не
- * ответил, остаток неизвестен. Окончательно решает сервер при подаче заявки.
- */
 export async function getKycAllowance(
   userId: string,
   policy: MoneyPolicy,
@@ -76,12 +61,6 @@ export async function getKycAllowance(
   return computeKycAllowance({ bps: policy.unverifiedWithdraw.bps, balanceMinor, usage });
 }
 
-/**
- * Адрес кошелька биржи для ввода — ТОЛЬКО из env (подмена адреса ввода —
- * классическая атака; в базе/CMS его нет). Невалидный адрес не показываем
- * вовсе: лучше «ввод недоступен», чем реквизиты, по которым деньги уйдут
- * в никуда.
- */
 export function exchangeAddress(): string | null {
   const v = process.env.EXCHANGE_TRON_ADDRESS?.trim();
   return v && isUsableExchangeAddress(v) ? v : null;
@@ -92,7 +71,6 @@ export interface RealAccountView {
   currency: string;
 }
 
-/** Баланс реального счёта из проекции (`real_accounts`). */
 export async function getRealAccount(userId: string): Promise<RealAccountView | null> {
   const r = await getPool().query(`SELECT balance_cents, currency FROM real_accounts WHERE user_id = $1`, [userId]);
   const row = r.rows[0];

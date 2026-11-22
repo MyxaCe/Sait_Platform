@@ -11,7 +11,6 @@ export interface FormFieldProps {
   children: ReactNode;
 }
 
-/** Обёртка поля формы: label + контрол + ошибка/подсказка. */
 export function FormField({
   label,
   htmlFor,

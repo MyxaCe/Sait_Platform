@@ -5,10 +5,6 @@ export type Locale = z.infer<typeof localeSchema>;
 export const contentLocaleSchema = z.enum(['ru', 'en', 'de', 'fr', 'es']);
 export type ContentLocale = z.infer<typeof contentLocaleSchema>;
 
-/**
- * Медиа-объект из CRM. width/height/alt ОБЯЗАТЕЛЬНЫ:
- * это контрактная защита от CLS и провалов a11y (риск R-05).
- */
 export const mediaSchema = z.object({
   url: z.string().url(),
   width: z.number().int().positive(),

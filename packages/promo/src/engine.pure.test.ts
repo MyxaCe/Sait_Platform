@@ -18,17 +18,10 @@ import { parseRules, type ContestRules, type DepositBonusRules, type ReferralRul
 import { computeTurnover } from './turnover';
 import { rewardRef } from './refs';
 
-/**
- * Движок акций — чистые функции: все условия, границы, кешбэк, конкурс,
- * антифрод, атрибуция. Числа правил — из «админки» (здесь — из фикстуры
- * решения владельца 10.11), в коде движка их нет.
- */
-
 const T0 = '2026-11-01T00:00:00.000Z';
 const at = (min: number) => new Date(Date.parse(T0) + min * 60_000).toISOString();
 const day = (d: number) => new Date(Date.parse(T0) + d * 86_400_000).toISOString();
 
-// Решение владельца №2 (в админке это строка `promotions.rules`).
 const BONUS: DepositBonusRules = {
   percentBps: 3000,
   capMinor: 30_000,
@@ -41,7 +34,6 @@ const BONUS: DepositBonusRules = {
   forfeitOnWithdrawal: true,
 };
 
-// Решение владельца №3.
 const REFERRAL: ReferralRules = {
   referrerRewardMinor: 2_500,
   refereeRewardMinor: 2_500,
@@ -67,7 +59,6 @@ function facts(over: Partial<ClientFacts> = {}): ClientFacts {
   };
 }
 
-/** Пара open/close по BTC с удержанием `holdSec`, нотионал ноги = qty*price. */
 function roundTrip(startMin: number, holdSec: number, qty: number, price: number): TradeFact[] {
   const open = new Date(Date.parse(at(startMin)));
   const close = new Date(open.getTime() + holdSec * 1000);
@@ -104,7 +95,7 @@ describe('правила — схема одна на запись и чтени
 describe('оборот: нотионал и удержание ≥ N секунд', () => {
   it('N = 0 — нотионал всех сделок', () => {
     const r = computeTurnover(roundTrip(0, 5, 0.1, 50_000), { minHoldSeconds: 0 });
-    expect(r.qualifyingMinor).toBe(1_000_000); // 2 ноги × $5 000
+    expect(r.qualifyingMinor).toBe(1_000_000);
   });
   it('удержание ровно N засчитывается, N−1 — нет', () => {
     expect(computeTurnover(roundTrip(0, 120, 0.1, 50_000), { minHoldSeconds: 120 }).qualifyingMinor).toBe(1_000_000);
@@ -120,12 +111,11 @@ describe('оборот: нотионал и удержание ≥ N секун�
   it('FIFO: частичное закрытие и переворот через ноль', () => {
     const tr: TradeFact[] = [
       { symbol: 'X', side: 'buy', volume: 2, price: 100, executedAt: at(0) },
-      { symbol: 'X', side: 'buy', volume: 1, price: 100, executedAt: at(9) }, // молодой лот
-      { symbol: 'X', side: 'sell', volume: 4, price: 100, executedAt: at(10) }, // закрыл 3, открыл шорт 1
-      { symbol: 'X', side: 'buy', volume: 1, price: 100, executedAt: at(20) }, // закрыл шорт (10 мин)
+      { symbol: 'X', side: 'buy', volume: 1, price: 100, executedAt: at(9) },
+      { symbol: 'X', side: 'sell', volume: 4, price: 100, executedAt: at(10) },
+      { symbol: 'X', side: 'buy', volume: 1, price: 100, executedAt: at(20) },
     ];
     const r = computeTurnover(tr, { minHoldSeconds: 120 });
-    // лот 2 (10 мин) ✓ → 2×100×2; лот 1 (1 мин) ✗; шорт 1 (10 мин) ✓ → 1×100×2
     expect(r.qualifyingMinor).toBe(60_000);
     expect(r.shortHolds).toBe(1);
   });
@@ -171,7 +161,6 @@ describe('бонус на первый депозит (30 %, ≤ $300, обор�
     expect(ev.reason).toBe('deposit_before_start');
   });
   it('все условия → qualified; без KYC — нет', () => {
-    // награда $150 → оборот $4 500: две пары по $2 500 нотионала на ногу
     const trades = [...roundTrip(60 * 24 * 2, 300, 0.05, 50_000), ...roundTrip(60 * 24 * 3, 300, 0.05, 50_000)];
     const ok = evaluateDepositBonus(BONUS, ctx, facts({ deposits: [dep(50_000)], trades }), new Date(day(4)));
     expect(ok.state).toBe('qualified');
@@ -212,7 +201,7 @@ describe('друг (реферал): KYC + депозит ≥ $100 + оборо�
   const ctx = { attributedAt: T0, rewardMinor: 2_500 };
   it('выполнено → qualified; оборот $9 999.98 — нет', () => {
     const dep = [{ id: 'd', amountMinor: 10_000, creditedAt: day(1) }];
-    const enough = roundTrip(60 * 24 * 2, 300, 0.1, 50_000); // 2 × $5 000 = $10 000
+    const enough = roundTrip(60 * 24 * 2, 300, 0.1, 50_000);
     expect(evaluateReferee(REFERRAL, ctx, facts({ deposits: dep, trades: enough }), new Date(day(3))).state).toBe('qualified');
     const short = roundTrip(60 * 24 * 2, 300, 0.1, 49_999.9);
     expect(evaluateReferee(REFERRAL, ctx, facts({ deposits: dep, trades: short }), new Date(day(3))).state).toBe('in_progress');
@@ -349,7 +338,6 @@ describe('атрибуция: first-click, срок, параметры', () => 
       { name: 'bp_ref', value: encodeClick('SECOND22', now), maxAge: 30 * 86_400 },
       { name: 'bp_promo', value: encodeClick('welcome-30', now), maxAge: 30 * 86_400 },
     ]);
-    // Срок неизвестен (настройки не прочитаны) — сессионная cookie, срок проверит сервер.
     expect(cookiesForClick({ params: { ref: 'abcd2345' }, existing: {}, now, windowDays: null })[0]!.maxAge).toBeNull();
   });
   it('при регистрации: cookie в сроке важнее параметра; на границе срока — ещё действует; за ней — параметр', () => {

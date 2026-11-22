@@ -51,40 +51,21 @@ import { sanctionsListLabel } from '@/lib/aml/lists';
 import { fmtDate, fmtDateTime } from '@/lib/ui/format';
 import { actionLabel } from '@/lib/journal/labels';
 import { TronRef } from '../../_money/tron';
-// ── Поддержка (ветка demo-support) ──
 import { listClientTickets } from '@broker/support';
 import { getPool } from '@/lib/db';
 import { SupportTab } from './_components/SupportTab';
-// ── Менеджеры клиентов (ветка admin-managers) ──
 import { getClientManager, listClientManagers } from '@/lib/managers/queries';
 import { canAssignManagers } from '@/lib/managers/policy';
 import { AssignManagerForm } from '../_components/managers/AssignManagerForm';
-// ── Учётные данные клиента (ветка admin-credentials) ──
 import { getCredentialsView } from '@/lib/credentials/queries';
 import { CredentialsTab } from './_components/CredentialsTab';
-// ── Перевод на другую платформу группы (ветка client-transfer) ──
 import { TransferPanel } from './_components/TransferPanel';
-// ── Лимит вывода без верификации (ветка demo-withdraw-limits) ──
 import { WithdrawLimitPanel } from './_components/WithdrawLimitPanel';
 import { formatBpsPercent } from '@/lib/crypto/withdraw-limit';
 import { listManualCredits } from '@/lib/money/credit-queries';
 import { ManualCreditForm } from '../../_money/ManualCreditForms';
 import { ManualCreditsTable, PendingCreditCard, needsRetry } from '../../_money/ManualCredits';
 
-/**
- * Карточка клиента `/clients/[id]` (ADM-02, §3.2) — ЭТАЛОННЫЙ экран редизайна
- * (концепция §7.2 «страница-карточка»). Шапка сущности с ключевыми цифрами →
- * баннеры ограничений → вкладки (`?tab=`): Обзор · Торговля · Деньги · KYC и
- * AML · Доступ · Журнал. Вкладки — ссылки (работают без JS, переживают F5).
- *
- * Данные и действия — прежние: проекция торговли, политика денег, живые цифры
- * терминала (null — не ответил), депозиты/выводы, AML-карточка (только чтение),
- * журнал по субъекту. Формы — существующие server actions без изменений.
- *
- * Роль-гейт (fail-closed, недоступное НЕ отрисовано): просмотр — operator+admin
- * (+ finance_operator через деньги); блокировка/сессии — только admin;
- * денежные флаги — admin и finance_operator.
- */
 export const dynamic = 'force-dynamic';
 
 const TAB_KEYS = ['overview', 'trading', 'money', 'compliance', 'access', 'credentials', 'support', 'journal'] as const;
@@ -101,8 +82,6 @@ const AML_KEY: Record<string, StatusKey> = {
   clear: 'aml_clear',
   escalated: 'aml_escalated',
 };
-
-/* ─── Деньги: единая лента депозитов и выводов ───────────────────────── */
 
 interface MoneyRow {
   id: string;
@@ -198,14 +177,8 @@ const MONEY_COLUMNS: DataTableColumn<MoneyRow>[] = [
   },
 ];
 
-/* ─── Правила ввода/вывода ─────────────────────────────────────────── */
-
 const SOURCE: Record<string, string> = { platform: 'из настроек платформы', client: 'индивидуально' };
 
-/**
- * Лимит вывода без верификации в карточке: `allowance` — посчитан (баланс
- * терминала известен), `null` — терминал не дал баланс.
- */
 function unverifiedWithdrawItems(policy: MoneyPolicy, allowance: KycAllowance | null) {
   const pct = policy.unverifiedWithdraw.bps === 0 ? 'запрещён' : `до ${formatBpsPercent(policy.unverifiedWithdraw.bps)}`;
   const items: { term: string; value: ReactNode; hint?: string; tone?: 'default' | 'positive' | 'negative' | 'warning' }[] = [
@@ -268,8 +241,6 @@ function PolicySummary({ policy, allowance }: { policy: MoneyPolicy; allowance: 
   );
 }
 
-/* ─── Верификация ──────────────────────────────────────────────────── */
-
 const VERIFICATION_ACTIONS = new Set([
   'client.verification.verified',
   'client.verification.rejected',
@@ -299,8 +270,6 @@ function VerificationTimeline({ journal }: { journal: ClientJournalEntry[] }) {
   );
 }
 
-/* ─── Страница ─────────────────────────────────────────────────────── */
-
 export default async function ClientCardPage({
   params,
   searchParams,
@@ -312,8 +281,6 @@ export default async function ClientCardPage({
   if (!card) notFound();
   const tab = asTab(searchParams.tab);
 
-  // Проекция торговли — после проверки, что клиент есть (UUID уже валиден).
-  // Демо и реальный счёт разделены (09.11): показываем раздельно.
   const [demo, real, policyInputs, live, deposits, withdrawals, aml, kycUsage] = await Promise.all([
     getClientTrading(card.userId, undefined, 'demo'),
     getClientTrading(card.userId, undefined, 'real'),
@@ -327,8 +294,6 @@ export default async function ClientCardPage({
     loadKycWithdrawUsage(moneyPool(), card.userId),
   ]);
   const policy = computeMoneyPolicy(policyInputs);
-  // Лимит вывода без верификации: та же формула, что проверяет сервер при подаче
-  // заявки (`@broker/money` kyc-allowance). Баланс — из терминала; нет — «неизвестно».
   const liveRealAccount = live.state === 'ok' ? live.accounts.find((a) => a.kind === 'real') : undefined;
   const allowanceBalance =
     live.state !== 'ok' ? null : !liveRealAccount || !liveRealAccount.opened ? 0 : liveRealAccount.balanceMinor;
@@ -341,14 +306,12 @@ export default async function ClientCardPage({
   const manualCredits = await listManualCredits({ userId: card.userId, limit: 50 });
   const creditsOpen = manualCredits.filter((c) => c.state === 'awaiting_second_approval' || needsRetry(c));
   const supportAwaiting = supportTickets.filter((t) => t.status === 'new' || t.status === 'open').length;
-  // ── Менеджер клиента: видят все роли карточки, меняет только admin. ──
   const canAssignManager = canAssignManagers(operator?.role);
   const [manager, managerChoices] = await Promise.all([
     getClientManager(card.userId),
     canAssignManager ? listClientManagers() : Promise.resolve([]),
   ]);
   const managerIsMe = manager !== null && manager.managerId === operator?.operatorId;
-  // ── Учётные данные: права зрителя (admin / менеджер этого клиента) — из базы. ──
   const credentials = await getCredentialsView(moneyPool(), {
     userId: card.userId,
     operatorId: operator?.operatorId ?? '00000000-0000-0000-0000-000000000000',
@@ -364,8 +327,6 @@ export default async function ClientCardPage({
   const liveReal = liveOf('real');
   const canMoney = canOperateMoney(operator?.role);
   const isAdmin = operator?.role === 'admin';
-  // KYC-документы и переходы в KYC/AML — только ролям этих разделов (матрица
-  // sections.ts). finance_operator видит статус верификации, но не документы.
   const canDocs = canViewKycDocuments(operator?.role);
   const canKyc = canAccessSection(operator?.role, 'kyc');
   const canAml = canAccessSection(operator?.role, 'aml');
@@ -421,7 +382,6 @@ export default async function ClientCardPage({
         ]}
         actions={
           <>
-            {/* ── Перевод на другую платформу группы (ветка client-transfer): отдельная кнопка, только закреплённый менеджер ── */}
             {managerIsMe ? (
               <Link
                 href={`/clients/${card.userId}/transfer`}
@@ -623,7 +583,6 @@ export default async function ClientCardPage({
               </div>
             </Panel>
 
-            {/* ── Перевод на другую платформу группы (ветка client-transfer) ── */}
             <TransferPanel userId={card.userId} canTransfer={managerIsMe} />
 
             <Panel title="Комплаенс">

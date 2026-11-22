@@ -2,12 +2,6 @@
 
 import { Button, Callout } from '@broker/ui';
 
-/**
- * Граница ошибок рабочей зоны: раздел не смог прочитать данные (например,
- * база не ответила). Каркас (рельс, шапка) остаётся; вместо раздела —
- * спокойный отказ без стектрейса и «Повторить». Деталь ошибки — только в логе
- * сервера (Next передаёт сюда лишь digest).
- */
 export default function ProtectedError({ reset }: { error: Error & { digest?: string }; reset: () => void }) {
   return (
     <div className="mx-auto max-w-xl py-10">

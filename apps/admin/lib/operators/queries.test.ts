@@ -2,11 +2,6 @@ import { describe, expect, it } from 'vitest';
 import type { Queryable } from '../db';
 import { asRole, listOperators } from './queries';
 
-/**
- * Регресс: раздел «Операторы» падал, если в базе был оператор с ролью
- * finance_operator (роль введена миграцией 1794150000000, а чтение списка
- * знало только admin|operator).
- */
 describe('asRole', () => {
   it('принимает все три роли', () => {
     expect(asRole('admin')).toBe('admin');
