@@ -948,7 +948,12 @@
     "leverageBase": "Basis 1:{n}",
     "classLeverage": "{class}: bis zu 1:{n}",
     "classes": {
-      "crypto": "Krypto"
+      "crypto": "Krypto",
+      "forex": "Forex",
+      "metals": "Metalle",
+      "stocks": "Aktien",
+      "energy": "Energie",
+      "indices": "Indizes"
     },
     "cost": "Handelskosten",
     "fee": {

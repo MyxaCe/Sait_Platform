@@ -178,6 +178,11 @@ export const ACTION_LABELS: Record<string, ActionMeta> = {
     tone: 'neutral',
     group: 'leverage',
   },
+  'leverage.class_table_changed': {
+    label: 'Изменено плечо портфеля по категориям',
+    tone: 'warning',
+    group: 'leverage',
+  },
 
   'leverage.portfolio_fees_changed': { label: 'Изменён тариф портфеля (наценка/комиссия)', tone: 'warning', group: 'leverage' },
 

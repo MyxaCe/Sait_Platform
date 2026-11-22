@@ -2,29 +2,38 @@ import {
   clientsOfPortfolio,
   leverageChanges,
   pushLeverageToTerminal,
-  readTerminalLeverage,
+  readTerminalLeverageTables,
   type LeverageChange,
   type Queryable,
+  type TerminalLeverage,
   type TerminalLeverageClient,
 } from '@broker/money';
 import { terminalMoney } from '../crypto/runtime';
 
 export interface LeverageTerminalSync {
-  read(db: Queryable, userIds: readonly string[]): Promise<Map<string, number>>;
+  read(db: Queryable, userIds: readonly string[]): Promise<Map<string, TerminalLeverage>>;
   usersOfPortfolio(db: Queryable, portfolioKey: string): Promise<string[]>;
   terminal: TerminalLeverageClient;
 }
 
 export function terminalLeverageSync(): LeverageTerminalSync {
-  return { read: readTerminalLeverage, usersOfPortfolio: clientsOfPortfolio, terminal: terminalMoney() };
+  return { read: readTerminalLeverageTables, usersOfPortfolio: clientsOfPortfolio, terminal: terminalMoney() };
 }
 
 export type TerminalSyncFailure =
   | { ok: false; reason: 'terminalUnavailable' }
   | { ok: false; reason: 'terminalRefused'; code: string };
 
+const tableOf = (t: TerminalLeverage) => ({ base: t.base, classes: { ...t.classes } });
+
 export function changesForJournal(changes: readonly LeverageChange[]) {
-  return changes.map((c) => ({ userId: c.userId, before: c.before, after: c.after }));
+  return changes.map((c) => ({
+    userId: c.userId,
+    before: c.before ? c.before.leverage : null,
+    after: c.after.leverage,
+    beforeTable: c.before ? tableOf(c.before) : null,
+    afterTable: tableOf(c.after),
+  }));
 }
 
 export async function deliverToTerminal(

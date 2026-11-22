@@ -178,6 +178,22 @@ describe('SSO handoff-JWT · claim leverage (Р-446)', () => {
     expect('leverage' in b.payload).toBe(false);
   });
 
+  it('таблица по категориям — число для старого шлюза, база и категории для нового', async () => {
+    const { issueHandoffToken, publicJwks } = await import('./jwt');
+    const jwks = createLocalJWKSet(await publicJwks());
+    const t = await issueHandoffToken('user-1', 'demo', { leverage: 10, base: 20, classes: { crypto: 10, forex: 100 } });
+    const { payload } = await jwtVerify(t.token, jwks);
+    expect(payload.leverage).toBe(10);
+    expect(payload.leverage_base).toBe(20);
+    expect(payload.leverage_classes).toEqual({ crypto: 10, forex: 100 });
+    await expect(
+      issueHandoffToken('user-1', 'demo', { leverage: 10, base: 20, classes: { forex: 0 } }),
+    ).rejects.toThrow(/1\.\.1000/);
+    await expect(
+      issueHandoffToken('user-1', 'demo', { leverage: 10, base: 20, classes: { fx: 10 } }),
+    ).rejects.toThrow(/категория/);
+  });
+
   it('плечо вне 1..1000 — подписи нет (терминал такой claim отверг бы)', async () => {
     const { issueHandoffToken } = await import('./jwt');
     for (const bad of [0, 1001, 2.5]) {

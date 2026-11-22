@@ -4,7 +4,8 @@ import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { getOperatorSession } from '../auth/current';
 import { LOGIN_PATH } from '../auth/constants';
-import { changePortfolioLeverage, setClassOverride } from './portfolio';
+import { LEVERAGE_CLASSES } from '@broker/money';
+import { changePortfolioLeverage, setClassLeverageTable } from './portfolio';
 import { setClientPortfolio, setClientOverride, clearClientOverride } from './client';
 
 export interface LeverageActionState {
@@ -60,7 +61,7 @@ export async function changePortfolioLeverageAction(
   return { ok: true };
 }
 
-export async function setClassOverrideAction(
+export async function setClassLeverageTableAction(
   _prev: LeverageActionState,
   formData: FormData,
 ): Promise<LeverageActionState> {
@@ -69,17 +70,19 @@ export async function setClassOverrideAction(
 
   const portfolioKey = String(formData.get('portfolioKey') ?? '').trim();
   if (!portfolioKey) return { error: 'noPortfolio' };
-  const instrumentClass = String(formData.get('instrumentClass') ?? '').trim();
   const reason = String(formData.get('reason') ?? '');
-  const raw = intField(formData, 'leverage');
-  if (raw !== null && Number.isNaN(raw)) return { error: 'invalidLeverage' };
+  const table: Record<string, number | null> = {};
+  for (const cls of LEVERAGE_CLASSES) {
+    const raw = intField(formData, `class.${cls}`);
+    if (raw !== null && Number.isNaN(raw)) return { error: 'invalidLeverage' };
+    table[cls] = raw;
+  }
 
-  const result = await setClassOverride({
+  const result = await setClassLeverageTable({
     operatorId: operator.operatorId,
     operatorLogin: operator.login,
     portfolioKey,
-    instrumentClass,
-    leverage: raw,
+    table,
     reason,
   });
   if (!result.ok) return toState(result);

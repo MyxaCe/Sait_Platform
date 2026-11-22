@@ -23,7 +23,7 @@ const snapshot: LiveSnapshot = {
       key: 'standard',
       title: 'Standard',
       baseLeverage: 20,
-      classOverrides: { crypto: 10 },
+      classOverrides: { crypto: 10, forex: 200 },
       markupBps: 0,
       commissionBps: 10,
       isDefault: true,
@@ -95,6 +95,8 @@ const EXPECTED: Record<string, Record<string, string>> = {
   'deposit.methods': { ru: 'USDT (TRC20)', en: 'USDT (TRC20)', de: 'USDT (TRC20)', fr: 'USDT (TRC20)', es: 'USDT (TRC20)' },
   'demo.startBalance': { ru: '10 000 USD', en: '10,000 USD', de: '10.000 USD', fr: '10 000 USD', es: '10.000 USD' },
   'leverage.max': { ru: '1:100', en: '1:100', de: '1:100', fr: '1:100', es: '1:100' },
+  'leverage.forex': { ru: '1:200', en: '1:200', de: '1:200', fr: '1:200', es: '1:200' },
+  'leverage.metals': { ru: '1:100', en: '1:100', de: '1:100', fr: '1:100', es: '1:100' },
   'account.standard.name': { ru: 'Standard', en: 'Standard', de: 'Standard', fr: 'Standard', es: 'Standard' },
   'account.enc_prime.name': { ru: 'ECN Prime', en: 'ECN Prime', de: 'ECN Prime', fr: 'ECN Prime', es: 'ECN Prime' },
   'account.standard.leverage': { ru: '1:20', en: '1:20', de: '1:20', fr: '1:20', es: '1:20' },
@@ -118,7 +120,9 @@ describe('параметры на пяти языках', () => {
 
   it('каждый шаблон из списка покрыт проверкой', () => {
     const covered = Object.keys(EXPECTED).map((n) =>
-      n.startsWith('account.') ? n.replace(/^account\.[a-z_]+/, 'account.<key>').replace(/\.crypto$/, '.<class>') : n,
+      n.startsWith('account.')
+        ? n.replace(/^account\.[a-z_]+/, 'account.<key>').replace(/\.crypto$/, '.<class>')
+        : n.replace(/^leverage\.(?!max$)[a-z]+$/, 'leverage.<class>'),
     );
     for (const template of LIVE_PARAMS) expect(covered).toContain(template);
   });
@@ -173,6 +177,8 @@ describe('неизвестное и недоступное', () => {
     'account.standard.commission.crypto',
     'account.standard.spread',
     'leverage',
+    'leverage.fx',
+    'leverage.forex.max',
   ])('%s — неизвестный параметр', (name) => {
     expect(resolveParam(name, ctx('ru'))).toEqual({ ok: false, reason: 'unknown' });
   });
@@ -182,6 +188,7 @@ describe('неизвестное и недоступное', () => {
     'withdraw.min',
     'withdraw.unverifiedPercent',
     'leverage.max',
+    'leverage.forex',
     'account.standard.name',
     'account.standard.leverage.crypto',
     'support.hours',

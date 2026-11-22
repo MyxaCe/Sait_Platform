@@ -33,7 +33,14 @@ export type FreezeOutcome =
   | { state: 'unavailable'; reason: TerminalUnavailable };
 
 export type LeverageOutcome =
-  | { state: 'ok'; leverage: number; previousLeverage: number | null; changed: boolean; seq: number | null }
+  | {
+      state: 'ok';
+      leverage: number;
+      previousLeverage: number | null;
+      previousClasses: Record<string, number> | null;
+      changed: boolean;
+      seq: number | null;
+    }
   | { state: 'not-opened' }
   | { state: 'refused'; code: string; status: number }
   | { state: 'unavailable'; reason: TerminalUnavailable };

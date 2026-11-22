@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { Panel, ToneBadge, cn } from '@broker/ui';
-import { resolveLeverage, TERMINAL_INSTRUMENT_CLASS } from '@broker/money';
 import { listPortfolios } from '@/lib/leverage/queries';
+import { LEVERAGE_CLASSES, LEVERAGE_CLASS_LABELS } from '@/lib/leverage/classes';
 import { getOperatorSession } from '@/lib/auth/current';
 import { formatLeverage } from '@/lib/leverage/resolve';
 import { RiskHeader } from '../_components/RiskHeader';
@@ -32,15 +32,6 @@ export default async function PortfoliosPage({
 
       <section aria-label="Портфели плеча" className="grid gap-5 lg:grid-cols-3">
         {portfolios.map((p) => {
-          const terminal = resolveLeverage({
-            portfolio: p,
-            clientOverride: null,
-            instrumentClass: TERMINAL_INSTRUMENT_CLASS,
-          });
-          const crypto = p.classOverrides[TERMINAL_INSTRUMENT_CLASS];
-          const otherClasses = Object.entries(p.classOverrides).filter(
-            ([cls]) => cls !== TERMINAL_INSTRUMENT_CLASS,
-          );
           const selected = editing?.key === p.key;
           return (
             <Panel
@@ -64,36 +55,31 @@ export default async function PortfoliosPage({
               className={cn(selected && 'ring-accent/40 ring-1')}
             >
               <div data-portfolio={p.key} className="space-y-4">
-                <div>
-                  <p className="text-muted text-xs">Плечо в терминале</p>
-                  <p className="text-primary text-2xl font-semibold tabular-nums tracking-tight">
-                    {formatLeverage(terminal.leverage)}
-                  </p>
-                  <p className="text-muted text-xs">
-                    {terminal.source === 'class-override'
-                      ? 'по планке класса crypto'
-                      : 'по базовому плечу портфеля'}
-                  </p>
-                </div>
-                <dl className="border-border grid grid-cols-3 gap-3 border-t pt-3">
+                <div className="flex items-end justify-between gap-3">
                   <div>
-                    <dt className="text-muted text-xs">База</dt>
-                    <dd className="text-primary mt-0.5 text-sm font-medium tabular-nums">
+                    <p className="text-muted text-xs">Базовое плечо</p>
+                    <p className="text-primary text-2xl font-semibold tabular-nums tracking-tight">
                       {formatLeverage(p.baseLeverage)}
-                    </dd>
+                    </p>
                   </div>
-                  <div>
-                    <dt className="text-muted text-xs">Планка crypto</dt>
-                    <dd className="text-primary mt-0.5 text-sm font-medium tabular-nums">
-                      {crypto ? formatLeverage(crypto) : <span className="text-muted">нет</span>}
-                    </dd>
+                  <div className="text-right">
+                    <p className="text-muted text-xs">Клиентов</p>
+                    <p className="text-primary text-sm font-medium tabular-nums">{clientsOf(p)}</p>
                   </div>
-                  <div>
-                    <dt className="text-muted text-xs">Клиентов</dt>
-                    <dd className="text-primary mt-0.5 text-sm font-medium tabular-nums">
-                      {clientsOf(p)}
-                    </dd>
-                  </div>
+                </div>
+                <dl className="border-border grid grid-cols-3 gap-3 border-t pt-3" data-leverage-classes>
+                  {LEVERAGE_CLASSES.map((c) => (
+                    <div key={c} data-class={c}>
+                      <dt className="text-muted text-xs">{LEVERAGE_CLASS_LABELS[c]}</dt>
+                      <dd className="text-primary mt-0.5 text-sm font-medium tabular-nums">
+                        {p.classOverrides[c] !== undefined ? (
+                          formatLeverage(p.classOverrides[c]!)
+                        ) : (
+                          <span className="text-muted font-normal">база</span>
+                        )}
+                      </dd>
+                    </div>
+                  ))}
                 </dl>
                 <dl className="border-border grid grid-cols-2 gap-3 border-t pt-3">
                   <div>
@@ -124,18 +110,6 @@ export default async function PortfoliosPage({
                 <p className="text-secondary text-xs">
                   Инструменты: {p.instruments ?? <span className="text-muted">не указаны</span>}
                 </p>
-                {otherClasses.length > 0 ? (
-                  <p className="text-secondary text-xs tabular-nums">
-                    Другие классы:{' '}
-                    {otherClasses.map(([cls, lev]) => `${cls} ${formatLeverage(lev)}`).join(' · ')}
-                  </p>
-                ) : null}
-                {crypto ? (
-                  <p className="text-muted text-xs">
-                    Пока задана планка crypto, смена базы на торговлю не влияет: терминал торгует
-                    только криптопарами.
-                  </p>
-                ) : null}
               </div>
             </Panel>
           );
@@ -149,7 +123,7 @@ export default async function PortfoliosPage({
             portfolioKey={editing.key}
             title={editing.title}
             baseLeverage={editing.baseLeverage}
-            cryptoLeverage={editing.classOverrides[TERMINAL_INSTRUMENT_CLASS] ?? null}
+            classOverrides={editing.classOverrides}
             clientCount={clientsOf(editing)}
             isDefault={editing.isDefault}
             markupBps={editing.markupBps}
@@ -167,8 +141,8 @@ export default async function PortfoliosPage({
               'Индивидуальное плечо',
               'Выдаётся конкретному клиенту по заявке на вкладке «Плечо клиентов».',
             ],
-            ['Планка класса в портфеле', 'Например, crypto 1:10 в Standard — для всех его клиентов.'],
-            ['Базовое плечо портфеля', 'Если ни индивидуального плеча, ни планки класса нет.'],
+            ['Плечо категории в портфеле', 'Например, криптовалюты 1:10 в Standard — для всех его клиентов.'],
+            ['Базовое плечо портфеля', 'Если ни индивидуального плеча, ни плеча категории нет.'],
           ].map(([t, d], i) => (
             <li key={t} className="flex gap-3">
               <span className="bg-primary/[0.07] text-primary flex size-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold tabular-nums">

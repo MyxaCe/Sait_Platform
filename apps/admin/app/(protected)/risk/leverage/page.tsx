@@ -11,7 +11,8 @@ import {
   ToneBadge,
   type DataTableColumn,
 } from '@broker/ui';
-import { resolveLeverage, TERMINAL_INSTRUMENT_CLASS } from '@broker/money';
+import { resolveLeverage, terminalLeverageOf } from '@broker/money';
+import { describeTerminalLeverage } from '@/lib/leverage/classes';
 import { listPortfolios, getClientLeverage, getDefaultPortfolioKey } from '@/lib/leverage/queries';
 import { listClients, type ClientRow } from '@/lib/clients/queries';
 import { getOperatorSession } from '@/lib/auth/current';
@@ -54,12 +55,13 @@ export default async function LeverageOverridePage({
     ? resolveLeverage({
         portfolio,
         clientOverride: view?.override ?? null,
-        instrumentClass: TERMINAL_INSTRUMENT_CLASS,
+        instrumentClass: null,
       })
     : null;
+  const table = portfolio ? terminalLeverageOf(portfolio, view?.override ?? null) : null;
   const SOURCE: Record<string, string> = {
     'client-override': 'индивидуальное плечо клиента',
-    'class-override': `планка класса «${TERMINAL_INSTRUMENT_CLASS}» в портфеле`,
+    'class-override': 'плечо категории в портфеле',
     portfolio: 'базовое плечо портфеля',
   };
 
@@ -91,19 +93,14 @@ export default async function LeverageOverridePage({
     {
       key: 'terminal',
       header: 'В терминале',
-      numeric: true,
-      width: '7rem',
       cell: (r) => {
         const p = portfolios.find((x) => x.key === r.portfolioKey);
         if (!p) return '—';
-        const res = resolveLeverage({
-          portfolio: p,
-          clientOverride: r.overrideLeverage
-            ? { leverage: r.overrideLeverage, reason: '', ticket: '' }
-            : null,
-          instrumentClass: TERMINAL_INSTRUMENT_CLASS,
-        });
-        return <span className="font-medium">{formatLeverage(res.leverage)}</span>;
+        const t = terminalLeverageOf(
+          p,
+          r.overrideLeverage ? { leverage: r.overrideLeverage, reason: '', ticket: '' } : null,
+        );
+        return <span className="text-xs tabular-nums">{describeTerminalLeverage(t)}</span>;
       },
     },
     {
@@ -208,14 +205,16 @@ export default async function LeverageOverridePage({
         <div className="space-y-4">
           <div className="border-border bg-sunken/60 flex flex-wrap items-baseline justify-between gap-3 rounded-md border px-4 py-3">
             <div>
-              <p className="text-muted text-xs">Действует в терминале</p>
+              <p className="text-muted text-xs">Базовое плечо в терминале</p>
               <p className="text-primary text-2xl font-semibold tabular-nums tracking-tight">
-                {effective ? formatLeverage(effective.leverage) : '—'}
+                {table ? formatLeverage(table.base) : '—'}
               </p>
             </div>
             <p className="text-secondary max-w-xs text-right text-xs">
-              {effective ? `Источник: ${SOURCE[effective.source]}.` : 'Портфель не задан.'} Одно
-              плечо на счёт — терминал торгует только криптопарами.
+              {effective ? `Источник: ${SOURCE[effective.source]}.` : 'Портфель не задан.'}{' '}
+              {view?.override
+                ? 'Индивидуальное плечо действует на все категории.'
+                : 'Категории со своим плечом — в строке «По категориям».'}
             </p>
           </div>
           <DescriptionList
@@ -232,12 +231,8 @@ export default async function LeverageOverridePage({
                 numeric: true,
               },
               {
-                term: 'Планка класса crypto',
-                value:
-                  portfolio && portfolio.classOverrides[TERMINAL_INSTRUMENT_CLASS]
-                    ? formatLeverage(portfolio.classOverrides[TERMINAL_INSTRUMENT_CLASS]!)
-                    : 'нет',
-                numeric: true,
+                term: 'В терминале по категориям',
+                value: table ? describeTerminalLeverage(table) : '—',
               },
             ]}
           />
@@ -259,7 +254,7 @@ export default async function LeverageOverridePage({
             key: p.key,
             title: p.title,
             baseLeverage: p.baseLeverage,
-            cryptoLeverage: p.classOverrides[TERMINAL_INSTRUMENT_CLASS] ?? null,
+            classesText: describeTerminalLeverage(terminalLeverageOf(p, null)),
           }))}
           assignedKey={assignedKey}
           override={view?.override ? { leverage: view.override.leverage, ticket: view.override.ticket } : null}

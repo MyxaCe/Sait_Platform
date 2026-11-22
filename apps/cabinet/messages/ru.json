@@ -948,7 +948,12 @@
     "leverageBase": "базовое 1:{n}",
     "classLeverage": "{class}: до 1:{n}",
     "classes": {
-      "crypto": "Криптовалюты"
+      "crypto": "Криптовалюты",
+      "forex": "Форекс",
+      "metals": "Металлы",
+      "stocks": "Акции",
+      "energy": "Энергоносители",
+      "indices": "Индексы"
     },
     "cost": "Стоимость сделки",
     "fee": {

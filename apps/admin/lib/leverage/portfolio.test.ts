@@ -78,7 +78,17 @@ function fakePool(opts: { base?: number | null; classLeverage?: number | null; p
   const sync: LeverageTerminalSync = {
     terminal,
     usersOfPortfolio: async () => [CLIENT],
-    read: async (_db, ids) => new Map(ids.map((id) => [id, state.classLeverage ?? state.base])),
+    read: async (_db, ids) =>
+      new Map(
+        ids.map((id) => [
+          id,
+          {
+            leverage: state.classLeverage ?? state.base,
+            base: state.base,
+            classes: (state.classLeverage === null ? {} : { crypto: state.classLeverage }) as Record<string, number>,
+          },
+        ]),
+      ),
   };
   return { pool, state, journal, flags, terminal, sync };
 }
@@ -174,6 +184,17 @@ describe('WEB-45 · планка класса внутри портфеля', ()
     expect(JSON.parse(f.journal[0]!.payload).previousLeverage).toBe(10);
   });
 
+  it('класс вне категорий терминала — invalidClass до транзакции', async () => {
+    const f = fakePool({ classLeverage: null });
+    const res = await setClassOverride(
+      { operatorId: OP, portfolioKey: 'standard', instrumentClass: 'fx', leverage: 10, reason: 'старый ключ' },
+      f.pool,
+      f.sync,
+    );
+    expect(res).toEqual({ ok: false, reason: 'invalidClass' });
+    expect(f.flags.begun).toBe(false);
+  });
+
   it('та же планка — пустой переход, откат', async () => {
     const f = fakePool({ classLeverage: 10 });
     const res = await setClassOverride(
@@ -196,16 +217,22 @@ describe('Р-446 · плечо портфеля доезжает до терми
     );
     expect(res).toMatchObject({ ok: true });
     expect(f.terminal.leverageCalls).toEqual([
-      { userId: CLIENT, kind: 'demo', leverage: 50, reason: 'показ' },
-      { userId: CLIENT, kind: 'real', leverage: 50, reason: 'показ' },
+      { userId: CLIENT, kind: 'demo', leverage: 50, reason: 'показ', base: 50, classes: {} },
+      { userId: CLIENT, kind: 'real', leverage: 50, reason: 'показ', base: 50, classes: {} },
     ]);
     expect(JSON.parse(f.journal[0]!.payload).terminalLeverage).toEqual([
-      { userId: CLIENT, before: 20, after: 50 },
+      {
+        userId: CLIENT,
+        before: 20,
+        after: 50,
+        beforeTable: { base: 20, classes: {} },
+        afterTable: { base: 50, classes: {} },
+      },
     ]);
     expect(f.flags.committed).toBe(true);
   });
 
-  it('смена базы при крипто-планке: действующее плечо то же — терминал не зовётся', async () => {
+  it('смена базы при крипто-планке: число для старого шлюза то же, база уходит в терминал', async () => {
     const f = fakePool({ base: 20, classLeverage: 10 });
     const res = await changePortfolioLeverage(
       { operatorId: OP, portfolioKey: 'standard', baseLeverage: 30, reason: 'показ' },
@@ -213,8 +240,11 @@ describe('Р-446 · плечо портфеля доезжает до терми
       f.sync,
     );
     expect(res).toMatchObject({ ok: true });
-    expect(f.terminal.leverageCalls).toHaveLength(0);
-    expect(JSON.parse(f.journal[0]!.payload).terminalLeverage).toEqual([]);
+    expect(f.terminal.leverageCalls.map((c) => [c.leverage, c.base, c.classes])).toEqual([
+      [10, 30, { crypto: 10 }],
+      [10, 30, { crypto: 10 }],
+    ]);
+    expect(JSON.parse(f.journal[0]!.payload).terminalLeverage).toMatchObject([{ before: 10, after: 10 }]);
   });
 
   it('терминал не ответил — откат всего, оператор видит terminalUnavailable', async () => {

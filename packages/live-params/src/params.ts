@@ -1,3 +1,4 @@
+import { isLeverageClass } from '@broker/money/leverage-classes';
 import { DEPOSIT_METHODS, depositMethodLabel } from './deposit-methods';
 import { formatAmount, formatBpsPercent, formatLeverage, formatList, formatSupportHours, type LiveLabels } from './format';
 import { portfolioLeverage, publicPortfolios, type LiveSnapshot } from './snapshot';
@@ -14,6 +15,7 @@ export const LIVE_PARAMS = [
   'deposit.methods',
   'demo.startBalance',
   'leverage.max',
+  'leverage.<class>',
   'account.<key>.name',
   'account.<key>.leverage',
   'account.<key>.leverage.<class>',
@@ -34,6 +36,12 @@ export interface ParamContext {
 export type ParamOutcome = { ok: true; value: string } | { ok: false; reason: 'unknown' | 'unavailable' };
 
 const ACCOUNT = /^account\.([a-z0-9_-]+)\.(name|leverage|commission|markup)(?:\.([a-z0-9_-]+))?$/;
+const CLASS_LEVERAGE = /^leverage\.([a-z]+)$/;
+
+function leverageClassOf(name: string): string | null {
+  const m = CLASS_LEVERAGE.exec(name);
+  return m && isLeverageClass(m[1]!) ? m[1]! : null;
+}
 
 export function sourcesOf(name: string): LiveSource[] | null {
   switch (name) {
@@ -49,6 +57,7 @@ export function sourcesOf(name: string): LiveSource[] | null {
     case 'support.hours':
       return ['snapshot', 'labels'];
   }
+  if (leverageClassOf(name)) return ['snapshot'];
   const m = ACCOUNT.exec(name);
   if (!m) return null;
   if (m[3] !== undefined && m[2] !== 'leverage') return null;
@@ -83,6 +92,12 @@ export function resolveParam(name: string, ctx: ParamContext): ParamOutcome {
       const value = formatSupportHours(snapshot.support, locale, ctx.labels);
       return value ? ok(value) : UNAVAILABLE;
     }
+  }
+  const cls = leverageClassOf(name);
+  if (cls) {
+    const list = publicPortfolios(snapshot);
+    if (!list || list.length === 0) return UNAVAILABLE;
+    return ok(formatLeverage(Math.max(...list.map((p) => portfolioLeverage(p, cls)))));
   }
   const m = ACCOUNT.exec(name)!;
   const [, key, field, instrumentClass] = m;

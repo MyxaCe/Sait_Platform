@@ -1,6 +1,7 @@
 import type { Queryable } from './db';
 import type { AccountKind, LeverageBody } from './terminal-contract';
 import type { LeverageOutcome } from './terminal-money';
+import { isLeverageClass, LEVERAGE_CLASSES } from './leverage-classes';
 
 export type LeverageSource = 'client-override' | 'class-override' | 'portfolio';
 
@@ -61,6 +62,34 @@ export function resolveLeverage(input: ResolveInput): ResolvedLeverage {
 
 export const TERMINAL_INSTRUMENT_CLASS = 'crypto';
 
+export { LEVERAGE_CLASSES, isLeverageClass, type LeverageClass } from './leverage-classes';
+
+export interface TerminalLeverage {
+  readonly leverage: number;
+  readonly base: number;
+  readonly classes: Readonly<Record<string, number>>;
+}
+
+export function terminalLeverageOf(
+  portfolio: PortfolioLeverage,
+  clientOverride: ClientLeverageOverride | null,
+): TerminalLeverage {
+  const leverage = resolveLeverage({ portfolio, clientOverride, instrumentClass: TERMINAL_INSTRUMENT_CLASS }).leverage;
+  if (clientOverride) return { leverage, base: clientOverride.leverage, classes: {} };
+  const classes: Record<string, number> = {};
+  for (const c of LEVERAGE_CLASSES) {
+    if (Object.prototype.hasOwnProperty.call(portfolio.classOverrides, c)) classes[c] = portfolio.classOverrides[c]!;
+  }
+  return { leverage, base: portfolio.baseLeverage, classes };
+}
+
+export function sameTerminalLeverage(a: TerminalLeverage, b: TerminalLeverage): boolean {
+  if (a.leverage !== b.leverage || a.base !== b.base) return false;
+  const ka = Object.keys(a.classes).sort();
+  const kb = Object.keys(b.classes).sort();
+  return ka.length === kb.length && ka.every((k, i) => k === kb[i] && a.classes[k] === b.classes[k]);
+}
+
 export const MIN_TERMINAL_LEVERAGE = 1;
 export const MAX_TERMINAL_LEVERAGE = 1000;
 
@@ -73,7 +102,15 @@ export async function readTerminalLeverage(
   db: Queryable,
   userIds: readonly string[],
 ): Promise<Map<string, number>> {
-  const out = new Map<string, number>();
+  const tables = await readTerminalLeverageTables(db, userIds);
+  return new Map([...tables].map(([userId, t]) => [userId, t.leverage]));
+}
+
+export async function readTerminalLeverageTables(
+  db: Queryable,
+  userIds: readonly string[],
+): Promise<Map<string, TerminalLeverage>> {
+  const out = new Map<string, TerminalLeverage>();
   if (userIds.length === 0) return out;
 
   const clients = await db.query(
@@ -85,14 +122,16 @@ export async function readTerminalLeverage(
   );
   const portfolios = await db.query(`SELECT key, title, base_leverage, is_default FROM leverage_portfolios`);
   const classRows = await db.query(
-    `SELECT portfolio_key, leverage FROM leverage_portfolio_class_overrides WHERE instrument_class = $1`,
-    [TERMINAL_INSTRUMENT_CLASS],
+    `SELECT portfolio_key, instrument_class, leverage FROM leverage_portfolio_class_overrides`,
   );
 
-  const classByPortfolio = new Map<string, number>();
+  const classByPortfolio = new Map<string, Record<string, number>>();
   for (const r of classRows.rows) {
     const lev = denominator(r.leverage);
-    if (lev !== null) classByPortfolio.set(String(r.portfolio_key), lev);
+    const cls = String(r.instrument_class);
+    if (lev === null || !isLeverageClass(cls)) continue;
+    const key = String(r.portfolio_key);
+    classByPortfolio.set(key, { ...classByPortfolio.get(key), [cls]: lev });
   }
   const byKey = new Map<string, PortfolioLeverage>();
   let defaultKey: string | null = null;
@@ -100,12 +139,11 @@ export async function readTerminalLeverage(
     const key = String(r.key);
     const base = denominator(r.base_leverage);
     if (base === null) continue;
-    const cls = classByPortfolio.get(key);
     byKey.set(key, {
       key,
       title: String(r.title ?? key),
       baseLeverage: base,
-      classOverrides: cls === undefined ? {} : { [TERMINAL_INSTRUMENT_CLASS]: cls },
+      classOverrides: classByPortfolio.get(key) ?? {},
     });
     if (r.is_default === true && (defaultKey === null || key < defaultKey)) defaultKey = key;
   }
@@ -115,12 +153,10 @@ export async function readTerminalLeverage(
     const portfolio = portfolioKey ? byKey.get(portfolioKey) : undefined;
     if (!portfolio) continue;
     const override = denominator(r.override_leverage);
-    const resolved = resolveLeverage({
-      portfolio,
-      clientOverride: override === null ? null : { leverage: override, reason: '', ticket: '' },
-      instrumentClass: TERMINAL_INSTRUMENT_CLASS,
-    });
-    out.set(String(r.user_id), resolved.leverage);
+    out.set(
+      String(r.user_id),
+      terminalLeverageOf(portfolio, override === null ? null : { leverage: override, reason: '', ticket: '' }),
+    );
   }
   return out;
 }
@@ -141,17 +177,24 @@ export async function clientsOfPortfolio(db: Queryable, portfolioKey: string): P
 
 export interface LeverageChange {
   userId: string;
-  before: number | null;
-  after: number;
+  before: TerminalLeverage | null;
+  after: TerminalLeverage;
 }
 
-export function leverageChanges(before: Map<string, number>, after: Map<string, number>): LeverageChange[] {
+export function leverageChanges(
+  before: Map<string, TerminalLeverage>,
+  after: Map<string, TerminalLeverage>,
+): LeverageChange[] {
   const out: LeverageChange[] = [];
   for (const [userId, lev] of after) {
     const was = before.get(userId) ?? null;
-    if (was !== lev) out.push({ userId, before: was, after: lev });
+    if (!was || !sameTerminalLeverage(was, lev)) out.push({ userId, before: was, after: lev });
   }
   return out;
+}
+
+export function leverageBody(t: TerminalLeverage): Pick<LeverageBody, 'leverage' | 'leverage_base' | 'leverage_classes'> {
+  return { leverage: t.leverage, leverage_base: t.base, leverage_classes: { ...t.classes } };
 }
 
 export interface AppliedLeverage {
@@ -159,6 +202,7 @@ export interface AppliedLeverage {
   kind: AccountKind;
   leverage: number;
   previous: number | null;
+  previousClasses: Record<string, number> | null;
   changed: boolean;
   seq: number | null;
 }
@@ -191,6 +235,7 @@ export async function pushLeverageToTerminal(
           a.userId,
           {
             leverage: a.previous,
+            ...(a.previousClasses ? { leverage_base: a.previous, leverage_classes: a.previousClasses } : {}),
             reason: `откат: изменение плеча не применено на сайте (${meta.reason})`,
             operator: meta.operator,
             ...(meta.externalRef ? { external_ref: meta.externalRef } : {}),
@@ -209,7 +254,7 @@ export async function pushLeverageToTerminal(
         .setLeverage(
           change.userId,
           {
-            leverage: change.after,
+            ...leverageBody(change.after),
             reason: meta.reason,
             operator: meta.operator,
             ...(meta.externalRef ? { external_ref: meta.externalRef } : {}),
@@ -221,8 +266,9 @@ export async function pushLeverageToTerminal(
         applied.push({
           userId: change.userId,
           kind,
-          leverage: change.after,
+          leverage: change.after.leverage,
           previous: out.previousLeverage,
+          previousClasses: out.previousClasses,
           changed: out.changed,
           seq: out.seq,
         });

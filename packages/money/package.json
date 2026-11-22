@@ -6,7 +6,8 @@
     ".": "./src/index.ts",
     "./testing": "./src/testing/index.ts",
     "./display-currency": "./src/display-currency.ts",
-    "./amounts": "./src/amounts.ts"
+    "./amounts": "./src/amounts.ts",
+    "./leverage-classes": "./src/leverage-classes.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
