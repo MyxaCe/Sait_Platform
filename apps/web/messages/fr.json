@@ -627,7 +627,8 @@
   },
   "preview": {
     "mode": "Mode aperçu",
-    "exit": "Quitter"
+    "exit": "Quitter",
+    "scheduled": "Programmé : l'article sera publié le {date}"
   },
   "language": {
     "label": "Langue"

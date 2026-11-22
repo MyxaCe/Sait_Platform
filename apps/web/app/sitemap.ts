@@ -1,6 +1,7 @@
 import type { MetadataRoute } from 'next';
 import type { ContentLocale } from '@broker/api-client';
 import { listInstrumentPages, type InstrumentPageRef } from '@/features/instruments/instrument-detail';
+import { loadEducationArticles, loadNews } from '@/lib/articles';
 import { getCms } from '@/lib/cms';
 import { getMdsCatalogEntries } from '@/lib/mds';
 import { getTenantAccess } from '@/lib/tenant';
@@ -30,9 +31,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const site = await getSiteLanguages();
   const locale = site.defaultLanguage;
 
-  const [articles, academy, legal, instrumentPages, brand] = await Promise.all([
-    getCms('articles', { locale, revalidate: 60, params: { pageSize: '50' } }),
-    getCms('academy', { locale }),
+  const [newsItems, educationItems, legal, instrumentPages, brand] = await Promise.all([
+    loadNews(locale),
+    loadEducationArticles(locale),
     getCms('legal', { locale }),
     siteInstrumentPages(locale),
     getCms('brand', { locale }),
@@ -70,16 +71,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.6,
   }));
 
-  const news: MetadataRoute.Sitemap = articles.items.map((a) => ({
+  const news: MetadataRoute.Sitemap = newsItems.map((a) => ({
     url: `${SITE_URL}/analytics/news/${a.slug}`,
     lastModified: new Date(a.publishedAt),
     changeFrequency: 'weekly',
     priority: 0.7,
   }));
 
-  const education: MetadataRoute.Sitemap = academy.articles.map((a) => ({
+  const education: MetadataRoute.Sitemap = educationItems.map((a) => ({
     url: `${SITE_URL}/education/articles/${a.slug}`,
-    lastModified: now,
+    lastModified: a.publishedAt ? new Date(a.publishedAt) : now,
     changeFrequency: 'monthly',
     priority: 0.6,
   }));

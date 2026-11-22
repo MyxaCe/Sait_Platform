@@ -4,6 +4,7 @@ import { SITE_URL } from '@/lib/site';
 const cms = vi.hoisted(() => ({ instrumentsFail: false, catalog: { state: 'unavailable', reason: 'network' } as unknown }));
 
 vi.mock('@/lib/cms', () => ({
+  isDraft: () => false,
   getCms: async (resource: string) => {
     if (resource === 'instruments') {
       if (cms.instrumentsFail) throw new Error('CMS недоступна, сохранённой версии нет: instruments');

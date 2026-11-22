@@ -5,36 +5,24 @@ import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { Badge, Button } from '@broker/ui';
 import { formatDate, formatTime } from '@broker/utils';
 import { Link } from '@/i18n/navigation';
-import { MarkdownText } from '@/components/MarkdownText';
+import { ArticleCover, ScheduledBadge, scheduledLabel } from '@/components/ArticleMeta';
+import { ArticleBody } from '@/components/RichText';
+import { findNews, loadNews } from '@/lib/articles';
 import { brandName } from '@/lib/brand';
-import { getCms, staticParamsFromCms } from '@/lib/cms';
+import { staticParamsFromCms } from '@/lib/cms';
 
 interface PageParams {
   params: { locale: string; slug: string };
 }
 
-async function findNews(locale: string, slug: string) {
-  const { items } = await getCms('articles', {
-    locale: pageLocale(locale),
-    revalidate: 60,
-    params: { pageSize: '50' },
-  });
-  return items.find((a) => a.slug === slug) ?? null;
-}
-
 export function generateStaticParams({ params }: { params: { locale: string } }) {
-  return staticParamsFromCms(async () => {
-    const { items } = await getCms('articles', {
-      locale: pageLocale(params.locale),
-      revalidate: 60,
-      params: { pageSize: '50' },
-    });
-    return items.map((a) => ({ slug: a.slug }));
-  });
+  return staticParamsFromCms(async () =>
+    (await loadNews(pageLocale(params.locale))).map((a) => ({ slug: a.slug })),
+  );
 }
 
 export async function generateMetadata({ params }: PageParams): Promise<Metadata> {
-  const article = await findNews(params.locale, params.slug);
+  const article = await findNews(pageLocale(params.locale), params.slug);
   if (!article) return {};
   return {
     title: article.title,
@@ -44,6 +32,7 @@ export async function generateMetadata({ params }: PageParams): Promise<Metadata
       title: article.title,
       description: article.excerpt,
       publishedTime: article.publishedAt,
+      ...(article.cover ? { images: [{ url: article.cover.url, width: article.cover.width, height: article.cover.height }] } : {}),
     },
   };
 }
@@ -57,10 +46,11 @@ export default async function NewsArticlePage({ params }: PageParams) {
   const publisher = await brandName(locale);
   const t = await getTranslations('analytics');
   const tCommon = await getTranslations('common');
+  const scheduled = await scheduledLabel(article.publishedAt, params.locale);
   const intlLocale = intlTag(params.locale);
-  const categoryLabel = t.has(`categories.${article.category}`)
-    ? t(`categories.${article.category}`)
-    : article.category;
+  const categoryLabel =
+    article.categoryTitle ??
+    (t.has(`categories.${article.category}`) ? t(`categories.${article.category}`) : article.category);
 
   const jsonLd = {
     '@context': 'https://schema.org',
@@ -68,6 +58,7 @@ export default async function NewsArticlePage({ params }: PageParams) {
     headline: article.title,
     description: article.excerpt,
     datePublished: article.publishedAt,
+    ...(article.cover ? { image: article.cover.url } : {}),
     author: { '@type': 'Organization', name: article.source },
     publisher: { '@type': 'Organization', name: publisher },
   };
@@ -100,10 +91,14 @@ export default async function NewsArticlePage({ params }: PageParams) {
         {article.title}
       </h1>
 
+      {scheduled && <ScheduledBadge label={scheduled} />}
+
       <p className="mt-4 text-lg leading-relaxed text-secondary">{article.excerpt}</p>
 
+      {article.cover && <ArticleCover cover={article.cover} />}
+
       <div className="mt-8 space-y-5 border-t border-border pt-8">
-        <MarkdownText markdown={article.bodyMarkdown} />
+        <ArticleBody body={article.body} bodyMarkdown={article.bodyMarkdown} title={article.title} />
       </div>
 
       <p className="mt-8 text-sm text-secondary">{t('source', { source: article.source })}</p>

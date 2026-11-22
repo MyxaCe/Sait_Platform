@@ -2,7 +2,7 @@ import { pageLocale } from '@/lib/locale';
 import type { Metadata } from 'next';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
-import { getCms } from '@/lib/cms';
+import { loadEducationArticles } from '@/lib/articles';
 
 interface PageProps {
   params: { locale: string };
@@ -17,9 +17,7 @@ export default async function EducationArticlesPage({ params }: PageProps) {
   setRequestLocale(params.locale);
   const t = await getTranslations('education');
   const tCommon = await getTranslations('common');
-  const { articles } = await getCms('academy', {
-    locale: pageLocale(params.locale),
-  });
+  const articles = await loadEducationArticles(pageLocale(params.locale));
 
   return (
     <div className="grid gap-4 sm:grid-cols-2 lg:gap-6">

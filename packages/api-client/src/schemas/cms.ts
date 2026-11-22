@@ -267,6 +267,14 @@ export const streamSchema = z.object({
 });
 export const streamsResponseSchema = z.object({ items: z.array(streamSchema) });
 
+export const articleSectionSchema = z.enum(['news', 'education']);
+export type ArticleSection = z.infer<typeof articleSectionSchema>;
+
+export const richTextSchema = z
+  .object({ root: z.object({ children: z.array(z.unknown()) }).passthrough() })
+  .passthrough();
+export type RichText = z.infer<typeof richTextSchema>;
+
 export const articleSchema = z.object({
   slug: z.string(),
   title: z.string(),
@@ -276,12 +284,19 @@ export const articleSchema = z.object({
   publishedAt: isoDateTimeSchema,
   readingMinutes: z.number().int().positive(),
   bodyMarkdown: z.string(),
+  section: articleSectionSchema.optional().catch(undefined),
+  body: richTextSchema.optional().catch(undefined),
+  cover: mediaSchema.optional().catch(undefined),
+  categoryTitle: z.string().optional().catch(undefined),
+  level: z.enum(['beginner', 'intermediate']).optional().catch(undefined),
+  video: videoRefSchema.optional().catch(undefined),
 });
 export const articlesResponseSchema = z.object({
   items: z.array(articleSchema),
   total: z.number().int().nonnegative(),
   page: z.number().int().positive(),
   pageSize: z.number().int().positive(),
+  section: articleSectionSchema.optional().catch(undefined),
 });
 export type Article = z.infer<typeof articleSchema>;
 

@@ -627,7 +627,8 @@
   },
   "preview": {
     "mode": "Preview mode",
-    "exit": "Exit"
+    "exit": "Exit",
+    "scheduled": "Scheduled: the article goes live on {date}"
   },
   "language": {
     "label": "Language"

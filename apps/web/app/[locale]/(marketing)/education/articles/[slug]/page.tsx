@@ -4,25 +4,25 @@ import { notFound } from 'next/navigation';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { Button } from '@broker/ui';
 import { Link } from '@/i18n/navigation';
-import { MarkdownText } from '@/components/MarkdownText';
+import { ArticleCover, ScheduledBadge, scheduledLabel } from '@/components/ArticleMeta';
+import { ArticleBody } from '@/components/RichText';
 import { StreamFacade } from '@/features/streams/StreamFacade';
+import { findEducationArticle, loadEducationArticles } from '@/lib/articles';
 import { brandName } from '@/lib/brand';
-import { getCms, staticParamsFromCms } from '@/lib/cms';
+import { staticParamsFromCms } from '@/lib/cms';
 
 interface PageParams {
   params: { locale: string; slug: string };
 }
 
-async function findArticle(locale: string, slug: string) {
-  const { articles } = await getCms('academy', { locale: pageLocale(locale) });
-  return articles.find((a) => a.slug === slug) ?? null;
+function findArticle(locale: string, slug: string) {
+  return findEducationArticle(pageLocale(locale), slug);
 }
 
 export function generateStaticParams({ params }: { params: { locale: string } }) {
-  return staticParamsFromCms(async () => {
-    const { articles } = await getCms('academy', { locale: pageLocale(params.locale) });
-    return articles.map((a) => ({ slug: a.slug }));
-  });
+  return staticParamsFromCms(async () =>
+    (await loadEducationArticles(pageLocale(params.locale))).map((a) => ({ slug: a.slug })),
+  );
 }
 
 export async function generateMetadata({ params }: PageParams): Promise<Metadata> {
@@ -39,12 +39,15 @@ export default async function EducationArticlePage({ params }: PageParams) {
   const organization = await brandName(params.locale);
   const t = await getTranslations('education');
   const tCommon = await getTranslations('common');
+  const scheduled = await scheduledLabel(article.publishedAt, params.locale);
 
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'Article',
     headline: article.title,
     description: article.excerpt,
+    ...(article.publishedAt ? { datePublished: article.publishedAt } : {}),
+    ...(article.cover ? { image: article.cover.url } : {}),
     author: { '@type': 'Organization', name: organization },
     publisher: { '@type': 'Organization', name: organization },
   };
@@ -75,6 +78,10 @@ export default async function EducationArticlePage({ params }: PageParams) {
         {article.title}
       </h1>
 
+      {scheduled && <ScheduledBadge label={scheduled} />}
+
+      {article.cover && <ArticleCover cover={article.cover} />}
+
       {article.video && (
         <section aria-label={t('articleVideo')} className="mt-8">
           <StreamFacade provider={article.video.provider} videoId={article.video.videoId} title={article.title} />
@@ -82,7 +89,7 @@ export default async function EducationArticlePage({ params }: PageParams) {
       )}
 
       <div className="mt-8 space-y-5 border-t border-border pt-8">
-        <MarkdownText markdown={article.bodyMarkdown} />
+        <ArticleBody body={article.body} bodyMarkdown={article.bodyMarkdown} title={article.title} />
       </div>
 
       <div className="mt-10 rounded-2xl border border-accent/20 bg-accent/5 p-6 text-center">

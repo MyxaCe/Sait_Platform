@@ -4,7 +4,7 @@ import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { Badge } from '@broker/ui';
 import { formatDate, formatTime } from '@broker/utils';
 import { Link } from '@/i18n/navigation';
-import { getCms } from '@/lib/cms';
+import { loadNews } from '@/lib/articles';
 
 interface PageProps {
   params: { locale: string };
@@ -21,13 +21,10 @@ export default async function NewsPage({ params }: PageProps) {
   const tCommon = await getTranslations('common');
   const locale = params.locale;
   const intlLocale = intlTag(locale);
-  const categoryLabel = (category: string) =>
-    t.has(`categories.${category}`) ? t(`categories.${category}`) : category;
+  const categoryLabel = ({ category, categoryTitle }: { category: string; categoryTitle?: string }) =>
+    categoryTitle ?? (t.has(`categories.${category}`) ? t(`categories.${category}`) : category);
 
-  const { items } = await getCms('articles', {
-    locale: pageLocale(locale),
-    revalidate: 60,
-  });
+  const items = await loadNews(pageLocale(locale));
   const [featured, ...rest] = items;
   if (!featured) {
     return (
@@ -45,7 +42,7 @@ export default async function NewsPage({ params }: PageProps) {
       >
         <div className="flex flex-wrap items-center gap-3 text-xs text-secondary">
           <Badge variant="accent" className="px-3 py-1 text-xs">
-            {categoryLabel(featured.category)}
+            {categoryLabel(featured)}
           </Badge>
           <time dateTime={featured.publishedAt}>
             {formatDate(featured.publishedAt, intlLocale)} ·{' '}
@@ -68,7 +65,7 @@ export default async function NewsPage({ params }: PageProps) {
             className="group flex flex-col rounded-2xl border border-border bg-card p-6 transition-colors hover:border-accent/40"
           >
             <div className="flex flex-wrap items-center gap-2 text-xs text-secondary">
-              <span className="font-medium text-accent">{categoryLabel(article.category)}</span>
+              <span className="font-medium text-accent">{categoryLabel(article)}</span>
               <span aria-hidden>·</span>
               <time dateTime={article.publishedAt}>
                 {formatDate(article.publishedAt, intlLocale)}

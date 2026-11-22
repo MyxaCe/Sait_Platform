@@ -52,7 +52,7 @@ export function isCmsConfigured(): boolean {
   return Boolean(process.env.CMS_API_URL?.trim()) && readTenantSlug(process.env.SITE_SLUG) !== null;
 }
 
-function isDraft(): boolean {
+export function isDraft(): boolean {
   try {
     return draftMode().isEnabled;
   } catch {

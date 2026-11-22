@@ -42,6 +42,102 @@
               },
               "bodyMarkdown": {
                 "type": "string"
+              },
+              "section": {
+                "type": "string",
+                "enum": [
+                  "news",
+                  "education"
+                ]
+              },
+              "body": {
+                "type": "object",
+                "properties": {
+                  "root": {
+                    "type": "object",
+                    "properties": {
+                      "children": {
+                        "type": "array",
+                        "items": {}
+                      }
+                    },
+                    "required": [
+                      "children"
+                    ],
+                    "additionalProperties": true
+                  }
+                },
+                "required": [
+                  "root"
+                ],
+                "additionalProperties": true
+              },
+              "cover": {
+                "type": "object",
+                "properties": {
+                  "url": {
+                    "type": "string",
+                    "format": "uri"
+                  },
+                  "width": {
+                    "type": "integer",
+                    "exclusiveMinimum": 0
+                  },
+                  "height": {
+                    "type": "integer",
+                    "exclusiveMinimum": 0
+                  },
+                  "alt": {
+                    "type": "string"
+                  },
+                  "mimeType": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "url",
+                  "width",
+                  "height",
+                  "alt",
+                  "mimeType"
+                ],
+                "additionalProperties": false
+              },
+              "categoryTitle": {
+                "type": "string"
+              },
+              "level": {
+                "type": "string",
+                "enum": [
+                  "beginner",
+                  "intermediate"
+                ]
+              },
+              "video": {
+                "type": "object",
+                "properties": {
+                  "provider": {
+                    "type": "string",
+                    "enum": [
+                      "youtube",
+                      "vimeo"
+                    ]
+                  },
+                  "videoId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "url": {
+                    "type": "string",
+                    "format": "uri"
+                  }
+                },
+                "required": [
+                  "provider",
+                  "videoId",
+                  "url"
+                ],
+                "additionalProperties": false
               }
             },
             "required": [
@@ -68,6 +164,9 @@
         "pageSize": {
           "type": "integer",
           "exclusiveMinimum": 0
+        },
+        "section": {
+          "$ref": "#/definitions/cms.articles/properties/items/items/properties/section"
         }
       },
       "required": [

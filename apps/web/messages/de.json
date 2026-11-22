@@ -627,7 +627,8 @@
   },
   "preview": {
     "mode": "Vorschaumodus",
-    "exit": "Beenden"
+    "exit": "Beenden",
+    "scheduled": "Geplant: Der Artikel erscheint am {date}"
   },
   "language": {
     "label": "Sprache"
