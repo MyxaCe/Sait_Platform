@@ -42,3 +42,13 @@
     }
   }
 }
+
+@supports not (height: 100svh) {
+  .h-svh {
+    height: 100vh;
+  }
+
+  .min-h-svh {
+    min-height: 100vh;
+  }
+}
