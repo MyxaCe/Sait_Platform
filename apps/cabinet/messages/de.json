@@ -286,7 +286,7 @@
     "kind": "Dokumenttyp",
     "kinds": {
       "identity": "Reisepass / Personalausweis",
-      "selfie_liveness": "Selfie mit Lebendigkeitsprüfung",
+      "selfie_liveness": "Kamera-Selfie",
       "address_proof": "Adressnachweis",
       "source_of_funds": "Herkunft der Mittel"
     },
@@ -296,17 +296,70 @@
       "unverified": "Nicht verifiziert",
       "pending": "In Prüfung",
       "verified": "Verifiziert",
-      "rejected": "Abgelehnt"
+      "rejected": "Abgelehnt",
+      "resubmit_requested": "Weitere Dokumente erforderlich"
     },
-    "stepReview": "Prüfung durch Mitarbeiter",
     "stateText": {
-      "unverified": "Bestätigen Sie Ihre Identität, um Auszahlungen freizuschalten. Laden Sie unten Ihre Dokumente hoch; die Prüfung dauert in der Regel bis zu einem Werktag.",
-      "pending": "Ihre Dokumente werden geprüft — in der Regel bis zu einem Werktag. Wir benachrichtigen Sie über die Entscheidung.",
+      "unverified": "Bestätigen Sie Ihre Identität, um Auszahlungen freizuschalten. Führen Sie die drei Schritte unten aus.",
+      "pending": "Ihre Dokumente werden geprüft. Wir benachrichtigen Sie über die Entscheidung.",
       "verified": "Identität verifiziert. Ein- und Auszahlungen sind verfügbar.",
-      "rejected": "Verifizierung fehlgeschlagen. Laden Sie die Dokumente erneut hoch — wir prüfen sie noch einmal."
+      "rejected": "Verifizierung fehlgeschlagen. Laden Sie die Dokumente erneut hoch — wir prüfen sie noch einmal.",
+      "resubmit_requested": "Unser Team benötigt weitere oder neu aufgenommene Dokumente. Prüfen Sie die Schritte unten und reichen Sie Fehlendes nach."
     },
     "submittedTitle": "Eingereichte Dokumente",
-    "emptyHint": "Eingereichte Dokumente erscheinen hier mit dem Einreichungsdatum."
+    "emptyHint": "Eingereichte Dokumente erscheinen hier mit dem Einreichungsdatum.",
+    "reviewEta": "Voraussichtliche Prüfdauer: bis zu einem Werktag.",
+    "stepsLabel": "Schritte der Verifizierung",
+    "steps": {
+      "identity": "Dokument",
+      "address_proof": "Adresse",
+      "selfie_liveness": "Selfie"
+    },
+    "stepDone": "Eingereicht",
+    "stepTodo": "Offen",
+    "stepOf": "Schritt {current} von {total}",
+    "stepHint": {
+      "identity": "Reisepass oder Ausweis: Seite mit Foto, alle Ecken im Bild, Text lesbar. PDF, JPG oder PNG bis 10 MB.",
+      "address_proof": "Nebenkostenabrechnung oder Kontoauszug, nicht älter als 3 Monate, mit Ihrem Namen und Ihrer Adresse. PDF, JPG oder PNG bis 10 MB.",
+      "selfie_liveness": "Fotos mit der Frontkamera nach der Aufgabe auf dem Bildschirm. Ein Mitarbeiter vergleicht sie mit dem Foto in Ihrem Dokument."
+    },
+    "nextStep": "Weiter: {step}",
+    "extraTitle": "Zusätzlich: Herkunft der Mittel",
+    "extraHint": "Falls unser Team danach fragt, laden Sie einen Nachweis über die Herkunft Ihrer Mittel hoch: Einkommensnachweis, Kontoauszug oder Vertrag.",
+    "selfie": {
+      "cameraOnly": "In diesem Schritt werden nur Kamerafotos akzeptiert — ein Upload aus der Galerie ist nicht möglich.",
+      "intro": "Schalten Sie die Kamera ein: Auf dem Bildschirm erscheinen eine zufällige Aufgabe und ein Code. Machen Sie 3 Fotos nach Anweisung — Sie haben 2 Minuten Zeit.",
+      "start": "Kamera einschalten",
+      "preview": "Kamerabild",
+      "code": "Code {code}",
+      "codeHint": "Code und Uhrzeit sind auf den Fotos sichtbar, damit unser Team erkennt, dass sie gerade aufgenommen wurden.",
+      "timeLeft": "Noch {seconds} s",
+      "stepOf": "Foto {current} von {total}",
+      "tasks": {
+        "face_front": "Schauen Sie direkt in die Kamera, das ganze Gesicht im Bild",
+        "turn_left": "Drehen Sie den Kopf nach links",
+        "turn_right": "Drehen Sie den Kopf nach rechts",
+        "show_fingers": "{count, plural, one {Halten Sie # Finger neben Ihr Gesicht} other {Halten Sie # Finger neben Ihr Gesicht}}",
+        "hold_document": "Halten Sie Ihren Ausweis neben Ihr Gesicht"
+      },
+      "capture": "Foto aufnehmen",
+      "review": "Prüfen Sie die Fotos: Gesicht sichtbar, Aufgabe erfüllt.",
+      "send": "Zur Prüfung senden",
+      "sending": "Wird gesendet…",
+      "retake": "Neu aufnehmen",
+      "done": "Fotos gesendet. Ein Mitarbeiter vergleicht sie mit dem Foto in Ihrem Dokument.",
+      "expired": "Die Zeit für diese Aufgabe ist abgelaufen. Starten Sie neu — Sie erhalten eine neue Aufgabe.",
+      "restart": "Neu starten",
+      "unavailable": {
+        "unsupported": "Dieser Browser bietet keinen Kamerazugriff.",
+        "denied": "Kein Kamerazugriff. Erlauben Sie die Kamera für diese Website in den Browsereinstellungen und versuchen Sie es erneut.",
+        "nocamera": "Auf diesem Gerät wurde keine Kamera gefunden.",
+        "error": "Die Kamera konnte nicht eingeschaltet werden. Schließen Sie andere Apps, die sie verwenden, und versuchen Sie es erneut."
+      },
+      "phoneHint": "Erledigen Sie diesen Schritt am Smartphone: Scannen Sie den QR-Code oder melden Sie sich am Smartphone an und öffnen Sie Profil → Verifizierung → Selfie.",
+      "qrAlt": "QR-Code mit Link zum Schritt „Selfie“",
+      "tryAgain": "Erneut versuchen"
+    }
   },
   "notifications": {
     "title": "Benachrichtigungen",
@@ -371,7 +424,10 @@
     "twoFactorExpired": "Die Zeit für die Codeeingabe ist abgelaufen — bitte melden Sie sich erneut an",
     "twoFactorUnavailable": "Die Zwei-Faktor-Authentifizierung ist vorübergehend nicht verfügbar. Bitte wenden Sie sich an den Support.",
     "twoFactorAlreadyEnabled": "Die Zwei-Faktor-Authentifizierung ist bereits aktiv",
-    "twoFactorSetupExpired": "Die Einrichtung ist abgelaufen — bitte beginnen Sie erneut"
+    "twoFactorSetupExpired": "Die Einrichtung ist abgelaufen — bitte beginnen Sie erneut",
+    "selfieCameraOnly": "Das Selfie wird nur als Kamerafoto angenommen — der Datei-Upload ist für diesen Schritt deaktiviert.",
+    "selfieExpired": "Die Aufgabe ist abgelaufen — bitte neu starten.",
+    "selfieInvalid": "Die Fotos wurden nicht angenommen. Bitte nehmen Sie sie erneut mit der Kamera auf."
   },
   "history": {
     "title": "Verlauf",

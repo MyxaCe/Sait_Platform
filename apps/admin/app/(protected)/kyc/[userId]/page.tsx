@@ -29,6 +29,7 @@ import { CheckList, type CheckItem } from '../../clients/_components/CheckList';
 import { AML_SHORT, amlKey } from '../../clients/_components/compliance-labels';
 import { DecisionForm } from './DecisionForm';
 import { DocumentReview } from './_components/DocumentReview';
+import { toSelfieCaptureView } from '@/lib/kyc/selfie-view';
 
 export const dynamic = 'force-dynamic';
 
@@ -51,6 +52,7 @@ export default async function KycDecisionPage({ params }: { params: { userId: st
   const missing = REQUIRED_KINDS.filter((k) => !kinds.has(k));
   const address = card.documents.find((d) => d.kind === 'address_proof');
   const addressStale = address ? isDocumentOlderThan(address.submittedAt, ADDRESS_PROOF_MAX_AGE_DAYS) : false;
+  const selfie = [...card.documents].reverse().find((d) => d.kind === 'selfie_liveness');
   const sof = sourceOfFundsStatus(kinds.has('source_of_funds'));
   const amlStatus = aml?.status ?? 'unscreened';
   const blocked = client?.block.blocked ?? false;
@@ -72,6 +74,13 @@ export default async function KycDecisionPage({ params }: { params: { userId: st
       value: !address ? 'не подано' : addressStale ? 'старше 3 мес' : 'свежее',
       tone: !address || addressStale ? 'warning' : 'positive',
       hint: address ? `подано ${fmtDate(address.submittedAt)} · допустимо до 3 мес` : undefined,
+    },
+    {
+      key: 'selfie',
+      label: 'Селфи',
+      value: !selfie ? 'не подано' : selfie.capture ? `с камеры, снимков: ${selfie.capture.frames.length}` : 'файлом (до камеры)',
+      tone: selfie?.capture ? 'positive' : 'warning',
+      hint: selfie?.capture ? 'сверьте снимки с фото документа' : undefined,
     },
     {
       key: 'sof',
@@ -211,6 +220,7 @@ export default async function KycDecisionPage({ params }: { params: { userId: st
                     d.kind === 'address_proof' && isDocumentOlderThan(d.submittedAt, ADDRESS_PROOF_MAX_AGE_DAYS)
                       ? 'старше 3 мес — нужен свежий'
                       : null,
+                  capture: d.capture ? toSelfieCaptureView(d.capture) : null,
                 }))}
               />
             )}

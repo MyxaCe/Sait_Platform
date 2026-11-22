@@ -7,7 +7,7 @@ import { buildKycObjectKey, putObject } from '@broker/storage';
 import { getPool } from './db';
 import { getSessionUser } from './auth/session';
 import { isRateLimited } from './rate-limit';
-import { isKycDocKind } from './kyc-kinds';
+import { CAMERA_ONLY_KYC_KINDS, isKycDocKind } from './kyc-kinds';
 import type { ActionState } from './actions';
 import { MAX_DOC_BYTES } from '@/upload-limits.mjs';
 
@@ -23,6 +23,7 @@ export async function submitKycDocumentAction(
 
   const kind = String(formData.get('kind') ?? '');
   if (!isKycDocKind(kind)) return { error: 'invalidRequest' };
+  if (CAMERA_ONLY_KYC_KINDS.includes(kind)) return { error: 'selfieCameraOnly' };
 
   const file = formData.get('file');
   if (!(file instanceof File) || file.size === 0) {

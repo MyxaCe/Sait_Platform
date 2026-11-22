@@ -51,7 +51,7 @@ export type KycDocKind = 'identity' | 'selfie_liveness' | 'address_proof' | 'sou
 
 export const DOC_KIND_LABELS: Record<KycDocKind, string> = {
   identity: 'Паспорт / ID',
-  selfie_liveness: 'Селфи с liveness',
+  selfie_liveness: 'Селфи с камеры',
   address_proof: 'Подтверждение адреса',
   source_of_funds: 'Источник средств',
 };

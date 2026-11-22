@@ -286,7 +286,7 @@
     "kind": "Type de document",
     "kinds": {
       "identity": "Passeport / pièce d’identité",
-      "selfie_liveness": "Selfie avec contrôle du vivant",
+      "selfie_liveness": "Selfie par caméra",
       "address_proof": "Justificatif de domicile",
       "source_of_funds": "Origine des fonds"
     },
@@ -296,17 +296,70 @@
       "unverified": "Non effectuée",
       "pending": "En cours d’examen",
       "verified": "Effectuée",
-      "rejected": "Refusée"
+      "rejected": "Refusée",
+      "resubmit_requested": "Documents supplémentaires requis"
     },
-    "stepReview": "Examen par un opérateur",
     "stateText": {
-      "unverified": "Vérifiez votre identité pour débloquer les retraits. Téléchargez vos documents ci-dessous ; l’examen prend généralement jusqu’à un jour ouvré.",
-      "pending": "Documents en cours d’examen — généralement jusqu’à un jour ouvré. Nous vous informerons de la décision.",
+      "unverified": "Vérifiez votre identité pour débloquer les retraits. Suivez les trois étapes ci-dessous.",
+      "pending": "Vos documents sont en cours de vérification. Nous vous informerons de la décision.",
       "verified": "Identité vérifiée. Les dépôts et les retraits sont disponibles.",
-      "rejected": "La vérification a échoué. Téléchargez à nouveau vos documents et nous les examinerons encore une fois."
+      "rejected": "La vérification a échoué. Téléchargez à nouveau vos documents et nous les examinerons encore une fois.",
+      "resubmit_requested": "Notre équipe a besoin de documents complémentaires ou repris. Vérifiez les étapes ci-dessous et envoyez ce qui manque."
     },
     "submittedTitle": "Documents envoyés",
-    "emptyHint": "Les documents envoyés apparaîtront ici avec leur date d’envoi."
+    "emptyHint": "Les documents envoyés apparaîtront ici avec leur date d’envoi.",
+    "reviewEta": "Délai de vérification estimé : jusqu’à un jour ouvré.",
+    "stepsLabel": "Étapes de la vérification",
+    "steps": {
+      "identity": "Document",
+      "address_proof": "Adresse",
+      "selfie_liveness": "Selfie"
+    },
+    "stepDone": "Envoyé",
+    "stepTodo": "À faire",
+    "stepOf": "Étape {current} sur {total}",
+    "stepHint": {
+      "identity": "Passeport ou carte d’identité : page avec photo, tous les coins visibles, texte lisible. PDF, JPG ou PNG jusqu’à 10 Mo.",
+      "address_proof": "Facture de services ou relevé bancaire de moins de 3 mois, à votre nom et adresse. PDF, JPG ou PNG jusqu’à 10 Mo.",
+      "selfie_liveness": "Photos prises avec la caméra frontale selon la consigne affichée. Un membre de notre équipe les compare à la photo de votre document."
+    },
+    "nextStep": "Suivant : {step}",
+    "extraTitle": "En complément : origine des fonds",
+    "extraHint": "Si notre équipe le demande, téléversez un justificatif de l’origine de vos fonds : justificatif de revenus, relevé ou contrat.",
+    "selfie": {
+      "cameraOnly": "À cette étape, seules les photos prises avec la caméra sont acceptées — l’envoi depuis la galerie est impossible.",
+      "intro": "Activez la caméra : une consigne aléatoire et un code s’afficheront. Prenez 3 photos selon les indications — vous avez 2 minutes.",
+      "start": "Activer la caméra",
+      "preview": "Image de la caméra",
+      "code": "Code {code}",
+      "codeHint": "Le code et l’heure apparaîtront sur les photos : notre équipe verra qu’elles viennent d’être prises.",
+      "timeLeft": "Encore {seconds} s",
+      "stepOf": "Photo {current} sur {total}",
+      "tasks": {
+        "face_front": "Regardez droit vers la caméra, le visage entier dans le cadre",
+        "turn_left": "Tournez la tête vers la gauche",
+        "turn_right": "Tournez la tête vers la droite",
+        "show_fingers": "{count, plural, one {Levez # doigt à côté de votre visage} other {Levez # doigts à côté de votre visage}}",
+        "hold_document": "Tenez votre pièce d’identité à côté de votre visage"
+      },
+      "capture": "Prendre la photo",
+      "review": "Vérifiez les photos : visage visible, consigne respectée.",
+      "send": "Envoyer pour vérification",
+      "sending": "Envoi…",
+      "retake": "Reprendre",
+      "done": "Photos envoyées. Un membre de notre équipe les comparera à la photo de votre document.",
+      "expired": "Le temps imparti est écoulé. Recommencez : nous vous donnerons une nouvelle consigne.",
+      "restart": "Recommencer",
+      "unavailable": {
+        "unsupported": "Ce navigateur ne donne pas accès à la caméra.",
+        "denied": "Pas d’accès à la caméra. Autorisez la caméra pour ce site dans les réglages du navigateur et réessayez.",
+        "nocamera": "Aucune caméra trouvée sur cet appareil.",
+        "error": "Impossible d’activer la caméra. Fermez les autres applications qui l’utilisent et réessayez."
+      },
+      "phoneHint": "Faites cette étape sur votre téléphone : scannez le QR code, ou connectez-vous sur le téléphone et ouvrez Profil → Vérification → Selfie.",
+      "qrAlt": "QR code menant à l’étape « Selfie »",
+      "tryAgain": "Réessayer"
+    }
   },
   "notifications": {
     "title": "Notifications",
@@ -371,7 +424,10 @@
     "twoFactorExpired": "Le délai de saisie du code a expiré — reconnectez-vous",
     "twoFactorUnavailable": "L’authentification à deux facteurs est temporairement indisponible. Contactez le support.",
     "twoFactorAlreadyEnabled": "L’authentification à deux facteurs est déjà activée",
-    "twoFactorSetupExpired": "La configuration a expiré — recommencez"
+    "twoFactorSetupExpired": "La configuration a expiré — recommencez",
+    "selfieCameraOnly": "Le selfie n’est accepté que sous forme de photo prise avec la caméra — l’envoi de fichier est désactivé pour cette étape.",
+    "selfieExpired": "La consigne a expiré — recommencez.",
+    "selfieInvalid": "Les photos n’ont pas été acceptées. Reprenez-les avec la caméra."
   },
   "history": {
     "title": "Historique",

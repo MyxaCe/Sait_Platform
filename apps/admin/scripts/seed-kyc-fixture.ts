@@ -33,6 +33,11 @@ async function main(): Promise<number> {
       [FIXTURE_USER_ID],
     );
 
+    await client.query(`DELETE FROM kyc_liveness_challenges WHERE user_id = $1`, [FIXTURE_USER_ID]);
+    await client.query(
+      `DELETE FROM kyc_document_frames WHERE document_id IN (SELECT id FROM kyc_documents WHERE user_id = $1)`,
+      [FIXTURE_USER_ID],
+    );
     await client.query(`DELETE FROM kyc_documents WHERE user_id = $1`, [FIXTURE_USER_ID]);
     const docs: Array<[string, string, string]> = [
       ['identity', `kyc/${FIXTURE_USER_ID}/passport.jpg`, 'image/jpeg'],

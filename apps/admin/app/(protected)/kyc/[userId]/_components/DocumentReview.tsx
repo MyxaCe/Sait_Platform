@@ -2,7 +2,9 @@
 
 import { useState, useTransition } from 'react';
 import { Button, Callout, ToneBadge, cn } from '@broker/ui';
-import { issueDocumentViewUrlAction } from '@/lib/kyc/documents';
+import { issueDocumentViewUrlAction, issueSelfieReviewAction, type SelfieReviewIdentity } from '@/lib/kyc/documents';
+import type { SelfieCaptureView } from '@/lib/kyc/selfie-view';
+import { SelfieComparison } from './SelfieComparison';
 
 export interface ReviewDocument {
   id: string;
@@ -11,6 +13,7 @@ export interface ReviewDocument {
   submittedAt: string;
   submittedText: string;
   flag?: string | null;
+  capture?: SelfieCaptureView | null;
 }
 
 const MESSAGES: Record<string, string> = {
@@ -24,6 +27,7 @@ type View =
   | { state: 'idle' }
   | { state: 'loading'; id: string }
   | { state: 'ok'; id: string; url: string }
+  | { state: 'selfie'; id: string; frames: { index: number; url: string }[]; identity: SelfieReviewIdentity | null }
   | { state: 'error'; id: string; message: string };
 
 function kindOf(contentType: string | null): 'image' | 'pdf' | 'video' | 'other' {
@@ -58,6 +62,17 @@ export function DocumentReview({ documents }: { documents: ReviewDocument[] }) {
 
   function open(id: string) {
     setView({ state: 'loading', id });
+    if (documents.find((d) => d.id === id)?.capture) {
+      startTransition(async () => {
+        const result = await issueSelfieReviewAction(id);
+        setView(
+          result.ok
+            ? { state: 'selfie', id, frames: result.frames, identity: result.identity }
+            : { state: 'error', id, message: MESSAGES[result.reason] ?? 'Не удалось открыть снимки.' },
+        );
+      });
+      return;
+    }
     startTransition(async () => {
       const result = await issueDocumentViewUrlAction(id);
       setView(
@@ -82,7 +97,7 @@ export function DocumentReview({ documents }: { documents: ReviewDocument[] }) {
               <div className="min-w-0 flex-1 space-y-1">
                 <p className="truncate text-sm font-medium text-primary">{d.label}</p>
                 <p className="text-xs text-muted tabular-nums">
-                  {TYPE_LABEL[k]} · подан {d.submittedText}
+                  {d.capture ? `снимки с камеры: ${d.capture.frames.length}` : TYPE_LABEL[k]} · подан {d.submittedText}
                 </p>
                 {d.flag ? <ToneBadge tone="warning">{d.flag}</ToneBadge> : null}
                 <div className="pt-1">
@@ -93,7 +108,7 @@ export function DocumentReview({ documents }: { documents: ReviewDocument[] }) {
                     loading={view.state === 'loading' && view.id === d.id}
                     onClick={() => open(d.id)}
                   >
-                    {active && view.state === 'ok' ? 'Открыт' : 'Просмотреть'}
+                    {active && (view.state === 'ok' || view.state === 'selfie') ? 'Открыт' : 'Просмотреть'}
                   </Button>
                 </div>
               </div>
@@ -136,6 +151,8 @@ export function DocumentReview({ documents }: { documents: ReviewDocument[] }) {
                 <Callout tone="negative" className="w-full">
                   {view.message}
                 </Callout>
+              ) : view.state === 'selfie' && current.capture ? (
+                <SelfieComparison capture={current.capture} frames={view.frames} identity={view.identity} />
               ) : view.state === 'ok' ? (
                 kindOf(current.contentType) === 'image' ? (
                   <img src={view.url} alt={current.label} className="max-h-[36rem] max-w-full rounded-md object-contain" />
