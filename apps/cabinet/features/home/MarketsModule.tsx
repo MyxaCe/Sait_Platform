@@ -6,6 +6,7 @@ import { useRealtimeQuotes } from '@broker/realtime';
 import { cn, PriceChange } from '@broker/ui';
 import { formatPrice } from '@broker/utils';
 import { Link } from '@/i18n/navigation';
+import { terminalPageHref } from '@/features/trade/terminal-href';
 import type { CabinetHomeModule } from '@broker/api-client';
 import type { MarketInstrument, MarketsData } from '@/lib/home';
 import { selectGainers } from './markets-gainers';
@@ -165,7 +166,8 @@ export function MarketsModule({ config, data }: { config: MarketsConfig; data: M
                   <PriceChange value={q.changePercent} />
                 </td>
                 <td className="py-3 text-right">
-                  <Link href="/trade" className="text-xs text-accent hover:underline">
+                  {/* Не TerminalLink: флаг верхнего уровня серверный, его решает сама `/terminal` */}
+                  <Link href={terminalPageHref('real', q.symbol)} className="text-xs text-accent hover:underline">
                     {t('trade')}
                   </Link>
                 </td>

@@ -1,13 +1,16 @@
 import type { MetadataRoute } from 'next';
-import { SYMBOL_UNIVERSE } from '@broker/realtime';
+import type { ContentLocale } from '@broker/api-client';
+import { listInstrumentPages, type InstrumentPageRef } from '@/features/instruments/instrument-detail';
 import { getCms } from '@/lib/cms';
+import { getMdsCatalogEntries } from '@/lib/mds';
+import { getTenantAccess } from '@/lib/tenant';
 import { localizedPath } from '@broker/utils/locales';
 import { getSiteLanguages } from '@/lib/site-languages';
 import { SITE_URL } from '@/lib/site';
 
 /**
  * Sitemap: статические разделы + страницы, чьи списки живут в CMS
- * (новости, статьи обучения, юр-документы). Прежде слаги брались из
+ * (инструменты сайта, новости, статьи обучения, юр-документы). Прежде слаги брались из
  * data-файлов кода и расходились с CMS на первой же новой статье.
  *
  * Динамический: на сборке CMS нет (CI), а пререндер запёк бы sitemap без
@@ -16,15 +19,31 @@ import { SITE_URL } from '@/lib/site';
  */
 export const dynamic = 'force-dynamic';
 
+/** Инструменты сайта — те же, что открывает страница инструмента. CMS недоступна → без них. */
+async function siteInstrumentPages(locale: ContentLocale): Promise<InstrumentPageRef[]> {
+  try {
+    const [{ items }, access, catalog] = await Promise.all([
+      getCms('instruments', { locale }),
+      getTenantAccess(),
+      getMdsCatalogEntries(),
+    ]);
+    return listInstrumentPages({ cmsItems: items, access, catalog });
+  } catch (error) {
+    console.error(`[sitemap] инструменты не попали в карту: ${error instanceof Error ? error.message : String(error)}`);
+    return [];
+  }
+}
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
   const site = await getSiteLanguages();
   const locale = site.defaultLanguage;
 
-  const [articles, academy, legal] = await Promise.all([
+  const [articles, academy, legal, instrumentPages] = await Promise.all([
     getCms('articles', { locale, revalidate: 60, params: { pageSize: '50' } }),
     getCms('academy', { locale }),
     getCms('legal', { locale }),
+    siteInstrumentPages(locale),
   ]);
 
   const staticRoutes: MetadataRoute.Sitemap = [
@@ -49,7 +68,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: r.priority,
   }));
 
-  const instruments: MetadataRoute.Sitemap = SYMBOL_UNIVERSE.map((d) => ({
+  const instruments: MetadataRoute.Sitemap = instrumentPages.map((d) => ({
     url: `${SITE_URL}/instruments/${d.category}/${d.symbol.toLowerCase()}`,
     lastModified: now,
     changeFrequency: 'hourly',

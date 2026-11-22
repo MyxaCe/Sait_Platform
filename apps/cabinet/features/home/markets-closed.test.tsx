@@ -64,3 +64,12 @@ describe('«Рынки» кабинета · закрытый рынок', () =>
     expect(document.querySelector('[data-market]')).toBeNull();
   });
 });
+
+describe('ТД-010 · «Торговать» в «Рынках» передаёт инструмент в терминал', () => {
+  it('ссылка как у витрины: /terminal?account=real&symbol=<символ>', () => {
+    feed.quotes = [quote({})];
+    render(<MarketsModule config={config} data={data} />);
+
+    expect(screen.getByText('trade').getAttribute('href')).toBe('/terminal?account=real&symbol=EURUSD');
+  });
+});

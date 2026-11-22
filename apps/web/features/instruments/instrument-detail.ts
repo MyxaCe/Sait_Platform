@@ -63,3 +63,26 @@ export function resolveInstrument({ category, symbol, cmsItems, access, catalog 
     },
   };
 }
+
+export interface InstrumentPageRef {
+  symbol: string;
+  category: InstrumentCategory;
+}
+
+/** Страницы инструментов, которые `resolveInstrument` откроет (для sitemap). */
+export function listInstrumentPages(input: Omit<ResolveInput, 'category' | 'symbol'>): InstrumentPageRef[] {
+  const pages: InstrumentPageRef[] = [];
+  const seen = new Set<string>();
+  for (const item of input.cmsItems) {
+    const entry = input.catalog.state === 'available' ? input.catalog.entries[item.symbol] : undefined;
+    const detail = resolveInstrument({
+      ...input,
+      category: entry?.category ?? item.category,
+      symbol: item.symbol.toLowerCase(),
+    });
+    if (detail.kind !== 'ok' || seen.has(detail.instrument.symbol)) continue;
+    seen.add(detail.instrument.symbol);
+    pages.push({ symbol: detail.instrument.symbol, category: detail.instrument.category });
+  }
+  return pages;
+}

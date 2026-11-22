@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { Instrument } from '@broker/api-client';
 import type { TenantAccess } from '@broker/tenant';
 import type { MdsCatalogEntries, MdsCatalogEntry } from '@/lib/mds';
-import { resolveInstrument, type ResolveInput } from './instrument-detail';
+import { listInstrumentPages, resolveInstrument, type ResolveInput } from './instrument-detail';
 
 const cmsItem = (over: Partial<Instrument> = {}): Instrument => ({
   symbol: 'LTCUSD',
@@ -81,5 +81,42 @@ describe('деталка инструмента · какие инструмен
       kind: 'ok',
       instrument: { name: 'Litecoin (CMS)', category: 'crypto', digits: null, minQty: null },
     });
+  });
+});
+
+describe('ТД-010 · список страниц инструментов для sitemap', () => {
+  const { category: _c, symbol: _s, ...base } = input();
+
+  it('ровно те инструменты сайта, чью страницу откроет деталка; категория — из каталога', () => {
+    const pages = listInstrumentPages({
+      ...base,
+      cmsItems: [cmsItem(), cmsItem({ symbol: 'EURUSD', category: 'crypto' }), cmsItem({ symbol: 'XAUUSD' })],
+    });
+
+    expect(pages).toEqual([
+      { symbol: 'LTCUSD', category: 'crypto' },
+      { symbol: 'EURUSD', category: 'forex' },
+    ]);
+  });
+
+  it('вне списка доступа сайта — нет в карте', () => {
+    expect(listInstrumentPages({ ...base, access: allowed('EURUSD') })).toEqual([{ symbol: 'EURUSD', category: 'forex' }]);
+  });
+
+  it('граница доступа закрыта → пусто (страницы-объяснения не индексируем)', () => {
+    expect(listInstrumentPages({ ...base, access: { state: 'unavailable', reason: 'network' } })).toEqual([]);
+  });
+
+  it('каталог MDS недоступен → категория из CMS', () => {
+    expect(listInstrumentPages({ ...base, catalog: { state: 'unavailable', reason: 'network' } })).toEqual([
+      { symbol: 'LTCUSD', category: 'crypto' },
+      { symbol: 'EURUSD', category: 'forex' },
+    ]);
+  });
+
+  it('дубль символа в CMS — одна запись', () => {
+    expect(listInstrumentPages({ ...base, cmsItems: [cmsItem(), cmsItem({ symbol: 'ltcusd' })] })).toEqual([
+      { symbol: 'LTCUSD', category: 'crypto' },
+    ]);
   });
 });
