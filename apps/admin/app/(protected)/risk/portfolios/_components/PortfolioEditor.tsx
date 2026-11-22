@@ -6,15 +6,17 @@ import { Input, Panel, Textarea } from '@broker/ui';
 import { changePortfolioFeesAction, type FeesActionState } from '@/lib/fees/actions';
 import {
   changePortfolioLeverageAction,
-  setClassOverrideAction,
+  setClassLeverageTableAction,
   type LeverageActionState,
 } from '@/lib/leverage/actions';
+import { LEVERAGE_CLASSES, LEVERAGE_CLASS_LABELS } from '@/lib/leverage/classes';
 import { ActionResult, ArmedSubmit, Field, ReasonField } from '@/components/control/forms';
 
 const MESSAGES: Record<string, string> = {
   forbidden: 'Недостаточно прав: изменение плеча — действие администратора.',
   missingReason: 'Нужно указать основание.',
   invalidLeverage: 'Плечо — целое число от 1 до 1000 (знаменатель 1:N).',
+  invalidClass: 'Неизвестная категория инструментов.',
   noPortfolio: 'Портфель не найден.',
   alreadyInState: 'Значение не изменилось — записывать нечего.',
   terminalUnavailable:
@@ -158,16 +160,17 @@ function FeesForm({
 function BaseLeverageForm({
   portfolioKey,
   baseLeverage,
-  cryptoLeverage,
+  classOverrides,
   clientCount,
   isDefault,
 }: {
   portfolioKey: string;
   baseLeverage: number;
-  cryptoLeverage: number | null;
+  classOverrides: Readonly<Record<string, number>>;
   clientCount: number;
   isDefault: boolean;
 }) {
+  const own = LEVERAGE_CLASSES.filter((c) => classOverrides[c] !== undefined).map((c) => LEVERAGE_CLASS_LABELS[c]);
   const [state, action] = useFormState<LeverageActionState, FormData>(
     changePortfolioLeverageAction,
     {},
@@ -188,11 +191,7 @@ function BaseLeverageForm({
       <ArmedSubmit
         idle="Изменить базовое плечо"
         confirm="Да, изменить для всех"
-        consequence={
-          cryptoLeverage
-            ? `База станет 1:${value} ${whom(clientCount, isDefault)}. В терминале плечо не изменится — действует планка crypto 1:${cryptoLeverage}.`
-            : `Плечо станет 1:${value} ${whom(clientCount, isDefault)} и сразу уйдёт в терминал. Открытые позиции сохранят прежнее плечо.`
-        }
+        consequence={`База станет 1:${value} ${whom(clientCount, isDefault)} для всех категорий${own.length > 0 ? `, кроме своих: ${own.join(', ')}` : ''}, и сразу уйдёт в терминал. Открытые позиции сохранят прежнее плечо.`}
         disabled={!changed || reason.trim().length === 0}
         resetKey={`${value}|${reason}`}
       />
@@ -200,57 +199,61 @@ function BaseLeverageForm({
   );
 }
 
-function ClassOverrideForm({
+function ClassTableForm({
   portfolioKey,
-  cryptoLeverage,
+  classOverrides,
   baseLeverage,
   clientCount,
   isDefault,
 }: {
   portfolioKey: string;
-  cryptoLeverage: number | null;
+  classOverrides: Readonly<Record<string, number>>;
   baseLeverage: number;
   clientCount: number;
   isDefault: boolean;
 }) {
-  const [state, action] = useFormState<LeverageActionState, FormData>(setClassOverrideAction, {});
-  const [cls, setCls] = useState('crypto');
-  const [lev, setLev] = useState(cryptoLeverage ? String(cryptoLeverage) : '');
+  const [state, action] = useFormState<LeverageActionState, FormData>(setClassLeverageTableAction, {});
+  const initial = Object.fromEntries(
+    LEVERAGE_CLASSES.map((c) => [c, classOverrides[c] !== undefined ? String(classOverrides[c]) : '']),
+  ) as Record<string, string>;
+  const [values, setValues] = useState(initial);
   const [reason, setReason] = useState('');
-  const removing = lev.trim() === '';
-  const ready = cls.trim().length > 0 && reason.trim().length > 0;
-  const isCrypto = cls.trim() === 'crypto';
+  const changed = LEVERAGE_CLASSES.filter((c) => values[c]!.trim() !== initial[c]);
+  const summary = changed
+    .map((c) => `${LEVERAGE_CLASS_LABELS[c]} ${values[c]!.trim() === '' ? `→ база 1:${baseLeverage}` : `→ 1:${values[c]}`}`)
+    .join(', ');
 
   return (
     <form action={action} className="space-y-3">
-      <h3 className="text-primary text-sm font-semibold">Планка класса инструментов</h3>
-      <ActionResult state={state} okText="Планка класса сохранена, запись в журнале." messages={MESSAGES} />
+      <h3 className="text-primary text-sm font-semibold">Плечо по категориям инструментов</h3>
+      <ActionResult state={state} okText="Плечо по категориям сохранено, запись в журнале." messages={MESSAGES} />
       <input type="hidden" name="portfolioKey" value={portfolioKey} />
       <div className="grid gap-3 sm:grid-cols-2">
-        <Field label="Класс" htmlFor="cls" hint="Терминал торгует классом crypto">
-          <Input
-            id="cls"
-            name="instrumentClass"
-            controlSize="compact"
-            value={cls}
-            onChange={(e) => setCls(e.target.value)}
-          />
-        </Field>
-        <Field label="Плечо" htmlFor="cls-lev" hint="Пусто — снять планку">
-          <LeverageInput id="cls-lev" name="leverage" value={lev} onChange={setLev} placeholder="нет" />
-        </Field>
+        {LEVERAGE_CLASSES.map((c) => (
+          <Field
+            key={c}
+            label={LEVERAGE_CLASS_LABELS[c]}
+            htmlFor={`cls-${c}`}
+            hint={classOverrides[c] !== undefined ? `Сейчас 1:${classOverrides[c]}` : `Сейчас базовое 1:${baseLeverage}`}
+          >
+            <LeverageInput
+              id={`cls-${c}`}
+              name={`class.${c}`}
+              value={values[c]!}
+              onChange={(v) => setValues((prev) => ({ ...prev, [c]: v }))}
+              placeholder={`база ${baseLeverage}`}
+            />
+          </Field>
+        ))}
       </div>
+      <p className="text-muted text-xs">Пустое поле — категория торгуется с базовым плечом портфеля.</p>
       <ReasonField id="cls-reason" value={reason} onChange={setReason} />
       <ArmedSubmit
-        idle={removing ? 'Снять планку класса' : 'Задать планку класса'}
-        confirm={removing ? 'Да, снять' : 'Да, задать для всех'}
-        consequence={
-          isCrypto
-            ? `В терминале станет 1:${removing ? baseLeverage : lev} ${whom(clientCount, isDefault)} (кроме клиентов с индивидуальным плечом). Открытые позиции сохранят прежнее плечо.`
-            : `Планка класса «${cls}» ${removing ? 'будет снята' : `станет 1:${lev}`}. Терминал этот класс пока не торгует.`
-        }
-        disabled={!ready}
-        resetKey={`${cls}|${lev}|${reason}`}
+        idle="Сохранить плечо по категориям"
+        confirm="Да, применить для всех"
+        consequence={`${summary} — ${whom(clientCount, isDefault)} (кроме клиентов с индивидуальным плечом), сразу уйдёт в терминал. Открытые позиции сохранят прежнее плечо.`}
+        disabled={changed.length === 0 || reason.trim().length === 0}
+        resetKey={`${JSON.stringify(values)}|${reason}`}
       />
     </form>
   );
@@ -260,7 +263,7 @@ export function PortfolioEditor({
   portfolioKey,
   title,
   baseLeverage,
-  cryptoLeverage,
+  classOverrides,
   clientCount,
   isDefault,
   markupBps,
@@ -271,7 +274,7 @@ export function PortfolioEditor({
   portfolioKey: string;
   title: string;
   baseLeverage: number;
-  cryptoLeverage: number | null;
+  classOverrides: Readonly<Record<string, number>>;
   clientCount: number;
   isDefault: boolean;
   markupBps: number;
@@ -279,7 +282,7 @@ export function PortfolioEditor({
   instruments: string | null;
   description: string | null;
 }) {
-  const common = { portfolioKey, baseLeverage, cryptoLeverage, clientCount, isDefault };
+  const common = { portfolioKey, baseLeverage, classOverrides, clientCount, isDefault };
   return (
     <Panel
       tone="danger"
@@ -288,7 +291,7 @@ export function PortfolioEditor({
     >
       <div className="grid gap-6 lg:grid-cols-2">
         <BaseLeverageForm {...common} />
-        <ClassOverrideForm {...common} />
+        <ClassTableForm {...common} />
       </div>
       <div className="border-border mt-6 border-t pt-6">
         <FeesForm

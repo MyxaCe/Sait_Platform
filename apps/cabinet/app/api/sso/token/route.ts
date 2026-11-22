@@ -50,7 +50,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'rateLimited' }, { status: 429 });
   }
 
-  let leverage: number | null;
+  let leverage: Awaited<ReturnType<typeof terminalLeverageFor>>;
   try {
     leverage = await terminalLeverageFor(user.id);
   } catch (error) {

@@ -103,7 +103,7 @@ function fakePool(opts: {
     usersOfPortfolio: async () => [USER],
     read: async (_db, ids) => {
       const lev = row?.override_leverage ?? CRYPTO_LEVERAGE[row?.portfolio_key ?? defaultPortfolio ?? 'standard']!;
-      return new Map(ids.map((id) => [id, lev]));
+      return new Map(ids.map((id) => [id, { leverage: lev, base: lev, classes: {} }]));
     },
   };
   return { pool, journal, flags, getRow: () => row, terminal, sync };
@@ -234,7 +234,7 @@ describe('Р-446 · плечо клиента доезжает до термин
     );
     expect(res).toMatchObject({ ok: true });
     expect(f.terminal.leverageCalls.map((c) => `${c.kind}:${c.leverage}`)).toEqual(['demo:5', 'real:5']);
-    expect(JSON.parse(f.journal[0]!.payload).terminalLeverage).toEqual([{ userId: USER, before: 10, after: 5 }]);
+    expect(JSON.parse(f.journal[0]!.payload).terminalLeverage).toMatchObject([{ userId: USER, before: 10, after: 5 }]);
     expect(f.flags.committed).toBe(true);
   });
 

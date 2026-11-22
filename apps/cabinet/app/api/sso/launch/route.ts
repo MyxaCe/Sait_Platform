@@ -55,7 +55,7 @@ export async function GET(request: Request) {
   }
   if (isRateLimited(`sso:${user.id}`, 30, 60_000)) return deny('rateLimited', 429);
 
-  let leverage: number | null;
+  let leverage: Awaited<ReturnType<typeof terminalLeverageFor>>;
   try {
     leverage = await terminalLeverageFor(user.id);
   } catch (error) {

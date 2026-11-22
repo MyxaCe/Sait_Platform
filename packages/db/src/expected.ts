@@ -28,4 +28,5 @@ export const EXPECTED_MIGRATIONS: readonly string[] = [
   '1795910000000_money_command_execution',
   '1795960000000_kyc_selfie_capture',
   '1796030000000_client_totp',
+  '1796310000000_leverage_instrument_classes',
 ];

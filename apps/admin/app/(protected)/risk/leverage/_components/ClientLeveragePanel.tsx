@@ -30,7 +30,7 @@ interface PortfolioOpt {
   key: string;
   title: string;
   baseLeverage: number;
-  cryptoLeverage: number | null;
+  classesText: string;
 }
 
 function Outcome({ children }: { children: React.ReactNode }) {
@@ -53,7 +53,7 @@ function PortfolioForm({
   const [reason, setReason] = useState('');
   const changed = key !== '' && key !== assignedKey;
   const target = portfolios.find((p) => p.key === key);
-  const terminal = override ?? target?.cryptoLeverage ?? target?.baseLeverage ?? null;
+  const terminal = override ? `1:${override}` : (target?.classesText ?? null);
 
   return (
     <form action={action} className="space-y-3">
@@ -73,7 +73,7 @@ function PortfolioForm({
         >
           {portfolios.map((p) => (
             <option key={p.key} value={p.key}>
-              {p.title} — 1:{p.cryptoLeverage ?? p.baseLeverage}
+              {p.title} — {p.classesText}
               {p.key === assignedKey ? ' (текущий)' : ''}
             </option>
           ))}
@@ -86,7 +86,7 @@ function PortfolioForm({
         </SubmitButton>
         {changed && terminal ? (
           <Outcome>
-            В терминале станет <span className="text-primary font-medium">1:{terminal}</span>
+            В терминале станет <span className="text-primary font-medium">{terminal}</span>
             {override ? ' (индивидуальное плечо сохранится)' : ''}
           </Outcome>
         ) : null}
@@ -153,7 +153,7 @@ function OverrideForm({ userId }: { userId: string }) {
   );
 }
 
-function ClearForm({ userId, fallback }: { userId: string; fallback: number | null }) {
+function ClearForm({ userId, fallback }: { userId: string; fallback: string | null }) {
   const [state, action] = useFormState<LeverageActionState, FormData>(clearClientOverrideAction, {});
   const [reason, setReason] = useState('');
 
@@ -172,7 +172,7 @@ function ClearForm({ userId, fallback }: { userId: string; fallback: number | nu
         </SubmitButton>
         {fallback ? (
           <Outcome>
-            В терминале станет <span className="text-primary font-medium">1:{fallback}</span> — по
+            В терминале станет <span className="text-primary font-medium">{fallback}</span> — по
             портфелю
           </Outcome>
         ) : null}
@@ -193,7 +193,7 @@ export function ClientLeveragePanel({
   override: { leverage: number; ticket: string } | null;
 }) {
   const current = portfolios.find((p) => p.key === assignedKey);
-  const fallback = current ? (current.cryptoLeverage ?? current.baseLeverage) : null;
+  const fallback = current ? current.classesText : null;
   return (
     <div className="space-y-5">
       <Panel title="Портфель клиента" description="Плечо клиента следует за портфелем, если нет индивидуального.">

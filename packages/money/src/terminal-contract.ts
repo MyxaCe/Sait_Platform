@@ -34,6 +34,8 @@ export interface FreezeBody {
 
 export interface LeverageBody {
   leverage: number;
+  leverage_base?: number;
+  leverage_classes?: Record<string, number>;
   reason: string;
   operator: string;
   external_ref?: string;
@@ -42,8 +44,20 @@ export interface LeverageBody {
 export interface LeverageResult {
   leverage: number;
   previousLeverage: number | null;
+  previousClasses: Record<string, number> | null;
   changed: boolean;
   seq: number | null;
+}
+
+function classesOrNull(value: unknown): Record<string, number> | null {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+  const out: Record<string, number> = {};
+  for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+    const n = Number(v);
+    if (!Number.isInteger(n) || n < 1) return null;
+    out[k] = n;
+  }
+  return out;
 }
 
 export function parseLeverageResponse(body: unknown): LeverageResult | null {
@@ -55,6 +69,7 @@ export function parseLeverageResponse(body: unknown): LeverageResult | null {
   return {
     leverage: lev,
     previousLeverage: prev,
+    previousClasses: classesOrNull(b.previous_leverage_classes),
     changed: b.changed === true,
     seq: numOrNull(b.seq),
   };

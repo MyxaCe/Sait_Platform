@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { decodeJwt, exportJWK, importPKCS8, SignJWT, type JWK } from 'jose';
 import { requireTenantSlug } from '@broker/tenant';
+import { isLeverageClass, type TerminalLeverage } from '@broker/money';
 
 export const SSO_ISSUER = 'platform-auth';
 export const SSO_AUDIENCE = 'terminal';
@@ -74,16 +75,28 @@ export function parseAccountKind(value: unknown): AccountKind | null {
 export async function issueHandoffToken(
   userId: string,
   accountKind: AccountKind = 'demo',
-  leverage: number | null = null,
+  leverage: TerminalLeverage | number | null = null,
   fees: { markupBps: number; commissionBps: number } | null = null,
 ): Promise<HandoffToken> {
   const { privateKey } = await getKeys();
   const claims: Record<string, unknown> = { tenant: tenantSlug(), account_kind: accountKind };
   if (leverage !== null) {
-    if (!Number.isInteger(leverage) || leverage < 1 || leverage > 1000) {
-      throw new Error(`плечо для токена вне 1..1000: ${String(leverage)}`);
+    const t = typeof leverage === 'number' ? null : leverage;
+    const values = t ? [t.leverage, t.base, ...Object.values(t.classes)] : [leverage as number];
+    for (const v of values) {
+      if (!Number.isInteger(v) || v < 1 || v > 1000) {
+        throw new Error(`плечо для токена вне 1..1000: ${String(v)}`);
+      }
     }
-    claims.leverage = leverage;
+    if (t) {
+      const bad = Object.keys(t.classes).find((c) => !isLeverageClass(c));
+      if (bad) throw new Error(`неизвестная категория плеча для токена: ${bad}`);
+      claims.leverage = t.leverage;
+      claims.leverage_base = t.base;
+      claims.leverage_classes = { ...t.classes };
+    } else {
+      claims.leverage = leverage;
+    }
   }
   if (fees !== null) {
     for (const v of [fees.markupBps, fees.commissionBps]) {

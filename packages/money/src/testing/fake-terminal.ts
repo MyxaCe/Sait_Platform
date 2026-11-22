@@ -13,9 +13,18 @@ export class FakeTerminal implements TerminalMoneyClient {
   calls: { op: string; userId: string; ref?: string; amount?: number }[] = [];
   frozen = new Map<string, boolean>();
   leverage = new Map<string, number>();
+  classes = new Map<string, Record<string, number>>();
+  supportsClasses = false;
   platformLeverage = 20;
   opened: Set<string> | null = null;
-  leverageCalls: { userId: string; kind: AccountKind; leverage: number; reason: string }[] = [];
+  leverageCalls: {
+    userId: string;
+    kind: AccountKind;
+    leverage: number;
+    reason: string;
+    base?: number;
+    classes?: Record<string, number>;
+  }[] = [];
   next: string[] = [];
   private seq = 0;
 
@@ -52,15 +61,39 @@ export class FakeTerminal implements TerminalMoneyClient {
 
   async setLeverage(userId: string, body: LeverageBody, kind: AccountKind): Promise<LeverageOutcome> {
     this.calls.push({ op: `leverage:${kind}`, userId });
-    this.leverageCalls.push({ userId, kind, leverage: body.leverage, reason: body.reason });
+    this.leverageCalls.push({
+      userId,
+      kind,
+      leverage: body.leverage,
+      reason: body.reason,
+      ...(body.leverage_base !== undefined ? { base: body.leverage_base } : {}),
+      ...(body.leverage_classes !== undefined ? { classes: body.leverage_classes } : {}),
+    });
     const key = `${userId}:${kind}`;
     if (this.opened && !this.opened.has(key)) return { state: 'not-opened' };
     const mode = this.take();
     if (mode === 'unavailable') return { state: 'unavailable', reason: 'network' };
     if (mode !== 'ok') return { state: 'refused', code: mode, status: 400 };
     const previous = this.leverage.get(key) ?? this.platformLeverage;
-    this.leverage.set(key, body.leverage);
-    return { state: 'ok', leverage: body.leverage, previousLeverage: previous, changed: previous !== body.leverage, seq: ++this.seq };
+    if (!this.supportsClasses) {
+      this.leverage.set(key, body.leverage);
+      return {
+        state: 'ok',
+        leverage: body.leverage,
+        previousLeverage: previous,
+        previousClasses: null,
+        changed: previous !== body.leverage,
+        seq: ++this.seq,
+      };
+    }
+    const previousClasses = this.classes.get(key) ?? {};
+    const table = body.leverage_base !== undefined && body.leverage_classes !== undefined;
+    const base = table ? body.leverage_base! : body.leverage;
+    const classes = table ? { ...body.leverage_classes! } : {};
+    this.leverage.set(key, base);
+    this.classes.set(key, classes);
+    const changed = previous !== base || JSON.stringify(previousClasses) !== JSON.stringify(classes);
+    return { state: 'ok', leverage: body.leverage, previousLeverage: previous, previousClasses, changed, seq: ++this.seq };
   }
 
   accountsUnavailable = false;
