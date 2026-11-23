@@ -5,6 +5,8 @@ import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { Badge, Button } from '@broker/ui';
 import { formatDate, formatTime } from '@broker/utils';
 import { Link } from '@/i18n/navigation';
+import { cabinetRegisterHref } from '@/lib/cabinet-links';
+import { getSiteLanguages } from '@/lib/site-languages';
 import { ArticleCover, ScheduledBadge, scheduledLabel } from '@/components/ArticleMeta';
 import { ArticleBody } from '@/components/RichText';
 import { findNews, loadNews } from '@/lib/articles';
@@ -48,6 +50,7 @@ export default async function NewsArticlePage({ params }: PageParams) {
   const tCommon = await getTranslations('common');
   const scheduled = await scheduledLabel(article.publishedAt, params.locale);
   const intlLocale = intlTag(params.locale);
+  const registerHref = cabinetRegisterHref('/register', params.locale, (await getSiteLanguages()).defaultLanguage);
   const categoryLabel =
     article.categoryTitle ??
     (t.has(`categories.${article.category}`) ? t(`categories.${article.category}`) : article.category);
@@ -105,9 +108,9 @@ export default async function NewsArticlePage({ params }: PageParams) {
 
       <div className="mt-10 rounded-2xl border border-accent/20 bg-accent/5 p-6 text-center">
         <p className="font-medium text-primary">{t('articleCta')}</p>
-        <Link href="/register" className="mt-4 inline-block">
+        <a href={registerHref} className="mt-4 inline-block">
           <Button tabIndex={-1}>{tCommon('openAccount')}</Button>
-        </Link>
+        </a>
       </div>
     </article>
   );

@@ -4,6 +4,8 @@ import { notFound } from 'next/navigation';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { Button } from '@broker/ui';
 import { Link } from '@/i18n/navigation';
+import { cabinetRegisterHref } from '@/lib/cabinet-links';
+import { getSiteLanguages } from '@/lib/site-languages';
 import { ArticleCover, ScheduledBadge, scheduledLabel } from '@/components/ArticleMeta';
 import { ArticleBody } from '@/components/RichText';
 import { StreamFacade } from '@/features/streams/StreamFacade';
@@ -40,6 +42,7 @@ export default async function EducationArticlePage({ params }: PageParams) {
   const t = await getTranslations('education');
   const tCommon = await getTranslations('common');
   const scheduled = await scheduledLabel(article.publishedAt, params.locale);
+  const registerHref = cabinetRegisterHref('/register?demo=1', params.locale, (await getSiteLanguages()).defaultLanguage);
 
   const jsonLd = {
     '@context': 'https://schema.org',
@@ -94,9 +97,9 @@ export default async function EducationArticlePage({ params }: PageParams) {
 
       <div className="mt-10 rounded-2xl border border-accent/20 bg-accent/5 p-6 text-center">
         <p className="font-medium text-primary">{t('articleCta')}</p>
-        <Link href="/register?demo=1" className="mt-4 inline-block">
+        <a href={registerHref} className="mt-4 inline-block">
           <Button tabIndex={-1}>{t('articleCtaButton')}</Button>
-        </Link>
+        </a>
       </div>
     </article>
   );

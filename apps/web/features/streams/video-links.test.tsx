@@ -21,6 +21,11 @@ vi.mock('@/i18n/navigation', () => ({
   ),
 }));
 vi.mock('@/lib/brand', () => ({ brandName: async () => 'Brand' }));
+vi.mock('@/lib/site-languages', () => ({
+  getSiteLanguages: async () => ({ defaultLanguage: 'ru', languages: ['ru', 'en'] }),
+}));
+
+const CABINET_REGISTER = `${(process.env.NEXT_PUBLIC_CABINET_URL || 'http://localhost:3002').replace(/\/$/, '')}/register`;
 
 const cms = vi.fn<(resource: string) => unknown>();
 vi.mock('@/lib/cms', () => ({
@@ -114,7 +119,7 @@ describe('вебинары: запись и ссылка участия', () => 
     expect(zoom.getAttribute('target')).toBe('_blank');
     expect(zoom.getAttribute('rel')).toContain('noopener');
     const plain = within(card('Обычный')).getByRole('link');
-    expect(plain.getAttribute('href')).toBe('/register');
+    expect(plain.getAttribute('href')).toBe(CABINET_REGISTER);
     expect(plain.getAttribute('target')).toBeNull();
   });
 
@@ -132,7 +137,7 @@ describe('вебинары: запись и ссылка участия', () => 
     );
     await renderWebinars();
     expect(within(card('Старый прошедший')).getByRole('button', { name: 'recordSoon' }).hasAttribute('disabled')).toBe(true);
-    expect(within(card('Старый будущий')).getByRole('link').getAttribute('href')).toBe('/register');
+    expect(within(card('Старый будущий')).getByRole('link').getAttribute('href')).toBe(CABINET_REGISTER);
     expect(screen.queryByRole('region', { name: 'streamRecords' })).toBeNull();
   });
 });
