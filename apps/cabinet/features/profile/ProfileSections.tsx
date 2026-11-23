@@ -18,7 +18,7 @@ function Card({ title, hint, children, className }: { title: string; hint?: stri
     <section className={['flex min-w-0 flex-col rounded-2xl border border-border bg-elevated p-4 sm:p-5', className].filter(Boolean).join(' ')}>
       <h2 className="text-[15px] font-semibold">{title}</h2>
       {hint ? <p className="mt-1 text-xs text-secondary">{hint}</p> : null}
-      <div className="mt-4 flex flex-1 flex-col">{children}</div>
+      <div className="mt-4 flex min-h-0 flex-1 flex-col">{children}</div>
     </section>
   );
 }
@@ -38,13 +38,16 @@ export async function SecuritySection({ userId }: { userId: string }) {
   const format = await getFormatter();
   const [sessions, twoFactor] = await Promise.all([listSessions(userId), isTwoFactorEnabled(twoFactorPool(), userId)]);
   return (
-    <div className="space-y-4 xl:grid xl:grid-cols-2 xl:items-stretch xl:gap-5 xl:space-y-0">
-      <Card title={t('changePassword')}>
+    // Слева «Смена пароля» + «Активные сессии», справа 2FA на всю высоту колонки (без пустого места снизу).
+    <div className="space-y-4 xl:grid xl:h-full xl:grid-cols-2 xl:grid-rows-[auto_minmax(0,1fr)] xl:items-stretch xl:gap-5 xl:space-y-0">
+      <Card title={t('changePassword')} className="xl:col-start-1 xl:row-start-1">
         <PasswordForm twoFactor={twoFactor} />
       </Card>
-      <TwoFactorCard userId={userId} />
-      <Card title={t('sessions')} hint={t('sessionsHint')}>
-        <ul className="divide-y divide-border rounded-xl border border-border">
+      <div className="flex min-w-0 flex-col xl:col-start-2 xl:row-span-2 xl:row-start-1 [&>section]:flex-1">
+        <TwoFactorCard userId={userId} />
+      </div>
+      <Card title={t('sessions')} hint={t('sessionsHint')} className="xl:col-start-1 xl:row-start-2 xl:min-h-0">
+        <ul className="divide-y divide-border overflow-auto rounded-xl border border-border xl:min-h-0 xl:flex-1">
           {sessions.map((session) => (
             <li key={session.id} className="flex items-center justify-between gap-3 px-3 py-3">
               <div className="min-w-0">
@@ -84,7 +87,7 @@ export async function DocumentsSection({ userId }: { userId: string }) {
   const format = await getFormatter();
   const documents = await listDocuments(userId);
   return (
-    <div className="space-y-4 xl:grid xl:grid-cols-2 xl:items-stretch xl:gap-5 xl:space-y-0">
+    <div className="space-y-4 xl:grid xl:h-full xl:grid-cols-2 xl:items-stretch xl:gap-5 xl:space-y-0">
       <Card title={t('upload')} hint={t('hint')}>
         <UploadForm />
       </Card>
@@ -95,7 +98,7 @@ export async function DocumentsSection({ userId }: { userId: string }) {
             <EmptyState size="compact" title={t('empty')} />
           </div>
         ) : (
-          <ul className="mt-3 flex-1 divide-y divide-border border-t border-border">
+          <ul className="mt-3 min-h-0 flex-1 divide-y divide-border overflow-auto border-t border-border">
             {documents.map((doc) => (
               <li key={doc.id} className="flex items-center justify-between gap-3 px-4 py-3 sm:px-5">
                 <div className="min-w-0">

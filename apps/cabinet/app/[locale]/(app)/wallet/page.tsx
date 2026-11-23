@@ -17,7 +17,7 @@ import { OperationsHistory } from '@/features/money/MoneyHistory';
 import { NavIcon } from '@/features/shell/NavIcon';
 import { realMoneyCurrency } from '@broker/money/display-currency';
 import { Segmented } from '@/features/ui/Segmented';
-import { PAGE_NARROW } from '@/features/ui/page';
+import { PAGE } from '@/features/ui/page';
 import { TransferNotice } from '@/features/transfer/TransferNotice';
 
 export const dynamic = 'force-dynamic';
@@ -54,7 +54,7 @@ export default async function WalletPage({
 
   const balanceCard = (
     <section
-      className="rounded-2xl border border-accent/40 bg-elevated p-4 sm:p-5"
+      className="h-full rounded-2xl border border-accent/40 bg-elevated p-4 sm:p-5"
       aria-label={th('realAccountTitle')}
       data-account="real"
     >
@@ -79,67 +79,68 @@ export default async function WalletPage({
           </p>
         </div>
       </div>
-      <p className="mt-2 text-xs text-secondary">
-        {freeMargin !== null ? t('availableHint') : t('availableFallbackHint')}
-      </p>
+      {tab === 'withdraw' ? (
+        <p className="mt-2 text-xs text-secondary">
+          {freeMargin !== null ? t('availableHint') : t('availableFallbackHint')}
+        </p>
+      ) : null}
     </section>
   );
 
   return (
-    <div className={cn(PAGE_NARROW, 'xl:grid xl:grid-cols-12 xl:items-start xl:gap-5')}>
-      <div className="min-w-0 space-y-4 sm:space-y-5 xl:col-span-8">
-        <div>
-          <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">{t('walletTitle')}</h1>
-          <p className="mt-1 text-sm text-secondary">{t('walletLead')}</p>
+    <div className={cn(PAGE, 'space-y-4 sm:space-y-5')}>
+      <div>
+        <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">{t('walletTitle')}</h1>
+        <p className="mt-1 text-sm text-secondary">{t('walletLead')}</p>
+      </div>
+      <TransferNotice userId={user.id} withWithdrawLink={tab !== 'withdraw'} />
+
+      {/* Одна строка: действия (Пополнить / Вывести) слева, баланс справа — закреплён вверху. */}
+      <div className="flex flex-col gap-4 sm:gap-5 xl:grid xl:grid-cols-2 xl:items-stretch" data-wallet-top>
+        <div className="order-2 flex min-w-0 flex-col justify-center gap-4 xl:order-1 [&>nav>a]:xl:min-h-[52px]">
+          {policy.frozen ? (
+            <Callout tone="negative" title={th('realFrozenTitle')}>
+              {th('realFrozen')}
+            </Callout>
+          ) : null}
+          <Segmented
+            label={t('walletTabs')}
+            active={tab}
+            items={[
+              {
+                key: 'deposit',
+                href: '/wallet?tab=deposit',
+                label: (
+                  <>
+                    <NavIcon name="deposit" className="size-[18px]" />
+                    {th('btnDeposit')}
+                  </>
+                ),
+              },
+              {
+                key: 'withdraw',
+                href: '/wallet?tab=withdraw',
+                label: (
+                  <>
+                    <NavIcon name="withdraw" className="size-[18px]" />
+                    {th('btnWithdraw')}
+                  </>
+                ),
+              },
+            ]}
+          />
         </div>
-        <TransferNotice userId={user.id} withWithdrawLink={tab !== 'withdraw'} />
-
-        <div className="xl:hidden">{balanceCard}</div>
-
-        {policy.frozen ? (
-          <Callout tone="negative" title={th('realFrozenTitle')}>
-            {th('realFrozen')}
-          </Callout>
-        ) : null}
-
-        <Segmented
-          label={t('walletTabs')}
-          active={tab}
-          items={[
-            {
-              key: 'deposit',
-              href: '/wallet?tab=deposit',
-              label: (
-                <>
-                  <NavIcon name="deposit" className="size-[18px]" />
-                  {th('btnDeposit')}
-                </>
-              ),
-            },
-            {
-              key: 'withdraw',
-              href: '/wallet?tab=withdraw',
-              label: (
-                <>
-                  <NavIcon name="withdraw" className="size-[18px]" />
-                  {th('btnWithdraw')}
-                </>
-              ),
-            },
-          ]}
-        />
-
-        {tab === 'deposit' ? (
-          <DepositPanel policy={policy} address={exchangeAddress()} />
-        ) : (
-          <WithdrawPanel policy={policy} availableMinor={available} kycAllowance={kycAllowance} userId={user.id} />
-        )}
-
-        {/* Шаги и история — одна колонка, одна ширина, один стиль карточек. */}
-        <OperationsHistory deposits={deposits} withdrawals={withdrawals} />
+        <div className="order-1 min-w-0 xl:order-2">{balanceCard}</div>
       </div>
 
-      <aside className="hidden min-w-0 space-y-5 xl:sticky xl:top-24 xl:col-span-4 xl:block">{balanceCard}</aside>
+      {tab === 'deposit' ? (
+        <DepositPanel policy={policy} address={exchangeAddress()} />
+      ) : (
+        <WithdrawPanel policy={policy} availableMinor={available} kycAllowance={kycAllowance} userId={user.id} />
+      )}
+
+      {/* История — один блок на всю ширину двух шагов. */}
+      <OperationsHistory deposits={deposits} withdrawals={withdrawals} />
     </div>
   );
 }

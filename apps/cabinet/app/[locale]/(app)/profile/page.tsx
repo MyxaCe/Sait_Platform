@@ -48,7 +48,7 @@ export default async function ProfilePage({
 
   return (
     <div className={cn(PAGE_NARROW, 'space-y-5 xl:grid xl:grid-cols-12 xl:items-stretch xl:gap-5 xl:space-y-0')}>
-      <div className="min-w-0 space-y-5 xl:col-span-3 xl:flex xl:flex-col xl:gap-4 xl:space-y-0">
+      <div className="min-w-0 space-y-5 xl:col-span-3 xl:flex xl:flex-col xl:gap-4 xl:space-y-0" data-profile-side>
         <div className="xl:rounded-2xl xl:border xl:border-border xl:bg-elevated xl:p-5">
           <div className="flex items-center gap-4 xl:flex-col xl:items-start xl:gap-3">
             <span
@@ -78,6 +78,7 @@ export default async function ProfilePage({
         <Segmented
           vertical
           stretch
+          keepScroll
           label={t('tabsLabel')}
           active={tab}
           className="grid grid-cols-2 gap-1 sm:flex"
@@ -90,7 +91,11 @@ export default async function ProfilePage({
         />
       </div>
 
-      <div className="min-w-0 space-y-5 xl:col-span-9 xl:flex xl:flex-col xl:gap-5 xl:space-y-0 [&>*:last-child]:xl:flex-1">
+      <div
+        key={tab}
+        className="profile-panel min-w-0 space-y-5 xl:col-span-9 xl:flex xl:h-[38rem] xl:flex-col xl:gap-5 xl:space-y-0 [&>*:last-child]:xl:flex-1"
+        data-profile-panel
+      >
         {tab === 'personal' ? <TransferNotice userId={user.id} /> : null}
         {tab === 'personal' ? <EmailVerifyNotice userId={user.id} /> : null}
         {tab === 'personal' ? (

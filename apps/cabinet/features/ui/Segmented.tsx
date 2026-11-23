@@ -8,6 +8,7 @@ export function Segmented({
   className,
   vertical = false,
   stretch = false,
+  keepScroll = false,
 }: {
   items: { key: string; label: React.ReactNode; href: string }[];
   active: string;
@@ -16,6 +17,8 @@ export function Segmented({
   vertical?: boolean;
   /** Вертикальное меню растягивается до высоты соседней колонки (без «лесенки»). */
   stretch?: boolean;
+  /** Переключение вкладок без прокрутки страницы наверх (вкладки одной страницы). */
+  keepScroll?: boolean;
 }) {
   return (
     <nav
@@ -28,6 +31,7 @@ export function Segmented({
           <Link
             key={it.key}
             href={it.href}
+            scroll={keepScroll ? false : undefined}
             aria-current={on ? 'page' : undefined}
             className={cn(
               'flex min-h-[40px] flex-1 items-center justify-center gap-2 whitespace-nowrap rounded-lg px-3 text-sm transition-colors',

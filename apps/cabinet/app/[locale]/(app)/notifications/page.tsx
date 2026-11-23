@@ -56,8 +56,7 @@ export default async function NotificationsPage({
   };
 
   return (
-    <div className={cn(PAGE, 'space-y-4 sm:space-y-5 xl:grid xl:grid-cols-12 xl:items-start xl:gap-5 xl:space-y-0')}>
-      <div className="min-w-0 space-y-4 sm:space-y-5 xl:col-span-8">
+    <div className={cn(PAGE, 'space-y-4 sm:space-y-5')}>
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
             <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">{t('title')}</h1>
@@ -75,8 +74,10 @@ export default async function NotificationsPage({
           ) : null}
         </div>
 
+      {/* Одна сетка: фильтры ↔ сводка, список ↔ «Что сюда приходит» — строки одной высоты. */}
+      <div className="grid gap-4 sm:gap-5 xl:grid-cols-12 xl:items-stretch" data-notifications-grid>
         {notifications.length > 0 ? (
-          <Card as="div" data-notifications-filter>
+          <Card as="div" className="xl:col-span-8 xl:col-start-1 xl:row-start-1" bodyClassName="flex items-center" data-notifications-filter>
             <FilterChips
               label={t('filterLabel')}
               active={filter}
@@ -89,7 +90,13 @@ export default async function NotificationsPage({
           </Card>
         ) : null}
 
-        <Card title={t(`groups.${filter}`)} titleId="notif-list" flush={shown.length > 0} data-notifications-list>
+        <Card
+          title={t(`groups.${filter}`)}
+          titleId="notif-list"
+          flush={shown.length > 0}
+          className="xl:col-span-8 xl:col-start-1 xl:row-start-2"
+          data-notifications-list
+        >
           {shown.length === 0 ? (
             <EmptyState
               size="compact"
@@ -138,21 +145,17 @@ export default async function NotificationsPage({
             </ul>
           )}
         </Card>
-        {notifications.length >= LIST_LIMIT ? <p className="text-xs text-muted">{t('limitHint', { n: LIST_LIMIT })}</p> : null}
-      </div>
-
-      <aside className="min-w-0 space-y-4 sm:space-y-5 xl:sticky xl:top-24 xl:col-span-4">
-        <dl className="grid grid-cols-2 gap-3 sm:gap-4 xl:gap-5">
-          <div className={cn(CARD, 'px-4 py-3 sm:px-5 sm:py-4')}>
+        <dl className="grid grid-cols-2 gap-3 sm:gap-4 xl:col-span-4 xl:col-start-9 xl:row-start-1 xl:gap-5" data-notifications-stats>
+          <div className={cn(CARD, 'flex flex-col justify-center px-4 py-3 sm:px-5 sm:py-4')}>
             <dt className="text-xs text-muted">{t('statUnread')}</dt>
             <dd className="mt-1 text-[22px] font-semibold leading-8 tabular-nums">{unread}</dd>
           </div>
-          <div className={cn(CARD, 'px-4 py-3 sm:px-5 sm:py-4')}>
+          <div className={cn(CARD, 'flex flex-col justify-center px-4 py-3 sm:px-5 sm:py-4')}>
             <dt className="text-xs text-muted">{t('statTotal')}</dt>
             <dd className="mt-1 text-[22px] font-semibold leading-8 tabular-nums">{notifications.length}</dd>
           </div>
         </dl>
-        <Card title={t('aboutTitle')} titleId="notif-about">
+        <Card title={t('aboutTitle')} titleId="notif-about" className="xl:col-span-4 xl:col-start-9 xl:row-start-2">
           <ul className="space-y-3">
             {NOTIFICATION_GROUPS.map((g) => (
               <li key={g} className="flex gap-3">
@@ -168,7 +171,8 @@ export default async function NotificationsPage({
           </ul>
           <p className="mt-4 text-xs text-muted">{t('aboutNote')}</p>
         </Card>
-      </aside>
+      </div>
+      {notifications.length >= LIST_LIMIT ? <p className="text-xs text-muted">{t('limitHint', { n: LIST_LIMIT })}</p> : null}
     </div>
   );
 }

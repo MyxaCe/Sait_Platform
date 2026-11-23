@@ -38,7 +38,7 @@ export async function VerificationSection({
   const next = KYC_STEPS[KYC_STEPS.indexOf(current) + 1];
 
   return (
-    <div className="space-y-4 xl:grid xl:grid-cols-2 xl:items-start xl:gap-5 xl:space-y-0">
+    <div className="space-y-4 xl:grid xl:h-full xl:grid-cols-2 xl:grid-rows-[auto_minmax(0,1fr)] xl:items-stretch xl:gap-5 xl:space-y-0">
       <section
         className={cn(
           'rounded-2xl border p-4 sm:p-5 xl:col-span-2',
@@ -109,7 +109,7 @@ export async function VerificationSection({
 
       {!verified ? (
         <section
-          className="border-border bg-elevated rounded-2xl border p-4 sm:p-5"
+          className="border-border bg-elevated flex min-h-0 flex-col overflow-auto rounded-2xl border p-4 sm:p-5"
           data-testid={`kyc-step-${current}`}
         >
           <p className="text-secondary text-xs font-medium uppercase tracking-wide">
@@ -117,7 +117,7 @@ export async function VerificationSection({
           </p>
           <h2 className="mt-1 text-[15px] font-semibold">{t(`kinds.${current}` as never)}</h2>
           <p className="text-secondary mt-1 text-xs">{t(`stepHint.${current}` as never)}</p>
-          <div className="mt-4">
+          <div className="mt-4 flex-1">
             {current === 'selfie_liveness' ? (
               <SelfieCapture />
             ) : (
@@ -135,7 +135,7 @@ export async function VerificationSection({
         </section>
       ) : null}
 
-      <div className="space-y-4">
+      <div className={cn('flex min-w-0 flex-col gap-4 xl:gap-5', verified && 'xl:col-span-2')}>
         {!verified ? (
           <section className="border-border bg-elevated rounded-2xl border p-4 sm:p-5">
             <h2 className="text-[15px] font-semibold">{t('extraTitle')}</h2>
@@ -146,16 +146,16 @@ export async function VerificationSection({
           </section>
         ) : null}
 
-        <section className="space-y-2">
-          <h2 className="text-sm font-semibold">{t('submittedTitle')}</h2>
+        <section className="border-border bg-elevated flex min-h-0 flex-1 flex-col rounded-2xl border">
+          <h2 className="px-4 pt-4 text-[15px] font-semibold sm:px-5 sm:pt-5">{t('submittedTitle')}</h2>
           {documents.length === 0 ? (
-            <div className="border-border bg-elevated rounded-2xl border">
+            <div className="flex flex-1 items-center justify-center">
               <EmptyState size="compact" title={t('empty')} description={t('emptyHint')} />
             </div>
           ) : (
-            <ul className="divide-border border-border bg-elevated divide-y rounded-2xl border">
+            <ul className="divide-border border-border mt-3 min-h-0 flex-1 divide-y overflow-auto border-t">
               {documents.map((doc) => (
-                <li key={doc.id} className="flex items-center justify-between gap-3 px-4 py-3">
+                <li key={doc.id} className="flex items-center justify-between gap-3 px-4 py-3 sm:px-5">
                   <div className="min-w-0">
                     <p className="truncate text-sm">{t(`kinds.${doc.kind}` as never)}</p>
                     <p className="text-secondary text-xs">

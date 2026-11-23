@@ -28,3 +28,13 @@
     min-height: 100vh;
   }
 }
+
+/* Профиль: смена раздела — мягкая перерисовка без скачков (размер панели стабилен, см. xl:min-h). */
+@keyframes profile-panel-in {
+  from { opacity: 0.4; }
+  to { opacity: 1; }
+}
+.profile-panel { animation: profile-panel-in 160ms ease-out; }
+@media (prefers-reduced-motion: reduce) {
+  .profile-panel { animation: none; }
+}

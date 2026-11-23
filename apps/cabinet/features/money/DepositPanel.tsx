@@ -19,14 +19,14 @@ export async function DepositPanel({ policy, address }: { policy: MoneyPolicy; a
 
   const notice = !policy.depositAllowed;
   return (
-    <div className="space-y-4 sm:space-y-5">
+    <div className="space-y-4 sm:space-y-5 xl:grid xl:grid-cols-2 xl:items-stretch xl:gap-5 xl:space-y-0">
       {notice ? (
-        <div>
+        <div className="xl:col-span-2">
           <PolicyNotice op="deposit" reasons={policy.depositReasons} />
         </div>
       ) : null}
 
-      <Step n={1} title={t('step1Title')} muted={!enabled} >
+      <Step n={1} title={t('step1Title')} muted={!enabled} className="h-full">
         {address ? (
           <div className="space-y-4">
             <Callout tone="warning" title={t('warningTitle')}>
@@ -69,7 +69,7 @@ export async function DepositPanel({ policy, address }: { policy: MoneyPolicy; a
         )}
       </Step>
 
-      <Step n={2} title={t('step2Title')} muted={!enabled} >
+      <Step n={2} title={t('step2Title')} muted={!enabled} className="h-full">
         <p className="mb-3 text-sm text-secondary">{t('step2')}</p>
         <DepositClaimForm disabled={!enabled} />
       </Step>

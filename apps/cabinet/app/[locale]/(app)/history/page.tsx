@@ -6,7 +6,7 @@ import { Link } from '@/i18n/navigation';
 import { TerminalLink } from '@/features/trade/TerminalLink';
 import { requireSessionUser } from '@/lib/auth/require';
 import { getAccountHistory, parsePeriod, periodStart, summarizeTrades, type TradeRow } from '@/lib/history';
-import { getRealAccount, listMyDeposits, listMyWithdrawals } from '@/lib/money';
+import { getRealAccount, listMyDeposits, listMyWithdrawals, terminalReader } from '@/lib/money';
 import { getClosedDeals } from '@/lib/terminal/client';
 import { moneyOpRenderer, toMoneyOps, type MoneyOp } from '@/features/money/MoneyHistory';
 import { ClosedDeals } from '@/features/history/ClosedDeals';
@@ -23,6 +23,14 @@ type Kind = 'real' | 'demo';
 type TypeFilter = 'all' | 'trades' | 'money';
 
 type FeedItem = { kind: 'trade'; at: Date; trade: TradeRow } | { kind: 'money'; at: Date; op: MoneyOp };
+
+async function realClosedDeals(userId: string) {
+  const live = await terminalReader()
+    .accounts(userId)
+    .catch(() => ({ state: 'unavailable' as const }));
+  const real = live.state === 'ok' ? live.accounts.find((a) => a.kind === 'real') : undefined;
+  return real?.opened ? getClosedDeals(userId, 'real') : null;
+}
 
 export default async function HistoryPage({
   params,
@@ -55,7 +63,9 @@ export default async function HistoryPage({
     getAccountHistory(user.id, account, period),
     account === 'real' ? listMyDeposits(user.id) : Promise.resolve([]),
     account === 'real' ? listMyWithdrawals(user.id) : Promise.resolve([]),
-    account === 'demo' ? getClosedDeals(user.id) : Promise.resolve(null),
+    // Закрытые сделки из терминала — как на демо, так и на реальном (одинаковый вид). Реальный счёт
+    // спрашиваем, только если он уже открыт в терминале: страница истории не должна открывать счёт.
+    account === 'demo' ? getClosedDeals(user.id, 'demo') : realClosedDeals(user.id),
   ]);
   const summary = summarizeTrades(hist.trades);
   const ops = toMoneyOps(deposits, withdrawals).filter((o) => since === null || o.at >= since);
@@ -343,7 +353,7 @@ export default async function HistoryPage({
         )}
       </Card>
 
-      {closed ? <ClosedDeals outcome={closed} /> : null}
+      {closed && type !== 'money' ? <ClosedDeals outcome={closed} currency={hist.currency} /> : null}
     </div>
   );
 }

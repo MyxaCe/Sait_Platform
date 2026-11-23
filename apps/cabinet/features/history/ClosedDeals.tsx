@@ -4,7 +4,7 @@ import { Money } from '@/features/ui/Money';
 import { describeSlippage } from '@/lib/slippage';
 import type { ClosedDealsOutcome } from '@/lib/terminal/client';
 
-export async function ClosedDeals({ outcome }: { outcome: ClosedDealsOutcome }) {
+export async function ClosedDeals({ outcome, currency = 'USD' }: { outcome: ClosedDealsOutcome; currency?: string }) {
   if (outcome.state !== 'available' || outcome.deals.length === 0) return null;
   const t = await getTranslations('history');
 
@@ -26,7 +26,7 @@ export async function ClosedDeals({ outcome }: { outcome: ClosedDealsOutcome }) 
                   {t('columns', { side: deal.side, volume: String(deal.volume), symbol: deal.symbol })}
                 </span>
                 <span className="text-sm font-medium">
-                  <Money minor={deal.pnlCents} currency="USD" signed tone="auto" />
+                  <Money minor={deal.pnlCents} currency={currency} signed tone="auto" />
                 </span>
               </div>
               <p className="mt-0.5 text-xs tabular-nums text-secondary">
