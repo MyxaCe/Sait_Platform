@@ -96,12 +96,11 @@ test.describe('Страница инструмента (сайт со списк
     await expect(page.getByTestId('instrument-precision')).toHaveText('2 зн.');
   });
 
-  test('список и бегущая строка: закрытый рынок с последней ценой и пометкой', async ({ page }) => {
+  test('список: закрытый рынок с последней ценой и пометкой', async ({ page }) => {
     await serveFeed(page);
     await page.goto('/instruments');
 
     await expect(page.getByText(/Рынок закрыт · откроется/).filter({ visible: true }).first()).toBeVisible();
-    await expect(page.locator('[data-market="closed"]').first()).toBeAttached();
   });
 
   for (const path of ['/instruments/crypto/ethusd', '/instruments/forex/btcusd', '/instruments/crypto/nosuchcoin']) {

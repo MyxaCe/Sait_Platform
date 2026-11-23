@@ -23,7 +23,7 @@ describe('WEB-30 · гейты сквозных сценариев', () => {
     const found = specs();
 
     expect(found.length).toBeGreaterThan(3);
-    expect(found.some((s) => s.file === 'mds-live.spec.ts')).toBe(true);
+    expect(found.some((s) => s.file === 'instruments.spec.ts')).toBe(true);
   });
 
   it.each(specs().map((s) => s.file))(

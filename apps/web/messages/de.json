@@ -129,8 +129,34 @@
   "pwa": {
     "install": "App installieren",
     "installed": "App installiert",
-    "iosHint": "Auf dem iPhone/iPad: Tippen Sie in Safari auf „Teilen“ (das Quadrat mit Pfeil) und dann auf „Zum Home-Bildschirm“.",
-    "manualHint": "Öffnen Sie das Browsermenü und wählen Sie „App installieren“ (Chrome, Edge) oder „Zum Startbildschirm hinzufügen“."
+    "sheet": {
+      "title": "So installieren Sie die App",
+      "close": "Schließen",
+      "copy": "Link kopieren",
+      "copied": "Link kopiert",
+      "ios": {
+        "1": "Tippen Sie auf „Teilen“ – das Quadrat mit Pfeil nach oben (in Safari unten, in Chrome in der Adressleiste).",
+        "2": "Scrollen Sie und wählen Sie „Zum Home-Bildschirm“.",
+        "3": "Tippen Sie auf „Hinzufügen“ – das App-Symbol erscheint auf dem Bildschirm."
+      },
+      "android": {
+        "1": "Tippen Sie oben rechts im Browser auf ⋮ (drei Punkte).",
+        "2": "Wählen Sie „App installieren“ oder „Zum Startbildschirm hinzufügen“.",
+        "3": "Bestätigen Sie – das App-Symbol erscheint auf dem Bildschirm."
+      },
+      "samsung": {
+        "1": "Tippen Sie unten auf ≡ (Menü).",
+        "2": "Wählen Sie „Seite hinzufügen zu“ → „Startbildschirm“."
+      },
+      "inApp": {
+        "1": "Die Website ist in einer anderen App geöffnet (z. B. Telegram oder Instagram) – von hier aus ist keine Installation möglich.",
+        "2": "Öffnen Sie die Website im Browser: Menü ⋮ oder ··· → „Im Browser öffnen“, oder kopieren Sie den Link unten und fügen Sie ihn in Chrome oder Safari ein. Tippen Sie dort erneut auf „App installieren“."
+      },
+      "desktop": {
+        "1": "Klicken Sie in Chrome oder Edge rechts in der Adressleiste auf das Installationssymbol.",
+        "2": "Oder öffnen Sie das Menü ⋮ → „App installieren“ (in Edge: „Apps“ → „Diese Website als App installieren“)."
+      }
+    }
   },
   "instruments": {
     "title": "Handelsinstrumente",

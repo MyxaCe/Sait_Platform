@@ -129,8 +129,34 @@
   "pwa": {
     "install": "Instalar aplicación",
     "installed": "Aplicación instalada",
-    "iosHint": "En iPhone/iPad: pulse «Compartir» (el cuadrado con una flecha) en Safari y, después, «Añadir a pantalla de inicio».",
-    "manualHint": "Abra el menú del navegador y elija «Instalar aplicación» (Chrome, Edge) o «Añadir a pantalla de inicio»."
+    "sheet": {
+      "title": "Cómo instalar la aplicación",
+      "close": "Cerrar",
+      "copy": "Copiar enlace",
+      "copied": "Enlace copiado",
+      "ios": {
+        "1": "Toca «Compartir»: el cuadrado con una flecha hacia arriba (abajo en Safari, en la barra de direcciones en Chrome).",
+        "2": "Desplázate y elige «Añadir a pantalla de inicio».",
+        "3": "Toca «Añadir»: el icono de la aplicación aparecerá en la pantalla."
+      },
+      "android": {
+        "1": "Toca ⋮ (tres puntos) en la esquina superior derecha del navegador.",
+        "2": "Elige «Instalar aplicación» o «Añadir a pantalla de inicio».",
+        "3": "Confirma: el icono de la aplicación aparecerá en la pantalla."
+      },
+      "samsung": {
+        "1": "Toca ≡ (menú) en la parte inferior de la pantalla.",
+        "2": "Elige «Añadir página a» → «Pantalla de inicio»."
+      },
+      "inApp": {
+        "1": "El sitio está abierto dentro de otra aplicación (por ejemplo, Telegram o Instagram): desde aquí no se puede instalar.",
+        "2": "Abre el sitio en tu navegador: menú ⋮ o ··· → «Abrir en el navegador», o copia el enlace de abajo y pégalo en Chrome o Safari. Allí vuelve a tocar «Instalar aplicación»."
+      },
+      "desktop": {
+        "1": "En Chrome o Edge, haz clic en el icono de instalación a la derecha de la barra de direcciones.",
+        "2": "O abre el menú ⋮ → «Instalar aplicación» (en Edge: «Aplicaciones» → «Instalar este sitio como una aplicación»)."
+      }
+    }
   },
   "instruments": {
     "title": "Instrumentos de trading",

@@ -1,20 +1,15 @@
 import { expect, test } from '@playwright/test';
 
-test('главная: hero, бегущая строка котировок и CTA', async ({ page }) => {
+test('главная: hero и CTA, бегущей строки котировок нет', async ({ page }) => {
   await page.goto('/');
 
   await expect(page.getByRole('heading', { level: 1 })).toContainText(
     'Торгуйте на мировых рынках',
   );
-  const ticker = page.getByLabel('Котировки в реальном времени');
-  const closed = page.getByTestId('access-notice').first();
-  if (await ticker.count()) {
-    await expect(ticker).toBeVisible();
-    await expect(ticker.getByText('EURUSD').first()).toBeVisible();
-  } else {
-    await expect(closed).toBeVisible();
-    await expect(closed).toHaveAttribute('data-access-state', /empty|unavailable/);
-  }
+  // Бегущую строку убрали 23.11 (решение владельца): при ~230 инструментах
+  // она неслась так, что ничего не прочитать.
+  await expect(page.getByLabel('Котировки в реальном времени')).toHaveCount(0);
+  await expect(page.locator('.animate-ticker')).toHaveCount(0);
 
   await expect(
     page.getByRole('link', { name: 'Открыть счёт' }).first(),

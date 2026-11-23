@@ -26,14 +26,6 @@ test.describe('Граница закрыта (CI: стаб CMS без списк
     await expect(page.getByText('Bid')).toHaveCount(0);
   });
 
-  test('тикер не исчезает молча — на его месте строка с причиной', async ({ page }) => {
-    await page.goto('/');
-
-    const strip = page.getByTestId('access-notice').first();
-    await expect(strip).toBeVisible();
-    await expect(strip).toContainText('не показываются');
-  });
-
   test('неизвестный инструмент по-прежнему 404', async ({ page }) => {
     const response = await page.goto('/instruments/forex/nosuchpair');
     expect(response?.status()).toBe(404);
