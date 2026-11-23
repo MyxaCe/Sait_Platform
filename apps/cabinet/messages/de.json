@@ -87,7 +87,11 @@
     "haveAccount": "Bereits ein Konto?",
     "toRegister": "Konto eröffnen",
     "toLogin": "Anmelden",
-    "riskNote": "Mit der Kontoeröffnung stimmen Sie der Kundenvereinbarung und dem Risikohinweis zu."
+    "riskNote": "Mit der Kontoeröffnung stimmen Sie der Kundenvereinbarung und dem Risikohinweis zu.",
+    "consentLabel": "Ich akzeptiere die <termsLink>{terms}</termsLink> und die <privacyLink>{privacy}</privacyLink> und bestätige, dass ich die <riskLink>{risk}</riskLink> gelesen habe",
+    "consentTerms": "Nutzungsbedingungen",
+    "consentPrivacy": "Datenschutzerklärung",
+    "consentRisk": "Risikohinweise"
   },
   "home": {
     "vipHint": "Mehr handeln — niedrigere Kommissionen erhalten",
@@ -427,7 +431,8 @@
     "twoFactorSetupExpired": "Die Einrichtung ist abgelaufen — bitte beginnen Sie erneut",
     "selfieCameraOnly": "Das Selfie wird nur als Kamerafoto angenommen — der Datei-Upload ist für diesen Schritt deaktiviert.",
     "selfieExpired": "Die Aufgabe ist abgelaufen — bitte neu starten.",
-    "selfieInvalid": "Die Fotos wurden nicht angenommen. Bitte nehmen Sie sie erneut mit der Kamera auf."
+    "selfieInvalid": "Die Fotos wurden nicht angenommen. Bitte nehmen Sie sie erneut mit der Kamera auf.",
+    "consentRequired": "Um ein Konto zu eröffnen, bestätigen Sie bitte Ihre Zustimmung zu den Dokumenten"
   },
   "history": {
     "title": "Verlauf",
@@ -1097,5 +1102,10 @@
     "licenseNumber": "Lizenz Nr. {number}",
     "verifyLicense": "Lizenz prüfen",
     "regulationLink": "Regulierung"
+  },
+  "cookies": {
+    "aria": "Cookie-Hinweis",
+    "accept": "Verstanden",
+    "text": "Wir verwenden nur notwendige Cookies: damit Sie angemeldet bleiben, Ihre Sprache gespeichert wird, die Anmeldung geschützt ist und der Partnerlink erfasst wird, über den Sie gekommen sind. Werbe- oder Analyse-Cookies verwenden wir nicht. Mehr dazu in unserer <policy>Datenschutzerklärung</policy>."
   }
 }

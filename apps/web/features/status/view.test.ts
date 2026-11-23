@@ -117,4 +117,10 @@ describe('formatUptime', () => {
     expect(formatUptime(1, 'en-US')).toBe('100%');
     expect(formatUptime(0.9996, 'de-DE')).toMatch(/^99,96\s?%$/);
   });
+
+  it('часть сервисов без данных — не «всё штатно», а честное «по части данных нет»', () => {
+    const view = resolveStatusView([svc({ check: 'site' }), svc({ check: null })], live({}), NOW);
+    expect(view.services.map((s) => s.status)).toEqual(['operational', 'unknown']);
+    expect(view.banner).toBe('partial');
+  });
 });

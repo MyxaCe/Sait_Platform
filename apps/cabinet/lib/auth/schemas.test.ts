@@ -11,6 +11,7 @@ const validRegister = {
   password: 'secret1234',
   locale: 'ru',
   website: '',
+  consent: 'on',
 };
 
 describe('registerSchema', () => {
@@ -20,6 +21,15 @@ describe('registerSchema', () => {
 
   it('honeypot: заполненное поле website — отказ', () => {
     expect(registerSchema.safeParse({ ...validRegister, website: 'http://spam' }).success).toBe(false);
+  });
+
+  it('без галочки согласия — ключ consentRequired', () => {
+    const { consent: _omit, ...withoutConsent } = validRegister;
+    const r = registerSchema.safeParse(withoutConsent);
+    expect(r.success).toBe(false);
+    if (!r.success) {
+      expect(r.error.issues.find((i) => i.path[0] === 'consent')?.message).toBe('consentRequired');
+    }
   });
 
   it('короткий пароль — ключ passwordTooShort', () => {

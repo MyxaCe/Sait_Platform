@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { Container, Section } from '@broker/ui';
 import { brandName } from '@/lib/brand';
+import { notFound } from 'next/navigation';
 
 interface PageProps {
   params: { locale: string };
@@ -16,8 +17,12 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   };
 }
 
+/** Публикаций в блоге нет и источника для них нет — раздел скрыт целиком (разбор доверия 22.11). */
+const BLOG_HAS_CONTENT = false;
+
 export default async function BlogPage({ params }: PageProps) {
   setRequestLocale(params.locale);
+  if (!BLOG_HAS_CONTENT) notFound();
   const t = await getTranslations('blog');
 
   return (

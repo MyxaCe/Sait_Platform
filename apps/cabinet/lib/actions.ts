@@ -11,6 +11,7 @@ import { getPool } from './db';
 import { isRateLimited } from './rate-limit';
 import { hashPassword, verifyPassword } from './auth/password';
 import { registerUser } from './auth/register';
+import { consentRecords, decodeShownVersions, loadConsentDocuments } from './legal-consent';
 import { checkLogin } from './auth/login';
 import { resetDemoAccount, type TerminalFailure } from './terminal/client';
 import { safeNext } from './auth/next-path';
@@ -82,6 +83,7 @@ export async function registerAction(_prev: ActionState, formData: FormData): Pr
     ip: ip === 'local' ? null : ip,
     ipCountry: geoHeader ? headers().get(geoHeader) : null,
     invite: typeof raw.invite === 'string' && raw.invite ? raw.invite : null,
+    consents: consentRecords(await loadConsentDocuments(parsed.data.locale), decodeShownVersions(parsed.data.consentShown)),
   });
   if (!result.ok) {
     if (result.reason === 'emailExists') {

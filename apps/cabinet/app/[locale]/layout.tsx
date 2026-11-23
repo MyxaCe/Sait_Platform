@@ -6,9 +6,10 @@ import { getMessages, getTranslations, setRequestLocale } from 'next-intl/server
 import { hexToRgbChannels } from '@broker/utils';
 import { SiteLanguagesProvider } from '@/i18n/site-languages-context';
 import { getSiteLanguages } from '@/lib/site-languages';
-import { getChromeBrand, resolveBrandName } from '@/lib/chrome';
+import { getChromeBrand, resolveBrandName, siteHref } from '@/lib/chrome';
 import { onAccentChannels } from '@/lib/on-accent';
 import '../globals.css';
+import { CabinetCookieNotice } from '@/features/CabinetCookieNotice';
 
 const inter = Inter({
   subsets: ['latin', 'cyrillic'],
@@ -63,6 +64,7 @@ export default async function RootLayout({ children, params }: LayoutProps) {
         )}
         <NextIntlClientProvider messages={messages}>
           <SiteLanguagesProvider value={site}>{children}</SiteLanguagesProvider>
+          <CabinetCookieNotice policyHref={siteHref('/legal/privacy', locale, site.defaultLanguage)} />
         </NextIntlClientProvider>
       </body>
     </html>

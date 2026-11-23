@@ -33,6 +33,7 @@ const STATE_KEY = {
 
 const BANNER_KEY = {
   ok: 'bannerOk',
+  partial: 'bannerPartial',
   issues: 'bannerIssues',
   maintenance: 'bannerMaintenance',
   unavailable: 'bannerUnavailable',

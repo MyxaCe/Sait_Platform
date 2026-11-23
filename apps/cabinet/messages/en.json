@@ -87,7 +87,11 @@
     "haveAccount": "Already have an account?",
     "toRegister": "Open account",
     "toLogin": "Sign in",
-    "riskNote": "By opening an account you agree to the client agreement and risk disclosure."
+    "riskNote": "By opening an account you agree to the client agreement and risk disclosure.",
+    "consentLabel": "I accept the <termsLink>{terms}</termsLink> and the <privacyLink>{privacy}</privacyLink> and confirm that I have read the <riskLink>{risk}</riskLink>",
+    "consentTerms": "Terms of Use",
+    "consentPrivacy": "Privacy Policy",
+    "consentRisk": "Risk Disclosure"
   },
   "home": {
     "vipHint": "Trade more — get lower commissions",
@@ -427,7 +431,8 @@
     "twoFactorSetupExpired": "Setup has expired — please start again",
     "selfieCameraOnly": "The selfie is accepted only as a camera photo — file upload is disabled for this step.",
     "selfieExpired": "The task has expired — please start again.",
-    "selfieInvalid": "The photos were not accepted. Please take them again with the camera."
+    "selfieInvalid": "The photos were not accepted. Please take them again with the camera.",
+    "consentRequired": "To open an account, please confirm that you accept the documents"
   },
   "history": {
     "title": "History",
@@ -1097,5 +1102,10 @@
     "licenseNumber": "Licence No. {number}",
     "verifyLicense": "Verify licence",
     "regulationLink": "Regulation"
+  },
+  "cookies": {
+    "aria": "Cookie notice",
+    "accept": "Got it",
+    "text": "We only use necessary cookies: to keep you signed in, remember your language, protect sign-in and record the partner link you came from. We use no advertising or analytics cookies. Learn more in our <policy>Privacy Policy</policy>."
   }
 }

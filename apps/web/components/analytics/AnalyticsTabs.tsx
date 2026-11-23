@@ -4,7 +4,7 @@ import { useTranslations } from 'next-intl';
 import { Link, usePathname } from '@/i18n/navigation';
 import { cn } from '@broker/ui';
 
-export function AnalyticsTabs() {
+export function AnalyticsTabs({ hidden = [] }: { hidden?: readonly string[] } = {}) {
   const t = useTranslations('analytics');
   const pathname = usePathname();
 
@@ -12,12 +12,13 @@ export function AnalyticsTabs() {
     { href: '/analytics/news', label: t('tabNews') },
     { href: '/analytics/calendar', label: t('tabCalendar') },
   ];
+  const visible = tabs.filter((tab) => !hidden.includes(tab.href));
 
   return (
     <nav aria-label={t('tabsAria')} className="-mx-4 overflow-x-auto px-4"
          style={{ scrollbarWidth: 'none' }}>
       <div className="flex gap-2 border-b border-border">
-        {tabs.map((tab) => {
+        {visible.map((tab) => {
           const active = pathname.startsWith(tab.href);
           return (
             <Link

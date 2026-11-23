@@ -4,7 +4,7 @@ import { useTranslations } from 'next-intl';
 import { Link, usePathname } from '@/i18n/navigation';
 import { cn } from '@broker/ui';
 
-export function EducationTabs() {
+export function EducationTabs({ hidden = [] }: { hidden?: readonly string[] } = {}) {
   const t = useTranslations('education');
   const pathname = usePathname();
 
@@ -14,12 +14,13 @@ export function EducationTabs() {
     { href: '/education/glossary', label: t('tabGlossary') },
     { href: '/education/faq', label: t('tabFaq') },
   ];
+  const visible = tabs.filter((tab) => !hidden.includes(tab.href));
 
   return (
     <nav aria-label={t('tabsAria')} className="-mx-4 overflow-x-auto px-4"
          style={{ scrollbarWidth: 'none' }}>
       <div className="flex gap-2 border-b border-border">
-        {tabs.map((tab) => {
+        {visible.map((tab) => {
           const active = pathname.startsWith(tab.href);
           return (
             <Link

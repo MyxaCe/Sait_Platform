@@ -5,6 +5,7 @@ import { Badge } from '@broker/ui';
 import { formatDate, formatTime } from '@broker/utils';
 import { Link } from '@/i18n/navigation';
 import { loadNews } from '@/lib/articles';
+import { notFound } from 'next/navigation';
 
 interface PageProps {
   params: { locale: string };
@@ -26,13 +27,7 @@ export default async function NewsPage({ params }: PageProps) {
 
   const items = await loadNews(pageLocale(locale));
   const [featured, ...rest] = items;
-  if (!featured) {
-    return (
-      <p className="rounded-2xl border border-border bg-card p-8 text-center text-secondary">
-        {t('noNews')}
-      </p>
-    );
-  }
+  if (!featured) notFound();
 
   return (
     <div>

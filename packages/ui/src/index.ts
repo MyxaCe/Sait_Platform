@@ -67,6 +67,7 @@ export {
 } from './organisms/EntityHeader/EntityHeader';
 export { Pagination, type PaginationProps } from './organisms/Pagination/Pagination';
 export { Timeline, type TimelineProps, type TimelineItem } from './organisms/Timeline/Timeline';
+export { CookieNotice, type CookieNoticeProps, COOKIE_NOTICE_STORAGE_KEY } from './organisms/CookieNotice/CookieNotice';
 export { ReasonForm, type ReasonFormProps } from './organisms/ReasonForm/ReasonForm';
 
 export { Container, type ContainerProps } from './layout/Container/Container';

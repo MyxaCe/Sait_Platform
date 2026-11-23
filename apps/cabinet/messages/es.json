@@ -87,7 +87,11 @@
     "haveAccount": "¿Ya tiene cuenta?",
     "toRegister": "Abrir cuenta",
     "toLogin": "Iniciar sesión",
-    "riskNote": "Al abrir una cuenta, acepta el contrato de cliente y la advertencia de riesgos."
+    "riskNote": "Al abrir una cuenta, acepta el contrato de cliente y la advertencia de riesgos.",
+    "consentLabel": "Acepto los <termsLink>{terms}</termsLink> y la <privacyLink>{privacy}</privacyLink> y confirmo que he leído la <riskLink>{risk}</riskLink>",
+    "consentTerms": "Términos de uso",
+    "consentPrivacy": "Política de privacidad",
+    "consentRisk": "Advertencia de riesgos"
   },
   "home": {
     "vipHint": "Opere más y pague menos comisiones",
@@ -427,7 +431,8 @@
     "twoFactorSetupExpired": "La configuración ha expirado; empiece de nuevo",
     "selfieCameraOnly": "El selfi solo se acepta como foto de la cámara: la subida de archivos está desactivada en este paso.",
     "selfieExpired": "La tarea ha caducado: empiece de nuevo.",
-    "selfieInvalid": "No se aceptaron las fotos. Tómelas de nuevo con la cámara."
+    "selfieInvalid": "No se aceptaron las fotos. Tómelas de nuevo con la cámara.",
+    "consentRequired": "Para abrir una cuenta, confirme que acepta los documentos"
   },
   "history": {
     "title": "Historial",
@@ -1097,5 +1102,10 @@
     "licenseNumber": "Licencia n.º {number}",
     "verifyLicense": "Verificar licencia",
     "regulationLink": "Regulación"
+  },
+  "cookies": {
+    "aria": "Aviso sobre cookies",
+    "accept": "Entendido",
+    "text": "Solo usamos cookies necesarias: para mantener tu sesión, recordar tu idioma, proteger el inicio de sesión y registrar el enlace de socio por el que llegaste. No usamos cookies publicitarias ni analíticas. Más información en nuestra <policy>Política de privacidad</policy>."
   }
 }

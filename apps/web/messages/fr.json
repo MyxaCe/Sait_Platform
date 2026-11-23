@@ -529,7 +529,8 @@
     "maintenanceFrom": "à partir du {from} UTC",
     "incidentInvestigating": "En cours d’analyse",
     "incidentFixing": "Correction en cours",
-    "incidentResolved": "Résolu"
+    "incidentResolved": "Résolu",
+    "bannerPartial": "Les services surveillés fonctionnent ; pas encore de données pour certains services"
   },
   "offline": {
     "metaTitle": "Pas de connexion",
@@ -600,5 +601,10 @@
     "regulator": "Régulateur",
     "regulatorCountry": "Pays du régulateur",
     "document": "Licence (PDF)"
+  },
+  "cookies": {
+    "aria": "Avis sur les cookies",
+    "accept": "Compris",
+    "text": "Nous utilisons uniquement des cookies nécessaires : pour vous garder connecté, mémoriser votre langue, protéger la connexion et enregistrer le lien partenaire par lequel vous êtes arrivé. Aucun cookie publicitaire ni analytique. En savoir plus dans notre <policy>Politique de confidentialité</policy>."
   }
 }

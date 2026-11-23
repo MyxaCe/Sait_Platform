@@ -10,6 +10,9 @@ import { HelpButton } from '@/features/tour/HelpButton';
 import { TourProvider } from '@/features/tour/TourProvider';
 import { loadTourConfig } from '@/lib/onboarding/server';
 import { partOf } from '@/lib/onboarding/state';
+import { siteHref } from '@/lib/chrome';
+import { encodeShownVersions, loadConsentDocuments } from '@/lib/legal-consent';
+import { getSiteLanguages } from '@/lib/site-languages';
 
 export default async function RegisterPage({
   params,
@@ -21,12 +24,21 @@ export default async function RegisterPage({
   setRequestLocale(params.locale);
   const t = await getTranslations('auth');
   const next = safeNext(searchParams?.next);
-  const [startBalance, invite, plans, tour] = await Promise.all([
+  const [startBalance, invite, plans, tour, consentDocs, site] = await Promise.all([
     getTenantStartBalance(),
     loadInvite(searchParams?.invite),
     loadRegisterPlans(params.locale, searchParams?.accountType),
     loadTourConfig(params.locale),
+    loadConsentDocuments(params.locale),
+    getSiteLanguages(),
   ]);
+  const legalHref = (slug: string) => siteHref(`/legal/${slug}`, params.locale, site.defaultLanguage);
+  const consent = {
+    terms: legalHref('terms'),
+    privacy: legalHref('privacy'),
+    risk: legalHref('risk-disclosure'),
+    shown: encodeShownVersions(consentDocs),
+  };
 
   const choice = registerSubtitle(startBalance, params.locale);
   const subtitle =
@@ -47,6 +59,7 @@ export default async function RegisterPage({
         plans={plans.plans}
         selectedPlan={plans.selected ?? undefined}
         next={next}
+        consent={consent}
       />
       <p className="mt-6 text-center text-sm text-secondary">
         {t('haveAccount')}{' '}

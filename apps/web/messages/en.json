@@ -529,7 +529,8 @@
     "maintenanceFrom": "from {from} UTC",
     "incidentInvestigating": "Investigating",
     "incidentFixing": "Fixing",
-    "incidentResolved": "Resolved"
+    "incidentResolved": "Resolved",
+    "bannerPartial": "Monitored services are operational; no data yet for some services"
   },
   "offline": {
     "metaTitle": "No Connection",
@@ -600,5 +601,10 @@
     "regulator": "Regulator",
     "regulatorCountry": "Regulator country",
     "document": "Licence (PDF)"
+  },
+  "cookies": {
+    "aria": "Cookie notice",
+    "accept": "Got it",
+    "text": "We only use necessary cookies: to keep you signed in, remember your language, protect sign-in and record the partner link you came from. We use no advertising or analytics cookies. Learn more in our <policy>Privacy Policy</policy>."
   }
 }

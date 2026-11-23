@@ -22,6 +22,7 @@ test.describe('Личный кабинет', () => {
     await page.getByLabel(/телефон/i).fill('+35725000001');
     await page.getByLabel(/страна/i).fill('Кипр');
     await page.getByLabel(/пароль/i).fill(password);
+    await page.locator('#consent').check();
     await page.getByRole('button', { name: /открыть счёт/i }).click();
 
     await expect(page.getByText('Тест Кабинетов').first()).toBeVisible({ timeout: 15_000 });
@@ -56,6 +57,7 @@ test.describe('Личный кабинет', () => {
     await page.getByLabel(/телефон/i).fill('+35725000001');
     await page.getByLabel(/страна/i).fill('Кипр');
     await page.getByLabel(/пароль/i).fill(password);
+    await page.locator('#consent').check();
     await page.getByRole('button', { name: /открыть счёт/i }).click();
     await expect(page.getByText(/уже существует/i)).toBeVisible();
   });

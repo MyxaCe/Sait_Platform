@@ -16,6 +16,7 @@ import { legacyLocale, type PlatformLocale } from '@broker/utils/locales';
 import { getPool } from '../db';
 import { getTenantStartBalance } from '../tenant';
 import { hashPassword } from './password';
+import type { ConsentRecord } from '../legal-consent';
 
 export interface RegisterInput {
   firstName: string;
@@ -43,6 +44,8 @@ export interface RegisterContext {
   ipCountry?: string | null;
   now?: Date;
   invite?: string | null;
+  /** Принятые при регистрации документы и их редакции (разбор доверия 22.11). */
+  consents?: ConsentRecord[];
 }
 
 async function resolveRegistrationAttribution(ctx: RegisterContext): Promise<ResolvedAttribution | null> {
@@ -157,6 +160,13 @@ export async function registerUser(input: RegisterInput, ctx: RegisterContext = 
       `INSERT INTO notifications (id, user_id, type, params) VALUES ($1, $2, $3, $4)`,
       [randomUUID(), userId, 'welcome', JSON.stringify({ accountType: portfolio?.title ?? '' })],
     );
+    for (const c of ctx.consents ?? []) {
+      await client.query(
+        `INSERT INTO user_legal_acceptances (user_id, document_slug, document_version, document_title, source, context, locale, ip)
+         VALUES ($1, $2, $3, $4, $5, 'registration', $6, $7)`,
+        [userId, c.slug, c.version, c.title, c.source, input.locale, ctx.ip?.trim() || null],
+      );
+    }
     if (ctx.invite) {
       await bindInviteWithinTx(client as unknown as Queryable, { token: ctx.invite, userId });
     }
