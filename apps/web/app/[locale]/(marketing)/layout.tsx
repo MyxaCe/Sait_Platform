@@ -3,6 +3,8 @@ import { SiteFooter } from '@/components/layout/SiteFooter';
 import { SiteHeader } from '@/components/layout/SiteHeader';
 import { SupportFab } from '@/components/layout/SupportFab';
 import { getCms } from '@/lib/cms';
+import { emptySections, withoutEmptyColumns, withoutEmptyLinks } from '@/lib/empty-sections';
+import { getSiteLanguages } from '@/lib/site-languages';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -11,18 +13,22 @@ interface LayoutProps {
 
 export default async function MarketingLayout({ children, params }: LayoutProps) {
   const locale = pageLocale(params.locale);
-  const [brand, navigation] = await Promise.all([
+  const [brand, navigation, empty, site] = await Promise.all([
     getCms('brand', { locale }),
     getCms('navigation', { locale }),
+    emptySections(locale),
+    getSiteLanguages(),
   ]);
+  const header = withoutEmptyLinks(navigation.header, empty, site.languages);
+  const footerColumns = withoutEmptyColumns(navigation.footer.columns, empty, site.languages);
 
   return (
     <div className="flex min-h-svh flex-col">
-      <SiteHeader brandName={brand.name} logo={brand.logo} nav={navigation.header} />
+      <SiteHeader brandName={brand.name} logo={brand.logo} nav={header} />
       <main className="flex-1">{children}</main>
       <SupportFab locale={locale} />
       <SiteFooter
-        columns={navigation.footer.columns}
+        columns={footerColumns}
         riskWarning={navigation.footer.riskWarning}
         brandName={brand.name}
         socials={brand.socials}

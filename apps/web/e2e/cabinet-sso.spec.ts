@@ -21,6 +21,7 @@ test.describe('SSO: кабинет → терминал', () => {
     await page.getByLabel(/телефон/i).fill('+35725000002');
     await page.getByLabel(/страна/i).fill('Кипр');
     await page.getByLabel(/пароль/i).fill('secret1234!');
+    await page.locator('#consent').check();
     await page.getByRole('button', { name: /открыть счёт/i }).click();
 
     await expect(page, 'регистрация не увела с формы: сессия не создана').not.toHaveURL(

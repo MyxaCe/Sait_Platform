@@ -9,6 +9,7 @@ import { localizedPath } from '@broker/utils/locales';
 import { getSiteLanguages } from '@/lib/site-languages';
 import { SITE_URL } from '@/lib/site';
 import { REGULATION_PATH } from '@/features/legal/regulation';
+import { emptySections } from '@/lib/empty-sections';
 
 export const dynamic = 'force-dynamic';
 
@@ -31,12 +32,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const site = await getSiteLanguages();
   const locale = site.defaultLanguage;
 
-  const [newsItems, educationItems, legal, instrumentPages, brand] = await Promise.all([
+  const [newsItems, educationItems, legal, instrumentPages, brand, empty] = await Promise.all([
     loadNews(locale),
     loadEducationArticles(locale),
     getCms('legal', { locale }),
     siteInstrumentPages(locale),
     getCms('brand', { locale }),
+    emptySections(locale),
   ]);
 
   const staticRoutes: MetadataRoute.Sitemap = [
@@ -57,7 +59,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...(brand.legalEntity
       ? [{ path: REGULATION_PATH, priority: 0.4, changeFrequency: 'monthly' as const }]
       : []),
-  ].map((r) => ({
+  ]
+    .filter((r) => !(empty as ReadonlySet<string>).has(r.path))
+    .map((r) => ({
     url: `${SITE_URL}${r.path}`,
     lastModified: now,
     changeFrequency: r.changeFrequency,

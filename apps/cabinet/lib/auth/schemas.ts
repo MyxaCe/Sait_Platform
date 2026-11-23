@@ -15,6 +15,8 @@ export const registerSchema = z.object({
   password: z.string().min(8, 'passwordTooShort').max(200, 'tooLong'),
   locale: z.enum(PLATFORM_LOCALES),
   website: z.string().max(0, 'bot').optional().or(z.literal('')),
+  consent: z.literal('on', { errorMap: () => ({ message: 'consentRequired' }) }),
+  consentShown: z.string().max(400).optional(),
 });
 
 export const loginSchema = z.object({

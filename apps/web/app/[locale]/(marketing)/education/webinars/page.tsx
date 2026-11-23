@@ -8,6 +8,7 @@ import { RecordingButton } from '@/features/streams/RecordingButton';
 import { StreamFacade } from '@/features/streams/StreamFacade';
 import type { VideoRef } from '@broker/api-client';
 import { getCms } from '@/lib/cms';
+import { notFound } from 'next/navigation';
 
 interface PageProps {
   params: { locale: string };
@@ -110,6 +111,7 @@ export default async function WebinarsPage({ params }: PageProps) {
     getCms('streams', { locale, revalidate: 60 }),
   ]);
 
+  if (webinars.length + streams.items.length === 0) notFound();
   const now = Date.now();
   const views: WebinarView[] = webinars
     .map((w) => ({ ...w, isPast: Date.parse(w.startsAt) < now }))

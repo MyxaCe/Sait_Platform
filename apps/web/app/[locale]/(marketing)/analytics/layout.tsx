@@ -1,5 +1,7 @@
 import { useTranslations } from 'next-intl';
 import { setRequestLocale } from 'next-intl/server';
+import { pageLocale } from '@/lib/locale';
+import { emptySections } from '@/lib/empty-sections';
 import { Container } from '@broker/ui';
 import { AnalyticsTabs } from '@/components/analytics/AnalyticsTabs';
 
@@ -8,12 +10,13 @@ interface LayoutProps {
   params: { locale: string };
 }
 
-export default function AnalyticsLayout({ children, params }: LayoutProps) {
+export default async function AnalyticsLayout({ children, params }: LayoutProps) {
   setRequestLocale(params.locale);
-  return <LayoutContent>{children}</LayoutContent>;
+  const empty = await emptySections(pageLocale(params.locale));
+  return <LayoutContent hidden={[...empty]}>{children}</LayoutContent>;
 }
 
-function LayoutContent({ children }: { children: React.ReactNode }) {
+function LayoutContent({ children, hidden }: { children: React.ReactNode; hidden: string[] }) {
   const t = useTranslations('analytics');
   return (
     <div className="py-10 md:py-14">
@@ -23,7 +26,7 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
         </h1>
         <p className="mt-3 max-w-2xl text-secondary sm:text-lg">{t('subtitle')}</p>
         <div className="mt-8">
-          <AnalyticsTabs />
+          <AnalyticsTabs hidden={hidden} />
         </div>
         <div className="mt-8">{children}</div>
       </Container>

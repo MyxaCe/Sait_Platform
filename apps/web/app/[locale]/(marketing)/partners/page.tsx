@@ -4,6 +4,7 @@ import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { Badge, Button, Container, Section } from '@broker/ui';
 import { Link } from '@/i18n/navigation';
 import { getCms } from '@/lib/cms';
+import { notFound } from 'next/navigation';
 
 interface PageProps {
   params: { locale: string };
@@ -20,6 +21,7 @@ export default async function PartnersPage({ params }: PageProps) {
   const { models, tiers, steps } = await getCms('partners', {
     locale: pageLocale(params.locale),
   });
+  if (models.length + tiers.length + steps.length === 0) notFound();
 
   return (
     <>

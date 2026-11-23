@@ -31,6 +31,10 @@ const buildFingerprint = JSON.stringify(
   ),
 );
 
+// Старые и «угадываемые» адреса контактов → действующая страница (разбор доверия 22.11).
+const CONTACT_ALIASES = ['contact', 'contacts', 'contact-us', 'support', 'company/contact'];
+const LOCALE_PREFIX = ':locale(ru|en|de|fr|es)';
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
@@ -53,6 +57,11 @@ const nextConfig = {
     formats: ['image/avif', 'image/webp'],
     deviceSizes: [320, 428, 768, 1024, 1440, 1920, 2560],
   },
+  redirects: async () =>
+    CONTACT_ALIASES.flatMap((alias) => [
+      { source: `/${alias}`, destination: '/company/contacts', permanent: true },
+      { source: `/${LOCALE_PREFIX}/${alias}`, destination: '/:locale/company/contacts', permanent: true },
+    ]),
   headers: async () => [
     {
       source: '/(.*)',

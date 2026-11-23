@@ -16,6 +16,7 @@ async function register(page: Page) {
   await page.getByLabel(/телефон/i).fill('+35725000003');
   await page.getByLabel(/страна/i).fill('Кипр');
   await page.getByLabel(/пароль/i).fill('secret1234!');
+  await page.locator('#consent').check();
   await page.getByRole('button', { name: /открыть счёт/i }).click();
   await expect(page).not.toHaveURL(/\/register/, { timeout: 15_000 });
 }

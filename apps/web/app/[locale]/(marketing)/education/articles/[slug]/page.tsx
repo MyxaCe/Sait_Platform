@@ -1,4 +1,7 @@
 import { pageLocale } from '@/lib/locale';
+import { BreadcrumbJsonLd } from '@/components/seo/BreadcrumbJsonLd';
+import { jsonLdHtml } from '@/lib/seo/json-ld';
+import { absoluteUrl } from '@/lib/seo/absolute-url';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
@@ -56,7 +59,14 @@ export default async function EducationArticlePage({ params }: PageParams) {
     <article className="mx-auto max-w-3xl">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: jsonLdHtml(jsonLd) }}
+      />
+      <BreadcrumbJsonLd
+        crumbs={[
+          { name: t('title'), url: await absoluteUrl('/education', params.locale) },
+          { name: t('tabArticles'), url: await absoluteUrl('/education/articles', params.locale) },
+          { name: article.title, url: await absoluteUrl(`/education/articles/${params.slug}`, params.locale) },
+        ]}
       />
 
       <nav className="text-sm text-secondary">

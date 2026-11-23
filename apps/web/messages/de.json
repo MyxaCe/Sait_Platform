@@ -614,7 +614,8 @@
     "maintenanceFrom": "ab {from} UTC",
     "incidentInvestigating": "Wird untersucht",
     "incidentFixing": "Wird behoben",
-    "incidentResolved": "Behoben"
+    "incidentResolved": "Behoben",
+    "bannerPartial": "Überwachte Dienste laufen; für einige Dienste liegen noch keine Daten vor"
   },
   "offline": {
     "metaTitle": "Keine Verbindung",
@@ -685,5 +686,10 @@
     "regulator": "Aufsichtsbehörde",
     "regulatorCountry": "Land der Aufsichtsbehörde",
     "document": "Lizenz (PDF)"
+  },
+  "cookies": {
+    "aria": "Cookie-Hinweis",
+    "accept": "Verstanden",
+    "text": "Wir verwenden nur notwendige Cookies: damit Sie angemeldet bleiben, Ihre Sprache gespeichert wird, die Anmeldung geschützt ist und der Partnerlink erfasst wird, über den Sie gekommen sind. Werbe- oder Analyse-Cookies verwenden wir nicht. Mehr dazu in unserer <policy>Datenschutzerklärung</policy>."
   }
 }

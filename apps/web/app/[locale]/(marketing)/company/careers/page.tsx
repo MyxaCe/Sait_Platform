@@ -4,6 +4,7 @@ import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { Badge, Container, Section } from '@broker/ui';
 import { getCms } from '@/lib/cms';
 import { brandName } from '@/lib/brand';
+import { notFound } from 'next/navigation';
 
 interface PageProps {
   params: { locale: string };
@@ -23,6 +24,7 @@ export default async function CareersPage({ params }: PageProps) {
   const { benefits, vacancies } = await getCms('careers', {
     locale: pageLocale(params.locale),
   });
+  if (vacancies.length === 0) notFound();
   const hrEmail = vacancies[0]?.applyEmail ?? null;
 
   return (

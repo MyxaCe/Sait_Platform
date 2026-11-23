@@ -2,7 +2,7 @@ import { isStatusCheckKey, type LiveStatus } from '@/lib/live-status';
 
 export type ViewStatus = 'operational' | 'degraded' | 'outage' | 'maintenance' | 'unknown';
 export type StatusMode = 'legacy' | 'live' | 'unavailable';
-export type Banner = 'ok' | 'issues' | 'maintenance' | 'unavailable';
+export type Banner = 'ok' | 'partial' | 'issues' | 'maintenance' | 'unavailable';
 
 export interface CmsService {
   id: string;
@@ -58,8 +58,9 @@ export function maintenanceOf(service: CmsService, now: number): ViewService['ma
 function bannerFor(statuses: ViewStatus[]): Banner {
   if (statuses.some((s) => s === 'degraded' || s === 'outage')) return 'issues';
   if (statuses.some((s) => s === 'maintenance')) return 'maintenance';
-  if (statuses.some((s) => s === 'operational')) return 'ok';
-  return 'unavailable';
+  if (!statuses.some((s) => s === 'operational')) return 'unavailable';
+  // «Всё штатно» — только если данные есть по всем сервисам (разбор доверия 22.11).
+  return statuses.some((s) => s === 'unknown') ? 'partial' : 'ok';
 }
 
 export function resolveStatusView(cms: CmsService[], live: LiveStatus, now: number): StatusView {

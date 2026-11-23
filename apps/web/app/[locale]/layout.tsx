@@ -7,6 +7,7 @@ import { NextIntlClientProvider } from 'next-intl';
 import { getMessages, getTranslations, setRequestLocale } from 'next-intl/server';
 import { ContentAutoRefresh } from '@/components/ContentAutoRefresh';
 import { PreviewBanner } from '@/components/PreviewBanner';
+import { SiteCookieNotice } from '@/components/layout/SiteCookieNotice';
 import { OrganizationJsonLd } from '@/components/seo/OrganizationJsonLd';
 import { OPEN_GRAPH_LOCALES, type PlatformLocale } from '@broker/utils/locales';
 import { SiteLanguagesProvider } from '@/i18n/site-languages-context';
@@ -137,10 +138,14 @@ export default async function RootLayout({ children, params }: LayoutProps) {
           name={brand.name}
           description={tMeta('description')}
           logoUrl={brand.logo?.url ?? null}
+          legalEntity={brand.legalEntity}
+          socials={brand.socials}
+          languages={site.languages}
         />
         <NextIntlClientProvider messages={messages}>
           <SiteLanguagesProvider value={site}>
             <Providers>{children}</Providers>
+            <SiteCookieNotice />
           </SiteLanguagesProvider>
         </NextIntlClientProvider>
         <ContentAutoRefresh disabled={isDraft} />
