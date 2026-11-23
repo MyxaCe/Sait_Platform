@@ -26,6 +26,7 @@ ENV NODE_ENV=production PORT=3005 HOSTNAME=0.0.0.0
 RUN addgroup -S app && adduser -S app -G app
 COPY --from=build --chown=app:app /repo/apps/admin/.next/standalone ./
 COPY --from=build --chown=app:app /repo/apps/admin/.next/static ./apps/admin/.next/static
+COPY --chown=app:app apps/admin/scripts/encrypt-operator-totp.mjs ./apps/admin/scripts/encrypt-operator-totp.mjs
 COPY --chown=app:app docker/runtime-config.sh /usr/local/bin/runtime-config
 RUN chmod +x /usr/local/bin/runtime-config
 USER app
