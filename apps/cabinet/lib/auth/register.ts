@@ -128,8 +128,8 @@ export async function registerUser(input: RegisterInput, ctx: RegisterContext = 
       return { ok: false, reason: 'accountTypeUnavailable' };
     }
     await client.query(
-      `INSERT INTO users (id, email, password_hash, full_name, locale, country, registration_ip, registration_ip_country)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+      `INSERT INTO users (id, email, password_hash, full_name, locale, country, registration_ip, registration_ip_country, onboarding)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, '{"autostart": true}'::jsonb)`,
       [
         userId,
         input.email,

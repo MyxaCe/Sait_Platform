@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, usePathname } from '@/i18n/navigation';
 import { cn } from '@broker/ui';
+import { navTourId } from '@/lib/onboarding/anchors';
 import { NavIcon } from './NavIcon';
 import { CountBadge, isActive, type NavItem } from './NavLink';
 
@@ -112,6 +113,7 @@ export function MobileNav({
                 <Link
                   href={item.href}
                   aria-current={active ? 'page' : undefined}
+                  data-tour={navTourId(item.href, true)}
                   className={cn(tab, active ? 'text-accent' : 'text-secondary')}
                 >
                   <NavIcon name={item.icon} className="size-[22px] shrink-0" />
@@ -125,6 +127,7 @@ export function MobileNav({
               type="button"
               aria-haspopup="dialog"
               aria-expanded={open}
+              data-tour="mnav-more"
               onClick={() => setOpen((v) => !v)}
               className={cn(tab, moreActive || open ? 'text-accent' : 'text-secondary')}
             >

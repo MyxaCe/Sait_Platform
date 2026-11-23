@@ -10,7 +10,7 @@ import { PlanPicker, type RegisterPlan } from './PlanPicker';
 function SubmitButton({ label }: { label: string }) {
   const { pending } = useFormStatus();
   return (
-    <Button type="submit" size="lg" className="w-full" disabled={pending}>
+    <Button type="submit" size="lg" className="w-full" disabled={pending} data-tour="register-submit">
       {pending ? '…' : label}
     </Button>
   );

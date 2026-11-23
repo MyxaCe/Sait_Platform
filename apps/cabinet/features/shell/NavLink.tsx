@@ -2,6 +2,7 @@
 
 import { Link, usePathname } from '@/i18n/navigation';
 import { cn } from '@broker/ui';
+import { navTourId } from '@/lib/onboarding/anchors';
 import { NavIcon, type NavIconName } from './NavIcon';
 
 export interface NavItem {
@@ -23,6 +24,7 @@ export function NavLink({ item }: { item: NavItem }) {
     <Link
       href={item.href}
       aria-current={active ? 'page' : undefined}
+      data-tour={navTourId(item.href)}
       className={cn(
         'flex h-10 items-center gap-3 rounded-lg px-3 text-sm transition-colors',
         active

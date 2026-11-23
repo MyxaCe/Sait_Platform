@@ -1,0 +1,98 @@
+{
+  "$ref": "#/definitions/cms.onboarding",
+  "definitions": {
+    "cms.onboarding": {
+      "type": "object",
+      "properties": {
+        "parts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "part": {
+                "type": "string",
+                "enum": [
+                  "registration",
+                  "cabinet",
+                  "terminal"
+                ]
+              },
+              "version": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "steps": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "anchor": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "body": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "anchor",
+                    "title",
+                    "body"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            },
+            "required": [
+              "part",
+              "version",
+              "steps"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "labels": {
+          "type": "object",
+          "properties": {
+            "back": {
+              "type": "string"
+            },
+            "next": {
+              "type": "string"
+            },
+            "skip": {
+              "type": "string"
+            },
+            "done": {
+              "type": "string"
+            },
+            "help": {
+              "type": "string"
+            },
+            "stepOf": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "back",
+            "next",
+            "skip",
+            "done",
+            "help",
+            "stepOf"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "parts",
+        "labels"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}

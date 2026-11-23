@@ -73,6 +73,7 @@ services:
       SITE_SLUG: apex-ru
       SSO_PRIVATE_KEY_B64: ${SSO_PRIVATE_KEY_B64:-}
       CABINET_TOTP_KEY: ${CABINET_TOTP_KEY:-}
+      ONBOARDING_TOUR_ENABLED: ${ONBOARDING_TOUR_ENABLED:-0}
     ports:
       - '3002:3002'
     volumes:

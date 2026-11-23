@@ -73,7 +73,7 @@ export async function OnboardingModule({
 
   const col = (cls: string) => (column ? cls : undefined);
   return (
-    <section aria-labelledby="next-steps" className={cn('flex flex-col gap-2', col('2xl:h-full'))}>
+    <section aria-labelledby="next-steps" data-tour="next-steps" className={cn('flex flex-col gap-2', col('2xl:h-full'))}>
       <h2 id="next-steps" className={cn('sr-only', col('2xl:not-sr-only 2xl:text-sm 2xl:font-semibold'))}>
         {t('nextStepsTitle')}
       </h2>

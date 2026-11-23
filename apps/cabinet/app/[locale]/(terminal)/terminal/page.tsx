@@ -9,6 +9,8 @@ import { parseTerminalSymbol } from '@/lib/auth/public-paths';
 import { requireSessionUser } from '@/lib/auth/require';
 import { tenantSlug } from '@/lib/sso/jwt';
 import { terminalLaunchHref } from '@/lib/sso/launch';
+import { loadOnboardingState, loadTourConfig } from '@/lib/onboarding/server';
+import { partOf, shouldAutostart } from '@/lib/onboarding/state';
 
 export default async function TerminalPage({
   params,
@@ -22,10 +24,19 @@ export default async function TerminalPage({
   const symbol = parseTerminalSymbol(searchParams.symbol);
   const selfHref = (kind: 'demo' | 'real') =>
     `/terminal?${new URLSearchParams(symbol ? { account: kind, symbol } : { account: kind }).toString()}`;
-  await requireSessionUser(params.locale, await localeHref(selfHref(accountKind), params.locale));
+  const user = await requireSessionUser(params.locale, await localeHref(selfHref(accountKind), params.locale));
   const launch = terminalLaunchHref(accountKind, params.locale, process.env, symbol);
   if (launch) redirect(launch);
-  const t = await getTranslations('trade');
+  const [t, tourConfig, onboarding] = await Promise.all([
+    getTranslations('trade'),
+    loadTourConfig(params.locale),
+    loadOnboardingState(user.id),
+  ]);
+  const terminalPart = partOf(tourConfig, 'terminal');
+  const tour =
+    terminalPart && tourConfig
+      ? { part: terminalPart, labels: tourConfig.labels, autostart: shouldAutostart(onboarding, terminalPart) }
+      : null;
   const terminalUrl = process.env.NEXT_PUBLIC_TERMINAL_URL;
 
   const seg = (kind: 'demo' | 'real', label: string) => (
@@ -67,6 +78,7 @@ export default async function TerminalPage({
           title={t('title')}
           accountKind={accountKind}
           symbol={symbol}
+          tour={tour}
           className="block min-h-0 w-full flex-1 border-0 bg-elevated"
         />
       ) : (
