@@ -6,6 +6,10 @@ import { getTenantStartBalance } from '@/lib/tenant';
 import { loadRegisterPlans } from '@/lib/register-plans';
 import { InviteNotice, loadInvite } from '@/features/auth/TransferInvite';
 import { safeNext, withNext } from '@/lib/auth/next-path';
+import { HelpButton } from '@/features/tour/HelpButton';
+import { TourProvider } from '@/features/tour/TourProvider';
+import { loadTourConfig } from '@/lib/onboarding/server';
+import { partOf } from '@/lib/onboarding/state';
 
 export default async function RegisterPage({
   params,
@@ -17,10 +21,11 @@ export default async function RegisterPage({
   setRequestLocale(params.locale);
   const t = await getTranslations('auth');
   const next = safeNext(searchParams?.next);
-  const [startBalance, invite, plans] = await Promise.all([
+  const [startBalance, invite, plans, tour] = await Promise.all([
     getTenantStartBalance(),
     loadInvite(searchParams?.invite),
     loadRegisterPlans(params.locale, searchParams?.accountType),
+    loadTourConfig(params.locale),
   ]);
 
   const choice = registerSubtitle(startBalance, params.locale);
@@ -30,8 +35,11 @@ export default async function RegisterPage({
       : t(choice.key);
 
   return (
-    <>
-      <h1 className="text-2xl font-semibold">{t('registerTitle')}</h1>
+    <TourProvider part={partOf(tour, 'registration') ?? null} labels={tour?.labels ?? null} autostart persist="local">
+      <div className="flex items-start justify-between gap-3">
+        <h1 className="text-2xl font-semibold">{t('registerTitle')}</h1>
+        <HelpButton />
+      </div>
       <p className="mb-6 mt-1 text-sm text-secondary">{subtitle}</p>
       <InviteNotice invite={invite} />
       <RegisterForm
@@ -46,6 +54,6 @@ export default async function RegisterPage({
           {t('toLogin')}
         </Link>
       </p>
-    </>
+    </TourProvider>
   );
 }

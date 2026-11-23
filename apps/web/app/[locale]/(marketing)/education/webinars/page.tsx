@@ -3,7 +3,8 @@ import type { Metadata } from 'next';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { Badge, Button } from '@broker/ui';
 import { formatDate, formatTime } from '@broker/utils';
-import { Link } from '@/i18n/navigation';
+import { cabinetRegisterHref } from '@/lib/cabinet-links';
+import { getSiteLanguages } from '@/lib/site-languages';
 import { RecordingButton } from '@/features/streams/RecordingButton';
 import { StreamFacade } from '@/features/streams/StreamFacade';
 import type { VideoRef } from '@broker/api-client';
@@ -42,6 +43,7 @@ interface CardLabels {
   seat: string;
   recordSoon: string;
   watchRecording: string;
+  registerHref: string;
 }
 
 function WebinarCard({ webinar, labels }: { webinar: WebinarView; labels: CardLabels }) {
@@ -88,11 +90,11 @@ function WebinarCard({ webinar, labels }: { webinar: WebinarView; labels: CardLa
             </Button>
           </a>
         ) : (
-          <Link href="/register" className="block">
+          <a href={labels.registerHref} className="block">
             <Button className="w-full" tabIndex={-1}>
               {labels.seat}
             </Button>
-          </Link>
+          </a>
         )}
       </div>
     </article>
@@ -105,9 +107,10 @@ export default async function WebinarsPage({ params }: PageProps) {
   const locale = pageLocale(params.locale);
   const intlLocale = intlTag(locale);
 
-  const [{ webinars }, streams] = await Promise.all([
+  const [{ webinars }, streams, languages] = await Promise.all([
     getCms('academy', { locale }),
     getCms('streams', { locale, revalidate: 60 }),
+    getSiteLanguages(),
   ]);
 
   const now = Date.now();
@@ -129,6 +132,7 @@ export default async function WebinarsPage({ params }: PageProps) {
     seat: t('seat'),
     recordSoon: t('recordSoon'),
     watchRecording: t('watchRecording'),
+    registerHref: cabinetRegisterHref('/register', params.locale, languages.defaultLanguage),
   };
 
   return (
