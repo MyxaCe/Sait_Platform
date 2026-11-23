@@ -15,6 +15,7 @@ import {
   SITE_REGULATION_PATH,
   getChromeBrand,
   getChromeFooter,
+  getChromeHeaderNav,
   siteHref,
   resolveBrandName,
 } from '@/lib/chrome';
@@ -44,7 +45,7 @@ export default async function AppLayout({ children, params }: LayoutProps) {
     redirect(await localeHref('/change-password', params.locale));
   }
 
-  const [tNav, tCommon, tLegal, unread, brand, footer, contests, site, tour, onboarding] = await Promise.all([
+  const [tNav, tCommon, tLegal, unread, brand, footer, contests, site, tour, onboarding, headerNav] = await Promise.all([
     getTranslations('nav'),
     getTranslations('common'),
     getTranslations('legalEntity'),
@@ -55,8 +56,11 @@ export default async function AppLayout({ children, params }: LayoutProps) {
     getSiteLanguages(),
     loadTourConfig(params.locale),
     loadOnboardingState(user.id),
+    getChromeHeaderNav(params.locale),
   ]);
   const cabinetTour = partOf(tour, 'cabinet') ?? null;
+  const siteHome = siteHref('/', params.locale, site.defaultLanguage);
+  const siteNav = headerNav.map((l) => ({ label: l.label, href: siteHref(l.href, params.locale, site.defaultLanguage) }));
   const brandName = resolveBrandName(brand, tCommon('cabinet'));
   const legalLines = footerLegalLines(brand?.legalEntity, {
     regNumber: (number) => tLegal('regNumber', { number }),
@@ -75,7 +79,6 @@ export default async function AppLayout({ children, params }: LayoutProps) {
   const profileNav: NavItem[] = [
     { href: '/profile', label: tNav('profile'), icon: 'profile' },
     { href: '/notifications', label: tNav('notifications'), icon: 'notifications', badge: unread },
-    { href: '/accounts', label: tNav('accounts'), icon: 'terms' },
   ];
   const growthNav: NavItem[] = [
     { href: '/promotions', label: tNav('promotions'), icon: 'gift' },
@@ -102,7 +105,7 @@ export default async function AppLayout({ children, params }: LayoutProps) {
     >
     <div className="flex min-h-svh flex-col">
       <div className="hidden lg:block">
-        <CabinetHeader brand={brand} user={user} locale={params.locale} />
+        <CabinetHeader brand={brand} user={user} locale={params.locale} siteHome={siteHome} siteNav={siteNav} />
       </div>
 
       <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-border bg-elevated/95 px-4 backdrop-blur lg:hidden">
@@ -118,6 +121,15 @@ export default async function AppLayout({ children, params }: LayoutProps) {
           <span className="truncate">{tCommon('cabinet')}</span>
         </Link>
         <div className="flex items-center gap-1">
+          <a
+            href={siteHome}
+            aria-label={tCommon('backToSite')}
+            title={tCommon('backToSite')}
+            className="grid size-9 place-items-center rounded-lg text-secondary hover:text-primary"
+            data-header-site-home
+          >
+            <NavIcon name="site" className="size-[20px]" />
+          </a>
           <HelpButton className="size-8 text-sm" />
           <LangSwitcher />
           <Link
@@ -151,7 +163,7 @@ export default async function AppLayout({ children, params }: LayoutProps) {
             ) : null}
           </nav>
           <a
-            href={siteHref('/', params.locale, site.defaultLanguage)}
+            href={siteHome}
             className="border-t border-border px-3 pt-4 text-sm text-secondary transition-colors hover:text-primary"
           >
             ← {tCommon('backToSite')}

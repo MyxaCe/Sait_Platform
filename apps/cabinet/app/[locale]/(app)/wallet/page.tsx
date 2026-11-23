@@ -87,7 +87,7 @@ export default async function WalletPage({
 
   return (
     <div className={cn(PAGE_NARROW, 'xl:grid xl:grid-cols-12 xl:items-start xl:gap-5')}>
-      <div className="space-y-4 sm:space-y-5 xl:col-span-7 2xl:col-span-8">
+      <div className="min-w-0 space-y-4 sm:space-y-5 xl:col-span-8">
         <div>
           <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">{t('walletTitle')}</h1>
           <p className="mt-1 text-sm text-secondary">{t('walletLead')}</p>
@@ -135,15 +135,11 @@ export default async function WalletPage({
           <WithdrawPanel policy={policy} availableMinor={available} kycAllowance={kycAllowance} userId={user.id} />
         )}
 
-        <div className="xl:hidden">
-          <OperationsHistory deposits={deposits} withdrawals={withdrawals} />
-        </div>
+        {/* Шаги и история — одна колонка, одна ширина, один стиль карточек. */}
+        <OperationsHistory deposits={deposits} withdrawals={withdrawals} />
       </div>
 
-      <aside className="hidden space-y-5 xl:sticky xl:top-6 xl:col-span-5 xl:block 2xl:col-span-4">
-        {balanceCard}
-        <OperationsHistory deposits={deposits} withdrawals={withdrawals} titleId="ops-title-desk" />
-      </aside>
+      <aside className="hidden min-w-0 space-y-5 xl:sticky xl:top-24 xl:col-span-4 xl:block">{balanceCard}</aside>
     </div>
   );
 }

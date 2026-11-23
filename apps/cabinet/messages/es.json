@@ -18,7 +18,9 @@
     "retry": "Reintentar",
     "copy": "Copiar",
     "copied": "Copiado",
-    "language": "Idioma"
+    "language": "Idioma",
+    "mainSite": "Página principal de {brand}",
+    "siteNav": "Secciones del sitio"
   },
   "nav": {
     "dashboard": "Resumen",
@@ -377,7 +379,29 @@
       "tradeExecutedBetter": "Operación ejecutada: {side, select, buy {compra} sell {venta} other {{side}}} {volume} {symbol} a {price}. Es {slippage} mejor que su nivel {level}.",
       "supportReply": "Soporte ha respondido a la solicitud n.º {number}. Abra el chat de Soporte en la esquina inferior derecha.",
       "supportResolved": "La solicitud n.º {number} está resuelta. Valore la atención de Soporte en el chat."
-    }
+    },
+    "unreadLead": "Sin leer: {n}",
+    "allReadLead": "Todo leído",
+    "filterLabel": "Tipo de notificación",
+    "groups": {
+      "all": "Todas",
+      "trading": "Trading",
+      "account": "Cuenta",
+      "support": "Soporte",
+      "other": "Otras"
+    },
+    "emptyFiltered": "No hay notificaciones en esta sección",
+    "emptyHint": "Aquí aparecerán operaciones, avisos de margen, cargas de documentos y respuestas de soporte.",
+    "limitHint": "Se muestran las últimas {n} notificaciones.",
+    "statUnread": "Sin leer",
+    "statTotal": "Total",
+    "aboutTitle": "Qué llega aquí",
+    "about": {
+      "trading": "Operaciones ejecutadas, deslizamiento en stops, avisos de nivel de margen.",
+      "account": "Apertura de cuenta, carga de documentos, reinicio de la cuenta demo.",
+      "support": "Respuestas y resoluciones de sus solicitudes de soporte."
+    },
+    "aboutNote": "Los depósitos y retiros se ven en Billetera y en el historial."
   },
   "trade": {
     "title": "Trading",
@@ -1065,7 +1089,10 @@
     "instruments": "Instrumentos",
     "notSpecified": "no especificado",
     "changeHint": "La plataforma asigna su tipo de cuenta. Para cambiarlo, contacte con Soporte.",
-    "compareParam": "Parámetro"
+    "compareParam": "Parámetro",
+    "yourType": "Su tipo de cuenta",
+    "compareOpen": "Comparar todos los tipos de cuenta",
+    "compareClose": "Ocultar comparación"
   },
   "platformTransfer": {
     "inviteTitle": "Invitación para el traspaso {number}",

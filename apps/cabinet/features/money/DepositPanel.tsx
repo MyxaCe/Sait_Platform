@@ -18,22 +18,21 @@ export async function DepositPanel({ policy, address }: { policy: MoneyPolicy; a
   const enabled = policy.depositAllowed && address !== null;
 
   const notice = !policy.depositAllowed;
-  const row = notice ? '2xl:row-start-2' : '2xl:row-start-1';
   return (
-    <div className="space-y-4 2xl:grid 2xl:grid-cols-2 2xl:items-start 2xl:gap-5 2xl:space-y-0">
+    <div className="space-y-4 sm:space-y-5">
       {notice ? (
-        <div className="2xl:col-span-2">
+        <div>
           <PolicyNotice op="deposit" reasons={policy.depositReasons} />
         </div>
       ) : null}
 
-      <Step n={1} title={t('step1Title')} muted={!enabled} className={`2xl:col-start-1 ${row}`}>
+      <Step n={1} title={t('step1Title')} muted={!enabled} >
         {address ? (
           <div className="space-y-4">
             <Callout tone="warning" title={t('warningTitle')}>
               {t('onlyUsdtWarning')}
             </Callout>
-            <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-start 2xl:flex-col 2xl:items-start">
+            <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-start">
               {qr ? (
                 <div
                   role="img"
@@ -70,7 +69,7 @@ export async function DepositPanel({ policy, address }: { policy: MoneyPolicy; a
         )}
       </Step>
 
-      <Step n={2} title={t('step2Title')} muted={!enabled} className={`2xl:col-start-2 ${row}`}>
+      <Step n={2} title={t('step2Title')} muted={!enabled} >
         <p className="mb-3 text-sm text-secondary">{t('step2')}</p>
         <DepositClaimForm disabled={!enabled} />
       </Step>

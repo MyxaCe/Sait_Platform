@@ -8,7 +8,8 @@ import { PromotionsModule } from '@/features/home/PromotionsModule';
 import { requireSessionUser } from '@/lib/auth/require';
 import { getDemoAccount } from '@/lib/data';
 import { getHomeModules, getMarketInstruments, getVerificationStatus } from '@/lib/home';
-import { loadClientPromotions, loadMyReferral } from '@/lib/promo';
+import { loadAccountTerms, loadClientPromotions, loadMyReferral } from '@/lib/promo';
+import { AccountTermsModule } from '@/features/home/AccountTermsModule';
 import { getAccountHistory } from '@/lib/history';
 import { listMyDeposits, listMyWithdrawals } from '@/lib/money';
 import { RecentActivity } from '@/features/home/RecentActivity';
@@ -63,11 +64,12 @@ export default async function HomePage({ params }: { params: { locale: string } 
     ? await loadRealBlock(user.id, params.locale)
     : undefined;
 
-  const [recent, deposits, withdrawals, referral] = await Promise.all([
+  const [recent, deposits, withdrawals, referral, terms] = await Promise.all([
     getAccountHistory(user.id, 'real', '30d').catch(() => null),
     listMyDeposits(user.id),
     listMyWithdrawals(user.id),
     loadMyReferral(user.id, params.locale),
+    loadAccountTerms(user.id),
   ]);
 
   const mod = <T extends CabinetHomeModule['type']>(type: T) =>
@@ -78,51 +80,60 @@ export default async function HomePage({ params }: { params: { locale: string } 
   const marketsM = mod('markets');
   const promotionsM = mod('promotions');
 
+  const referralView = referral.state === 'ok' ? referral.data.referral : null;
+  const hasReferral = Boolean(referralView && (referralView.enabled || referralView.isPartner));
+  const hasPromotions = Boolean(promotionsM);
+  const hasMarkets = Boolean(marketsM && markets);
+
+  // Одна сетка: на телефоне — порядок DOM (шаги → счета → рынки → операции → друг → акции → условия),
+  // на компьютере — явные места. Блоки одной строки тянутся до общей высоты, «лесенки» нет.
   return (
     <div className={cn(PAGE, 'flex flex-col gap-4 lg:gap-5')}>
       {profileM ? <ProfileModule user={user} verification={verification} /> : null}
 
-      <div className={GRID}>
+      <div className={cn(GRID, 'xl:items-stretch')} data-home-grid>
         {onboardingM ? (
-          <div className={cn('xl:col-span-12', balanceM && '2xl:col-span-4 2xl:col-start-9 2xl:row-start-1')}>
+          <div className={cn('min-w-0 xl:col-span-4 xl:col-start-9 xl:row-start-1', hasReferral && 'xl:row-span-2')}>
             <OnboardingModule
               config={onboardingM}
               verification={verification}
               realFunded={(realForSteps?.balanceCents ?? 0) > 0}
-              column={Boolean(balanceM)}
+              column
             />
           </div>
         ) : null}
         {balanceM ? (
-          <div className={cn('xl:col-span-12', onboardingM && '2xl:col-span-8 2xl:col-start-1 2xl:row-start-1')}>
+          <div className={cn('min-w-0 xl:col-start-1 xl:row-start-1', onboardingM ? 'xl:col-span-8' : 'xl:col-span-12')}>
             <BalanceModule config={balanceM} demo={demo} startBalance={startBalance} real={real} />
           </div>
         ) : null}
-      </div>
-
-      <div className={GRID}>
-        {marketsM && markets ? (
-          <div className="xl:col-span-6 2xl:col-span-5 xl:[&>section]:h-full">
-            <MarketsModule config={marketsM} data={markets} />
+        {hasMarkets ? (
+          <div className="min-w-0 xl:col-span-6 xl:col-start-1 xl:row-start-3 [&>section]:h-full">
+            <MarketsModule config={marketsM!} data={markets!} />
           </div>
         ) : null}
-        <div className="hidden xl:col-span-6 xl:block 2xl:col-span-4">
+        <div className={cn('min-w-0 xl:row-start-3', hasMarkets ? 'xl:col-span-6 xl:col-start-7' : 'xl:col-span-12 xl:col-start-1')}>
           <RecentActivity
             trades={recent?.trades ?? []}
             deposits={deposits}
             withdrawals={withdrawals}
             currency={recent?.currency ?? 'USDT'}
+            limit={8}
           />
         </div>
-        <div className="flex flex-col gap-4 xl:col-span-12 xl:grid xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] xl:gap-5 2xl:col-span-3 2xl:flex 2xl:flex-col">
-          {promotionsM ? (
-            <PromotionsModule view={promos?.state === 'ok' ? promos.data : null} compact />
-          ) : null}
-          <div className="hidden xl:block">
-            <ReferralMini referral={referral.state === 'ok' ? referral.data.referral : null} />
+        {hasReferral ? (
+          <div className={cn('min-w-0 xl:col-start-1 xl:row-start-2', onboardingM ? 'xl:col-span-8' : 'xl:col-span-12')}>
+            <ReferralMini referral={referralView} wide />
           </div>
-        </div>
+        ) : null}
+        {hasPromotions ? (
+          <div className="min-w-0 empty:hidden xl:col-span-12 xl:col-start-1 xl:row-start-4">
+            <PromotionsModule view={promos?.state === 'ok' ? promos.data : null} />
+          </div>
+        ) : null}
       </div>
+
+      <AccountTermsModule data={terms.state === 'ok' ? terms.data : null} />
     </div>
   );
 }

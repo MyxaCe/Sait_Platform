@@ -21,9 +21,9 @@ export function PromotionsModule({
 
   if (view === null) {
     return (
-      <section aria-labelledby="home-promo">
+      <section aria-labelledby="home-promo" className="flex h-full min-w-0 flex-col rounded-2xl border border-border bg-elevated p-4 sm:p-5">
         <Head />
-        <p className="mt-3 rounded-2xl border border-border bg-elevated px-4 py-3 text-sm text-secondary">{t('home.unavailable')}</p>
+        <p className="mt-3 text-sm text-secondary">{t('home.unavailable')}</p>
       </section>
     );
   }
@@ -31,9 +31,9 @@ export function PromotionsModule({
   const picks = pickHomePromos(view);
   if (!view.enabled && view.disabledReason && picks.every((p) => p.kind !== 'participation')) {
     return (
-      <section aria-labelledby="home-promo">
+      <section aria-labelledby="home-promo" className="flex h-full min-w-0 flex-col rounded-2xl border border-border bg-elevated p-4 sm:p-5">
         <Head />
-        <div className="mt-3 rounded-2xl border border-border bg-elevated px-4 py-3">
+        <div className="mt-3">
           <p className="text-sm font-medium">{t(`disabled.${view.disabledReason}.title`)}</p>
         </div>
       </section>
@@ -42,9 +42,9 @@ export function PromotionsModule({
   if (picks.length === 0) return null;
 
   return (
-    <section aria-labelledby="home-promo">
+    <section aria-labelledby="home-promo" className="flex h-full min-w-0 flex-col rounded-2xl border border-border bg-elevated p-4 sm:p-5">
       <Head />
-      <div className={cn('mt-3 grid gap-3', picks.length > 1 && 'sm:grid-cols-2', compact && '2xl:grid-cols-1')}>
+      <div className={cn('mt-3 grid gap-3', picks.length > 1 && 'sm:grid-cols-2', compact && 'xl:grid-cols-1')}>
         {picks.map((p) => (
           <HomeCard key={p.kind === 'participation' ? p.item.promotionId : p.item.id} pick={p} now={now} />
         ))}

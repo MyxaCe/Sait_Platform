@@ -1,4 +1,5 @@
 import { getTranslations } from 'next-intl/server';
+import { Card } from '@/features/ui/Card';
 import { Money } from '@/features/ui/Money';
 import { describeSlippage } from '@/lib/slippage';
 import type { ClosedDealsOutcome } from '@/lib/terminal/client';
@@ -8,12 +9,8 @@ export async function ClosedDeals({ outcome }: { outcome: ClosedDealsOutcome }) 
   const t = await getTranslations('history');
 
   return (
-    <section className="space-y-2" aria-labelledby="closed-deals">
-      <h2 id="closed-deals" className="text-sm font-semibold">
-        {t('closedDealsTitle')}
-      </h2>
-      <p className="text-xs text-secondary">{t('closedDealsHint')}</p>
-      <ul className="divide-y divide-border rounded-2xl border border-border bg-elevated">
+    <Card title={t('closedDealsTitle')} titleId="closed-deals" hint={t('closedDealsHint')} flush>
+      <ul className="divide-y divide-border">
         {outcome.deals.map((deal, i) => {
           const price = (value: number) => value.toFixed(deal.priceDigits);
           const slippage = describeSlippage({
@@ -49,6 +46,6 @@ export async function ClosedDeals({ outcome }: { outcome: ClosedDealsOutcome }) 
           );
         })}
       </ul>
-    </section>
+    </Card>
   );
 }

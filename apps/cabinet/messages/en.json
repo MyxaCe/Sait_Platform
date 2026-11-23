@@ -18,7 +18,9 @@
     "retry": "Try again",
     "copy": "Copy",
     "copied": "Copied",
-    "language": "Language"
+    "language": "Language",
+    "mainSite": "{brand} home page",
+    "siteNav": "Site sections"
   },
   "nav": {
     "dashboard": "Overview",
@@ -377,7 +379,29 @@
       "tradeExecutedBetter": "Trade executed: {side, select, buy {buy} sell {sell} other {{side}}} {volume} {symbol} at {price}. That is {slippage} better than your level {level}.",
       "supportReply": "Support replied to request #{number}. Open the support chat in the bottom right corner.",
       "supportResolved": "Request #{number} is resolved. Please rate the support in the chat."
-    }
+    },
+    "unreadLead": "Unread: {n}",
+    "allReadLead": "All caught up",
+    "filterLabel": "Notification type",
+    "groups": {
+      "all": "All",
+      "trading": "Trading",
+      "account": "Account",
+      "support": "Support",
+      "other": "Other"
+    },
+    "emptyFiltered": "No notifications in this section",
+    "emptyHint": "Trades, margin warnings, document uploads and support replies will appear here.",
+    "limitHint": "Showing the latest {n} notifications.",
+    "statUnread": "Unread",
+    "statTotal": "Total",
+    "aboutTitle": "What you get here",
+    "about": {
+      "trading": "Executed trades, stop slippage, margin level warnings.",
+      "account": "Account opening, document uploads, demo account resets.",
+      "support": "Replies and resolutions to your support requests."
+    },
+    "aboutNote": "Deposits and withdrawals are shown in Wallet and in the operations history."
   },
   "trade": {
     "title": "Trading",
@@ -1065,7 +1089,10 @@
     "instruments": "Instruments",
     "notSpecified": "not specified",
     "changeHint": "Your account type is assigned by the platform. Contact support to change it.",
-    "compareParam": "Parameter"
+    "compareParam": "Parameter",
+    "yourType": "Your account type",
+    "compareOpen": "Compare all account types",
+    "compareClose": "Hide comparison"
   },
   "platformTransfer": {
     "inviteTitle": "Invitation for transfer {number}",

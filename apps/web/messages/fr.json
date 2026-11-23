@@ -14,7 +14,8 @@
     "trade": "Trader",
     "cmsUnavailableTitle": "Contenu temporairement indisponible",
     "cmsUnavailableText": "Impossible de charger cette page. Veuillez réessayer dans quelques minutes.",
-    "retry": "Réessayer"
+    "retry": "Réessayer",
+    "toCabinet": "Mon espace"
   },
   "validation": {
     "nameMin": "Au moins 2 caractères",

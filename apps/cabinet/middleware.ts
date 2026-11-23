@@ -12,6 +12,7 @@ import { legacyTarget } from './lib/legacy-routes';
 import { applyAttributionCookies } from './lib/attribution-cookies';
 import { homePathFor, isMailLinkPath, isPublicAuthPath, loginPathFor, safeTerminalNext } from './lib/auth/public-paths';
 import { siteLanguagesForMiddleware } from './lib/site-languages-edge';
+import { SESSION_HINT_COOKIE, SESSION_HINT_VALUE, sessionHintDomain } from '@broker/utils/session-hint';
 
 const LOCALE_COOKIE_MAX_AGE = 60 * 60 * 24 * 365;
 
@@ -45,7 +46,36 @@ function withLocaleCookie(request: NextRequest, response: NextResponse, locale: 
   return response;
 }
 
+/**
+ * Флажок для витрины следует за наличием cookie сессии: есть сессия, а флажка нет (вход был до
+ * появления флажка) — ставим; сессии нет, а флажок остался — снимаем. Только для документов.
+ */
+function withSessionHint(request: NextRequest, response: NextResponse, hasSession: boolean): NextResponse {
+  if (!isDocumentRequest(request)) return response;
+  const hinted = request.cookies.get(SESSION_HINT_COOKIE)?.value === SESSION_HINT_VALUE;
+  if (hasSession === hinted) return response;
+  const domain = sessionHintDomain();
+  if (hasSession) {
+    response.cookies.set(SESSION_HINT_COOKIE, SESSION_HINT_VALUE, {
+      httpOnly: false,
+      sameSite: 'lax',
+      secure: request.nextUrl.protocol === 'https:',
+      path: '/',
+      maxAge: 60 * 60 * 24 * 30,
+      ...(domain ? { domain } : {}),
+    });
+  } else {
+    response.cookies.set(SESSION_HINT_COOKIE, '', { path: '/', maxAge: 0, ...(domain ? { domain } : {}) });
+  }
+  return response;
+}
+
 export default async function middleware(request: NextRequest) {
+  const response = await route(request);
+  return withSessionHint(request, response, request.cookies.has(SESSION_COOKIE));
+}
+
+async function route(request: NextRequest): Promise<NextResponse> {
   const { pathname } = request.nextUrl;
   const site = await siteLanguagesForMiddleware();
   const prefixed = stripLocalePrefix(pathname).locale;

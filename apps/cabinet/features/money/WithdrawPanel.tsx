@@ -42,14 +42,14 @@ export async function WithdrawPanel({
           })
         : t('kycLimit.exhausted', { limit: money(kycAllowance.limitMinor) });
   return (
-    <div className="space-y-4 2xl:grid 2xl:grid-cols-2 2xl:items-start 2xl:gap-5 2xl:space-y-0">
+    <div className="space-y-4 sm:space-y-5">
       {notice ? (
-        <div className="2xl:col-span-2">
+        <div>
           <PolicyNotice op="withdraw" reasons={reasons} banUntil={policy.withdrawBanUntil} />
         </div>
       ) : null}
       {limitText ? (
-        <div className="2xl:col-span-2" data-kyc-limit={kycAllowance ? kycAllowance.remainingMinor : 'unknown'}>
+        <div data-kyc-limit={kycAllowance ? kycAllowance.remainingMinor : 'unknown'}>
           <Callout tone={exhausted ? 'warning' : 'info'} title={t('kycLimit.title')}>
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <p>{limitText}</p>
@@ -72,7 +72,7 @@ export async function WithdrawPanel({
         />
         <p className="mt-4 text-xs leading-relaxed text-muted">{t('withdrawNote')}</p>
       </section>
-      <section className="hidden rounded-2xl border border-border bg-elevated p-5 2xl:block" aria-labelledby="wd-guide">
+      <section className="hidden rounded-2xl border border-border bg-elevated p-4 sm:p-5 xl:block" aria-labelledby="wd-guide">
         <h2 id="wd-guide" className="text-[15px] font-semibold">
           {t('guideTitle')}
         </h2>

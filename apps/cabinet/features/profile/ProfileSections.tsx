@@ -13,12 +13,12 @@ import { isTwoFactorEnabled } from '@broker/support';
 import { twoFactorPool } from '@/lib/two-factor';
 import { UploadForm } from '@/features/documents/UploadForm';
 
-function Card({ title, hint, children }: { title: string; hint?: string; children: React.ReactNode }) {
+function Card({ title, hint, children, className }: { title: string; hint?: string; children: React.ReactNode; className?: string }) {
   return (
-    <section className="rounded-2xl border border-border bg-elevated p-4 sm:p-5">
+    <section className={['flex min-w-0 flex-col rounded-2xl border border-border bg-elevated p-4 sm:p-5', className].filter(Boolean).join(' ')}>
       <h2 className="text-[15px] font-semibold">{title}</h2>
       {hint ? <p className="mt-1 text-xs text-secondary">{hint}</p> : null}
-      <div className="mt-4">{children}</div>
+      <div className="mt-4 flex flex-1 flex-col">{children}</div>
     </section>
   );
 }
@@ -38,7 +38,7 @@ export async function SecuritySection({ userId }: { userId: string }) {
   const format = await getFormatter();
   const [sessions, twoFactor] = await Promise.all([listSessions(userId), isTwoFactorEnabled(twoFactorPool(), userId)]);
   return (
-    <div className="space-y-4 xl:grid xl:grid-cols-2 xl:items-start xl:gap-5 xl:space-y-0">
+    <div className="space-y-4 xl:grid xl:grid-cols-2 xl:items-stretch xl:gap-5 xl:space-y-0">
       <Card title={t('changePassword')}>
         <PasswordForm twoFactor={twoFactor} />
       </Card>
@@ -84,20 +84,20 @@ export async function DocumentsSection({ userId }: { userId: string }) {
   const format = await getFormatter();
   const documents = await listDocuments(userId);
   return (
-    <div className="space-y-4 xl:grid xl:grid-cols-2 xl:items-start xl:gap-5 xl:space-y-0">
+    <div className="space-y-4 xl:grid xl:grid-cols-2 xl:items-stretch xl:gap-5 xl:space-y-0">
       <Card title={t('upload')} hint={t('hint')}>
         <UploadForm />
       </Card>
-      <section className="space-y-2">
-        <h2 className="text-sm font-semibold">{t('title')}</h2>
+      <section className="flex min-w-0 flex-col rounded-2xl border border-border bg-elevated">
+        <h2 className="px-4 pt-4 text-[15px] font-semibold sm:px-5 sm:pt-5">{t('title')}</h2>
         {documents.length === 0 ? (
-          <div className="rounded-2xl border border-border bg-elevated">
+          <div className="flex flex-1 items-center justify-center">
             <EmptyState size="compact" title={t('empty')} />
           </div>
         ) : (
-          <ul className="divide-y divide-border rounded-2xl border border-border bg-elevated">
+          <ul className="mt-3 flex-1 divide-y divide-border border-t border-border">
             {documents.map((doc) => (
-              <li key={doc.id} className="flex items-center justify-between gap-3 px-4 py-3">
+              <li key={doc.id} className="flex items-center justify-between gap-3 px-4 py-3 sm:px-5">
                 <div className="min-w-0">
                   <p className="truncate text-sm">{doc.filename}</p>
                   <p className="text-xs text-secondary">
@@ -121,19 +121,19 @@ export async function AccountOverview({ userId, state }: { userId: string; state
   const ts = await getTranslations('security');
   const sessions = await listSessions(userId);
   return (
-    <div className="space-y-5">
-      <Card title={tk('title')}>
+    <div className="flex h-full flex-col gap-5">
+      <Card title={tk('title')} className="flex-1">
         <div className="flex flex-wrap items-center gap-2">
           <ToneBadge tone={KYC_TONE[state]}>{tk(`states.${state}` as never)}</ToneBadge>
         </div>
         <p className="mt-2 text-sm text-secondary">{tk(`stateText.${state}` as never)}</p>
-        <Link href="/profile?tab=verification" className="mt-3 inline-block text-sm font-medium text-accent hover:underline">
+        <Link href="/profile?tab=verification" className="mt-auto inline-block pt-3 text-sm font-medium text-accent hover:underline">
           {t('openVerification')} →
         </Link>
       </Card>
-      <Card title={ts('title')}>
+      <Card title={ts('title')} className="flex-1">
         <p className="text-sm text-secondary">{t('sessionsActive', { n: sessions.length })}</p>
-        <Link href="/profile?tab=security" className="mt-3 inline-block text-sm font-medium text-accent hover:underline">
+        <Link href="/profile?tab=security" className="mt-auto inline-block pt-3 text-sm font-medium text-accent hover:underline">
           {t('openSecurity')} →
         </Link>
       </Card>
