@@ -16,6 +16,15 @@ export default defineConfig({
   use: {
     baseURL: `http://localhost:${PORT}`,
     trace: 'on-first-retry',
+    // Уведомление о cookie закрыто заранее: оно прибито к низу экрана и на
+    // мобильном перекрывает кнопки. Само уведомление — в cookie-notice.spec.ts.
+    storageState: {
+      cookies: [],
+      origins: [`http://localhost:${PORT}`, `http://localhost:${OPEN_SITE_PORT}`].map((origin) => ({
+        origin,
+        localStorage: [{ name: 'cookie-notice-v1', value: '1' }],
+      })),
+    },
   },
   projects: [
     { name: 'desktop-chromium', use: { ...devices['Desktop Chrome'] } },
