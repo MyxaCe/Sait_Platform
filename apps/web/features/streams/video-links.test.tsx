@@ -196,3 +196,19 @@ describe('статья обучения: видео вверху', () => {
     expect(screen.queryByRole('region', { name: 'articleVideo' })).toBeNull();
   });
 });
+
+describe('статья обучения: значок уровня', () => {
+  it('уровень advanced показывает «Профессиональный» (levelAdvanced), а не «Средний»', async () => {
+    setCms(
+      {
+        articles: [{ slug: 'pro', title: 'Про уровень', excerpt: 'e', level: 'advanced', readingMinutes: 5, bodyMarkdown: 'Текст' }],
+        glossary: [],
+        webinars: [],
+      },
+      { items: [] },
+    );
+    await renderArticle('pro');
+    expect(screen.getByText('levelAdvanced')).toBeTruthy();
+    expect(screen.queryByText('levelIntermediate')).toBeNull();
+  });
+});

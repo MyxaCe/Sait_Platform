@@ -233,7 +233,8 @@ export const academyResponseSchema = z.object({
       slug: z.string(),
       title: z.string(),
       excerpt: z.string(),
-      level: z.enum(['beginner', 'intermediate']),
+      // Неизвестный уровень из более новой CMS не роняет весь ответ academy (глоссарий, вебинары).
+      level: z.enum(['beginner', 'intermediate', 'advanced']).catch('beginner'),
       readingMinutes: z.number().int().positive(),
       bodyMarkdown: z.string(),
       video: videoRefSchema.optional().catch(undefined),
@@ -288,7 +289,7 @@ export const articleSchema = z.object({
   body: richTextSchema.optional().catch(undefined),
   cover: mediaSchema.optional().catch(undefined),
   categoryTitle: z.string().optional().catch(undefined),
-  level: z.enum(['beginner', 'intermediate']).optional().catch(undefined),
+  level: z.enum(['beginner', 'intermediate', 'advanced']).optional().catch(undefined),
   video: videoRefSchema.optional().catch(undefined),
 });
 export const articlesResponseSchema = z.object({

@@ -22,7 +22,8 @@
                 "type": "string",
                 "enum": [
                   "beginner",
-                  "intermediate"
+                  "intermediate",
+                  "advanced"
                 ]
               },
               "readingMinutes": {
@@ -63,7 +64,6 @@
               "slug",
               "title",
               "excerpt",
-              "level",
               "readingMinutes",
               "bodyMarkdown"
             ],

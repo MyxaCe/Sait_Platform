@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { articleSchema, articlesResponseSchema } from './cms';
+import { academyResponseSchema, articleSchema, articlesResponseSchema } from './cms';
 
 const legacy = {
   slug: 'gold',
@@ -50,5 +50,20 @@ describe('статьи в контракте CMS', () => {
       video: { provider: 'rutube', videoId: '1', url: 'https://example.com' },
     });
     expect(article).toEqual(legacy);
+  });
+
+  it('уровень «Профессиональный» (advanced) читается', () => {
+    expect(articleSchema.parse({ ...legacy, section: 'education', level: 'advanced' }).level).toBe('advanced');
+  });
+
+  it('academy: неизвестный уровень из более новой CMS не роняет ответ (глоссарий и вебинары живут)', () => {
+    const article = { slug: 'a', title: 'A', excerpt: 'e', readingMinutes: 3, bodyMarkdown: 'x' };
+    const parsed = academyResponseSchema.parse({
+      articles: [{ ...article, level: 'advanced' }, { ...article, slug: 'b', level: 'expert' }],
+      webinars: [],
+      glossary: [{ term: 'Спред', definition: 'Разница' }],
+    });
+    expect(parsed.articles.map((a) => a.level)).toEqual(['advanced', 'beginner']);
+    expect(parsed.glossary).toHaveLength(1);
   });
 });

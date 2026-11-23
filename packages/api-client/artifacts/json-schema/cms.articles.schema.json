@@ -110,7 +110,8 @@
                 "type": "string",
                 "enum": [
                   "beginner",
-                  "intermediate"
+                  "intermediate",
+                  "advanced"
                 ]
               },
               "video": {

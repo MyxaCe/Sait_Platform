@@ -5,11 +5,25 @@ export const ARTICLES_REVALIDATE = 60;
 const NEWS_PAGE_SIZE = '50';
 const EDUCATION_PAGE_SIZE = '100';
 
+export type ArticleLevel = 'beginner' | 'intermediate' | 'advanced';
+
+export const LEVEL_LABEL_KEY = {
+  beginner: 'levelBeginner',
+  intermediate: 'levelIntermediate',
+  advanced: 'levelAdvanced',
+} as const satisfies Record<ArticleLevel, string>;
+
+export const LEVEL_BADGE_CLASS: Record<ArticleLevel, string> = {
+  beginner: 'rounded-full bg-positive/10 px-2.5 py-1 text-positive',
+  intermediate: 'rounded-full bg-accent/10 px-2.5 py-1 text-accent',
+  advanced: 'rounded-full border border-accent/40 px-2.5 py-1 text-accent',
+};
+
 export interface EducationArticle {
   slug: string;
   title: string;
   excerpt: string;
-  level: 'beginner' | 'intermediate';
+  level: ArticleLevel;
   readingMinutes: number;
   bodyMarkdown: string;
   body?: RichText;

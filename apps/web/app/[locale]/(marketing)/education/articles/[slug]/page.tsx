@@ -7,7 +7,7 @@ import { Link } from '@/i18n/navigation';
 import { ArticleCover, ScheduledBadge, scheduledLabel } from '@/components/ArticleMeta';
 import { ArticleBody } from '@/components/RichText';
 import { StreamFacade } from '@/features/streams/StreamFacade';
-import { findEducationArticle, loadEducationArticles } from '@/lib/articles';
+import { LEVEL_LABEL_KEY, findEducationArticle, loadEducationArticles } from '@/lib/articles';
 import { brandName } from '@/lib/brand';
 import { staticParamsFromCms } from '@/lib/cms';
 
@@ -67,7 +67,7 @@ export default async function EducationArticlePage({ params }: PageParams) {
 
       <div className="mt-6 flex items-center gap-3 text-xs">
         <span className="rounded-full bg-accent/10 px-2.5 py-1 text-accent">
-          {article.level === 'beginner' ? t('levelBeginner') : t('levelIntermediate')}
+          {t(LEVEL_LABEL_KEY[article.level])}
         </span>
         <span className="text-secondary">
           {tCommon('minRead', { minutes: article.readingMinutes })}

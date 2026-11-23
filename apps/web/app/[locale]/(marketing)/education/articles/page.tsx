@@ -2,7 +2,7 @@ import { pageLocale } from '@/lib/locale';
 import type { Metadata } from 'next';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
-import { loadEducationArticles } from '@/lib/articles';
+import { LEVEL_BADGE_CLASS, LEVEL_LABEL_KEY, loadEducationArticles } from '@/lib/articles';
 
 interface PageProps {
   params: { locale: string };
@@ -28,14 +28,8 @@ export default async function EducationArticlesPage({ params }: PageProps) {
           className="group flex flex-col rounded-2xl border border-border bg-card p-6 transition-colors hover:border-accent/40 lg:p-8"
         >
           <div className="flex items-center gap-2 text-xs">
-            <span
-              className={
-                article.level === 'beginner'
-                  ? 'rounded-full bg-positive/10 px-2.5 py-1 text-positive'
-                  : 'rounded-full bg-accent/10 px-2.5 py-1 text-accent'
-              }
-            >
-              {article.level === 'beginner' ? t('levelBeginner') : t('levelIntermediate')}
+            <span className={LEVEL_BADGE_CLASS[article.level]}>
+              {t(LEVEL_LABEL_KEY[article.level])}
             </span>
             <span className="text-secondary">
               {tCommon('minRead', { minutes: article.readingMinutes })}
