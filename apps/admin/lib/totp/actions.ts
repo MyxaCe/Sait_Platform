@@ -4,7 +4,12 @@ import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { ADMIN_TOTP_ENROLL_COOKIE, LOGIN_PATH } from '../auth/constants';
 import { getOperatorSession } from '../auth/current';
-import { isOperatorEnrolled, saveOperatorTotpSecret } from '../auth/operator-totp';
+import {
+  canEnrollOperatorTotp,
+  isOperatorEnrolled,
+  OperatorTotpKeyMissingError,
+  saveOperatorTotpSecret,
+} from '../auth/operator-totp';
 import {
   buildOtpauthUri,
   generateTotpSecret,
@@ -32,6 +37,7 @@ export async function beginTotpEnrollment(): Promise<EnrollStartResult | { error
   if (await isOperatorEnrolled(operator.operatorId)) {
     return { error: 'alreadyEnrolled' };
   }
+  if (!canEnrollOperatorTotp()) return { error: 'keyMissing' };
 
   const secret = generateTotpSecret();
   const ticket = await issueEnrollTicket(operator.operatorId, secret);
@@ -65,7 +71,12 @@ export async function confirmTotpEnrollment(
     return { error: 'invalidCode' };
   }
 
-  await saveOperatorTotpSecret(operator.operatorId, operator.login, ticket.secret);
+  try {
+    await saveOperatorTotpSecret(operator.operatorId, operator.login, ticket.secret);
+  } catch (error) {
+    if (error instanceof OperatorTotpKeyMissingError) return { error: 'keyMissing' };
+    throw error;
+  }
   cookies().delete(ADMIN_TOTP_ENROLL_COOKIE);
   redirect('/');
 }

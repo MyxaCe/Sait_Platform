@@ -1,7 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { decryptTotpSecret, encryptTotpSecret, twoFactorKey } from '@broker/support';
 import { generateTotp, generateTotpSecret } from './totp';
 
 const ID = '33333333-3333-3333-3333-333333333333';
+const RAW_KEY = 'k'.repeat(48);
+const KEY = twoFactorKey(RAW_KEY)!;
+const OTHER_KEY = twoFactorKey('z'.repeat(48))!;
+const UPGRADE = /UPDATE operators SET totp_secret/i;
 
 const poolQueries: { sql: string; params: unknown[] }[] = [];
 const clientQueries: { sql: string; params: unknown[] }[] = [];
@@ -24,6 +29,7 @@ vi.mock('./../db', () => ({
       if (/FROM operators WHERE id/i.test(sql)) {
         return { rows: operatorRow ? [operatorRow] : [] };
       }
+      if (UPGRADE.test(sql)) return { rows: [], rowCount: 1 };
       return { rows: [] };
     },
     connect: async () => fakeClient,
@@ -52,6 +58,8 @@ beforeEach(() => {
   clientQueries.length = 0;
   operatorRow = undefined;
   updateRows = [{ id: ID }];
+  vi.stubEnv('ADMIN_TOTP_KEY', RAW_KEY);
+  vi.stubEnv('ADMIN_TOTP_REQUIRE_ENCRYPTED', '0');
   appendJournalEntry.mockClear();
   fakeClient.query.mockClear();
   fakeClient.release.mockClear();
@@ -60,6 +68,7 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.restoreAllMocks();
+  vi.unstubAllEnvs();
 });
 
 describe('verifyOperatorTotpStep · второй шаг входа', () => {
@@ -138,7 +147,11 @@ describe('saveOperatorTotpSecret · регистрация', () => {
     expect(update, 'должен быть UPDATE operators').toBeTruthy();
     expect(update!.sql).toMatch(/totp_secret/i);
     expect(update!.sql).toMatch(/totp_enrolled_at\s*=\s*now\(\)/i);
-    expect(update!.params).toEqual([secret, ID]);
+    const [stored, id] = update!.params as [string, string];
+    expect(id).toBe(ID);
+    expect(stored.startsWith('v1.'), 'секрет пишется зашифрованным').toBe(true);
+    expect(stored).not.toContain(secret);
+    expect(decryptTotpSecret(stored, KEY)).toBe(secret);
 
     expect(appendJournalEntry).toHaveBeenCalledTimes(1);
     const entry = appendJournalEntry.mock.calls[0]![0] as unknown as Record<string, unknown>;
@@ -158,5 +171,91 @@ describe('saveOperatorTotpSecret · регистрация', () => {
     await expect(saveOperatorTotpSecret(ID, 'super', generateTotpSecret())).rejects.toThrow();
     expect(appendJournalEntry).not.toHaveBeenCalled();
     expect(clientQueries.some((c) => /ROLLBACK/i.test(c.sql))).toBe(true);
+  });
+});
+
+describe('ТД-013 · шифрование секрета оператора', () => {
+  it('зашифрованный секрет + верный код → сессия, перезаписи нет', async () => {
+    const secret = generateTotpSecret();
+    operatorRow = makeRow(encryptTotpSecret(secret, KEY));
+    const { verifyOperatorTotpStep } = await import('./operator-totp');
+
+    expect((await verifyOperatorTotpStep(ID, generateTotp(secret))).ok).toBe(true);
+    expect(poolQueries.some((q) => UPGRADE.test(q.sql))).toBe(false);
+  });
+
+  it('открытый (старый) секрет + верный код → вход и перешифровка со сравнением старого значения', async () => {
+    const secret = generateTotpSecret();
+    operatorRow = makeRow(secret);
+    const { verifyOperatorTotpStep } = await import('./operator-totp');
+
+    expect((await verifyOperatorTotpStep(ID, generateTotp(secret))).ok).toBe(true);
+    const upgrade = poolQueries.find((q) => UPGRADE.test(q.sql));
+    expect(upgrade, 'должна быть перешифровка').toBeTruthy();
+    expect(upgrade!.sql).toMatch(/AND totp_secret = \$3/);
+    const [sealed, id, legacy] = upgrade!.params as [string, string, string];
+    expect(id).toBe(ID);
+    expect(legacy).toBe(secret);
+    expect(decryptTotpSecret(sealed, KEY)).toBe(secret);
+  });
+
+  it('открытый секрет + НЕВЕРНЫЙ код → отказ и без перешифровки', async () => {
+    const secret = generateTotpSecret();
+    operatorRow = makeRow(secret);
+    const { verifyOperatorTotpStep } = await import('./operator-totp');
+
+    const wrong = generateTotp(secret, {}, Date.now() + 10 * 30_000);
+    expect(await verifyOperatorTotpStep(ID, wrong)).toEqual({ ok: false });
+    expect(poolQueries.some((q) => UPGRADE.test(q.sql))).toBe(false);
+  });
+
+  it('секрет зашифрован другим ключом → отказ даже с верным кодом', async () => {
+    const secret = generateTotpSecret();
+    operatorRow = makeRow(encryptTotpSecret(secret, OTHER_KEY));
+    const { verifyOperatorTotpStep } = await import('./operator-totp');
+
+    expect(await verifyOperatorTotpStep(ID, generateTotp(secret))).toEqual({ ok: false });
+  });
+
+  it('ADMIN_TOTP_REQUIRE_ENCRYPTED=1 → вход по открытому секрету запрещён', async () => {
+    vi.stubEnv('ADMIN_TOTP_REQUIRE_ENCRYPTED', '1');
+    const secret = generateTotpSecret();
+    operatorRow = makeRow(secret);
+    const { verifyOperatorTotpStep } = await import('./operator-totp');
+
+    expect(await verifyOperatorTotpStep(ID, generateTotp(secret))).toEqual({ ok: false });
+  });
+
+  it('ключа нет: вход по открытому секрету работает, без перешифровки', async () => {
+    vi.stubEnv('ADMIN_TOTP_KEY', '');
+    const secret = generateTotpSecret();
+    operatorRow = makeRow(secret);
+    const { verifyOperatorTotpStep } = await import('./operator-totp');
+
+    expect((await verifyOperatorTotpStep(ID, generateTotp(secret))).ok).toBe(true);
+    expect(poolQueries.some((q) => UPGRADE.test(q.sql))).toBe(false);
+  });
+
+  it('ключа нет: зашифрованный секрет не открыть → отказ', async () => {
+    const secret = generateTotpSecret();
+    operatorRow = makeRow(encryptTotpSecret(secret, KEY));
+    vi.stubEnv('ADMIN_TOTP_KEY', '');
+    const { verifyOperatorTotpStep } = await import('./operator-totp');
+
+    expect(await verifyOperatorTotpStep(ID, generateTotp(secret))).toEqual({ ok: false });
+  });
+
+  it('ключа нет: подключение 2FA отклоняется до транзакции, в базу ничего', async () => {
+    vi.stubEnv('ADMIN_TOTP_KEY', 'short');
+    const { saveOperatorTotpSecret, OperatorTotpKeyMissingError, canEnrollOperatorTotp } = await import(
+      './operator-totp'
+    );
+
+    expect(canEnrollOperatorTotp()).toBe(false);
+    await expect(saveOperatorTotpSecret(ID, 'super', generateTotpSecret())).rejects.toBeInstanceOf(
+      OperatorTotpKeyMissingError,
+    );
+    expect(clientQueries).toHaveLength(0);
+    expect(appendJournalEntry).not.toHaveBeenCalled();
   });
 });
