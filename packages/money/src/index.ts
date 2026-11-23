@@ -14,3 +14,4 @@ export * from './terminal-stops';
 export * from './fees-contract';
 export * from './fees';
 export * from './display-currency';
+export * from './withdraw-mode';

@@ -16,6 +16,11 @@ import { readCredentialSettings } from '@/lib/credentials/core';
 import { checklistToText } from '@/lib/credentials/policy';
 import { CredentialSettingsForm } from './CredentialSettingsForm';
 import { GroupPlatformsPanel } from './GroupPlatformsPanel';
+import { getWithdrawMode } from '@/lib/crypto/withdraw-mode';
+import { WITHDRAW_MODE_HINT, WITHDRAW_MODE_LABEL } from '@/lib/crypto/labels';
+import { WithdrawModeForm } from './WithdrawModeForm';
+import { WithdrawModeBanner } from '../_money/WithdrawModeBanner';
+import { fmtDateTime } from '@/lib/ui/format';
 
 export const dynamic = 'force-dynamic';
 
@@ -26,11 +31,12 @@ function KycValue({ required }: { required: boolean }) {
 export default async function PlatformSettingsPage() {
   const operator = await getOperatorSession();
   if (operator?.role !== 'admin') notFound();
-  const [settings, promo, cred, minStop] = await Promise.all([
+  const [settings, promo, cred, minStop, withdrawMode] = await Promise.all([
     getPlatformMoneySettings(),
     getPromoSettings(),
     readCredentialSettings(moneyPool()),
     readMinStop(),
+    getWithdrawMode(),
   ]);
   const address = exchangeTronAddress();
 
@@ -43,6 +49,40 @@ export default async function PlatformSettingsPage() {
 
       <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
         <div className="min-w-0 space-y-5">
+        <Panel
+          id="withdraw-mode"
+          title="Режим вывода"
+          description="Один переключатель на всю платформу. Меняет только администратор, с основанием; каждое переключение — в журнал. Клиенты разницы не видят."
+          actions={
+            <ToneBadge tone={withdrawMode.mode === 'stop' ? 'negative' : withdrawMode.mode === 'auto' ? 'info' : 'neutral'}>
+              сейчас «{WITHDRAW_MODE_LABEL[withdrawMode.mode]}»
+            </ToneBadge>
+          }
+          className="scroll-mt-20"
+        >
+          <div className="space-y-5">
+            <WithdrawModeBanner state={withdrawMode} isAdmin={false} />
+            <DescriptionList
+              columns={2}
+              items={[
+                {
+                  term: 'Действует сейчас',
+                  value: <span className="font-medium">{WITHDRAW_MODE_LABEL[withdrawMode.mode]}</span>,
+                  hint: WITHDRAW_MODE_HINT[withdrawMode.mode],
+                },
+                {
+                  term: 'Последнее переключение',
+                  value: withdrawMode.changedAt ? fmtDateTime(withdrawMode.changedAt) : 'не переключали',
+                  hint: withdrawMode.changedByLogin ?? undefined,
+                },
+              ]}
+            />
+            <div className="border-border border-t pt-5">
+              <WithdrawModeForm current={withdrawMode.mode} />
+            </div>
+          </div>
+        </Panel>
+
         <Panel
           title="Ввод и вывод"
           description="Изменение — с основанием, пишется в журнал (до и после)."

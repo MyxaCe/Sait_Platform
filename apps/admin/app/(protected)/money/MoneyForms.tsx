@@ -234,13 +234,15 @@ function SettleForm({ w }: { w: WithdrawalFacts }) {
   );
 }
 
-export function WithdrawalActions({ w }: { w: WithdrawalFacts }) {
+export function WithdrawalActions({ w, stopped = false }: { w: WithdrawalFacts; stopped?: boolean }) {
   if (w.status === 'requested') {
     return (
       <>
-        <Section title="Одобрить" hint="Проверьте клиента и адрес получателя.">
-          <ApproveForm w={w} />
-        </Section>
+        {stopped ? null : (
+          <Section title="Одобрить" hint="Проверьте клиента и адрес получателя.">
+            <ApproveForm w={w} />
+          </Section>
+        )}
         <Section title="Отклонить" danger>
           <RefundForm
             w={w}
@@ -256,9 +258,11 @@ export function WithdrawalActions({ w }: { w: WithdrawalFacts }) {
   if (w.status === 'approved') {
     return (
       <>
-        <Section title="Внести хэш отправки" hint="После того как USDT ушли с кошелька биржи.">
-          <SentForm w={w} />
-        </Section>
+        {stopped ? null : (
+          <Section title="Внести хэш отправки" hint="После того как USDT ушли с кошелька биржи.">
+            <SentForm w={w} />
+          </Section>
+        )}
         <Section title="Отменить" danger>
           <RefundForm
             w={w}

@@ -6,6 +6,7 @@ import { SYSTEM_OPERATORS } from './system-operators';
 import { externalRef } from './terminal-contract';
 import type { MoneyMoveOutcome, TerminalMoneyClient } from './terminal-money';
 import { isValidTronAddress, normalizeTxHash } from './tron';
+import { lockWithdrawModeWithinTx, readWithdrawMode } from './withdraw-mode';
 
 export type WithdrawalStatus =
   | 'requested'
@@ -214,7 +215,8 @@ export type OperatorResult =
         | 'debitPending'
         | 'terminalUnavailable'
         | 'invalidHash'
-        | 'hashUsed';
+        | 'hashUsed'
+        | 'withdrawalsStopped';
     }
   | { ok: false; reason: 'terminalRefused'; code: string };
 
@@ -225,6 +227,8 @@ export async function approveWithdrawal(
 ): Promise<OperatorResult> {
   const reason = input.reason.trim();
   if (!reason) return { ok: false, reason: 'missingReason' };
+  // Быстрый отказ без обращения к терминалу; решающая проверка — ниже, в транзакции.
+  if ((await readWithdrawMode(pool)).mode === 'stop') return { ok: false, reason: 'withdrawalsStopped' };
 
   const debit = await ensureWithdrawalDebited(pool, terminal, input.withdrawalId);
   if (debit.state === 'not-found') return { ok: false, reason: 'notFound' };
@@ -232,6 +236,9 @@ export async function approveWithdrawal(
   if (debit.state === 'refused') return { ok: false, reason: 'wrongState' };
 
   return inTransaction<OperatorResult>(pool, async (tx) => {
+    if ((await lockWithdrawModeWithinTx(tx)) === 'stop') {
+      return rollback<OperatorResult>({ ok: false, reason: 'withdrawalsStopped' });
+    }
     const upd = await tx.query(
       `UPDATE crypto_withdrawals
           SET status = 'approved', decided_by = $2, updated_at = now()
@@ -361,6 +368,9 @@ export async function markWithdrawalSent(
 
   try {
     return await inTransaction<OperatorResult>(pool, async (tx) => {
+      if ((await lockWithdrawModeWithinTx(tx)) === 'stop') {
+        return rollback<OperatorResult>({ ok: false, reason: 'withdrawalsStopped' });
+      }
       const dep = await tx.query(`SELECT 1 FROM crypto_deposits WHERE tx_hash = $1`, [txHash]);
       if (dep.rows.length > 0) return rollback<OperatorResult>({ ok: false, reason: 'hashUsed' });
       const upd = await tx.query(

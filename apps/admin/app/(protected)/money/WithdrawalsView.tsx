@@ -35,6 +35,14 @@ import {
   type WithdrawalFilter,
 } from './view';
 
+function ManualOnlyBadge({ className }: { className?: string }) {
+  return (
+    <ToneBadge tone="warning" className={className}>
+      только ручной вывод
+    </ToneBadge>
+  );
+}
+
 function WithdrawalStatus({ status }: { status: string }) {
   const key = statusKeyOf(`withdrawal_${status}`);
   return key ? <StatusBadge status={key} /> : <ToneBadge tone="neutral">{status}</ToneBadge>;
@@ -53,6 +61,7 @@ function columns(filter: WithdrawalFilter, selectedId: string | undefined): Data
         <Link href={`/clients/${w.userId}?tab=money`} className="group block min-w-0">
           <span className="text-primary group-hover:text-accent block truncate font-medium">{w.clientName}</span>
           <span className="text-muted block truncate text-xs">{w.clientEmail}</span>
+          {w.manualOnly ? <ManualOnlyBadge className="mt-1" /> : null}
         </Link>
       ),
     },
@@ -146,7 +155,7 @@ const AMOUNT_LABEL: Record<string, string> = {
   cancelled: 'Сумма заявки',
 };
 
-function DecisionPanel({ w }: { w: WithdrawalRowView }) {
+function DecisionPanel({ w, stopped }: { w: WithdrawalRowView; stopped: boolean }) {
   const step = NEXT_STEP[w.status];
   const debitTone: DescriptionItem['tone'] = w.debitState === 'pending' ? 'warning' : 'default';
   const items: DescriptionItem[] = [
@@ -157,7 +166,7 @@ function DecisionPanel({ w }: { w: WithdrawalRowView }) {
           {w.clientName}
         </Link>
       ),
-      hint: w.clientEmail,
+      hint: w.manualOnly ? `${w.clientEmail} · флаг «только ручной вывод»` : w.clientEmail,
     },
     {
       term: 'Адрес получателя (TRON)',
@@ -217,7 +226,13 @@ function DecisionPanel({ w }: { w: WithdrawalRowView }) {
         </div>
         <DescriptionList columns={1} items={items} />
         <DecisionArea>
-          {step ? (
+          {stopped && (w.status === 'requested' || w.status === 'approved') ? (
+            <Callout tone="negative" title="Выводы остановлены («Стоп»)">
+              {w.status === 'requested'
+                ? 'Одобрить заявку сейчас нельзя никому. Деньги клиента удерживаются; вернуть их можно кнопкой «Отклонить с возвратом».'
+                : 'Внести хэш отправки сейчас нельзя никому — не отправляйте USDT, пока «Стоп» не снят. Вернуть деньги клиенту можно кнопкой «Отменить с возвратом».'}
+            </Callout>
+          ) : step ? (
             <Callout tone={step.tone} title={step.title}>
               {step.text}
               {isVoid(w.status) ? voidMoneyNote(w) : null}
@@ -238,6 +253,7 @@ function DecisionPanel({ w }: { w: WithdrawalRowView }) {
               clientEmail: w.clientEmail,
               toAddress: w.toAddress,
             }}
+            stopped={stopped}
           />
         </DecisionArea>
       </div>
@@ -249,10 +265,12 @@ export function WithdrawalsView({
   rows,
   filterParam,
   selectedId,
+  stopped = false,
 }: {
   rows: WithdrawalRowView[];
   filterParam: string | undefined;
   selectedId: string | undefined;
+  stopped?: boolean;
 }) {
   const filter = asWithdrawalFilter(filterParam);
   const shown = orderWithdrawals(rows, filter);
@@ -321,7 +339,7 @@ export function WithdrawalsView({
     </Panel>
   );
 
-  const banner = <AwaitingSendBanner rows={rows} filter={filter} selectedId={selected?.id} />;
+  const banner = stopped ? null : <AwaitingSendBanner rows={rows} filter={filter} selectedId={selected?.id} />;
 
   if (!selected) {
     return (
@@ -341,7 +359,7 @@ export function WithdrawalsView({
           aria-label="Решение по заявке"
           className="min-w-0"
         >
-          <DecisionPanel key={selected.id} w={selected} />
+          <DecisionPanel key={selected.id} w={selected} stopped={stopped} />
         </aside>
       </div>
     </div>

@@ -19,6 +19,10 @@ export const MONEY_ERRORS: Record<string, string> = {
   invalidHash: 'Хэш транзакции — 64 шестнадцатеричных символа.',
   hashUsed: 'Этот хэш уже использован (другой выплатой или депозитом).',
   invalidDecision: 'Неизвестное действие.',
+  withdrawalsStopped:
+    'Выводы остановлены («Стоп»): одобрять и отмечать отправку нельзя никому. Вернуть деньги клиенту («Отклонить» / «Отменить») можно.',
+  invalidMode: 'Неизвестный режим вывода.',
+  alreadyStopped: 'Выводы уже остановлены.',
   missingBasis: 'Нужно указать основание.',
   forbiddenRole: 'Денежные команды создают только администратор и финансовый оператор.',
   invalidAmount: 'Сумма — положительное число USDT, не больше двух знаков после запятой.',
@@ -80,3 +84,15 @@ export function centsText(cents: number | null): string {
   if (cents === null) return '—';
   return `${(cents / 100).toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT`;
 }
+
+export const WITHDRAW_MODE_LABEL: Record<string, string> = {
+  auto: 'Авто',
+  manual: 'Ручной',
+  stop: 'Стоп',
+};
+
+export const WITHDRAW_MODE_HINT: Record<string, string> = {
+  auto: 'Оператор одобряет, платформа отправляет USDT сама. Автоотправка пока не подключена — исполняется как «Ручной».',
+  manual: 'Оператор одобряет, отправляет USDT с кошелька биржи сам и вносит хэш. Наблюдатель сверяет перевод в сети.',
+  stop: 'Заявки принимаются, деньги клиентов удерживаются, но одобрить и отметить отправку не может никто, включая администратора. Вернуть деньги клиенту можно.',
+};
