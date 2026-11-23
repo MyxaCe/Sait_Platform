@@ -33,6 +33,8 @@ export interface WithdrawalRowView {
   payoutTxHash: string | null;
   refunded: boolean;
   requestedAt: string;
+  /** Флаг клиента «только ручной вывод». */
+  manualOnly: boolean;
 }
 
 const iso = (v: unknown) => (v ? new Date(v as string | Date).toISOString() : null);
@@ -90,13 +92,15 @@ function mapWithdrawal(r: Record<string, unknown>): WithdrawalRowView {
     payoutTxHash: (r.payout_tx_hash as string | null) ?? null,
     refunded: r.refunded_at !== null && r.refunded_at !== undefined,
     requestedAt: iso(r.requested_at)!,
+    manualOnly: r.withdraw_manual_only === true,
   };
 }
 
 export async function listWithdrawals(): Promise<WithdrawalRowView[]> {
   const r = await moneyPool().query(
-    `SELECT w.*, u.full_name, u.email
+    `SELECT w.*, u.full_name, u.email, COALESCE(f.withdraw_manual_only, false) AS withdraw_manual_only
        FROM crypto_withdrawals w JOIN users u ON u.id = w.user_id
+       LEFT JOIN client_money_flags f ON f.user_id = w.user_id
       ORDER BY CASE w.status WHEN 'needs_review' THEN 0 WHEN 'requested' THEN 1
                              WHEN 'approved' THEN 2 WHEN 'sent' THEN 3 ELSE 4 END,
                w.requested_at DESC
@@ -115,8 +119,9 @@ export async function listClientDeposits(userId: string): Promise<DepositRowView
 
 export async function listClientWithdrawals(userId: string): Promise<WithdrawalRowView[]> {
   const r = await moneyPool().query(
-    `SELECT w.*, u.full_name, u.email
+    `SELECT w.*, u.full_name, u.email, COALESCE(f.withdraw_manual_only, false) AS withdraw_manual_only
        FROM crypto_withdrawals w JOIN users u ON u.id = w.user_id
+       LEFT JOIN client_money_flags f ON f.user_id = w.user_id
       WHERE w.user_id = $1 ORDER BY w.requested_at DESC LIMIT 50`,
     [userId],
   );

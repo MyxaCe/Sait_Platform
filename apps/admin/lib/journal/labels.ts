@@ -91,6 +91,16 @@ export const ACTION_LABELS: Record<string, ActionMeta> = {
     tone: 'positive',
     group: 'client_money',
   },
+  'client.money.withdraw_manual_only_on': {
+    label: 'Включён «только ручной вывод»',
+    tone: 'warning',
+    group: 'client_money',
+  },
+  'client.money.withdraw_manual_only_off': {
+    label: 'Снят «только ручной вывод»',
+    tone: 'neutral',
+    group: 'client_money',
+  },
   'client.money.deposit_kyc_changed': {
     label: 'Изменено правило пополнения (KYC)',
     tone: 'info',
@@ -305,6 +315,11 @@ export const ACTION_LABELS: Record<string, ActionMeta> = {
   'platform.money_settings.updated': {
     label: 'Изменены денежные настройки платформы',
     tone: 'warning',
+    group: 'platform',
+  },
+  'platform.withdraw_mode.changed': {
+    label: 'Сменён режим вывода',
+    tone: 'negative',
     group: 'platform',
   },
   'platform.terminal_stops.updated': {

@@ -63,7 +63,14 @@ export class FakeDb implements PoolLike {
     min_deposit_minor: 1000,
     min_withdraw_minor: 1000,
     unverified_withdraw_bps: 500,
+    withdraw_mode: 'manual' as string,
+    withdraw_mode_changed_at: null as string | null,
+    withdraw_mode_changed_by: null as string | null,
   };
+  /** «Только ручной вывод» по клиентам (client_money_flags.withdraw_manual_only). */
+  manualOnly = new Map<string, boolean>();
+  /** Вызывается перед чтением режима под блокировкой — для тестов гонки. */
+  beforeModeLock: (() => void) | null = null;
   deposits = new Map<string, DepositRow>();
   withdrawals = new Map<string, WithdrawalRow>();
   journal: JournalRow[] = [];
@@ -370,6 +377,56 @@ export class FakeDb implements PoolLike {
       Object.assign(r, { status: 'settled', decided_by: p[1] });
       return one({ user_id: r.user_id });
     }
+
+    if (s.startsWith('SELECT s.withdraw_mode, s.withdraw_mode_changed_at')) {
+      return one({
+        withdraw_mode: this.settings.withdraw_mode,
+        withdraw_mode_changed_at: this.settings.withdraw_mode_changed_at,
+        withdraw_mode_changed_by: this.settings.withdraw_mode_changed_by,
+        changed_by_login: this.settings.withdraw_mode_changed_by ? 'login-of-' + this.settings.withdraw_mode_changed_by : null,
+      });
+    }
+    if (s.startsWith('SELECT withdraw_mode FROM platform_money_settings WHERE id = 1 FOR')) {
+      if (s.endsWith('FOR SHARE') && this.beforeModeLock) {
+        const hook = this.beforeModeLock;
+        this.beforeModeLock = null;
+        hook();
+      }
+      return one({ withdraw_mode: this.settings.withdraw_mode });
+    }
+    if (s.startsWith('INSERT INTO platform_money_settings (id) VALUES (1) ON CONFLICT')) return { rows: [] };
+    if (s.startsWith("SELECT COUNT(*) FILTER (WHERE status = 'requested') AS requested")) {
+      const all = [...this.withdrawals.values()];
+      return one({
+        requested: all.filter((r) => r.status === 'requested').length,
+        approved: all.filter((r) => r.status === 'approved').length,
+      });
+    }
+    if (s.startsWith('UPDATE platform_money_settings SET withdraw_mode = $1')) {
+      this.track(undo, this.settings);
+      Object.assign(this.settings, {
+        withdraw_mode: p[0] as string,
+        withdraw_mode_changed_at: new Date().toISOString(),
+        withdraw_mode_changed_by: p[1] as string,
+      });
+      return { rows: [], rowCount: 1 };
+    }
+    if (s.startsWith('UPDATE platform_money_settings SET last_journal_seq')) return { rows: [], rowCount: 1 };
+    if (s.startsWith('INSERT INTO client_money_flags (user_id) VALUES ($1) ON CONFLICT')) return { rows: [] };
+    if (s.startsWith('SELECT withdraw_manual_only FROM client_money_flags WHERE user_id = $1')) {
+      const uid = p[0] as string;
+      return this.manualOnly.has(uid) || this.clients.has(uid)
+        ? one({ withdraw_manual_only: this.manualOnly.get(uid) ?? false })
+        : { rows: [] };
+    }
+    if (s.startsWith('UPDATE client_money_flags SET withdraw_manual_only = $2')) {
+      const uid = p[0] as string;
+      const prev = this.manualOnly.get(uid);
+      if (undo) undo.push(() => (prev === undefined ? this.manualOnly.delete(uid) : this.manualOnly.set(uid, prev)));
+      this.manualOnly.set(uid, Boolean(p[1]));
+      return { rows: [], rowCount: 1 };
+    }
+    if (s.startsWith('UPDATE client_money_flags SET last_journal_seq')) return { rows: [], rowCount: 1 };
 
     throw new Error(`FakeDb: неизвестный SQL: ${s.slice(0, 160)}`);
   }

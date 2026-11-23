@@ -13,6 +13,9 @@ import { DepositsView } from './DepositsView';
 import { UnidentifiedView } from './UnidentifiedView';
 import { listManualCredits } from '@/lib/money/credit-queries';
 import { ManualCreditsTable, PendingCreditCard, needsRetry } from '../_money/ManualCredits';
+import { getWithdrawMode } from '@/lib/crypto/withdraw-mode';
+import { WithdrawModeBanner } from '../_money/WithdrawModeBanner';
+import { StopWithdrawalsButton } from '../_money/StopWithdrawalsButton';
 
 export const dynamic = 'force-dynamic';
 
@@ -38,12 +41,15 @@ export default async function MoneyPage({
     : 'withdrawals';
   const address = exchangeTronAddress();
 
-  const [withdrawals, deposits, unidentified, credits] = await Promise.all([
+  const [withdrawals, deposits, unidentified, credits, withdrawMode] = await Promise.all([
     listWithdrawals(),
     listDeposits(),
     listUnidentified(),
     listManualCredits({ limit: 200 }),
+    getWithdrawMode(),
   ]);
+  const isAdmin = operator?.role === 'admin';
+  const stopped = withdrawMode.mode === 'stop';
   const creditsAwaiting = credits.filter((c) => c.state === 'awaiting_second_approval');
   const creditsRetry = credits.filter(needsRetry);
 
@@ -83,6 +89,8 @@ export default async function MoneyPage({
           поступлений. Адрес задаётся только в окружении сервера, не в админке.
         </Callout>
       ) : null}
+
+      <WithdrawModeBanner state={withdrawMode} isAdmin={isAdmin} />
 
       <section aria-label="Очереди денег" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <KpiTile
@@ -180,7 +188,22 @@ export default async function MoneyPage({
       />
 
       {tab === 'withdrawals' ? (
-        <WithdrawalsView rows={withdrawals} filterParam={searchParams.f} selectedId={searchParams.w} />
+        <div className="space-y-5">
+          <WithdrawalsView
+            rows={withdrawals}
+            filterParam={searchParams.f}
+            selectedId={searchParams.w}
+            stopped={stopped}
+          />
+          {isAdmin && !stopped ? (
+            <Panel
+              title="Аварийная остановка выводов"
+              description="Режим «Стоп» для всей платформы: заявки принимаются, но исполнить их не может никто. Снимается в настройках платформы."
+            >
+              <StopWithdrawalsButton />
+            </Panel>
+          ) : null}
+        </div>
       ) : tab === 'credits' ? (
         <div className="space-y-5">
           <Panel

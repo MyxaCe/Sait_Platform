@@ -32,6 +32,9 @@ import { MyClientsKpis, MyClientsPanel } from './_managers/MyClientsSection';
 import { getCredentialsAlerts } from '@/lib/credentials/queries';
 import { moneyPool } from '@/lib/crypto/runtime';
 import { unseenTransferCounts } from '@broker/transfer';
+import { getWithdrawMode } from '@/lib/crypto/withdraw-mode';
+import { WithdrawModeBanner } from './_money/WithdrawModeBanner';
+import { StopWithdrawalsButton } from './_money/StopWithdrawalsButton';
 
 export const dynamic = 'force-dynamic';
 
@@ -146,6 +149,7 @@ export default async function ControlCenterHome() {
   const credAlerts = operator.role === 'admin' ? await getCredentialsAlerts(moneyPool()).catch(() => null) : null;
   const transfers =
     operator.role === 'admin' ? await unseenTransferCounts(getPool()).catch(() => null) : null;
+  const withdrawMode = money ? await getWithdrawMode().catch(() => null) : null;
   const oldest = pending[0];
   const overdue = pending.filter((p) => isOverdue(p.updatedAt)).length;
 
@@ -160,6 +164,22 @@ export default async function ControlCenterHome() {
           </span>
         }
       />
+
+      {withdrawMode ? <WithdrawModeBanner state={withdrawMode} isAdmin={operator.role === 'admin'} /> : null}
+
+      {withdrawMode && operator.role === 'admin' && withdrawMode.mode !== 'stop' ? (
+        <details className="group rounded-lg border border-negative/30 bg-elevated px-4 py-3">
+          <summary className="text-negative cursor-pointer select-none text-sm font-semibold">
+            Остановить выводы (аварийно)
+            <span className="text-muted ml-2 text-xs font-normal">
+              режим «Стоп» для всей платформы: заявки принимаются, но исполнить их не может никто
+            </span>
+          </summary>
+          <div className="mt-3 max-w-xl">
+            <StopWithdrawalsButton />
+          </div>
+        </details>
+      ) : null}
 
       {mySummary ? <MyClientsKpis summary={mySummary} /> : null}
 

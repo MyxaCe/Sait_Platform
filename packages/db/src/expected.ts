@@ -30,4 +30,5 @@ export const EXPECTED_MIGRATIONS: readonly string[] = [
   '1796030000000_client_totp',
   '1796310000000_leverage_instrument_classes',
   '1796400000000_users_onboarding',
+  '1796410000000_withdraw_modes',
 ];

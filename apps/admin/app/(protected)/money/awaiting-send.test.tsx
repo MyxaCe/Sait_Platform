@@ -24,6 +24,7 @@ function w(p: Partial<WithdrawalRowView>): WithdrawalRowView {
     payoutTxHash: null,
     refunded: false,
     requestedAt: '2026-11-10T08:00:00Z',
+    manualOnly: false,
     ...p,
   };
 }

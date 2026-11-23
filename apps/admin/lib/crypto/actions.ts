@@ -8,6 +8,8 @@ import {
   markWithdrawalSent,
   parseUsdtAmountToCents,
   rejectWithdrawal,
+  setClientWithdrawManualOnly,
+  setWithdrawMode,
   settleWithdrawalManually,
   type KycSetting,
 } from '@broker/money';
@@ -195,6 +197,61 @@ export async function withdrawalDecisionAction(
     default:
       return { error: 'invalidDecision' };
   }
+  revalidatePath('/money');
+  return fromResult(r);
+}
+
+function revalidateWithdrawMode() {
+  revalidatePath('/');
+  revalidatePath('/settings');
+  revalidatePath('/money');
+}
+
+/** Режим вывода на всю платформу: «Авто», «Ручной», «Стоп». Только admin, с основанием. */
+export async function setWithdrawModeAction(_prev: MoneyActionState, fd: FormData): Promise<MoneyActionState> {
+  const operator = await getOperatorSession();
+  if (!operator) redirect(LOGIN_PATH);
+  if (operator.role !== 'admin') return { error: 'forbidden' };
+  const r = await setWithdrawMode(moneyPool(), {
+    operatorId: operator.operatorId,
+    reason: str(fd, 'reason'),
+    mode: str(fd, 'mode'),
+  });
+  revalidateWithdrawMode();
+  return fromResult(r);
+}
+
+/** Аварийная кнопка «Остановить выводы» (главная админки, раздел «Деньги»). Только admin. */
+export async function stopWithdrawalsAction(_prev: MoneyActionState, fd: FormData): Promise<MoneyActionState> {
+  const operator = await getOperatorSession();
+  if (!operator) redirect(LOGIN_PATH);
+  if (operator.role !== 'admin') return { error: 'forbidden' };
+  const r = await setWithdrawMode(moneyPool(), {
+    operatorId: operator.operatorId,
+    reason: str(fd, 'reason'),
+    mode: 'stop',
+  });
+  revalidateWithdrawMode();
+  if (!r.ok && r.reason === 'noChange') return { error: 'alreadyStopped' };
+  return fromResult(r);
+}
+
+/** Флаг клиента «только ручной вывод». admin и finance_operator. */
+export async function setClientWithdrawManualOnlyAction(
+  _prev: MoneyActionState,
+  fd: FormData,
+): Promise<MoneyActionState> {
+  const operator = await requireMoneyOperator();
+  if (!operator) return { error: 'forbidden' };
+  const userId = str(fd, 'userId');
+  if (!userId) return { error: 'noClient' };
+  const r = await setClientWithdrawManualOnly(moneyPool(), {
+    operatorId: operator.operatorId,
+    userId,
+    reason: str(fd, 'reason'),
+    value: fd.get('manualOnly') === 'on',
+  });
+  revalidatePath(`/clients/${userId}`);
   revalidatePath('/money');
   return fromResult(r);
 }

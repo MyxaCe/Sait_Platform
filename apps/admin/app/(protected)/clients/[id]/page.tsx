@@ -32,6 +32,7 @@ import { MoneyFlagsPanel } from './_components/MoneyFlagsPanel';
 import { getClientTrading } from '@/lib/clients/trading';
 import {
   loadMoneyPolicyInputs,
+  readClientWithdrawManualOnly,
   computeMoneyPolicy,
   computeKycAllowance,
   loadKycWithdrawUsage,
@@ -61,6 +62,7 @@ import { getCredentialsView } from '@/lib/credentials/queries';
 import { CredentialsTab } from './_components/CredentialsTab';
 import { TransferPanel } from './_components/TransferPanel';
 import { WithdrawLimitPanel } from './_components/WithdrawLimitPanel';
+import { ManualOnlyPanel } from './_components/ManualOnlyPanel';
 import { formatBpsPercent } from '@/lib/crypto/withdraw-limit';
 import { listManualCredits } from '@/lib/money/credit-queries';
 import { ManualCreditForm } from '../../_money/ManualCreditForms';
@@ -281,7 +283,7 @@ export default async function ClientCardPage({
   if (!card) notFound();
   const tab = asTab(searchParams.tab);
 
-  const [demo, real, policyInputs, live, deposits, withdrawals, aml, kycUsage] = await Promise.all([
+  const [demo, real, policyInputs, live, deposits, withdrawals, aml, kycUsage, manualOnly] = await Promise.all([
     getClientTrading(card.userId, undefined, 'demo'),
     getClientTrading(card.userId, undefined, 'real'),
     loadMoneyPolicyInputs(moneyPool(), card.userId),
@@ -292,6 +294,7 @@ export default async function ClientCardPage({
     listClientWithdrawals(card.userId),
     getAmlCard(card.userId),
     loadKycWithdrawUsage(moneyPool(), card.userId),
+    readClientWithdrawManualOnly(moneyPool(), card.userId),
   ]);
   const policy = computeMoneyPolicy(policyInputs);
   const liveRealAccount = live.state === 'ok' ? live.accounts.find((a) => a.kind === 'real') : undefined;
@@ -719,6 +722,15 @@ export default async function ClientCardPage({
                     withdrawBanned: policyInputs.flags.withdrawBanned,
                   }}
                 />
+              </Panel>
+            ) : null}
+            {canMoney ? (
+              <Panel
+                title="Ручной вывод"
+                description="Изменение — с основанием, пишется в журнал. Клиент флаг не видит."
+                actions={manualOnly ? <ToneBadge tone="warning">только ручной вывод</ToneBadge> : undefined}
+              >
+                <ManualOnlyPanel userId={card.userId} manualOnly={manualOnly} />
               </Panel>
             ) : null}
             {canMoney ? (
