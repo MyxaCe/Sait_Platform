@@ -148,16 +148,7 @@ describe('проводка · состояние котировок спраши
     expect(quotesCall.slice(0, quotesCall.indexOf('}'))).not.toContain('revalidate');
   });
 
-  it('островок спрашивает ручку сам, а макет — нет', () => {
-    expect(read('features/quotes/TickerGate.tsx')).toContain('/api/quotes/state');
+  it('макет ручку состояния не спрашивает (бегущая строка убрана 23.11)', () => {
     expect(read('app/[locale]/(marketing)/layout.tsx')).not.toContain('/api/quotes/state');
-  });
-
-  it('прочитанный список ДОХОДИТ до ленты, а не оседает в островке', () => {
-    expect(code('features/quotes/TickerGate.tsx')).toMatch(/<QuotesTicker[^>]*staleSymbols=/s);
-  });
-
-  it('лента отдаёт список вердикту, а не держит его в пропсах', () => {
-    expect(code('features/quotes/QuotesTicker.tsx')).toMatch(/useQuoteViews\([^)]*staleSymbols/s);
   });
 });

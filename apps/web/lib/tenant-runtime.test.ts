@@ -93,15 +93,14 @@ describe('проводка границы по сегментам витрины
     const layout = code(MARKETING_LAYOUT);
 
     expect(layout).not.toContain('getTenantAccess');
-    expect(layout).toContain('<TickerGate');
+    expect(layout).not.toContain('TickerGate');
   });
 
-  it('островок тикера спрашивает границу у рантаймовой ручки', () => {
-    const gate = code('features/quotes/TickerGate.tsx');
+  it('фон главной спрашивает границу у рантаймовой ручки', () => {
+    const backdrop = code('features/hero-backdrop/backdrop-symbols.ts');
 
-    expect(gate).toContain("'/api/tenant/access'");
-    expect(gate).toContain('fetch(');
-    expect(gate).toContain("'use client'");
+    expect(backdrop).toContain("'/api/tenant/access'");
+    expect(backdrop).toContain('fetch(');
   });
 
   it('ручка границы объявлена динамической — GET без неё пререндерится', () => {

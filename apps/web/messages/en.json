@@ -129,8 +129,34 @@
   "pwa": {
     "install": "Install App",
     "installed": "App installed",
-    "iosHint": "On iPhone/iPad: tap “Share” (the square with an arrow) in Safari, then “Add to Home Screen”.",
-    "manualHint": "Open your browser menu and choose “Install app” (Chrome, Edge) or “Add to Home screen”."
+    "sheet": {
+      "title": "How to install the app",
+      "close": "Close",
+      "copy": "Copy link",
+      "copied": "Link copied",
+      "ios": {
+        "1": "Tap the Share button — the square with an up arrow (at the bottom in Safari, in the address bar in Chrome).",
+        "2": "Scroll down and choose “Add to Home Screen”.",
+        "3": "Tap “Add” — the app icon appears on your home screen."
+      },
+      "android": {
+        "1": "Tap ⋮ (three dots) in the top right corner of the browser.",
+        "2": "Choose “Install app” or “Add to Home screen”.",
+        "3": "Confirm — the app icon appears on your home screen."
+      },
+      "samsung": {
+        "1": "Tap ≡ (menu) at the bottom of the screen.",
+        "2": "Choose “Add page to” → “Home screen”."
+      },
+      "inApp": {
+        "1": "The site is open inside another app (e.g. Telegram or Instagram) — it can’t be installed from here.",
+        "2": "Open the site in your browser: menu ⋮ or ··· → “Open in browser”, or copy the link below and paste it into Chrome or Safari. Then tap “Install app” again."
+      },
+      "desktop": {
+        "1": "In Chrome or Edge, click the install icon on the right of the address bar.",
+        "2": "Or open the ⋮ menu → “Install app” (in Edge: “Apps” → “Install this site as an app”)."
+      }
+    }
   },
   "instruments": {
     "title": "Trading Instruments",

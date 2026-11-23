@@ -220,15 +220,14 @@ describe('проводка каталога по сегментам витрин
 
     expect(layout).not.toContain('getMdsCatalog');
     expect(layout).not.toContain('getMdsSymbols');
-    expect(layout).toContain('<TickerGate');
+    expect(layout).not.toContain('TickerGate');
   });
 
   it('зашитого списка символов на витрине не осталось НИГДЕ', () => {
     const doors = [
       MARKETING_LAYOUT,
-      'features/quotes/TickerGate.tsx',
-      'features/quotes/QuotesTicker.tsx',
       'features/quotes/ticker-decision.ts',
+      'features/hero-backdrop/backdrop-symbols.ts',
     ];
 
     for (const file of doors) {
@@ -236,12 +235,11 @@ describe('проводка каталога по сегментам витрин
     }
   });
 
-  it('островок спрашивает ОБЕ рантаймовые ручки', () => {
-    const gate = code('features/quotes/TickerGate.tsx');
+  it('фон главной спрашивает ОБЕ рантаймовые ручки', () => {
+    const backdrop = code('features/hero-backdrop/backdrop-symbols.ts');
 
-    expect(gate).toContain("'/api/quotes/catalog'");
-    expect(gate).toContain("'/api/tenant/access'");
-    expect(gate).toContain("'use client'");
+    expect(backdrop).toContain("'/api/quotes/catalog'");
+    expect(backdrop).toContain("'/api/tenant/access'");
   });
 
   it('ручка каталога объявлена динамической — GET без неё пререндерится', () => {
