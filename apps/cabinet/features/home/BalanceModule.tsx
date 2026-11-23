@@ -45,7 +45,7 @@ export async function BalanceModule({
   const t = await getTranslations('home');
 
   return (
-    <div className="grid gap-4 lg:grid-cols-2">
+    <div className="grid h-full gap-4 lg:grid-cols-2">
       {real ? (
         <RealAccountCard real={real} showDeposit={config.buttons.deposit} showWithdraw={config.buttons.withdraw} />
       ) : null}
@@ -210,7 +210,7 @@ async function RealAccountCard({
         </div>
       ) : null}
 
-      <div className="mt-auto grid grid-cols-3 gap-2 pt-5">
+      <div className="mt-auto grid grid-cols-3 gap-2 pt-5 [&_a]:min-w-0 [&_button]:min-w-0">
         {showDeposit ? (
           <div data-money-button="deposit" data-allowed={String(policy.depositAllowed)} className="grid">
             {policy.depositAllowed && real.depositAddressReady ? (

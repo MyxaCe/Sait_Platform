@@ -14,7 +14,8 @@
     "trade": "Operar",
     "cmsUnavailableTitle": "Contenido no disponible temporalmente",
     "cmsUnavailableText": "No hemos podido cargar esta página. Vuelva a intentarlo en un par de minutos.",
-    "retry": "Reintentar"
+    "retry": "Reintentar",
+    "toCabinet": "Mi cuenta"
   },
   "validation": {
     "nameMin": "Mínimo 2 caracteres",

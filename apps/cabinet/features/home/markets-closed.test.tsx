@@ -70,6 +70,6 @@ describe('ТД-010 · «Торговать» в «Рынках» передаё�
     feed.quotes = [quote({})];
     render(<MarketsModule config={config} data={data} />);
 
-    expect(screen.getByText('trade').getAttribute('href')).toBe('/terminal?account=real&symbol=EURUSD');
+    expect(screen.getByRole('link', { name: 'trade EURUSD' }).getAttribute('href')).toBe('/terminal?account=real&symbol=EURUSD');
   });
 });

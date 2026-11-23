@@ -82,6 +82,18 @@ export async function getChromeFooter(locale: string): Promise<ChromeFooter | nu
   return data.footer;
 }
 
+export async function getChromeHeaderNav(locale: string): Promise<{ href: string; label: string }[]> {
+  const data = (await cmsGet('navigation', locale)) as { header?: unknown } | null;
+  if (!data || !Array.isArray(data.header)) return [];
+  return data.header.filter(
+    (l): l is { href: string; label: string } =>
+      typeof l === 'object' &&
+      l !== null &&
+      typeof (l as { href?: unknown }).href === 'string' &&
+      typeof (l as { label?: unknown }).label === 'string',
+  );
+}
+
 export function siteHref(href: string, locale: string, defaultLanguage: string): string {
   const site = envOr(process.env.NEXT_PUBLIC_SITE_URL, 'http://localhost:3000').replace(/\/$/, '');
   if (/^[a-z][a-z0-9+.-]*:/i.test(href) || href.startsWith('//')) return href;

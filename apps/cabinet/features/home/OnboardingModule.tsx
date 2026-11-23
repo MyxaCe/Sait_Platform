@@ -73,11 +73,11 @@ export async function OnboardingModule({
 
   const col = (cls: string) => (column ? cls : undefined);
   return (
-    <section aria-labelledby="next-steps" data-tour="next-steps" className={cn('flex flex-col gap-2', col('2xl:h-full'))}>
-      <h2 id="next-steps" className={cn('sr-only', col('2xl:not-sr-only 2xl:text-sm 2xl:font-semibold'))}>
+    <section aria-labelledby="next-steps" data-tour="next-steps" className={cn('flex flex-col gap-2', col('xl:h-full'))}>
+      <h2 id="next-steps" className={cn('sr-only', col('xl:not-sr-only xl:text-sm xl:font-semibold'))}>
         {t('nextStepsTitle')}
       </h2>
-      <div className={cn('grid gap-2 sm:grid-cols-3 sm:gap-3', col('2xl:grid-cols-1 2xl:gap-2'))}>
+      <div className={cn('grid gap-2 sm:grid-cols-3 sm:gap-3', col('xl:flex xl:flex-1 xl:flex-col xl:gap-2 xl:[&>div:last-child]:flex-1'))}>
       {steps.map((step, i) => (
         <div
           key={step.key}
@@ -88,7 +88,7 @@ export async function OnboardingModule({
             step.done
               ? 'border-positive/25 bg-positive/[0.04] px-4 py-3 sm:p-4'
               : 'border-border bg-elevated p-4',
-            step.done && col('2xl:px-4 2xl:py-3'),
+            step.done && col('xl:px-4 xl:py-3'),
           )}
         >
           <div className="flex items-center gap-2.5">
@@ -112,7 +112,7 @@ export async function OnboardingModule({
             className={cn(
               'mt-2 flex-1 text-xs leading-relaxed text-secondary',
               step.done && 'hidden sm:block',
-              step.done && col('2xl:hidden'),
+              step.done && col('xl:hidden'),
             )}
           >
             {step.text}
@@ -121,7 +121,7 @@ export async function OnboardingModule({
             className={cn(
               'mt-3 flex min-h-[44px] items-end',
               step.done && 'hidden sm:flex',
-              step.done && col('2xl:hidden'),
+              step.done && col('xl:hidden'),
             )}
           >
             {step.action ? (

@@ -58,24 +58,25 @@ function Body({
         <Callout tone="info">{t(`disabled.${r.disabledReason}`)}</Callout>
       ) : null}
 
-      <div className="space-y-6 xl:grid xl:grid-cols-12 xl:items-start xl:gap-5 xl:space-y-0">
-      <div className="space-y-4 xl:sticky xl:top-6 xl:col-span-5 xl:space-y-5">
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] lg:gap-5 xl:grid-cols-1">
+      {/* «Приглашение» шире (7 из 12), колонки одной высоты — без «лесенки». */}
+      <div className="space-y-6 xl:grid xl:grid-cols-12 xl:items-stretch xl:gap-5 xl:space-y-0">
+      <div className="min-w-0 space-y-4 xl:col-span-7 xl:flex xl:flex-col xl:gap-5 xl:space-y-0">
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] lg:gap-5 xl:flex-1 xl:grid-cols-1 xl:grid-rows-[auto_1fr]">
         <InviteCard r={r} qrSvg={qrSvg} brand={brand} />
         {r.isPartner ? <PartnerTerms partner={partner} /> : <ProgramTerms r={r} />}
       </div>
       </div>
 
-      <div className="space-y-6 xl:col-span-7">
+      <div className="min-w-0 space-y-6 xl:col-span-5 xl:flex xl:flex-col xl:gap-5 xl:space-y-0">
       <Totals r={r} />
 
       {r.isPartner && partner ? <PartnerRewards partner={partner} /> : null}
 
-      <section aria-labelledby="ref-invited" className="space-y-3">
+      <section aria-labelledby="ref-invited" className="space-y-3 xl:flex xl:flex-1 xl:flex-col">
         <SectionTitle id="ref-invited" count={r.invited.length}>
           {r.isPartner ? t('partner.clientsTitle') : t('invitedTitle')}
         </SectionTitle>
-        <div className={CARD}>
+        <div className={cn(CARD, 'xl:flex-1')}>
           {r.invited.length === 0 ? (
             <EmptyState size="compact" title={t('invitedEmpty')} />
           ) : (
@@ -331,7 +332,7 @@ function Totals({ r }: { r: MyReferralView }) {
     { label: t('totals.processing'), value: <Money minor={r.totals.processingMinor} currency={PROMO_CURRENCY} /> },
   ];
   return (
-    <dl className="grid grid-cols-2 gap-3 lg:grid-cols-4" data-testid="ref-totals">
+    <dl className="grid grid-cols-2 gap-3 lg:grid-cols-4 xl:grid-cols-2" data-testid="ref-totals">
       {tiles.map((x) => (
         <div key={x.label} className="rounded-2xl border border-border bg-elevated px-4 py-3">
           <dt className="text-xs text-muted">{x.label}</dt>

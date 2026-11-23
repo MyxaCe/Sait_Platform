@@ -1,3 +1,4 @@
+import { Card } from '@/features/ui/Card';
 import { getFormatter, getTranslations } from 'next-intl/server';
 import { EmptyState, StatusBadge, ToneBadge, cn, statusKeyOf } from '@broker/ui';
 import { Money } from '@/features/ui/Money';
@@ -117,17 +118,12 @@ export async function OperationsHistory({
   const render = await moneyOpRenderer();
   const ops = toMoneyOps(deposits, withdrawals);
   return (
-    <section className="space-y-2" aria-labelledby={titleId}>
-      <h2 id={titleId} className="text-sm font-semibold">
-        {t('historyOperations')}
-      </h2>
+    <Card title={t('historyOperations')} titleId={titleId} count={ops.length > 0 ? ops.length : undefined} flush data-money-history>
       {ops.length === 0 ? (
-        <div className="rounded-2xl border border-border bg-elevated">
-          <EmptyState size="compact" title={t('historyEmptyOps')} description={t('historyEmptyOpsHint')} />
-        </div>
+        <EmptyState size="compact" title={t('historyEmptyOps')} description={t('historyEmptyOpsHint')} />
       ) : (
-        <ul className="divide-y divide-border rounded-2xl border border-border bg-elevated">{ops.map(render)}</ul>
+        <ul className="divide-y divide-border">{ops.map(render)}</ul>
       )}
-    </section>
+    </Card>
   );
 }

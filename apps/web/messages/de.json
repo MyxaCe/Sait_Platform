@@ -14,7 +14,8 @@
     "trade": "Handeln",
     "cmsUnavailableTitle": "Inhalt vorübergehend nicht verfügbar",
     "cmsUnavailableText": "Diese Seite konnte nicht geladen werden. Bitte versuchen Sie es in ein paar Minuten erneut.",
-    "retry": "Erneut versuchen"
+    "retry": "Erneut versuchen",
+    "toCabinet": "Mein Konto"
   },
   "validation": {
     "nameMin": "Mindestens 2 Zeichen",

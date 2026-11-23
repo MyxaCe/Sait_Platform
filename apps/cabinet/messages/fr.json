@@ -18,7 +18,9 @@
     "retry": "Réessayer",
     "copy": "Copier",
     "copied": "Copié",
-    "language": "Langue"
+    "language": "Langue",
+    "mainSite": "Page d’accueil {brand}",
+    "siteNav": "Rubriques du site"
   },
   "nav": {
     "dashboard": "Aperçu",
@@ -381,7 +383,29 @@
       "tradeExecutedBetter": "Transaction exécutée : {side, select, buy {achat} sell {vente} other {{side}}} {volume} {symbol} à {price}. C’est {slippage} de mieux que votre niveau {level}.",
       "supportReply": "L’assistance a répondu à la demande n° {number}. Ouvrez le chat d’assistance en bas à droite.",
       "supportResolved": "La demande n° {number} est résolue. Merci d’évaluer l’assistance dans le chat."
-    }
+    },
+    "unreadLead": "Non lues : {n}",
+    "allReadLead": "Tout est lu",
+    "filterLabel": "Type de notification",
+    "groups": {
+      "all": "Toutes",
+      "trading": "Trading",
+      "account": "Compte",
+      "support": "Assistance",
+      "other": "Autres"
+    },
+    "emptyFiltered": "Aucune notification dans cette rubrique",
+    "emptyHint": "Les transactions, alertes de marge, envois de documents et réponses de l’assistance apparaîtront ici.",
+    "limitHint": "Affichage des {n} dernières notifications.",
+    "statUnread": "Non lues",
+    "statTotal": "Total",
+    "aboutTitle": "Ce que vous recevez ici",
+    "about": {
+      "trading": "Transactions exécutées, glissement sur les stops, alertes de niveau de marge.",
+      "account": "Ouverture de compte, envoi de documents, réinitialisation du compte démo.",
+      "support": "Réponses et résolutions de vos demandes d’assistance."
+    },
+    "aboutNote": "Les dépôts et retraits sont visibles dans le Portefeuille et l’historique."
   },
   "trade": {
     "title": "Trading",
@@ -1070,7 +1094,10 @@
     "instruments": "Instruments",
     "notSpecified": "non précisé",
     "changeHint": "Votre type de compte est attribué par la plateforme. Contactez l’assistance pour le modifier.",
-    "compareParam": "Paramètre"
+    "compareParam": "Paramètre",
+    "yourType": "Votre type de compte",
+    "compareOpen": "Comparer tous les types de compte",
+    "compareClose": "Masquer la comparaison"
   },
   "platformTransfer": {
     "inviteTitle": "Invitation pour le transfert {number}",

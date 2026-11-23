@@ -8,6 +8,7 @@ import { LangSwitcher } from './LangSwitcher';
 import { ThemeToggle } from './ThemeToggle';
 import { envOr } from '@broker/utils';
 import { localizedPath } from '@broker/utils/locales';
+import { hasSessionHint } from '@broker/utils/session-hint';
 import { useSiteLanguages } from '@/i18n/site-languages-context';
 
 const CABINET_URL = envOr(process.env.NEXT_PUBLIC_CABINET_URL, 'http://localhost:3002').replace(
@@ -15,7 +16,7 @@ const CABINET_URL = envOr(process.env.NEXT_PUBLIC_CABINET_URL, 'http://localhost
   '',
 );
 
-function cabinetHref(path: '/login' | '/register', locale: string, defaultLanguage: string): string {
+function cabinetHref(path: '/' | '/login' | '/register', locale: string, defaultLanguage: string): string {
   return `${CABINET_URL}${localizedPath(path, locale, defaultLanguage)}`;
 }
 
@@ -34,6 +35,13 @@ export function SiteHeader({ brandName, logo, nav }: SiteHeaderProps) {
   const tCommon = useTranslations('common');
 
   useEffect(() => setMenuOpen(false), [pathname]);
+
+  // Флажок «вошёл в кабинет» ставит кабинет на общий домен (без секретов). Читаем после гидрации,
+  // чтобы страницы витрины оставались кешируемыми: сервер всегда отдаёт «Войти / Открыть счёт».
+  const [signedIn, setSignedIn] = useState(false);
+  useEffect(() => {
+    setSignedIn(hasSessionHint(document.cookie));
+  }, [pathname]);
 
   useEffect(() => {
     document.body.style.overflow = menuOpen ? 'hidden' : '';
@@ -83,16 +91,27 @@ export function SiteHeader({ brandName, logo, nav }: SiteHeaderProps) {
         <div className="hidden items-center gap-2 lg:flex">
           <LangSwitcher />
           <ThemeToggle />
-          <a href={cabinetHref('/login', locale, defaultLanguage)}>
-            <Button variant="ghost" size="sm" tabIndex={-1}>
-              {tCommon('login')}
-            </Button>
-          </a>
-          <a href={cabinetHref('/register', locale, defaultLanguage)}>
-            <Button size="sm" tabIndex={-1}>
-              {tCommon('openAccount')}
-            </Button>
-          </a>
+          {signedIn ? (
+            <a href={cabinetHref('/', locale, defaultLanguage)} data-header-cabinet>
+              <Button size="sm" tabIndex={-1}>
+                <span aria-hidden className="mr-1.5 inline-block size-2 rounded-full bg-current opacity-70" />
+                {tCommon('toCabinet')}
+              </Button>
+            </a>
+          ) : (
+            <>
+              <a href={cabinetHref('/login', locale, defaultLanguage)}>
+                <Button variant="ghost" size="sm" tabIndex={-1}>
+                  {tCommon('login')}
+                </Button>
+              </a>
+              <a href={cabinetHref('/register', locale, defaultLanguage)}>
+                <Button size="sm" tabIndex={-1}>
+                  {tCommon('openAccount')}
+                </Button>
+              </a>
+            </>
+          )}
         </div>
 
         <div className="flex items-center gap-1 lg:hidden">
@@ -147,16 +166,26 @@ export function SiteHeader({ brandName, logo, nav }: SiteHeaderProps) {
           ))}
         </nav>
         <div className="flex flex-col gap-3 border-t border-border p-4 pb-8">
-          <a href={cabinetHref('/register', locale, defaultLanguage)}>
-            <Button size="lg" className="w-full" tabIndex={-1}>
-              {tCommon('openAccount')}
-            </Button>
-          </a>
-          <a href={cabinetHref('/login', locale, defaultLanguage)}>
-            <Button variant="secondary" size="lg" className="w-full" tabIndex={-1}>
-              {tCommon('login')}
-            </Button>
-          </a>
+          {signedIn ? (
+            <a href={cabinetHref('/', locale, defaultLanguage)} data-header-cabinet>
+              <Button size="lg" className="w-full" tabIndex={-1}>
+                {tCommon('toCabinet')}
+              </Button>
+            </a>
+          ) : (
+            <>
+              <a href={cabinetHref('/register', locale, defaultLanguage)}>
+                <Button size="lg" className="w-full" tabIndex={-1}>
+                  {tCommon('openAccount')}
+                </Button>
+              </a>
+              <a href={cabinetHref('/login', locale, defaultLanguage)}>
+                <Button variant="secondary" size="lg" className="w-full" tabIndex={-1}>
+                  {tCommon('login')}
+                </Button>
+              </a>
+            </>
+          )}
         </div>
       </div>
     </header>

@@ -18,7 +18,9 @@
     "retry": "Erneut versuchen",
     "copy": "Kopieren",
     "copied": "Kopiert",
-    "language": "Sprache"
+    "language": "Sprache",
+    "mainSite": "{brand} Startseite",
+    "siteNav": "Bereiche der Website"
   },
   "nav": {
     "dashboard": "Übersicht",
@@ -381,7 +383,29 @@
       "tradeExecutedBetter": "Trade ausgeführt: {side, select, buy {Kauf} sell {Verkauf} other {{side}}} {volume} {symbol} zu {price}. Das ist {slippage} besser als Ihr Level {level}.",
       "supportReply": "Der Support hat auf Anfrage #{number} geantwortet. Öffnen Sie den Support-Chat unten rechts.",
       "supportResolved": "Anfrage #{number} ist gelöst. Bitte bewerten Sie den Support im Chat."
-    }
+    },
+    "unreadLead": "Ungelesen: {n}",
+    "allReadLead": "Alles gelesen",
+    "filterLabel": "Benachrichtigungstyp",
+    "groups": {
+      "all": "Alle",
+      "trading": "Handel",
+      "account": "Konto",
+      "support": "Support",
+      "other": "Sonstiges"
+    },
+    "emptyFiltered": "Keine Benachrichtigungen in diesem Bereich",
+    "emptyHint": "Hier erscheinen Trades, Margin-Warnungen, Dokument-Uploads und Antworten des Supports.",
+    "limitHint": "Es werden die letzten {n} Benachrichtigungen angezeigt.",
+    "statUnread": "Ungelesen",
+    "statTotal": "Gesamt",
+    "aboutTitle": "Was hier erscheint",
+    "about": {
+      "trading": "Ausgeführte Trades, Slippage bei Stopps, Warnungen zum Margin-Level.",
+      "account": "Kontoeröffnung, Dokument-Uploads, Zurücksetzen des Demokontos.",
+      "support": "Antworten und Lösungen zu Ihren Support-Anfragen."
+    },
+    "aboutNote": "Einzahlungen und Auszahlungen sehen Sie in der Wallet und im Verlauf."
   },
   "trade": {
     "title": "Handel",
@@ -1070,7 +1094,10 @@
     "instruments": "Instrumente",
     "notSpecified": "nicht angegeben",
     "changeHint": "Ihr Kontotyp wird von der Plattform zugewiesen. Wenden Sie sich an den Support, um ihn zu ändern.",
-    "compareParam": "Parameter"
+    "compareParam": "Parameter",
+    "yourType": "Ihr Kontotyp",
+    "compareOpen": "Alle Kontotypen vergleichen",
+    "compareClose": "Vergleich ausblenden"
   },
   "platformTransfer": {
     "inviteTitle": "Einladung zum Transfer {number}",

@@ -7,17 +7,20 @@ export function Segmented({
   label,
   className,
   vertical = false,
+  stretch = false,
 }: {
   items: { key: string; label: React.ReactNode; href: string }[];
   active: string;
   label: string;
   className?: string;
   vertical?: boolean;
+  /** Вертикальное меню растягивается до высоты соседней колонки (без «лесенки»). */
+  stretch?: boolean;
 }) {
   return (
     <nav
       aria-label={label}
-      className={cn('flex rounded-xl border border-border bg-sunken p-1', className, vertical && 'xl:flex xl:flex-col xl:gap-0.5')}
+      className={cn('flex rounded-xl border border-border bg-sunken p-1', className, vertical && 'xl:flex xl:flex-col xl:gap-0.5', vertical && stretch && 'xl:flex-1')}
     >
       {items.map((it) => {
         const on = it.key === active;

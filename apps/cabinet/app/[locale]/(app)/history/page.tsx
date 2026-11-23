@@ -1,3 +1,4 @@
+import { Card, CARD } from '@/features/ui/Card';
 import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/server';
 import { EmptyState, StatusBadge, ToneBadge, cn, statusKeyOf } from '@broker/ui';
 import { Money } from '@/features/ui/Money';
@@ -236,138 +237,113 @@ export default async function HistoryPage({
         </div>
       </div>
 
+      {/* Одна колонка карточек одинаковой ширины и стиля: фильтры → итоги → позиции → операции → закрытые сделки. */}
+      <Card as="div" bodyClassName="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between" data-history-filters>
+        <FilterChips
+          label={t('periodLabel')}
+          active={period}
+          items={(['7d', '30d', '90d', 'all'] as const).map((p) => ({ key: p, label: t(`period.${p}`), href: qs({ period: p }) }))}
+        />
+        {account === 'real' ? (
+          <FilterChips
+            label={t('typeLabel')}
+            active={type}
+            items={(['all', 'trades', 'money'] as const).map((k) => ({ key: k, label: t(`type.${k}`), href: qs({ type: k }) }))}
+          />
+        ) : null}
+      </Card>
+
       {type !== 'money' && summary.trades > 0 ? (
-        <dl className="hidden gap-px overflow-hidden rounded-2xl border border-border bg-border xl:grid xl:grid-cols-4">
+        <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4 xl:gap-5" data-history-summary>
           {tiles.map((tile) => (
-            <div key={tile.label} className="bg-elevated px-5 py-4">
+            <div key={tile.label} className={cn(CARD, 'min-w-0 px-4 py-3 sm:px-5 sm:py-4')}>
               <dt className="text-xs text-muted">{tile.label}</dt>
-              <dd className="mt-1 text-[22px] font-semibold leading-8 tracking-tight">{tile.value}</dd>
+              <dd className="mt-1 text-[17px] font-semibold leading-6 tracking-tight sm:text-[22px] sm:leading-8">{tile.value}</dd>
               {'hint' in tile && tile.hint ? <dd className="text-xs text-muted">{tile.hint}</dd> : null}
             </div>
           ))}
         </dl>
       ) : null}
 
-      <div className="space-y-4 sm:space-y-5 2xl:grid 2xl:grid-cols-12 2xl:items-start 2xl:gap-5 2xl:space-y-0">
-        <div className="space-y-4 sm:space-y-5 2xl:sticky 2xl:top-6 2xl:col-span-3">
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between xl:gap-6 xl:rounded-2xl xl:border xl:border-border xl:bg-elevated xl:p-4 2xl:flex-col 2xl:items-stretch 2xl:gap-4">
-            <FilterChips
-              vertical
-              label={t('periodLabel')}
-              active={period}
-              items={(['7d', '30d', '90d', 'all'] as const).map((p) => ({ key: p, label: t(`period.${p}`), href: qs({ period: p }) }))}
-            />
-            {account === 'real' ? (
-              <FilterChips
-                vertical
-                label={t('typeLabel')}
-                active={type}
-                items={(['all', 'trades', 'money'] as const).map((k) => ({ key: k, label: t(`type.${k}`), href: qs({ type: k }) }))}
-              />
-            ) : null}
-          </div>
+      {type !== 'money' && hist.positions.length > 0 ? (
+        <Card title={t('openPositions')} titleId="open-pos" count={hist.positions.length} flush>
+          <ul className="divide-y divide-border">
+            {hist.positions.map((p) => (
+              <li key={p.id} className="flex items-center justify-between gap-3 px-4 py-2.5 text-sm sm:px-5">
+                <span className="flex min-w-0 items-baseline gap-2">
+                  <span className="font-semibold">{p.symbol}</span>
+                  <span className={p.side === 'buy' ? 'text-info' : 'text-warning'}>{t(p.side === 'buy' ? 'buy' : 'sell')}</span>
+                </span>
+                <span className="text-xs tabular-nums text-secondary">
+                  {t('positionLine', { volume: num(p.volume, 4), price: num(p.entryPrice) })}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      ) : null}
 
-          {type !== 'money' && summary.trades > 0 ? (
-            <dl className="grid grid-cols-2 xl:hidden gap-px overflow-hidden rounded-2xl border border-border bg-border sm:grid-cols-4">
-              {tiles.map((tile) => (
-                <div key={tile.label} className="bg-elevated px-4 py-3">
-                  <dt className="text-xs text-muted">{tile.label}</dt>
-                  <dd className="mt-1 text-[17px] font-semibold leading-6">{tile.value}</dd>
-                  {'hint' in tile && tile.hint ? <dd className="text-xs text-muted">{tile.hint}</dd> : null}
-                </div>
-              ))}
-            </dl>
-          ) : null}
-
-          {type !== 'money' && hist.positions.length > 0 ? (
-            <section className="space-y-2" aria-labelledby="open-pos">
-              <h2 id="open-pos" className="text-sm font-semibold">
-                {t('openPositions')} <span className="font-normal text-muted">{hist.positions.length}</span>
-              </h2>
-              <ul className="divide-y divide-border rounded-2xl border border-border bg-elevated">
-                {hist.positions.map((p) => (
-                  <li key={p.id} className="flex items-center justify-between gap-3 px-4 py-2.5 text-sm">
-                    <span className="flex min-w-0 items-baseline gap-2">
-                      <span className="font-semibold">{p.symbol}</span>
-                      <span className={p.side === 'buy' ? 'text-info' : 'text-warning'}>{t(p.side === 'buy' ? 'buy' : 'sell')}</span>
-                    </span>
-                    <span className="text-xs tabular-nums text-secondary">
-                      {t('positionLine', { volume: num(p.volume, 4), price: num(p.entryPrice) })}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          ) : null}
-        </div>
-
-        <div className="space-y-4 sm:space-y-5 2xl:col-span-9">
-          <section className="space-y-3" aria-labelledby="feed-title">
-            <h2 id="feed-title" className="text-sm font-semibold">
-              {t('feedTitle')}
-            </h2>
-            {groups.length === 0 ? (
-              <div className="rounded-2xl border border-border bg-elevated">
-                <EmptyState
-                  title={type === 'money' ? t('emptyMoney') : t('emptyTitle')}
-                  description={type === 'money' ? t('emptyMoneyHint') : t('emptyHint')}
-                  action={
-                    type === 'money' ? (
-                      <Link href="/wallet?tab=deposit" className={linkButton('primary')}>
-                        {th('btnDeposit')}
-                      </Link>
-                    ) : (
-                      <TerminalLink account={account} className={linkButton('primary')}>
-                        <NavIcon name="trade" className="size-[18px]" />
-                        {t('emptyCta')}
-                      </TerminalLink>
-                    )
-                  }
-                />
-              </div>
-            ) : (
-              <>
+      <Card title={t('feedTitle')} titleId="feed-title" flush={groups.length > 0}>
+        {groups.length === 0 ? (
+          <EmptyState
+            title={type === 'money' ? t('emptyMoney') : t('emptyTitle')}
+            description={type === 'money' ? t('emptyMoneyHint') : t('emptyHint')}
+            action={
+              type === 'money' ? (
+                <Link href="/wallet?tab=deposit" className={linkButton('primary')}>
+                  {th('btnDeposit')}
+                </Link>
+              ) : (
+                <TerminalLink account={account} className={linkButton('primary')}>
+                  <NavIcon name="trade" className="size-[18px]" />
+                  {t('emptyCta')}
+                </TerminalLink>
+              )
+            }
+          />
+        ) : (
+          <>
+            <div className="xl:hidden">
               {groups.map((g) => (
-                <div key={g.key} className="space-y-1.5 xl:hidden">
-                  <p className="px-1 text-xs font-medium text-muted">{g.label}</p>
-                  <ul className="divide-y divide-border rounded-2xl border border-border bg-elevated">
+                <div key={g.key}>
+                  <p className="border-b border-border bg-base/40 px-4 py-1.5 text-xs font-medium text-muted">{g.label}</p>
+                  <ul className="divide-y divide-border border-b border-border last:border-b-0">
                     {g.items.map((it) => (it.kind === 'trade' ? renderTrade(it.trade) : renderMoney(it.op)))}
                   </ul>
                 </div>
               ))}
-              <div className="hidden overflow-hidden rounded-2xl border border-border bg-elevated xl:block">
-                <table className="w-full text-[13px]">
-                  <thead className="bg-primary/[0.03] text-left text-xs text-secondary">
+            </div>
+            <div className="hidden overflow-x-auto xl:block">
+              <table className="w-full text-[13px]">
+                <thead className="bg-primary/[0.03] text-left text-xs text-secondary">
+                  <tr>
+                    <th className="px-4 py-2.5 font-medium">{t('col.time')}</th>
+                    <th className="px-3 py-2.5 font-medium">{t('col.type')}</th>
+                    <th className="px-3 py-2.5 font-medium">{t('col.instrument')}</th>
+                    <th className="px-3 py-2.5 font-medium">{t('col.side')}</th>
+                    <th className="px-3 py-2.5 text-right font-medium">{t('col.volume')}</th>
+                    <th className="px-3 py-2.5 text-right font-medium">{t('col.price')}</th>
+                    <th className="whitespace-nowrap px-3 py-2.5 text-right font-medium">{t('col.amount', { currency: hist.currency })}</th>
+                    <th className="px-4 py-2.5 text-right font-medium">{t('col.status')}</th>
+                  </tr>
+                </thead>
+                {groups.map((g) => (
+                  <tbody key={g.key} className="divide-y divide-border border-t border-border">
                     <tr>
-                      <th className="px-4 py-2.5 font-medium">{t('col.time')}</th>
-                      <th className="px-3 py-2.5 font-medium">{t('col.type')}</th>
-                      <th className="px-3 py-2.5 font-medium">{t('col.instrument')}</th>
-                      <th className="px-3 py-2.5 font-medium">{t('col.side')}</th>
-                      <th className="px-3 py-2.5 text-right font-medium">{t('col.volume')}</th>
-                      <th className="px-3 py-2.5 text-right font-medium">{t('col.price')}</th>
-                      <th className="whitespace-nowrap px-3 py-2.5 text-right font-medium">{t('col.amount', { currency: hist.currency })}</th>
-                      <th className="px-4 py-2.5 text-right font-medium">{t('col.status')}</th>
+                      <th colSpan={8} scope="rowgroup" className="bg-base/40 px-4 py-1.5 text-left text-xs font-medium text-muted">
+                        {g.label}
+                      </th>
                     </tr>
-                  </thead>
-                  {groups.map((g) => (
-                    <tbody key={g.key} className="divide-y divide-border border-t border-border">
-                      <tr>
-                        <th colSpan={8} scope="rowgroup" className="bg-base/40 px-4 py-1.5 text-left text-xs font-medium text-muted">
-                          {g.label}
-                        </th>
-                      </tr>
-                      {g.items.map((it) => (it.kind === 'trade' ? tradeRow(it.trade) : moneyRow(it.op)))}
-                    </tbody>
-                  ))}
-                </table>
-              </div>
-              </>
-            )}
-          </section>
+                    {g.items.map((it) => (it.kind === 'trade' ? tradeRow(it.trade) : moneyRow(it.op)))}
+                  </tbody>
+                ))}
+              </table>
+            </div>
+          </>
+        )}
+      </Card>
 
-          {closed ? <ClosedDeals outcome={closed} /> : null}
-        </div>
-      </div>
+      {closed ? <ClosedDeals outcome={closed} /> : null}
     </div>
   );
 }

@@ -2,6 +2,7 @@ import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { cookies, headers } from 'next/headers';
 import { isPlatformLocale, type PlatformLocale } from '@broker/utils/locales';
 import { getPool } from '../db';
+import { SESSION_HINT_COOKIE, SESSION_HINT_VALUE, sessionHintDomain } from '@broker/utils/session-hint';
 import { SESSION_COOKIE, SESSION_TTL_DAYS } from './constants';
 
 export interface SessionUser {
@@ -42,7 +43,29 @@ export async function createSession(userId: string): Promise<string> {
     path: '/',
     maxAge: SESSION_TTL_DAYS * 24 * 3600,
   });
+  setSessionHint();
   return token;
+}
+
+/**
+ * Флажок для витрины «клиент вошёл» на общем домене. Без секретов (значение всегда `1`),
+ * не httpOnly — витрина читает его в браузере. См. @broker/utils/session-hint.
+ */
+export function setSessionHint(): void {
+  const domain = sessionHintDomain();
+  cookies().set(SESSION_HINT_COOKIE, SESSION_HINT_VALUE, {
+    httpOnly: false,
+    sameSite: 'lax',
+    secure: process.env.NODE_ENV === 'production',
+    path: '/',
+    maxAge: SESSION_TTL_DAYS * 24 * 3600,
+    ...(domain ? { domain } : {}),
+  });
+}
+
+export function clearSessionHint(): void {
+  const domain = sessionHintDomain();
+  cookies().set(SESSION_HINT_COOKIE, '', { path: '/', maxAge: 0, ...(domain ? { domain } : {}) });
 }
 
 export async function getSessionUser(): Promise<SessionUser | null> {
@@ -84,6 +107,7 @@ export async function destroyCurrentSession(): Promise<void> {
     await getPool().query(`DELETE FROM sessions WHERE token_hash = $1`, [hashToken(token)]);
   }
   cookies().delete(SESSION_COOKIE);
+  clearSessionHint();
 }
 
 export interface SessionInfo {

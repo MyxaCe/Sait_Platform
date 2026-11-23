@@ -5,7 +5,8 @@
   "exports": {
     ".": "./src/index.ts",
     "./locales": "./src/locales.ts",
-    "./site-languages": "./src/site-languages.ts"
+    "./site-languages": "./src/site-languages.ts",
+    "./session-hint": "./src/session-hint.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

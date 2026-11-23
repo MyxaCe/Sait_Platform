@@ -73,7 +73,7 @@ export function MarketsModule({ config, data }: { config: MarketsConfig; data: M
   }
 
   return (
-    <section className="rounded-2xl border border-border bg-elevated p-5">
+    <section className="flex min-w-0 flex-col rounded-2xl border border-border bg-elevated p-4 sm:p-5" data-home-markets>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="font-semibold">{t('marketsTitle')}</h2>
         <div className="flex flex-wrap gap-1">
@@ -95,20 +95,23 @@ export function MarketsModule({ config, data }: { config: MarketsConfig; data: M
         </div>
       </div>
 
-      <div className="mt-4 overflow-x-auto">
-        <table className="w-full min-w-96 text-sm">
-          <thead>
+      {/* Длинный список (сотни инструментов) прокручивается внутри блока, а не растягивает страницу. */}
+      <div className="mt-4 max-h-[26rem] min-h-0 flex-1 overflow-auto overscroll-contain xl:max-h-[30rem]" data-markets-scroll>
+        <table className="w-full text-sm">
+          <thead className="sticky top-0 z-10 bg-elevated">
             <tr className="text-left text-xs text-secondary">
               <th className="pb-2 font-normal">{t('colInstrument')}</th>
               <th className="pb-2 font-normal">{t('colPrice')}</th>
               <th className="pb-2 font-normal">{t('colChange')}</th>
-              <th className="pb-2" />
+              <th className="pb-2">
+                <span className="sr-only">{t('trade')}</span>
+              </th>
             </tr>
           </thead>
           <tbody>
             {rows.map((q) => (
               <tr key={q.symbol} className="border-t border-border">
-                <td className="py-3">
+                <td className="py-3 pr-2">
                   <span className="flex items-center gap-2.5">
                     {icons.has(q.symbol) ? (
                       // eslint-disable-next-line @next/next/no-img-element -- SVG с MDS
@@ -134,7 +137,7 @@ export function MarketsModule({ config, data }: { config: MarketsConfig; data: M
                     </span>
                   </span>
                 </td>
-                <td className="py-3 tabular-nums">
+                <td className="whitespace-nowrap py-3 pr-2 tabular-nums">
                   {formatPrice(q.price, q.digits)}
                   {marketText(q.market) && (
                     <span className="block text-[11px] text-secondary" data-market={q.market?.status}>
@@ -145,9 +148,14 @@ export function MarketsModule({ config, data }: { config: MarketsConfig; data: M
                 <td className="py-3">
                   <PriceChange value={q.changePercent} />
                 </td>
-                <td className="py-3 text-right">
-                  <Link href={terminalPageHref('real', q.symbol)} className="text-xs text-accent hover:underline">
-                    {t('trade')}
+                <td className="py-3 pl-2 text-right">
+                  <Link
+                    href={terminalPageHref('real', q.symbol)}
+                    className="whitespace-nowrap text-xs text-accent hover:underline"
+                    aria-label={`${t('trade')} ${q.symbol}`}
+                  >
+                    <span className="hidden sm:inline">{t('trade')}</span>
+                    <span aria-hidden className="sm:hidden">→</span>
                   </Link>
                 </td>
               </tr>
