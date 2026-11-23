@@ -1,5 +1,6 @@
 'use client';
 
+import { Fragment } from 'react';
 import { useFormState, useFormStatus } from 'react-dom';
 import { Button, Callout, Input } from '@broker/ui';
 import { loginAction, type LoginState } from '@/lib/actions';
@@ -77,7 +78,7 @@ export function LoginForm() {
         ) : null}
 
         {totpStep ? (
-          <>
+          <Fragment key="totp">
             <p className="text-secondary text-sm">
               Откройте приложение-аутентификатор и введите шестизначный код для Wholesalefy.
             </p>
@@ -89,6 +90,7 @@ export function LoginForm() {
                 type="text"
                 inputMode="numeric"
                 autoComplete="one-time-code"
+                defaultValue=""
                 maxLength={6}
                 autoFocus
                 controlSize="compact"
@@ -97,9 +99,9 @@ export function LoginForm() {
               />
             </label>
             <SubmitButton label="Подтвердить и войти" />
-          </>
+          </Fragment>
         ) : (
-          <>
+          <Fragment key="password">
             <label className="flex flex-col gap-1.5">
               <span className={fieldLabel}>Логин</span>
               <Input
@@ -126,7 +128,7 @@ export function LoginForm() {
             </label>
 
             <SubmitButton label="Продолжить" />
-          </>
+          </Fragment>
         )}
       </form>
       <p className="text-muted border-border border-t pt-4 text-xs">
