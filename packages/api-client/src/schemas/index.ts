@@ -17,6 +17,7 @@ import {
   systemStatusResponseSchema,
 } from './cms';
 import { cabinetHomeResponseSchema } from './cabinet';
+import { onboardingResponseSchema } from './onboarding';
 import { eventEnvelopeSchema, leadSubmittedDataSchema } from './events';
 import {
   incomingEnvelopeSchema,
@@ -36,6 +37,7 @@ import {
 export * from './common';
 export * from './cms';
 export * from './cabinet';
+export * from './onboarding';
 export * from './events';
 export * from './terminal-events';
 export * from './leads';
@@ -57,6 +59,7 @@ export const CMS_RESPONSE_SCHEMAS = {
   legal: legalResponseSchema,
   'system-status': systemStatusResponseSchema,
   'cabinet-home': cabinetHomeResponseSchema,
+  onboarding: onboardingResponseSchema,
 } satisfies Record<string, z.ZodTypeAny>;
 
 export const EVENT_SCHEMAS = {

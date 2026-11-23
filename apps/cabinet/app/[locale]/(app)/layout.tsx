@@ -24,6 +24,10 @@ import { loadContests } from '@/lib/promo';
 import { countClientUnread, loadSupportSettings } from '@broker/support';
 import { SupportWidget } from '@/features/support/SupportWidget';
 import { getPool } from '@/lib/db';
+import { HelpButton } from '@/features/tour/HelpButton';
+import { TourProvider } from '@/features/tour/TourProvider';
+import { loadOnboardingState, loadTourConfig } from '@/lib/onboarding/server';
+import { partOf, shouldAutostart } from '@/lib/onboarding/state';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -40,7 +44,7 @@ export default async function AppLayout({ children, params }: LayoutProps) {
     redirect(await localeHref('/change-password', params.locale));
   }
 
-  const [tNav, tCommon, tLegal, unread, brand, footer, contests, site] = await Promise.all([
+  const [tNav, tCommon, tLegal, unread, brand, footer, contests, site, tour, onboarding] = await Promise.all([
     getTranslations('nav'),
     getTranslations('common'),
     getTranslations('legalEntity'),
@@ -49,7 +53,10 @@ export default async function AppLayout({ children, params }: LayoutProps) {
     getChromeFooter(params.locale),
     loadContests(user.id, params.locale),
     getSiteLanguages(),
+    loadTourConfig(params.locale),
+    loadOnboardingState(user.id),
   ]);
+  const cabinetTour = partOf(tour, 'cabinet') ?? null;
   const brandName = resolveBrandName(brand, tCommon('cabinet'));
   const legalLines = footerLegalLines(brand?.legalEntity, {
     regNumber: (number) => tLegal('regNumber', { number }),
@@ -86,6 +93,13 @@ export default async function AppLayout({ children, params }: LayoutProps) {
   const mobileMore: NavItem[] = [...profileNav, ...growthNav];
 
   return (
+    <TourProvider
+      part={cabinetTour}
+      labels={tour?.labels ?? null}
+      autostart={shouldAutostart(onboarding, cabinetTour ?? undefined)}
+      persist="server"
+      autostartPath="/"
+    >
     <div className="flex min-h-svh flex-col">
       <div className="hidden lg:block">
         <CabinetHeader brand={brand} user={user} locale={params.locale} />
@@ -103,7 +117,8 @@ export default async function AppLayout({ children, params }: LayoutProps) {
           )}
           <span className="truncate">{tCommon('cabinet')}</span>
         </Link>
-        <div className="flex items-center">
+        <div className="flex items-center gap-1">
+          <HelpButton className="size-8 text-sm" />
           <LangSwitcher />
           <Link
             href="/notifications"
@@ -198,5 +213,6 @@ export default async function AppLayout({ children, params }: LayoutProps) {
         }
       />
     </div>
+    </TourProvider>
   );
 }

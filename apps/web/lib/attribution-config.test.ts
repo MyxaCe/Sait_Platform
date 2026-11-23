@@ -33,3 +33,19 @@ describe('CTA «Открыть счёт» / акции → регистраци�
     expect(cabinetRegisterHref('/partners', 'ru')).toBe('/partners');
   });
 });
+
+describe('старые адреса витрины /register и /login → кабинет', () => {
+  const base = (process.env.NEXT_PUBLIC_CABINET_URL || 'http://localhost:3002').replace(/\/$/, '');
+  it('переносит тариф account → accountType, промокод и демо; язык в пути', async () => {
+    const { cabinetRegisterRedirect } = await import('./cabinet-links');
+    expect(cabinetRegisterRedirect({ account: 'pro' }, 'ru')).toBe(`${base}/register?accountType=pro`);
+    expect(cabinetRegisterRedirect({ accountType: 'ecn', account: 'pro' }, 'en')).toBe(`${base}/en/register?accountType=ecn`);
+    expect(cabinetRegisterRedirect({ demo: '1', promo: ['a', 'b'], empty: '' }, 'ru')).toBe(`${base}/register?demo=1&promo=a`);
+    expect(cabinetRegisterRedirect(undefined, 'de')).toBe(`${base}/de/register`);
+  });
+  it('вход витрины → вход кабинета', async () => {
+    const { cabinetLoginHref } = await import('./cabinet-links');
+    expect(cabinetLoginHref('ru')).toBe(`${base}/login`);
+    expect(cabinetLoginHref('en')).toBe(`${base}/en/login`);
+  });
+});

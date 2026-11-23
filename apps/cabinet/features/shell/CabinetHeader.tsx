@@ -1,6 +1,7 @@
 import { getTranslations } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
 import { LangSwitcher } from '@/features/shell/LangSwitcher';
+import { HelpButton } from '@/features/tour/HelpButton';
 import { LogoutForm } from '@/features/shell/LogoutForm';
 import type { SessionUser } from '@/lib/auth/session';
 import { resolveBrandName, type ChromeBrand } from '@/lib/chrome';
@@ -35,6 +36,7 @@ export async function CabinetHeader({
       </Link>
 
       <div className="flex items-center gap-3">
+        <HelpButton />
         <LangSwitcher />
         <div className="hidden text-right sm:block">
           <p className="max-w-48 truncate text-sm text-primary">{user.fullName}</p>
