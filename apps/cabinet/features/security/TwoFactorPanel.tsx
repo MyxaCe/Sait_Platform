@@ -189,7 +189,7 @@ export function TwoFactorPanel({
 
   if (!enabled) {
     return (
-      <div className="space-y-4">
+      <div className="flex flex-1 flex-col gap-4">
         <div className="flex items-center gap-2">
           <ToneBadge tone="neutral">{t('statusOff')}</ToneBadge>
         </div>
@@ -208,8 +208,10 @@ export function TwoFactorPanel({
           />
         ) : (
           <>
-            <p className="text-sm text-secondary">{t('intro')}</p>
+            <p className="text-xs leading-relaxed text-secondary xl:hidden 2xl:block">{t('intro')}</p>
+            <Protects />
             <FormMessage error={error} />
+            <div className="mt-auto pt-1">
             <Button
               type="button"
               size="compact"
@@ -228,6 +230,7 @@ export function TwoFactorPanel({
             >
               {t('enable')}
             </Button>
+            </div>
           </>
         )}
       </div>
@@ -235,12 +238,14 @@ export function TwoFactorPanel({
   }
 
   return (
-    <div className="space-y-4">
+    <div className="flex flex-1 flex-col gap-4">
       <div className="flex flex-wrap items-center gap-2 text-sm">
         <ToneBadge tone="positive">{t('statusOn')}</ToneBadge>
         {enabledSince ? <span className="text-secondary">{t('enabledSince', { date: enabledSince })}</span> : null}
       </div>
       <p className="text-xs text-secondary">{t('recoveryLeft', { count: recoveryLeft })}</p>
+      <Protects />
+      <div className="mt-auto" />
       <CodeAction
         id="tf-regen-code"
         title={t('regenerate')}
@@ -265,6 +270,26 @@ export function TwoFactorPanel({
           if (r.disabled) setNotice('disabledOk');
         }}
       />
+    </div>
+  );
+}
+
+/** Что защищает код 2FA — чтобы карточка объясняла себя, а не пустовала. */
+function Protects() {
+  const t = useTranslations('twoFactor');
+  return (
+    <div className="rounded-xl bg-sunken px-3.5 py-2.5" data-two-factor-protects>
+      <p className="text-xs font-medium text-secondary">{t('protectsTitle')}</p>
+      <ul className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1 text-sm">
+        {(['login', 'withdraw', 'password'] as const).map((k) => (
+          <li key={k} className="flex items-center gap-1.5 whitespace-nowrap">
+            <svg viewBox="0 0 16 16" className="size-3.5 shrink-0 text-positive" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+              <path d="M3.5 8.5l3 3 6-6.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            {t(`protects.${k}`)}
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

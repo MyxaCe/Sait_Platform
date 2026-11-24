@@ -35,7 +35,7 @@ export function ProfileForm({
   const options = isPlatformLocale(locale) && !languages.includes(locale) ? [...languages, locale] : languages;
 
   return (
-    <form action={formAction} className="flex flex-col gap-4" noValidate>
+    <form action={formAction} className="flex flex-1 flex-col gap-4" noValidate>
       <FormMessage error={state.error} />
 
       <FormField label={t('fullName')} htmlFor="fullName" required error={fieldError(state.fieldErrors?.fullName)}>
@@ -56,7 +56,7 @@ export function ProfileForm({
         </Select>
       </FormField>
 
-      <div>
+      <div className="mt-auto pt-1">
         <SubmitButton label={tCommon('save')} savedLabel={tCommon('saved')} saved={saved} />
       </div>
     </form>

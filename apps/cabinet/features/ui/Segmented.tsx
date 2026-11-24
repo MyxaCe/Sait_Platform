@@ -35,7 +35,7 @@ export function Segmented({
             aria-current={on ? 'page' : undefined}
             className={cn(
               'flex min-h-[40px] flex-1 items-center justify-center gap-2 whitespace-nowrap rounded-lg px-3 text-sm transition-colors',
-              vertical && 'xl:flex-none xl:justify-start',
+              vertical && (stretch ? 'xl:max-h-16 xl:flex-1 xl:justify-start' : 'xl:flex-none xl:justify-start'),
               on ? 'bg-card font-semibold text-primary ring-1 ring-inset ring-border-strong' : 'text-secondary hover:text-primary',
             )}
           >

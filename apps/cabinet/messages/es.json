@@ -20,7 +20,9 @@
     "copied": "Copiado",
     "language": "Idioma",
     "mainSite": "Página principal de {brand}",
-    "siteNav": "Secciones del sitio"
+    "siteNav": "Secciones del sitio",
+    "showAll": "Mostrar todo ({n})",
+    "showLess": "Mostrar menos"
   },
   "nav": {
     "dashboard": "Resumen",
@@ -263,7 +265,13 @@
     "loginButton": "Verificar",
     "loginBack": "Iniciar sesión de nuevo",
     "actionCode": "Código de verificación en dos pasos",
-    "actionCodeHint": "Código de la aplicación de autenticación o código de recuperación"
+    "actionCodeHint": "Código de la aplicación de autenticación o código de recuperación",
+    "protectsTitle": "El código de la aplicación se pedirá para:",
+    "protects": {
+      "login": "iniciar sesión",
+      "withdraw": "retiros",
+      "password": "cambio de contraseña"
+    }
   },
   "documents": {
     "title": "Documentos",

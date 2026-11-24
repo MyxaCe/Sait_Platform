@@ -24,7 +24,7 @@ export function PasswordForm({ twoFactor = false }: { twoFactor?: boolean }) {
   const [state, formAction] = useFormState<ActionState, FormData>(changePasswordAction, {});
 
   return (
-    <form action={formAction} className="flex flex-col gap-4" noValidate>
+    <form action={formAction} className="flex flex-1 flex-col gap-4" noValidate>
       <FormMessage error={state.error} />
       {state.ok && (
         <p className="rounded-xl border border-positive/40 bg-positive/10 px-4 py-3 text-sm text-positive">
@@ -35,12 +35,14 @@ export function PasswordForm({ twoFactor = false }: { twoFactor?: boolean }) {
       <FormField label={t('currentPassword')} htmlFor="currentPassword" required error={fieldError(state.fieldErrors?.currentPassword)}>
         <Input id="currentPassword" name="currentPassword" type="password" autoComplete="current-password" invalid={!!state.fieldErrors?.currentPassword} />
       </FormField>
+      <div className="grid gap-4 sm:grid-cols-2">
       <FormField label={t('newPassword')} htmlFor="newPassword" required error={fieldError(state.fieldErrors?.newPassword)}>
         <Input id="newPassword" name="newPassword" type="password" autoComplete="new-password" invalid={!!state.fieldErrors?.newPassword} />
       </FormField>
       <FormField label={t('confirmPassword')} htmlFor="confirmPassword" required error={fieldError(state.fieldErrors?.confirmPassword)}>
         <Input id="confirmPassword" name="confirmPassword" type="password" autoComplete="new-password" invalid={!!state.fieldErrors?.confirmPassword} />
       </FormField>
+      </div>
 
       {twoFactor ? (
         <FormField label={tf('actionCode')} htmlFor="password-2fa-code" required error={fieldError(state.fieldErrors?.code)}>
@@ -48,7 +50,7 @@ export function PasswordForm({ twoFactor = false }: { twoFactor?: boolean }) {
         </FormField>
       ) : null}
 
-      <div>
+      <div className="mt-auto pt-1">
         <SubmitButton label={tCommon('save')} />
       </div>
     </form>

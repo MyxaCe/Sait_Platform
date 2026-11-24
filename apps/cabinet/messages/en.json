@@ -20,7 +20,9 @@
     "copied": "Copied",
     "language": "Language",
     "mainSite": "{brand} home page",
-    "siteNav": "Site sections"
+    "siteNav": "Site sections",
+    "showAll": "Show all ({n})",
+    "showLess": "Show less"
   },
   "nav": {
     "dashboard": "Overview",
@@ -263,7 +265,13 @@
     "loginButton": "Verify",
     "loginBack": "Sign in again",
     "actionCode": "Two-factor code",
-    "actionCodeHint": "Code from the authenticator app or a recovery code"
+    "actionCodeHint": "Code from the authenticator app or a recovery code",
+    "protectsTitle": "The app code will be required for:",
+    "protects": {
+      "login": "signing in",
+      "withdraw": "withdrawals",
+      "password": "password changes"
+    }
   },
   "documents": {
     "title": "Documents",

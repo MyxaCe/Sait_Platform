@@ -20,7 +20,9 @@
     "copied": "Copié",
     "language": "Langue",
     "mainSite": "Page d’accueil {brand}",
-    "siteNav": "Rubriques du site"
+    "siteNav": "Rubriques du site",
+    "showAll": "Tout afficher ({n})",
+    "showLess": "Réduire"
   },
   "nav": {
     "dashboard": "Aperçu",
@@ -263,7 +265,13 @@
     "loginButton": "Valider",
     "loginBack": "Se reconnecter",
     "actionCode": "Code à deux facteurs",
-    "actionCodeHint": "Code de l’application d’authentification ou code de secours"
+    "actionCodeHint": "Code de l’application d’authentification ou code de secours",
+    "protectsTitle": "Le code de l’application sera demandé pour :",
+    "protects": {
+      "login": "la connexion",
+      "withdraw": "les retraits",
+      "password": "le changement de mot de passe"
+    }
   },
   "documents": {
     "title": "Documents",

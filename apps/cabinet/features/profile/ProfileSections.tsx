@@ -4,7 +4,7 @@ import { EmptyState, ToneBadge, cn, type StatusTone } from '@broker/ui';
 import { listSessions, type SessionUser } from '@/lib/auth/session';
 import { revokeSessionAction } from '@/lib/actions';
 import { listDocuments } from '@/lib/data';
-import type { VerificationState } from '@/lib/kyc';
+import { KYC_STEPS, listKycDocuments, type VerificationState } from '@/lib/kyc';
 import { KYC_TONE } from '@/features/kyc/VerificationSection';
 import { ProfileForm } from './ProfileForm';
 import { PasswordForm } from '@/features/security/PasswordForm';
@@ -12,6 +12,7 @@ import { TwoFactorCard } from '@/features/security/TwoFactorCard';
 import { isTwoFactorEnabled } from '@broker/support';
 import { twoFactorPool } from '@/lib/two-factor';
 import { UploadForm } from '@/features/documents/UploadForm';
+import { CappedList } from '@/features/ui/CappedList';
 
 function Card({ title, hint, children, className }: { title: string; hint?: string; children: React.ReactNode; className?: string }) {
   return (
@@ -38,17 +39,19 @@ export async function SecuritySection({ userId }: { userId: string }) {
   const format = await getFormatter();
   const [sessions, twoFactor] = await Promise.all([listSessions(userId), isTwoFactorEnabled(twoFactorPool(), userId)]);
   return (
-    // Слева «Смена пароля» + «Активные сессии», справа 2FA на всю высоту колонки (без пустого места снизу).
-    <div className="space-y-4 xl:grid xl:h-full xl:grid-cols-2 xl:grid-rows-[auto_minmax(0,1fr)] xl:items-stretch xl:gap-5 xl:space-y-0">
-      <Card title={t('changePassword')} className="xl:col-start-1 xl:row-start-1">
+    // «Смена пароля» и «Двухфакторная защита» рядом, одной высоты; «Активные сессии» — строкой ниже на всю ширину.
+    <div className="space-y-4 xl:grid xl:h-full xl:grid-cols-2 xl:grid-rows-[minmax(0,1fr)_auto] xl:items-stretch xl:gap-5 xl:space-y-0">
+      <Card title={t('changePassword')}>
         <PasswordForm twoFactor={twoFactor} />
       </Card>
-      <div className="flex min-w-0 flex-col xl:col-start-2 xl:row-span-2 xl:row-start-1 [&>section]:flex-1">
+      <div className="flex min-w-0 flex-col [&>section]:flex-1">
         <TwoFactorCard userId={userId} />
       </div>
-      <Card title={t('sessions')} hint={t('sessionsHint')} className="xl:col-start-1 xl:row-start-2 xl:min-h-0">
-        <ul className="divide-y divide-border overflow-auto rounded-xl border border-border xl:min-h-0 xl:flex-1">
-          {sessions.map((session) => (
+      <Card title={t('sessions')} hint={t('sessionsHint')} className="xl:col-span-2">
+        <CappedList
+          limit={1}
+          className="overflow-hidden rounded-xl border border-border"
+          items={sessions.map((session) => (
             <li key={session.id} className="flex items-center justify-between gap-3 px-3 py-3">
               <div className="min-w-0">
                 <p className="truncate text-sm">
@@ -74,7 +77,7 @@ export async function SecuritySection({ userId }: { userId: string }) {
               )}
             </li>
           ))}
-        </ul>
+        />
       </Card>
     </div>
   );
@@ -98,8 +101,10 @@ export async function DocumentsSection({ userId }: { userId: string }) {
             <EmptyState size="compact" title={t('empty')} />
           </div>
         ) : (
-          <ul className="mt-3 min-h-0 flex-1 divide-y divide-border overflow-auto border-t border-border">
-            {documents.map((doc) => (
+          <CappedList
+            limit={4}
+            className="mt-3 border-t border-border"
+            items={documents.map((doc) => (
               <li key={doc.id} className="flex items-center justify-between gap-3 px-4 py-3 sm:px-5">
                 <div className="min-w-0">
                   <p className="truncate text-sm">{doc.filename}</p>
@@ -111,7 +116,7 @@ export async function DocumentsSection({ userId }: { userId: string }) {
                 <ToneBadge tone={DOC_TONE[doc.status] ?? 'neutral'}>{t(`statuses.${doc.status}` as never)}</ToneBadge>
               </li>
             ))}
-          </ul>
+          />
         )}
       </section>
     </div>
@@ -122,7 +127,14 @@ export async function AccountOverview({ userId, state }: { userId: string; state
   const t = await getTranslations('profile');
   const tk = await getTranslations('kyc');
   const ts = await getTranslations('security');
-  const sessions = await listSessions(userId);
+  const tf = await getTranslations('twoFactor');
+  const [sessions, kycDocs, twoFactor] = await Promise.all([
+    listSessions(userId),
+    listKycDocuments(userId),
+    isTwoFactorEnabled(twoFactorPool(), userId),
+  ]);
+  const submitted = new Set<string>(kycDocs.map((d) => d.kind));
+  const row = 'flex items-center justify-between gap-3 px-3.5 py-2.5 text-sm';
   return (
     <div className="flex h-full flex-col gap-5">
       <Card title={tk('title')} className="flex-1">
@@ -130,12 +142,33 @@ export async function AccountOverview({ userId, state }: { userId: string; state
           <ToneBadge tone={KYC_TONE[state]}>{tk(`states.${state}` as never)}</ToneBadge>
         </div>
         <p className="mt-2 text-sm text-secondary">{tk(`stateText.${state}` as never)}</p>
+        <dl className="mt-3 divide-y divide-border rounded-xl bg-sunken" data-overview-kyc>
+          {KYC_STEPS.map((k) => (
+            <div key={k} className={row}>
+              <dt className="text-secondary">{tk(`steps.${k}` as never)}</dt>
+              <dd className={submitted.has(k) ? 'font-medium text-positive' : 'text-muted'}>
+                {submitted.has(k) ? tk('stepDone') : '—'}
+              </dd>
+            </div>
+          ))}
+        </dl>
         <Link href="/profile?tab=verification" className="mt-auto inline-block pt-3 text-sm font-medium text-accent hover:underline">
           {t('openVerification')} →
         </Link>
       </Card>
       <Card title={ts('title')} className="flex-1">
-        <p className="text-sm text-secondary">{t('sessionsActive', { n: sessions.length })}</p>
+        <dl className="divide-y divide-border rounded-xl bg-sunken" data-overview-security>
+          <div className={row}>
+            <dt className="text-secondary">{tf('title')}</dt>
+            <dd>
+              <ToneBadge tone={twoFactor ? 'positive' : 'neutral'}>{twoFactor ? tf('statusOn') : tf('statusOff')}</ToneBadge>
+            </dd>
+          </div>
+          <div className={row}>
+            <dt className="text-secondary">{ts('sessions')}</dt>
+            <dd className="font-medium tabular-nums">{sessions.length}</dd>
+          </div>
+        </dl>
         <Link href="/profile?tab=security" className="mt-auto inline-block pt-3 text-sm font-medium text-accent hover:underline">
           {t('openSecurity')} →
         </Link>

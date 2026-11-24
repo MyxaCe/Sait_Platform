@@ -93,7 +93,7 @@ export default async function ProfilePage({
 
       <div
         key={tab}
-        className="profile-panel min-w-0 space-y-5 xl:col-span-9 xl:flex xl:h-[38rem] xl:flex-col xl:gap-5 xl:space-y-0 [&>*:last-child]:xl:flex-1"
+        className="profile-panel min-w-0 space-y-5 xl:col-span-9 xl:flex xl:min-h-[35rem] xl:flex-col xl:gap-5 xl:space-y-0 [&>*:last-child]:xl:flex-1"
         data-profile-panel
       >
         {tab === 'personal' ? <TransferNotice userId={user.id} /> : null}

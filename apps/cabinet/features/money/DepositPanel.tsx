@@ -63,9 +63,12 @@ export async function DepositPanel({ policy, address }: { policy: MoneyPolicy; a
             </div>
           </div>
         ) : (
-          <Callout tone="neutral" title={t('addressMissingTitle')}>
-            {t('addressMissing')}
-          </Callout>
+          // Адреса нет — сообщение по центру карточки, чтобы низ не пустовал рядом с шагом 2.
+          <div className="flex h-full items-center">
+            <Callout tone="neutral" title={t('addressMissingTitle')} className="w-full">
+              {t('addressMissing')}
+            </Callout>
+          </div>
         )}
       </Step>
 

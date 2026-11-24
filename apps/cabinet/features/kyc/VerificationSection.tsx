@@ -1,3 +1,4 @@
+import { CappedList } from '@/features/ui/CappedList';
 import { getFormatter, getTranslations } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
 import { EmptyState, ToneBadge, cn, type StatusTone } from '@broker/ui';
@@ -38,7 +39,7 @@ export async function VerificationSection({
   const next = KYC_STEPS[KYC_STEPS.indexOf(current) + 1];
 
   return (
-    <div className="space-y-4 xl:grid xl:h-full xl:grid-cols-2 xl:grid-rows-[auto_minmax(0,1fr)] xl:items-stretch xl:gap-5 xl:space-y-0">
+    <div className="space-y-4 xl:grid xl:h-full xl:grid-cols-2 xl:grid-rows-[auto_1fr] xl:items-stretch xl:gap-5 xl:space-y-0">
       <section
         className={cn(
           'rounded-2xl border p-4 sm:p-5 xl:col-span-2',
@@ -109,7 +110,7 @@ export async function VerificationSection({
 
       {!verified ? (
         <section
-          className="border-border bg-elevated flex min-h-0 flex-col overflow-auto rounded-2xl border p-4 sm:p-5"
+          className="border-border bg-elevated flex flex-col rounded-2xl border p-4 sm:p-5"
           data-testid={`kyc-step-${current}`}
         >
           <p className="text-secondary text-xs font-medium uppercase tracking-wide">
@@ -146,15 +147,17 @@ export async function VerificationSection({
           </section>
         ) : null}
 
-        <section className="border-border bg-elevated flex min-h-0 flex-1 flex-col rounded-2xl border">
+        <section className="border-border bg-elevated flex flex-1 flex-col rounded-2xl border">
           <h2 className="px-4 pt-4 text-[15px] font-semibold sm:px-5 sm:pt-5">{t('submittedTitle')}</h2>
           {documents.length === 0 ? (
             <div className="flex flex-1 items-center justify-center">
               <EmptyState size="compact" title={t('empty')} description={t('emptyHint')} />
             </div>
           ) : (
-            <ul className="divide-border border-border mt-3 min-h-0 flex-1 divide-y overflow-auto border-t">
-              {documents.map((doc) => (
+            <CappedList
+              limit={3}
+              className="border-border mt-3 border-t"
+              items={documents.map((doc) => (
                 <li key={doc.id} className="flex items-center justify-between gap-3 px-4 py-3 sm:px-5">
                   <div className="min-w-0">
                     <p className="truncate text-sm">{t(`kinds.${doc.kind}` as never)}</p>
@@ -164,7 +167,7 @@ export async function VerificationSection({
                   </div>
                 </li>
               ))}
-            </ul>
+            />
           )}
         </section>
       </div>

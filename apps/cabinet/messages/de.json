@@ -20,7 +20,9 @@
     "copied": "Kopiert",
     "language": "Sprache",
     "mainSite": "{brand} Startseite",
-    "siteNav": "Bereiche der Website"
+    "siteNav": "Bereiche der Website",
+    "showAll": "Alle anzeigen ({n})",
+    "showLess": "Weniger anzeigen"
   },
   "nav": {
     "dashboard": "Übersicht",
@@ -263,7 +265,13 @@
     "loginButton": "Bestätigen",
     "loginBack": "Erneut anmelden",
     "actionCode": "Zwei-Faktor-Code",
-    "actionCodeHint": "Code aus der Authenticator-App oder ein Wiederherstellungscode"
+    "actionCodeHint": "Code aus der Authenticator-App oder ein Wiederherstellungscode",
+    "protectsTitle": "Der App-Code wird benötigt bei:",
+    "protects": {
+      "login": "Anmeldung",
+      "withdraw": "Auszahlungen",
+      "password": "Passwortänderung"
+    }
   },
   "documents": {
     "title": "Dokumente",

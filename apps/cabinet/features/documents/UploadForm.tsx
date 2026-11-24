@@ -30,7 +30,7 @@ export function UploadForm() {
   );
 
   return (
-    <form ref={formRef} action={formAction} className="flex flex-col gap-4" noValidate>
+    <form ref={formRef} action={formAction} className="flex flex-1 flex-col gap-4" noValidate>
       <FormMessage error={state.error} />
       {state.ok && (
         <p className="rounded-xl border border-positive/40 bg-positive/10 px-4 py-3 text-sm text-positive">
@@ -56,7 +56,7 @@ export function UploadForm() {
         />
       </FormField>
 
-      <div>
+      <div className="mt-auto pt-1">
         <SubmitButton label={t('upload')} />
       </div>
     </form>
