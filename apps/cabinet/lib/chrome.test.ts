@@ -41,6 +41,22 @@ describe('цвет не задан', () => {
   });
 });
 
+describe('как показывать бренд в шапке', () => {
+  it('старая CMS без logoMode → null (прежнее поведение: логотип и название)', async () => {
+    stubFetch(BRAND_V2);
+    expect((await getChromeBrand('ru'))?.logoMode).toBeNull();
+  });
+
+  it('logo из CMS доезжает, незнакомое значение не ломает бренд', async () => {
+    stubFetch({ ...BRAND_V2, logoMode: 'logo' });
+    expect((await getChromeBrand('ru'))?.logoMode).toBe('logo');
+    stubFetch({ ...BRAND_V2, logoMode: 'sideways' });
+    const brand = await getChromeBrand('ru');
+    expect(brand?.logoMode).toBeNull();
+    expect(brand?.name).toBe('Apex Capital');
+  });
+});
+
 describe('юрлицо и лицензии', () => {
   it('старая CMS без legalEntity → null, бренд цел', async () => {
     stubFetch(BRAND_V2);
@@ -91,7 +107,7 @@ describe('бренда нет', () => {
 
 describe('resolveBrandName', () => {
   afterEach(() => vi.unstubAllEnvs());
-  const fromCms = { name: 'Из CMS', primaryColor: null, logo: null, socials: [], legalEntity: null };
+  const fromCms = { name: 'Из CMS', primaryColor: null, logo: null, logoMode: null, socials: [], legalEntity: null };
 
   it('CMS ответила → имя из CMS, даже если окружение задано', () => {
     vi.stubEnv('SITE_BRAND_NAME', 'Из окружения');

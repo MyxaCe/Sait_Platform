@@ -2,93 +2,171 @@
   "$ref": "#/definitions/cms.brand",
   "definitions": {
     "cms.brand": {
-      "type": "object",
-      "properties": {
-        "name": {
-          "type": "string",
-          "minLength": 1
-        },
-        "logo": {
-          "anyOf": [
-            {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "contract": {
+              "type": "string",
+              "const": "v1"
+            },
+            "site": {
               "type": "object",
               "properties": {
-                "url": {
+                "name": {
                   "type": "string",
-                  "format": "uri"
-                },
-                "width": {
-                  "type": "integer",
-                  "exclusiveMinimum": 0
-                },
-                "height": {
-                  "type": "integer",
-                  "exclusiveMinimum": 0
-                },
-                "alt": {
-                  "type": "string"
-                },
-                "mimeType": {
-                  "type": "string"
+                  "minLength": 1
                 }
               },
               "required": [
-                "url",
-                "width",
-                "height",
-                "alt",
-                "mimeType"
+                "name"
               ],
               "additionalProperties": false
             },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "favicon": {
-          "anyOf": [
-            {
-              "$ref": "#/definitions/cms.brand/properties/logo/anyOf/0"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "primaryColor": {
-          "type": "string",
-          "pattern": "^#[0-9a-fA-F]{6}$"
-        },
-        "socials": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "properties": {
-              "name": {
-                "type": "string"
+            "brand": {
+              "type": "object",
+              "properties": {
+                "logoLight": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "url": {
+                          "type": "string",
+                          "format": "uri"
+                        },
+                        "width": {
+                          "type": "integer",
+                          "exclusiveMinimum": 0
+                        },
+                        "height": {
+                          "type": "integer",
+                          "exclusiveMinimum": 0
+                        },
+                        "alt": {
+                          "type": "string"
+                        },
+                        "mimeType": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "url",
+                        "width",
+                        "height",
+                        "alt",
+                        "mimeType"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "favicon": {
+                  "$ref": "#/definitions/cms.brand/anyOf/0/properties/brand/properties/logoLight"
+                },
+                "primaryColor": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "pattern": "^#[0-9a-fA-F]{6}$"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "socials": {
+                  "type": "array",
+                  "items": {}
+                },
+                "heroBackground": {
+                  "type": "string",
+                  "enum": [
+                    "quotes",
+                    "off"
+                  ]
+                },
+                "logoMode": {
+                  "type": "string",
+                  "enum": [
+                    "logo-name",
+                    "logo",
+                    "name"
+                  ]
+                }
               },
-              "url": {
-                "type": "string",
-                "format": "uri"
-              }
+              "additionalProperties": false
             },
-            "required": [
-              "name",
-              "url"
-            ],
-            "additionalProperties": false
-          }
+            "legalEntity": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "name": {},
+                    "registrationNumber": {
+                      "$ref": "#/definitions/cms.brand/anyOf/0/properties/legalEntity/anyOf/0/properties/name"
+                    },
+                    "address": {
+                      "$ref": "#/definitions/cms.brand/anyOf/0/properties/legalEntity/anyOf/0/properties/name"
+                    },
+                    "licenses": {
+                      "type": "array",
+                      "items": {}
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "contract",
+            "site",
+            "brand"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "minLength": 1
+            },
+            "logo": {
+              "$ref": "#/definitions/cms.brand/anyOf/0/properties/brand/properties/logoLight"
+            },
+            "favicon": {
+              "$ref": "#/definitions/cms.brand/anyOf/0/properties/brand/properties/logoLight"
+            },
+            "primaryColor": {
+              "$ref": "#/definitions/cms.brand/anyOf/0/properties/brand/properties/primaryColor"
+            },
+            "socials": {
+              "$ref": "#/definitions/cms.brand/anyOf/0/properties/brand/properties/socials"
+            },
+            "heroBackground": {
+              "$ref": "#/definitions/cms.brand/anyOf/0/properties/brand/properties/heroBackground"
+            },
+            "logoMode": {
+              "$ref": "#/definitions/cms.brand/anyOf/0/properties/brand/properties/logoMode"
+            },
+            "legalEntity": {
+              "$ref": "#/definitions/cms.brand/anyOf/0/properties/legalEntity"
+            }
+          },
+          "required": [
+            "name"
+          ],
+          "additionalProperties": false
         }
-      },
-      "required": [
-        "name",
-        "logo",
-        "favicon",
-        "primaryColor",
-        "socials"
-      ],
-      "additionalProperties": false
+      ]
     }
   },
   "$schema": "http://json-schema.org/draft-07/schema#"

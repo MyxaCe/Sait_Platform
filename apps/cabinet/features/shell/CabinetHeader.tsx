@@ -5,6 +5,7 @@ import { HelpButton } from '@/features/tour/HelpButton';
 import { LogoutForm } from '@/features/shell/LogoutForm';
 import type { SessionUser } from '@/lib/auth/session';
 import { resolveBrandName, type ChromeBrand } from '@/lib/chrome';
+import { BrandMark } from '@broker/ui';
 
 export async function CabinetHeader({
   brand,
@@ -32,15 +33,7 @@ export async function CabinetHeader({
           title={t('mainSite', { brand: brandName })}
           data-header-site-home
         >
-          {brand?.logo ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={brand.logo.url} alt={brand.logo.alt || brandName} className="h-8 w-auto" />
-          ) : (
-            <span className="grid size-8 place-items-center rounded-lg bg-accent font-bold text-on-accent">
-              {brandName.charAt(0)}
-            </span>
-          )}
-          <span className="hidden sm:inline">{brandName}</span>
+          <BrandMark name={brandName} logo={brand?.logo} mode={brand?.logoMode} size="md" nameClassName="hidden sm:inline" />
         </a>
         <Link
           href="/"

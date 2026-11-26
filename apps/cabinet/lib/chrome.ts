@@ -1,4 +1,4 @@
-import { legalEntitySchema, type LegalEntity } from '@broker/api-client';
+import { brandLogoModeSchema, legalEntitySchema, type LegalEntity } from '@broker/api-client';
 import { readTenantSlug } from '@broker/tenant';
 import { envOr, readEnv } from '@broker/utils';
 import { isPlatformLocale, localizedPath } from '@broker/utils/locales';
@@ -8,6 +8,8 @@ export interface ChromeBrand {
   name: string;
   primaryColor: string | null;
   logo: { url: string; width: number; height: number; alt: string } | null;
+  /** Как показывать бренд в шапке; null — прежнее поведение (логотип и название). */
+  logoMode: 'logo-name' | 'logo' | 'name' | null;
   socials: { name: string; url: string }[];
   legalEntity: LegalEntity | null;
 }
@@ -67,6 +69,7 @@ export async function getChromeBrand(locale: string): Promise<ChromeBrand | null
     name: data.name,
     primaryColor: typeof data.primaryColor === 'string' ? data.primaryColor : null,
     logo: logo && typeof logo.url === 'string' ? logo : null,
+    logoMode: brandLogoModeSchema.safeParse(data.logoMode).success ? (data.logoMode as ChromeBrand['logoMode']) : null,
     socials: Array.isArray(data.socials) ? (data.socials as ChromeBrand['socials']) : [],
     legalEntity: legalEntitySchema.parse(data.legalEntity),
   };
