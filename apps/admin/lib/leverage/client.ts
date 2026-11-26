@@ -40,6 +40,8 @@ export interface SetClientPortfolioInput {
   portfolioKey: string;
   reason: string;
   operatorLogin?: string;
+  /** Записи в той же транзакции, до COMMIT (автоповышение: уведомление клиенту, отметка проверки). */
+  withinTx?: (db: Queryable) => Promise<void>;
 }
 
 export type ClientLeverageResult =
@@ -129,6 +131,7 @@ export async function setClientPortfolio(
       input.userId,
       journalSeq,
     ]);
+    if (input.withinTx) await input.withinTx(client as unknown as Queryable);
 
     await client.query('COMMIT');
     return { ok: true, journalSeq };

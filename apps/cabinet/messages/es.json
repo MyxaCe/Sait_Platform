@@ -382,6 +382,7 @@
     "markRead": "Leída",
     "types": {
       "welcome": "¡Bienvenido! Hemos recibido su solicitud de cuenta {accountType}; su cuenta demo ya está abierta.",
+      "accountTierUpgraded": "Su cuenta ha pasado al tipo {accountType}: su saldo alcanzó el umbral. Las nuevas condiciones de trading ya están vigentes.",
       "documentUploaded": "El documento «{filename}» se ha subido y enviado a revisión.",
       "demoReset": "La cuenta demo se ha restablecido al saldo inicial.",
       "tradeExecuted": "Operación ejecutada: {side, select, buy {compra} sell {venta} other {{side}}} {volume} {symbol} a {price}.",

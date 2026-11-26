@@ -5,7 +5,7 @@ const CABINET = (process.env.NEXT_PUBLIC_CABINET_URL || 'http://localhost:3002')
 test('старый /register витрины переадресует в регистрацию кабинета с тарифом', async ({ request }) => {
   const res = await request.get('/register?account=pro&promo=welcome', { maxRedirects: 0 });
   expect([307, 308]).toContain(res.status());
-  expect(res.headers()['location']).toBe(`${CABINET}/register?accountType=pro&promo=welcome`);
+  expect(res.headers()['location']).toBe(`${CABINET}/register?promo=welcome`);
 });
 
 test('/login витрины переадресует на вход кабинета', async ({ request }) => {

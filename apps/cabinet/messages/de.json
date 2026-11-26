@@ -382,6 +382,7 @@
     "markRead": "Gelesen",
     "types": {
       "welcome": "Willkommen! Ihr Antrag auf ein {accountType}-Konto ist eingegangen; Ihr Demokonto ist bereits eröffnet.",
+      "accountTierUpgraded": "Ihr Konto wurde auf {accountType} hochgestuft: Ihr Guthaben hat die Schwelle erreicht. Die neuen Handelsbedingungen gelten ab sofort.",
       "documentUploaded": "Das Dokument „{filename}“ wurde hochgeladen und zur Prüfung weitergeleitet.",
       "demoReset": "Das Demokonto wurde auf den Startbetrag zurückgesetzt.",
       "tradeExecuted": "Trade ausgeführt: {side, select, buy {Kauf} sell {Verkauf} other {{side}}} {volume} {symbol} zu {price}.",

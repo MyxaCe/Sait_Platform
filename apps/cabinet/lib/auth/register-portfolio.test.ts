@@ -38,42 +38,36 @@ async function leverageOf(userId: string): Promise<number | undefined> {
   return (await readTerminalLeverage(db as unknown as Queryable, [userId])).get(userId);
 }
 
-describe('тип счёта при регистрации применяется к клиенту', () => {
-  it('выбран Pro — клиент в портфеле pro, плечо терминала 1:50, а не Standard 1:10', async () => {
+describe('тип счёта при регистрации не выбирается — все начинают с портфеля по умолчанию', () => {
+  it('старая ссылка с accountType=pro — клиент всё равно в портфеле по умолчанию (1:10), без явной строки', async () => {
     const r = await registerUser({ ...INPUT, email: 'pro@example.com', accountType: 'pro' });
-    expect(r.ok).toBe(true);
-    if (!r.ok) return;
-    const row = await db.query(`SELECT portfolio_key FROM client_leverage WHERE user_id = $1`, [r.userId]);
-    expect(row.rows[0]?.portfolio_key).toBe('pro');
-    expect(await leverageOf(r.userId)).toBe(50);
-    const lead = await db.query(`SELECT payload FROM leads WHERE email = 'pro@example.com'`);
-    expect((lead.rows[0]?.payload as { accountType: string }).accountType).toBe('pro');
-    const welcome = await db.query(`SELECT params FROM notifications WHERE user_id = $1`, [r.userId]);
-    expect(welcome.rows[0]?.params).toEqual({ accountType: 'Pro' });
-  });
-
-  it('выбран ECN Prime — портфель enc_prime, в заявке CRM прежний код ecn', async () => {
-    const r = await registerUser({ ...INPUT, email: 'ecn@example.com', accountType: 'enc_prime' });
-    expect(r.ok).toBe(true);
-    if (!r.ok) return;
-    expect(await leverageOf(r.userId)).toBe(100);
-    expect(leadAccountType('enc_prime')).toBe('ecn');
-  });
-
-  it('скрытый тип счёта — отказ, клиент не создан', async () => {
-    await db.query(`UPDATE leverage_portfolios SET is_public = false WHERE key = 'pro'`);
-    const r = await registerUser({ ...INPUT, email: 'hidden@example.com', accountType: 'pro' });
-    expect(r).toEqual({ ok: false, reason: 'accountTypeUnavailable' });
-    const users = await db.query(`SELECT 1 FROM users WHERE email = 'hidden@example.com'`);
-    expect(users.rows).toHaveLength(0);
-  });
-
-  it('тип не выбран (портфели не опубликованы) — портфель по умолчанию, без явной строки', async () => {
-    const r = await registerUser({ ...INPUT, email: 'none@example.com' });
     expect(r.ok).toBe(true);
     if (!r.ok) return;
     const row = await db.query(`SELECT 1 FROM client_leverage WHERE user_id = $1`, [r.userId]);
     expect(row.rows).toHaveLength(0);
     expect(await leverageOf(r.userId)).toBe(10);
+    const lead = await db.query(`SELECT payload FROM leads WHERE email = 'pro@example.com'`);
+    expect((lead.rows[0]?.payload as { accountType: string }).accountType).toBe('standard');
+    const def = await db.query(`SELECT title FROM leverage_portfolios WHERE is_default`);
+    const welcome = await db.query(`SELECT params FROM notifications WHERE user_id = $1`, [r.userId]);
+    expect(welcome.rows[0]?.params).toEqual({ accountType: def.rows[0]?.title });
+  });
+
+  it('скрытый тип в ссылке больше не мешает регистрации', async () => {
+    await db.query(`UPDATE leverage_portfolios SET is_public = false WHERE key = 'pro'`);
+    const r = await registerUser({ ...INPUT, email: 'hidden@example.com', accountType: 'pro' });
+    expect(r.ok).toBe(true);
+  });
+
+  it('тип не передан — портфель по умолчанию', async () => {
+    const r = await registerUser({ ...INPUT, email: 'none@example.com' });
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(await leverageOf(r.userId)).toBe(10);
+  });
+
+  it('код типа для заявки CRM по-прежнему переводится (старые записи)', () => {
+    expect(leadAccountType('enc_prime')).toBe('ecn');
+    expect(leadAccountType(null)).toBe('standard');
   });
 });

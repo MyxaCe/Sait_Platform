@@ -33,7 +33,6 @@ export interface RegisterInput {
 export type RegisterRefusal =
   | { ok: false; reason: 'emailExists' }
   | { ok: false; reason: 'mailNotConfigured' }
-  | { ok: false; reason: 'accountTypeUnavailable' }
   | { ok: false; reason: 'startBalanceUnset' }
   | { ok: false; reason: 'startBalanceUnavailable'; detail: string };
 
@@ -118,7 +117,7 @@ export async function registerUser(input: RegisterInput, ctx: RegisterContext = 
     email: input.email,
     phone: input.phone,
     country: input.country,
-    accountType: leadAccountType(input.accountType ?? null),
+    accountType: leadAccountType(null),
     locale: legacyLocale(input.locale),
     source: { promo: attribution?.promo?.value ?? 'cabinet-registration' },
   };
@@ -127,20 +126,13 @@ export async function registerUser(input: RegisterInput, ctx: RegisterContext = 
   const client = await getPool().connect();
   try {
     await client.query('BEGIN');
-    const found = await client.query(
-      `SELECT key, title FROM leverage_portfolios
-        WHERE ($1::text IS NULL AND is_default) OR (key = $1::text AND is_public)
-        LIMIT 1`,
-      [input.accountType ?? null],
-    );
+    // Тип счёта при регистрации не выбирается (решение владельца 26.11): все начинают
+    // с портфеля по умолчанию, дальше админка повышает его по балансу автоматически.
+    // Параметр accountType из старых ссылок принимается формой, но не используется.
+    const found = await client.query(`SELECT key, title FROM leverage_portfolios WHERE is_default LIMIT 1`);
     const row = found.rows[0] as { key?: unknown; title?: unknown } | undefined;
     const portfolio =
       row && typeof row.key === 'string' ? { key: row.key, title: typeof row.title === 'string' ? row.title : row.key } : null;
-    if (input.accountType && !portfolio) {
-      await client.query('ROLLBACK');
-      console.error(`[register] отказ: тип счёта ${input.accountType} не опубликован`);
-      return { ok: false, reason: 'accountTypeUnavailable' };
-    }
     await client.query(
       `INSERT INTO users (id, email, password_hash, full_name, locale, country, registration_ip, registration_ip_country, onboarding)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, '{"autostart": true}'::jsonb)`,
@@ -164,9 +156,6 @@ export async function registerUser(input: RegisterInput, ctx: RegisterContext = 
       [envelope.event_id, LEAD_SUBMITTED_ROUTING_KEY, JSON.stringify(envelope), occurredAt],
     );
 
-    if (portfolio && input.accountType) {
-      await client.query(`INSERT INTO client_leverage (user_id, portfolio_key) VALUES ($1, $2)`, [userId, portfolio.key]);
-    }
     await client.query(
       `INSERT INTO notifications (id, user_id, type, params) VALUES ($1, $2, $3, $4)`,
       [randomUUID(), userId, 'welcome', JSON.stringify({ accountType: portfolio?.title ?? '' })],

@@ -382,6 +382,7 @@
     "markRead": "Прочитано",
     "types": {
       "welcome": "Добро пожаловать! Заявка на счёт {accountType} принята, демо-счёт уже открыт.",
+      "accountTierUpgraded": "Ваш счёт переведён на тип {accountType}: баланс достиг порога. Новые условия торговли уже действуют.",
       "documentUploaded": "Документ «{filename}» загружен и передан на проверку.",
       "demoReset": "Демо-счёт сброшен к стартовому балансу.",
       "tradeExecuted": "Сделка исполнена: {side, select, buy {покупка} sell {продажа} other {{side}}} {volume} {symbol} по {price}.",

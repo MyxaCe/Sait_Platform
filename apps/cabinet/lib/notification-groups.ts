@@ -7,6 +7,7 @@ const BY_TYPE: Record<string, NotificationGroup> = {
   marginCalled: 'trading',
   welcome: 'account',
   demoReset: 'account',
+  accountTierUpgraded: 'account',
   documentUploaded: 'account',
   supportReply: 'support',
   supportResolved: 'support',

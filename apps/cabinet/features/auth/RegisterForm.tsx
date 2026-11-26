@@ -6,7 +6,6 @@ import { useLocale, useTranslations } from 'next-intl';
 import { Button, FormField, Input } from '@broker/ui';
 import { registerAction, type ActionState } from '@/lib/actions';
 import { FormMessage, useFieldError } from './FormMessage';
-import { PlanPicker, type RegisterPlan } from './PlanPicker';
 
 function docLinks(consent: ConsentLinks | undefined) {
   const link = (href: string | undefined) =>
@@ -52,14 +51,10 @@ const consentLinkClass = 'text-accent underline-offset-2 hover:underline';
 
 export function RegisterForm({
   prefill,
-  plans = [],
-  selectedPlan,
   next,
   consent,
 }: {
   prefill?: RegisterPrefill;
-  plans?: RegisterPlan[];
-  selectedPlan?: string;
   next?: string | null;
   consent?: ConsentLinks;
 } = {}) {
@@ -96,8 +91,6 @@ export function RegisterForm({
       <FormField label={t('country')} htmlFor="country" required error={fieldError(state.fieldErrors?.country)}>
         <Input id="country" name="country" autoComplete="country-name" defaultValue={prefill?.country} invalid={!!state.fieldErrors?.country} />
       </FormField>
-
-      {plans.length > 0 ? <PlanPicker plans={plans} selected={selectedPlan ?? plans[0]!.key} /> : null}
 
       <FormField label={t('password')} htmlFor="password" required error={fieldError(state.fieldErrors?.password)}>
         <Input id="password" name="password" type="password" autoComplete="new-password" invalid={!!state.fieldErrors?.password} />

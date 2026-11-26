@@ -382,6 +382,7 @@
     "markRead": "Read",
     "types": {
       "welcome": "Welcome! Your {accountType} account application has been received; your demo account is already open.",
+      "accountTierUpgraded": "Your account has been upgraded to {accountType}: your balance reached the threshold. The new trading conditions apply now.",
       "documentUploaded": "Document “{filename}” has been uploaded and sent for review.",
       "demoReset": "Demo account has been reset to the starting balance.",
       "tradeExecuted": "Trade executed: {side, select, buy {buy} sell {sell} other {{side}}} {volume} {symbol} at {price}.",

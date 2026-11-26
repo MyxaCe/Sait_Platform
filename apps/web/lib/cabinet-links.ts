@@ -18,16 +18,17 @@ type Query = Record<string, string | string[] | undefined>;
 
 /**
  * Адрес регистрации кабинета для старых ссылок витрины `/register?…`.
- * Старая форма принимала тариф как `account`, кабинет — как `accountType`.
+ * Тариф из старых ссылок (`account` / `accountType`) отбрасывается: тип счёта зависит от баланса.
  */
 export function cabinetRegisterRedirect(query: Query | undefined, locale: string, defaultLanguage = 'ru'): string {
   const params = new URLSearchParams();
   for (const [key, raw] of Object.entries(query ?? {})) {
     const value = Array.isArray(raw) ? raw[0] : raw;
     if (value === undefined || value === '') continue;
-    const name = key === 'account' ? 'accountType' : key;
-    if (name === 'accountType' && params.has('accountType')) continue;
-    params.set(name, value);
+    // Тип счёта больше не выбирается при регистрации (решение владельца 26.11):
+    // старые ссылки ?account=… / ?accountType=… ведут на обычную регистрацию.
+    if (key === 'account' || key === 'accountType') continue;
+    params.set(key, value);
   }
   const search = params.toString();
   return cabinetRegisterHref(search ? `/register?${search}` : '/register', locale, defaultLanguage);

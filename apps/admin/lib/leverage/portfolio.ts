@@ -326,3 +326,91 @@ export async function setClassLeverageTable(
     client.release();
   }
 }
+
+export interface SetMinBalanceInput {
+  operatorId: string;
+  portfolioKey: string;
+  /** Порог в центах USDT (минорные единицы). */
+  minBalanceMinor: number;
+  reason: string;
+}
+
+export type MinBalanceResult =
+  | { ok: true; journalSeq: number }
+  | { ok: false; reason: 'missingReason' }
+  | { ok: false; reason: 'invalidAmount' }
+  | { ok: false; reason: 'noPortfolio' }
+  | { ok: false; reason: 'alreadyInState' }
+  | { ok: false; reason: 'defaultNotZero' }
+  | { ok: false; reason: 'notMonotonic'; lower: string; higher: string };
+
+/**
+ * Порог баланса для автоматического перехода на портфель. Только admin (проверка в action).
+ * Плечо счетов не меняется — терминал не трогаем; меняется только правило перехода.
+ */
+export async function setPortfolioMinBalance(
+  input: SetMinBalanceInput,
+  pool: { connect(): Promise<PoolClient> } = getPool(),
+): Promise<MinBalanceResult> {
+  const reason = input.reason?.trim() ?? '';
+  if (reason.length === 0) return { ok: false, reason: 'missingReason' };
+  if (!Number.isSafeInteger(input.minBalanceMinor) || input.minBalanceMinor < 0) {
+    return { ok: false, reason: 'invalidAmount' };
+  }
+  const { validateThresholds } = await import('./tier');
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const all = await client.query(
+      `SELECT key, title, min_balance_minor, sort_order, is_default, is_public
+         FROM leverage_portfolios ORDER BY key FOR UPDATE`,
+    );
+    const rows = (all.rows as Record<string, unknown>[]).map((r) => ({
+      key: String(r.key),
+      title: String(r.title ?? r.key),
+      minBalanceMinor: Number(r.min_balance_minor ?? 0),
+      sortOrder: Number(r.sort_order ?? 0),
+      isDefault: Boolean(r.is_default),
+      isPublic: Boolean(r.is_public),
+    }));
+    const target = rows.find((r) => r.key === input.portfolioKey);
+    if (!target) {
+      await client.query('ROLLBACK');
+      return { ok: false, reason: 'noPortfolio' };
+    }
+    if (target.minBalanceMinor === input.minBalanceMinor) {
+      await client.query('ROLLBACK');
+      return { ok: false, reason: 'alreadyInState' };
+    }
+    const next = rows.map((r) => (r.key === target.key ? { ...r, minBalanceMinor: input.minBalanceMinor } : r));
+    const verdict = validateThresholds(next);
+    if (!verdict.ok) {
+      await client.query('ROLLBACK');
+      return verdict.reason === 'defaultNotZero'
+        ? { ok: false, reason: 'defaultNotZero' }
+        : { ok: false, reason: 'notMonotonic', lower: verdict.lower, higher: verdict.higher };
+    }
+    await client.query(
+      `UPDATE leverage_portfolios SET min_balance_minor = $2, updated_at = now() WHERE key = $1`,
+      [target.key, input.minBalanceMinor],
+    );
+    const entry = await appendJournalEntry(
+      {
+        operatorId: input.operatorId,
+        action: 'leverage.portfolio_min_balance_set',
+        subjectKind: 'leverage_portfolio',
+        subjectId: target.key,
+        payload: { basis: reason, previousMinBalanceMinor: target.minBalanceMinor, newMinBalanceMinor: input.minBalanceMinor },
+      },
+      client as unknown as Parameters<typeof appendJournalEntry>[1],
+    );
+    const journalSeq = await seqOfEntry(client, entry.entryHash, 'порог баланса портфеля');
+    await client.query('COMMIT');
+    return { ok: true, journalSeq };
+  } catch (error) {
+    await client.query('ROLLBACK').catch(() => {});
+    throw error;
+  } finally {
+    client.release();
+  }
+}

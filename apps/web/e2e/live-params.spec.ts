@@ -33,7 +33,7 @@ test('счета: тарифы из публичных портфелей в и�
   await expect(pro).toContainText('1:50');
   await expect(pro).toContainText('E2E');
   await expect(page.locator('[data-account-type="enc_prime"]')).toContainText('ECN Prime');
-  await expect(pro.getByRole('link')).toHaveAttribute('href', /\/register\?accountType=pro$/);
+  await expect(pro.getByRole('link')).toHaveAttribute('href', /\/register$/);
 });
 
 test('акции: набор из движка, тексты CMS по идентификатору, выключенная не показывается', async ({ page }) => {

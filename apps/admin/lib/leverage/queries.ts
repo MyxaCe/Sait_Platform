@@ -8,6 +8,8 @@ export interface PortfolioRow extends PortfolioLeverage {
   readonly commissionBps: number;
   readonly instruments: string | null;
   readonly description: string | null;
+  /** Порог реального баланса для автоматического перехода на портфель, центы USDT. */
+  readonly minBalanceMinor: number;
 }
 
 function asDenominator(value: unknown): number {
@@ -30,6 +32,7 @@ export async function listPortfolios(db: Queryable = getPool()): Promise<Portfol
   const portfolios = await db.query(
     `SELECT p.key, p.title, p.base_leverage, p.is_default, p.sort_order,
             p.markup_bps, p.commission_bps, p.instruments, p.description,
+            p.min_balance_minor,
             COALESCE(c.cnt, 0) AS client_count
        FROM leverage_portfolios p
        LEFT JOIN (
@@ -63,6 +66,7 @@ export async function listPortfolios(db: Queryable = getPool()): Promise<Portfol
     commissionBps: asBps(row.commission_bps),
     instruments: row.instruments === null || row.instruments === undefined ? null : String(row.instruments),
     description: row.description === null || row.description === undefined ? null : String(row.description),
+    minBalanceMinor: Number(row.min_balance_minor ?? 0) || 0,
   }));
 }
 

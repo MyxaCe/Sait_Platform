@@ -382,6 +382,7 @@
     "markRead": "Lu",
     "types": {
       "welcome": "Bienvenue ! Votre demande de compte {accountType} a été reçue ; votre compte démo est déjà ouvert.",
+      "accountTierUpgraded": "Votre compte est passé au type {accountType} : votre solde a atteint le seuil. Les nouvelles conditions de trading s’appliquent dès maintenant.",
       "documentUploaded": "Le document « {filename} » a été téléchargé et transmis pour examen.",
       "demoReset": "Le compte démo a été réinitialisé au solde de départ.",
       "tradeExecuted": "Transaction exécutée : {side, select, buy {achat} sell {vente} other {{side}}} {volume} {symbol} à {price}.",

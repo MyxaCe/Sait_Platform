@@ -36,10 +36,10 @@ describe('CTA «Открыть счёт» / акции → регистраци�
 
 describe('старые адреса витрины /register и /login → кабинет', () => {
   const base = (process.env.NEXT_PUBLIC_CABINET_URL || 'http://localhost:3002').replace(/\/$/, '');
-  it('переносит тариф account → accountType, промокод и демо; язык в пути', async () => {
+  it('тариф из старых ссылок отбрасывается (тип счёта по балансу); промокод и демо переносятся; язык в пути', async () => {
     const { cabinetRegisterRedirect } = await import('./cabinet-links');
-    expect(cabinetRegisterRedirect({ account: 'pro' }, 'ru')).toBe(`${base}/register?accountType=pro`);
-    expect(cabinetRegisterRedirect({ accountType: 'ecn', account: 'pro' }, 'en')).toBe(`${base}/en/register?accountType=ecn`);
+    expect(cabinetRegisterRedirect({ account: 'pro' }, 'ru')).toBe(`${base}/register`);
+    expect(cabinetRegisterRedirect({ accountType: 'ecn', account: 'pro', promo: 'x' }, 'en')).toBe(`${base}/en/register?promo=x`);
     expect(cabinetRegisterRedirect({ demo: '1', promo: ['a', 'b'], empty: '' }, 'ru')).toBe(`${base}/register?demo=1&promo=a`);
     expect(cabinetRegisterRedirect(undefined, 'de')).toBe(`${base}/de/register`);
   });

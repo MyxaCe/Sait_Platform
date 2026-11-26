@@ -5,7 +5,7 @@ import { revalidatePath } from 'next/cache';
 import { getOperatorSession } from '../auth/current';
 import { LOGIN_PATH } from '../auth/constants';
 import { LEVERAGE_CLASSES } from '@broker/money';
-import { changePortfolioLeverage, setClassLeverageTable } from './portfolio';
+import { changePortfolioLeverage, setClassLeverageTable, setPortfolioMinBalance } from './portfolio';
 import { setClientPortfolio, setClientOverride, clearClientOverride } from './client';
 
 export interface LeverageActionState {
@@ -165,5 +165,29 @@ export async function clearClientOverrideAction(
   if (!result.ok) return toState(result);
 
   revalidatePath('/risk/leverage');
+  return { ok: true };
+}
+
+/** «Минимальный баланс для перехода, USDT» — порог автоматического повышения типа счёта. */
+export async function setPortfolioMinBalanceAction(
+  _prev: LeverageActionState,
+  formData: FormData,
+): Promise<LeverageActionState> {
+  const operator = await requireAdmin();
+  if (!operator) return { error: 'forbidden' };
+  const portfolioKey = String(formData.get('portfolioKey') ?? '').trim();
+  if (!portfolioKey) return { error: 'noPortfolio' };
+  const raw = String(formData.get('minBalance') ?? '').trim().replace(/\s/g, '').replace(',', '.');
+  if (!/^\d{1,12}(\.\d{1,2})?$/.test(raw)) return { error: 'invalidAmount' };
+  const [whole, frac = ''] = raw.split('.');
+  const minBalanceMinor = Number(whole) * 100 + Number((frac + '00').slice(0, 2));
+  const result = await setPortfolioMinBalance({
+    operatorId: operator.operatorId,
+    portfolioKey,
+    minBalanceMinor,
+    reason: String(formData.get('reason') ?? ''),
+  });
+  if (!result.ok) return { error: result.reason };
+  revalidatePath('/risk/portfolios');
   return { ok: true };
 }

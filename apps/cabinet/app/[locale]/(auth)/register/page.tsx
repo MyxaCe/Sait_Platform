@@ -3,7 +3,6 @@ import { Link } from '@/i18n/navigation';
 import { RegisterForm } from '@/features/auth/RegisterForm';
 import { registerSubtitle } from '@/lib/register-copy';
 import { getTenantStartBalance } from '@/lib/tenant';
-import { loadRegisterPlans } from '@/lib/register-plans';
 import { InviteNotice, loadInvite } from '@/features/auth/TransferInvite';
 import { safeNext, withNext } from '@/lib/auth/next-path';
 import { HelpButton } from '@/features/tour/HelpButton';
@@ -24,10 +23,9 @@ export default async function RegisterPage({
   setRequestLocale(params.locale);
   const t = await getTranslations('auth');
   const next = safeNext(searchParams?.next);
-  const [startBalance, invite, plans, tour, consentDocs, site] = await Promise.all([
+  const [startBalance, invite, tour, consentDocs, site] = await Promise.all([
     getTenantStartBalance(),
     loadInvite(searchParams?.invite),
-    loadRegisterPlans(params.locale, searchParams?.accountType),
     loadTourConfig(params.locale),
     loadConsentDocuments(params.locale),
     getSiteLanguages(),
@@ -56,8 +54,6 @@ export default async function RegisterPage({
       <InviteNotice invite={invite} />
       <RegisterForm
         prefill={invite.state === 'ok' ? invite.prefill : undefined}
-        plans={plans.plans}
-        selectedPlan={plans.selected ?? undefined}
         next={next}
         consent={consent}
       />

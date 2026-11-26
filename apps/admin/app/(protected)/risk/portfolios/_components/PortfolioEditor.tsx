@@ -7,6 +7,7 @@ import { changePortfolioFeesAction, type FeesActionState } from '@/lib/fees/acti
 import {
   changePortfolioLeverageAction,
   setClassLeverageTableAction,
+  setPortfolioMinBalanceAction,
   type LeverageActionState,
 } from '@/lib/leverage/actions';
 import { LEVERAGE_CLASSES, LEVERAGE_CLASS_LABELS } from '@/lib/leverage/classes';
@@ -19,6 +20,9 @@ const MESSAGES: Record<string, string> = {
   invalidClass: 'Неизвестная категория инструментов.',
   noPortfolio: 'Портфель не найден.',
   alreadyInState: 'Значение не изменилось — записывать нечего.',
+  invalidAmount: 'Сумма — число USDT, до двух знаков после запятой.',
+  defaultNotZero: 'У портфеля по умолчанию порог всегда 0: с него начинают все клиенты.',
+  notMonotonic: 'Порог должен расти по порядку портфелей: у старшего портфеля не меньше, чем у младшего.',
   terminalUnavailable:
     'Терминал не ответил — плечо НЕ изменено ни здесь, ни в терминале. Повторите позже.',
   terminalRefused:
@@ -259,6 +263,60 @@ function ClassTableForm({
   );
 }
 
+function MinBalanceForm({
+  portfolioKey,
+  minBalanceMinor,
+  isDefault,
+}: {
+  portfolioKey: string;
+  minBalanceMinor: number;
+  isDefault: boolean;
+}) {
+  const [state, action] = useFormState<LeverageActionState, FormData>(setPortfolioMinBalanceAction, {});
+  const current = (minBalanceMinor / 100).toFixed(2).replace(/\.00$/, '');
+  const [value, setValue] = useState(current);
+  const [reason, setReason] = useState('');
+  const changed = value.trim() !== '' && value.trim().replace(',', '.') !== current;
+  if (isDefault) {
+    return (
+      <div className="space-y-1">
+        <h3 className="text-primary text-sm font-semibold">Минимальный баланс для перехода</h3>
+        <p className="text-muted text-xs">Портфель по умолчанию: его получают все клиенты при регистрации, порог 0.</p>
+      </div>
+    );
+  }
+  return (
+    <form action={action} className="space-y-3" data-min-balance-form>
+      <h3 className="text-primary text-sm font-semibold">Минимальный баланс для перехода, USDT</h3>
+      <ActionResult state={state} okText="Порог сохранён, запись в журнале." messages={MESSAGES} />
+      <input type="hidden" name="portfolioKey" value={portfolioKey} />
+      <Field
+        label="Порог реального баланса"
+        htmlFor="min-balance"
+        hint={`Сейчас ${current} USDT. Клиент переходит на этот тип счёта автоматически, когда баланс реального счёта достигает порога. Обратно не понижается.`}
+      >
+        <Input
+          id="min-balance"
+          name="minBalance"
+          inputMode="decimal"
+          controlSize="compact"
+          value={value}
+          onChange={(e) => setValue(e.target.value.replace(/[^\d.,]/g, ''))}
+          className="tabular-nums"
+        />
+      </Field>
+      <ReasonField id="min-balance-reason" value={reason} onChange={setReason} />
+      <ArmedSubmit
+        idle="Сохранить порог"
+        confirm="Да, сохранить"
+        consequence={`Клиенты с балансом от ${value || 0} USDT будут переведены на этот тип счёта при следующей проверке. Уже переведённые клиенты не понижаются.`}
+        disabled={!changed || reason.trim().length === 0}
+        resetKey={`${value}|${reason}`}
+      />
+    </form>
+  );
+}
+
 export function PortfolioEditor({
   portfolioKey,
   title,
@@ -270,6 +328,7 @@ export function PortfolioEditor({
   commissionBps,
   instruments,
   description,
+  minBalanceMinor,
 }: {
   portfolioKey: string;
   title: string;
@@ -281,6 +340,7 @@ export function PortfolioEditor({
   commissionBps: number;
   instruments: string | null;
   description: string | null;
+  minBalanceMinor: number;
 }) {
   const common = { portfolioKey, baseLeverage, classOverrides, clientCount, isDefault };
   return (
@@ -292,6 +352,9 @@ export function PortfolioEditor({
       <div className="grid gap-6 lg:grid-cols-2">
         <BaseLeverageForm {...common} />
         <ClassTableForm {...common} />
+      </div>
+      <div className="border-border mt-6 border-t pt-6">
+        <MinBalanceForm portfolioKey={portfolioKey} minBalanceMinor={minBalanceMinor} isDefault={isDefault} />
       </div>
       <div className="border-border mt-6 border-t pt-6">
         <FeesForm

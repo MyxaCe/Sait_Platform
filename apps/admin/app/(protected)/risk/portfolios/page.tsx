@@ -8,6 +8,7 @@ import { RiskHeader } from '../_components/RiskHeader';
 import { countClientsInDefaultImplicitly } from '../_components/queries';
 import { PortfolioEditor } from './_components/PortfolioEditor';
 import { bpsText } from '@/lib/promo/labels';
+import { formatUsdt } from '@/lib/leverage/tier';
 
 export const dynamic = 'force-dynamic';
 
@@ -107,6 +108,12 @@ export default async function PortfoliosPage({
                     </dd>
                   </div>
                 </dl>
+                <p className="text-secondary text-xs" data-min-balance>
+                  Переход с баланса:{' '}
+                  <span className="text-primary font-medium tabular-nums">
+                    {p.isDefault || p.minBalanceMinor === 0 ? 'с регистрации' : `от ${formatUsdt(p.minBalanceMinor)} USDT`}
+                  </span>
+                </p>
                 <p className="text-secondary text-xs">
                   Инструменты: {p.instruments ?? <span className="text-muted">не указаны</span>}
                 </p>
@@ -128,6 +135,7 @@ export default async function PortfoliosPage({
             isDefault={editing.isDefault}
             markupBps={editing.markupBps}
             commissionBps={editing.commissionBps}
+            minBalanceMinor={editing.minBalanceMinor}
             instruments={editing.instruments}
             description={editing.description}
           />

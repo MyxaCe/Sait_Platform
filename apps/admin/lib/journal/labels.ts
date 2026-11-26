@@ -178,6 +178,11 @@ export const ACTION_LABELS: Record<string, ActionMeta> = {
     tone: 'warning',
     group: 'leverage',
   },
+  'leverage.portfolio_min_balance_set': {
+    label: 'Изменён порог баланса для типа счёта',
+    tone: 'warning',
+    group: 'leverage',
+  },
   'leverage.class_override_set': {
     label: 'Задана планка плеча по классу',
     tone: 'warning',

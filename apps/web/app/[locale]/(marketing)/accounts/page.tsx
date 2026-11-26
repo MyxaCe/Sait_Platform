@@ -127,7 +127,7 @@ async function AccountCard({ offer, locale }: { offer: AccountOffer; locale: str
         ))}
       </dl>
       <CabinetRegisterLink
-        href={`/register?accountType=${encodeURIComponent(a.key)}`}
+        href="/register"
         className="mt-6 inline-flex min-h-[44px] items-center justify-center rounded-xl bg-accent px-4 text-sm font-medium text-on-accent transition-colors hover:bg-accent-hover"
       >
         {t('openCta')}
