@@ -7,7 +7,7 @@ export {
   formatTime,
   formatWeekday,
 } from './format';
-export { hexToRgbChannels } from './brand';
+export { hexToRgbChannels, brandAccent, brandAccentCss, accentHoverChannels, onAccentChannels, contrastRatio, relativeLuminance, type BrandAccent } from './brand';
 export { readEnv, envOr, sentryEnvironment, UNKNOWN_ENVIRONMENT } from './env';
 export {
   PLATFORM_LOCALES,

@@ -6,6 +6,7 @@ import { Container, Section, cn } from '@broker/ui';
 import { formatDate } from '@broker/utils';
 import { Link } from '@/i18n/navigation';
 import { getCms, staticParamsFromCms } from '@/lib/cms';
+import { MarkdownText } from '@/components/MarkdownText';
 
 interface PageParams {
   params: { locale: string; document: string };
@@ -80,9 +81,7 @@ export default async function LegalDocumentPage({ params }: PageParams) {
                   <h2 className="text-xl font-semibold text-primary">{section.heading}</h2>
                   <div className="mt-3 space-y-4">
                     {section.paragraphsMarkdown.map((p, i) => (
-                      <p key={i} className="leading-relaxed text-primary/85">
-                        {p}
-                      </p>
+                      <MarkdownText key={i} markdown={p} paragraphClassName="leading-relaxed text-primary/85" />
                     ))}
                   </div>
                 </section>

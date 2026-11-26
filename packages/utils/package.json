@@ -6,7 +6,8 @@
     ".": "./src/index.ts",
     "./locales": "./src/locales.ts",
     "./site-languages": "./src/site-languages.ts",
-    "./session-hint": "./src/session-hint.ts"
+    "./session-hint": "./src/session-hint.ts",
+    "./fatal-error": "./src/fatal-error.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

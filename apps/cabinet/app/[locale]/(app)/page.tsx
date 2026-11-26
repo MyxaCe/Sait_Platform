@@ -10,6 +10,7 @@ import { getDemoAccount } from '@/lib/data';
 import { getHomeModules, getMarketInstruments, getVerificationStatus } from '@/lib/home';
 import { loadAccountTerms, loadClientPromotions, loadMyReferral } from '@/lib/promo';
 import { AccountTermsModule } from '@/features/home/AccountTermsModule';
+import { ORDER_CLASS, homeSlotOrder, orderStyle } from '@/features/home/module-order';
 import { getAccountHistory } from '@/lib/history';
 import { listMyDeposits, listMyWithdrawals } from '@/lib/money';
 import { RecentActivity } from '@/features/home/RecentActivity';
@@ -79,13 +80,14 @@ export default async function HomePage({ params }: { params: { locale: string } 
   const balanceM = mod('balance');
   const marketsM = mod('markets');
   const promotionsM = mod('promotions');
+  const order = homeSlotOrder(modules);
 
   const referralView = referral.state === 'ok' ? referral.data.referral : null;
   const hasReferral = Boolean(referralView && (referralView.enabled || referralView.isPartner));
   const hasPromotions = Boolean(promotionsM);
   const hasMarkets = Boolean(marketsM && markets);
 
-  // Одна сетка: на телефоне — порядок DOM (шаги → счета → рынки → операции → друг → акции → условия),
+  // Одна сетка: на телефоне — порядок блоков из CMS (homeSlotOrder),
   // на компьютере — явные места. Блоки одной строки тянутся до общей высоты, «лесенки» нет.
   return (
     <div className={cn(PAGE, 'flex flex-col gap-4 lg:gap-5')}>
@@ -93,7 +95,7 @@ export default async function HomePage({ params }: { params: { locale: string } 
 
       <div className={cn(GRID, 'xl:items-stretch')} data-home-grid>
         {onboardingM ? (
-          <div className={cn('min-w-0 xl:col-span-4 xl:col-start-9 xl:row-start-1', hasReferral && 'xl:row-span-2')}>
+          <div className={cn('min-w-0 xl:col-span-4 xl:col-start-9 xl:row-start-1', ORDER_CLASS, hasReferral && 'xl:row-span-2')} style={orderStyle(order.onboarding)}>
             <OnboardingModule
               config={onboardingM}
               verification={verification}
@@ -103,16 +105,16 @@ export default async function HomePage({ params }: { params: { locale: string } 
           </div>
         ) : null}
         {balanceM ? (
-          <div className={cn('min-w-0 xl:col-start-1 xl:row-start-1', onboardingM ? 'xl:col-span-8' : 'xl:col-span-12')}>
+          <div className={cn('min-w-0 xl:col-start-1 xl:row-start-1', ORDER_CLASS, onboardingM ? 'xl:col-span-8' : 'xl:col-span-12')} style={orderStyle(order.balance)}>
             <BalanceModule config={balanceM} demo={demo} startBalance={startBalance} real={real} />
           </div>
         ) : null}
         {hasMarkets ? (
-          <div className="min-w-0 xl:col-span-6 xl:col-start-1 xl:row-start-3 [&>section]:h-full">
+          <div className={cn('min-w-0 xl:col-span-6 xl:col-start-1 xl:row-start-3 [&>section]:h-full', ORDER_CLASS)} style={orderStyle(order.markets)}>
             <MarketsModule config={marketsM!} data={markets!} />
           </div>
         ) : null}
-        <div className={cn('min-w-0 xl:row-start-3', hasMarkets ? 'xl:col-span-6 xl:col-start-7' : 'xl:col-span-12 xl:col-start-1')}>
+        <div className={cn('min-w-0 xl:row-start-3', ORDER_CLASS, hasMarkets ? 'xl:col-span-6 xl:col-start-7' : 'xl:col-span-12 xl:col-start-1')} style={orderStyle(order.recent)}>
           <RecentActivity
             trades={recent?.trades ?? []}
             deposits={deposits}
@@ -122,12 +124,12 @@ export default async function HomePage({ params }: { params: { locale: string } 
           />
         </div>
         {hasReferral ? (
-          <div className={cn('min-w-0 xl:col-start-1 xl:row-start-2', onboardingM ? 'xl:col-span-8' : 'xl:col-span-12')}>
+          <div className={cn('min-w-0 xl:col-start-1 xl:row-start-2', ORDER_CLASS, onboardingM ? 'xl:col-span-8' : 'xl:col-span-12')} style={orderStyle(order.referral)}>
             <ReferralMini referral={referralView} wide />
           </div>
         ) : null}
         {hasPromotions ? (
-          <div className="min-w-0 empty:hidden xl:col-span-12 xl:col-start-1 xl:row-start-4">
+          <div className={cn('min-w-0 empty:hidden xl:col-span-12 xl:col-start-1 xl:row-start-4', ORDER_CLASS)} style={orderStyle(order.promotions)}>
             <PromotionsModule view={promos?.state === 'ok' ? promos.data : null} />
           </div>
         ) : null}
