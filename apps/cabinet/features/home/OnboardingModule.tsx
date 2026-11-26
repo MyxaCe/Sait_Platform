@@ -74,7 +74,7 @@ export async function OnboardingModule({
   const col = (cls: string) => (column ? cls : undefined);
   return (
     <section aria-labelledby="next-steps" data-tour="next-steps" className={cn('flex flex-col gap-2', col('xl:h-full'))}>
-      <h2 id="next-steps" className={cn('sr-only', col('xl:not-sr-only xl:text-sm xl:font-semibold'))}>
+      <h2 id="next-steps" className="sr-only">
         {t('nextStepsTitle')}
       </h2>
       <div className={cn('grid gap-2 sm:grid-cols-3 sm:gap-3', col('xl:flex xl:flex-1 xl:flex-col xl:gap-2 xl:[&>div:last-child]:flex-1'))}>
@@ -87,7 +87,7 @@ export async function OnboardingModule({
             'flex flex-col rounded-2xl border',
             step.done
               ? 'border-positive/25 bg-positive/[0.04] px-4 py-3 sm:p-4'
-              : 'border-border bg-elevated p-4',
+              : cn('border-border bg-elevated p-4', col('xl:p-3.5')),
             step.done && col('xl:px-4 xl:py-3'),
           )}
         >
@@ -111,6 +111,7 @@ export async function OnboardingModule({
           <p
             className={cn(
               'mt-2 flex-1 text-xs leading-relaxed text-secondary',
+              col('xl:line-clamp-3'),
               step.done && 'hidden sm:block',
               step.done && col('xl:hidden'),
             )}
@@ -120,6 +121,7 @@ export async function OnboardingModule({
           <div
             className={cn(
               'mt-3 flex min-h-[44px] items-end',
+              col('xl:mt-2.5'),
               step.done && 'hidden sm:flex',
               step.done && col('xl:hidden'),
             )}

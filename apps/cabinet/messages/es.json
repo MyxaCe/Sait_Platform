@@ -137,7 +137,7 @@
     "resetUnsetNote": "Restablecimiento no disponible: el importe inicial de la cuenta demo no está definido en la configuración del sitio.",
     "resetUnavailableNote": "Restablecimiento no disponible: no se ha podido obtener la configuración del sitio.",
     "balanceNoAccount": "Cuenta aún no abierta",
-    "balanceNoAccountNote": "La cuenta demo se abrirá en su primera visita al terminal: la crea el terminal, no el sitio.",
+    "balanceNoAccountNote": "Se abrirá en su primera visita al terminal.",
     "resetAccepted": "Aceptado. El importe se actualizará cuando el terminal aplique el restablecimiento.",
     "resetPositionsOpen": "Cierre primero sus posiciones abiertas: un restablecimiento con ellas dejaría el saldo de una etapa de la cuenta y las posiciones de otra.",
     "resetNotDemo": "No es una cuenta demo: no hay importe inicial al que restablecerla.",
