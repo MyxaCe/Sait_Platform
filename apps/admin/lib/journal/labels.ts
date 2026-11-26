@@ -353,6 +353,7 @@ export const ACTION_LABELS: Record<string, ActionMeta> = {
   'auth.password_reset.completed': { label: 'Пароль сброшен, сессии погашены', tone: 'warning', group: 'client_auth' },
   'auth.email_verify.sent': { label: 'Отправлено письмо подтверждения email', tone: 'neutral', group: 'client_auth' },
   'auth.email_verify.confirmed': { label: 'Email подтверждён', tone: 'positive', group: 'client_auth' },
+  'auth.unactivated.purged': { label: 'Удалены регистрации без подтверждённой почты (старше 7 дней)', tone: 'neutral', group: 'client_auth' },
   'auth.two_factor.enabled': { label: 'Клиент включил двухфакторную защиту', tone: 'positive', group: 'client_auth' },
   'auth.two_factor.disabled': { label: 'Клиент отключил двухфакторную защиту', tone: 'warning', group: 'client_auth' },
   'auth.two_factor.recovery_regenerated': { label: 'Клиент выпустил новые резервные коды 2FA', tone: 'info', group: 'client_auth' },
@@ -365,6 +366,11 @@ export const ACTION_LABELS: Record<string, ActionMeta> = {
   'operator.client_manager_revoked': { label: 'Снят флаг «менеджер клиентов»', tone: 'neutral', group: 'managers' },
 
   'client.credentials.email_changed': { label: 'Email клиента изменён', tone: 'warning', group: 'credentials' },
+  'client.credentials.activation_link_sent': {
+    label: 'Ссылка подтверждения почты отправлена повторно',
+    tone: 'info',
+    group: 'credentials',
+  },
   'client.credentials.password_reset_link_sent': {
     label: 'Ссылка сброса пароля отправлена клиенту',
     tone: 'info',

@@ -9,6 +9,7 @@ import {
   forcedPasswordChangeAction,
   forgotPasswordAction,
   requestEmailVerifyAction,
+  resendActivationAction,
   resetPasswordAction,
   type AuthMailState,
 } from '@/lib/support/auth-actions';
@@ -92,26 +93,55 @@ export function ResetPasswordForm({ token }: { token: string }) {
 
 export function ConfirmEmailForm({ token }: { token: string }) {
   const t = useTranslations('authMail');
+  const locale = useLocale();
   const [state, action] = useFormState<AuthMailState, FormData>(confirmEmailAction, {});
   if (state.ok) {
     return (
       <div className="space-y-4">
         <Notice tone="positive">{t('verifyDone')}</Notice>
-        <Link href="/" className="text-sm text-accent hover:underline">
-          {t('toCabinet')} →
+        <Link href="/login" className="text-sm text-accent hover:underline">
+          {t('toLogin')} →
         </Link>
       </div>
     );
   }
+  const tokenError = state.error === 'expiredToken' || state.error === 'usedToken' || state.error === 'invalidToken';
   return (
-    <form action={action} className="flex flex-col gap-4">
-      {state.error ? (
+    <form action={action} className="flex flex-col gap-4" data-testid="confirm-email">
+      {tokenError ? (
         <p role="alert" className="rounded-xl border border-negative/40 bg-negative/10 px-4 py-3 text-sm text-negative">
-          {t(`token.${state.error === 'expiredToken' || state.error === 'usedToken' ? state.error : 'invalidToken'}`)}
+          {t(`token.${state.error}`)}{' '}
+          <Link href="/login" className="underline">
+            {t('toLogin')}
+          </Link>
+        </p>
+      ) : (
+        <FormMessage error={state.error} />
+      )}
+      <input type="hidden" name="token" value={token} />
+      <input type="hidden" name="uiLocale" value={locale} />
+      <Submit label={t('verifyButton')} />
+    </form>
+  );
+}
+
+/**
+ * «Отправить письмо ещё раз» — на экране «Проверьте почту» и на входе с неподтверждённой
+ * почтой. Адрес берётся на сервере из cookie ожидающей регистрации.
+ */
+export function ResendActivationForm({ compact = false }: { compact?: boolean }) {
+  const t = useTranslations('authMail');
+  const [state, action] = useFormState<AuthMailState, FormData>(resendActivationAction, {});
+  return (
+    <form action={action} className="flex flex-col gap-3" data-testid="resend-activation">
+      <input type="text" name="website" tabIndex={-1} autoComplete="off" className="hidden" aria-hidden />
+      {state.ok ? <Notice tone="positive">{t('resendSent')}</Notice> : null}
+      {state.error ? (
+        <p role="alert" className="text-sm text-negative">
+          {t.has(`resendErrors.${state.error}`) ? t(`resendErrors.${state.error}`) : t('resendErrors.generic')}
         </p>
       ) : null}
-      <input type="hidden" name="token" value={token} />
-      <Submit label={t('verifyButton')} />
+      <Submit label={t('resendButton')} size={compact ? 'sm' : 'lg'} full={!compact} />
     </form>
   );
 }

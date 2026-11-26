@@ -2,25 +2,25 @@
 
 import { cookies, headers } from 'next/headers';
 import { redirect } from 'next/navigation';
-import { readEnv } from '@broker/utils';
-import { localizedPath } from '@broker/utils/locales';
 import {
   completeForcedPasswordChange,
   completePasswordReset,
   confirmEmail,
   loadSupportSettings,
+  requestActivationLink,
   requestEmailVerification,
   requestPasswordReset,
-  type LinkBuilder,
 } from '@broker/support';
 import { getPool } from '../db';
 import { hashPassword } from '../auth/password';
-import { getSessionUser, hashToken } from '../auth/session';
+import { createSession, getSessionUser, hashToken } from '../auth/session';
+import { safeNext } from '../auth/next-path';
+import { clearPendingActivation, readPendingActivation } from '../auth/pending-activation-cookie';
 import { SESSION_COOKIE } from '../auth/constants';
 import { isRateLimited } from '../rate-limit';
 import { supportPool } from './state';
 import { localeHref } from '@/i18n/redirect';
-import { getSiteLanguages } from '../site-languages';
+import { authLinkBuilder } from './auth-link';
 
 export interface AuthMailState {
   ok?: boolean;
@@ -32,16 +32,7 @@ function clientIp(): string | null {
   return headers().get('x-forwarded-for')?.split(',')[0]?.trim() ?? null;
 }
 
-async function linkBuilder(): Promise<LinkBuilder | null> {
-  const base = readEnv(process.env.CABINET_PUBLIC_URL) ?? readEnv(process.env.NEXT_PUBLIC_SITE_URL);
-  if (!base) return null;
-  const root = base.replace(/\/+$/, '');
-  const site = await getSiteLanguages();
-  return (path, token, locale) => {
-    const target = (site.languages as readonly string[]).includes(locale) ? locale : site.defaultLanguage;
-    return `${root}${localizedPath(path, target, site.defaultLanguage)}?token=${encodeURIComponent(token)}`;
-  };
-}
+const linkBuilder = authLinkBuilder;
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
@@ -89,9 +80,54 @@ export async function requestEmailVerifyAction(_prev: AuthMailState): Promise<Au
   return { error: r };
 }
 
+/**
+ * Ссылка из письма подтверждения. Первое подтверждение активирует учётную запись и сразу
+ * впускает в кабинет: письмо пришло на этот адрес — владелец доказан. Исключение —
+ * клиент с включённой 2FA (подтверждение нового адреса после смены оператором): ссылка не
+ * заменяет второй фактор, такой клиент входит обычным порядком.
+ *
+ * Повторное нажатие (двойной клик, вторая вкладка) приходит с уже использованным токеном:
+ * если сессия уже выдана — просто в кабинет, иначе понятное «ссылка уже использована».
+ */
 export async function confirmEmailAction(_prev: AuthMailState, fd: FormData): Promise<AuthMailState> {
+  if (isRateLimited(`confirm:${clientIp() ?? 'local'}`, 20, 60_000)) return { error: 'rateLimited' };
+  const locale = String(fd.get('uiLocale') ?? 'ru');
   const r = await confirmEmail(supportPool(), { token: String(fd.get('token') ?? '') });
-  return r.ok ? { ok: true } : { error: r.reason };
+  if (!r.ok) {
+    if (r.reason === 'usedToken' && (await getSessionUser())) redirect(await localeHref('/', locale));
+    return { error: r.reason };
+  }
+  const pending = readPendingActivation();
+  clearPendingActivation();
+  if (r.activatedNow && !r.twoFactor) {
+    await getPool().query(`UPDATE users SET last_login_at = now() WHERE id = $1`, [r.userId]);
+    await createSession(r.userId);
+    redirect(safeNext(pending?.next ?? null) ?? (await localeHref('/', locale)));
+  }
+  return { ok: true };
+}
+
+/**
+ * «Отправить письмо ещё раз» с экрана «Проверьте почту» и со входа. Адрес — из cookie
+ * ожидающей регистрации, не из формы. Ответ не зависит от того, есть ли такой адрес:
+ * интервал и лимит считаются одинаково для любого адреса.
+ */
+export async function resendActivationAction(_prev: AuthMailState, fd: FormData): Promise<AuthMailState> {
+  if (String(fd.get('website') ?? '')) return { ok: true };
+  if (isRateLimited(`activation:${clientIp() ?? 'local'}`, 10, 60_000)) return { error: 'rateLimited' };
+  const pending = readPendingActivation();
+  if (!pending) return { error: 'noPending' };
+  const link = await linkBuilder();
+  if (!link) {
+    console.error('[auth-mail] CABINET_PUBLIC_URL не задан — повторная ссылка подтверждения не поставлена (fail-closed)');
+    return { error: 'mailNotConfigured' };
+  }
+  const settings = await loadSupportSettings(getPool());
+  const r = await requestActivationLink(supportPool(), settings, { email: pending.email, ip: clientIp(), link });
+  if (r.internal !== 'sent') console.info(`[auth-mail] повторная ссылка подтверждения: ${r.internal}`);
+  if (r.internal === 'tooSoon') return { error: 'tooSoon' };
+  if (r.internal === 'rateLimited') return { error: 'rateLimited' };
+  return { ok: true };
 }
 
 export async function forcedPasswordChangeAction(_prev: AuthMailState, fd: FormData): Promise<AuthMailState> {

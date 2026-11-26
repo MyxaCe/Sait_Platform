@@ -464,7 +464,9 @@
     "selfieCameraOnly": "Le selfie n’est accepté que sous forme de photo prise avec la caméra — l’envoi de fichier est désactivé pour cette étape.",
     "selfieExpired": "La consigne a expiré — recommencez.",
     "selfieInvalid": "Les photos n’ont pas été acceptées. Reprenez-les avec la caméra.",
-    "consentRequired": "Pour ouvrir un compte, veuillez confirmer que vous acceptez les documents"
+    "consentRequired": "Pour ouvrir un compte, veuillez confirmer que vous acceptez les documents",
+    "emailNotVerified": "Votre e-mail n’est pas encore confirmé. Ouvrez l’e-mail avec le lien envoyé lors de l’inscription.",
+    "mailNotConfigured": "Inscription temporairement indisponible : l’envoi d’e-mails n’est pas configuré. Réessayez plus tard."
   },
   "history": {
     "title": "Historique",
@@ -755,7 +757,7 @@
     "token": {
       "invalidToken": "Le lien n’est pas valide.",
       "expiredToken": "Le lien a expiré.",
-      "usedToken": "Le lien a déjà été utilisé."
+      "usedToken": "Ce lien a déjà été utilisé. Si votre e-mail est confirmé, connectez-vous simplement."
     },
     "verifyTitle": "Confirmation de l’e-mail",
     "verifySubtitle": "Cliquez sur le bouton pour confirmer votre adresse e-mail.",
@@ -775,6 +777,21 @@
       "title": "Définissez un nouveau mot de passe",
       "subtitle": "Vous vous êtes connecté avec un mot de passe temporaire fourni par votre gestionnaire. Pour continuer, définissez votre propre mot de passe — le mot de passe temporaire ne fonctionnera plus et les autres sessions seront fermées.",
       "button": "Enregistrer le mot de passe"
+    },
+    "toLogin": "Se connecter",
+    "checkEmailTitle": "Vérifiez votre messagerie",
+    "checkEmailText": "Nous avons envoyé un lien à {email}. Ouvrez l’e-mail et cliquez sur « Confirmer l’e-mail » — le lien est valable 24 heures. Vous accéderez ensuite directement à votre espace.",
+    "checkEmailTextNoEmail": "Nous vous avons envoyé un lien pour confirmer votre adresse. Ouvrez l’e-mail et cliquez sur « Confirmer l’e-mail » — le lien est valable 24 heures.",
+    "checkEmailSpam": "Pas d’e-mail après quelques minutes ? Vérifiez le dossier Spam.",
+    "checkEmailExisting": "Si vous vous êtes déjà inscrit avec cette adresse et l’avez confirmée, aucun nouvel e-mail n’arrivera — connectez-vous ou réinitialisez votre mot de passe.",
+    "resendButton": "Renvoyer l’e-mail",
+    "resendSent": "Nous avons envoyé un nouvel e-mail. Si l’adresse n’est pas encore confirmée, il arrivera d’ici quelques minutes.",
+    "resendErrors": {
+      "tooSoon": "Un e-mail vient d’être envoyé. Réessayez dans une minute.",
+      "rateLimited": "Trop d’e-mails cette heure-ci. Réessayez plus tard.",
+      "noPending": "Recommencez : inscrivez-vous ou connectez-vous.",
+      "mailNotConfigured": "L’envoi d’e-mails est indisponible pour le moment. Réessayez plus tard.",
+      "generic": "Impossible d’envoyer l’e-mail. Réessayez plus tard."
     }
   },
   "promo": {

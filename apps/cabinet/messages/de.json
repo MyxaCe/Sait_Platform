@@ -464,7 +464,9 @@
     "selfieCameraOnly": "Das Selfie wird nur als Kamerafoto angenommen — der Datei-Upload ist für diesen Schritt deaktiviert.",
     "selfieExpired": "Die Aufgabe ist abgelaufen — bitte neu starten.",
     "selfieInvalid": "Die Fotos wurden nicht angenommen. Bitte nehmen Sie sie erneut mit der Kamera auf.",
-    "consentRequired": "Um ein Konto zu eröffnen, bestätigen Sie bitte Ihre Zustimmung zu den Dokumenten"
+    "consentRequired": "Um ein Konto zu eröffnen, bestätigen Sie bitte Ihre Zustimmung zu den Dokumenten",
+    "emailNotVerified": "Ihre E-Mail ist noch nicht bestätigt. Öffnen Sie die E-Mail mit dem Link, den wir bei der Registrierung gesendet haben.",
+    "mailNotConfigured": "Die Registrierung ist vorübergehend nicht verfügbar: Der E-Mail-Versand ist nicht eingerichtet. Bitte später erneut versuchen."
   },
   "history": {
     "title": "Verlauf",
@@ -755,7 +757,7 @@
     "token": {
       "invalidToken": "Der Link ist ungültig.",
       "expiredToken": "Der Link ist abgelaufen.",
-      "usedToken": "Der Link wurde bereits verwendet."
+      "usedToken": "Dieser Link wurde bereits verwendet. Ist Ihre E-Mail bestätigt, melden Sie sich einfach an."
     },
     "verifyTitle": "E-Mail-Bestätigung",
     "verifySubtitle": "Klicken Sie auf die Schaltfläche, um Ihre E-Mail-Adresse zu bestätigen.",
@@ -775,6 +777,21 @@
       "title": "Neues Passwort festlegen",
       "subtitle": "Sie haben sich mit einem temporären Passwort Ihres Managers angemeldet. Um fortzufahren, legen Sie Ihr eigenes Passwort fest — das temporäre wird ungültig und andere Sitzungen werden beendet.",
       "button": "Passwort speichern"
+    },
+    "toLogin": "Anmelden",
+    "checkEmailTitle": "Prüfen Sie Ihr Postfach",
+    "checkEmailText": "Wir haben einen Link an {email} gesendet. Öffnen Sie die E-Mail und klicken Sie auf „E-Mail bestätigen“ — der Link ist 24 Stunden gültig. Danach gelangen Sie direkt in Ihr Konto.",
+    "checkEmailTextNoEmail": "Wir haben Ihnen einen Link zur Bestätigung Ihrer Adresse gesendet. Öffnen Sie die E-Mail und klicken Sie auf „E-Mail bestätigen“ — der Link ist 24 Stunden gültig.",
+    "checkEmailSpam": "Nach einigen Minuten keine E-Mail? Prüfen Sie den Spam-Ordner.",
+    "checkEmailExisting": "Wenn Sie sich mit dieser Adresse bereits registriert und sie bestätigt haben, kommt keine neue E-Mail — melden Sie sich einfach an oder setzen Sie Ihr Passwort zurück.",
+    "resendButton": "E-Mail erneut senden",
+    "resendSent": "Wir haben eine weitere E-Mail gesendet. Ist die Adresse noch nicht bestätigt, kommt sie in wenigen Minuten an.",
+    "resendErrors": {
+      "tooSoon": "Gerade wurde eine E-Mail gesendet. In einer Minute erneut möglich.",
+      "rateLimited": "Zu viele E-Mails in dieser Stunde. Bitte später erneut versuchen.",
+      "noPending": "Bitte beginnen Sie neu: registrieren oder anmelden.",
+      "mailNotConfigured": "Der E-Mail-Versand ist derzeit nicht verfügbar. Bitte später erneut versuchen.",
+      "generic": "Die E-Mail konnte nicht gesendet werden. Bitte später erneut versuchen."
     }
   },
   "promo": {

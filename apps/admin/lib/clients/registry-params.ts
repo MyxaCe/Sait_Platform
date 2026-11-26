@@ -10,9 +10,9 @@ import {
 export const REGISTRY_PAGE_SIZE = 50;
 
 export type RegistrySortKey = 'name' | 'registered' | 'activity' | 'balance';
-export type AccessFilter = 'all' | 'active' | 'blocked' | 'restricted';
+export type AccessFilter = 'all' | 'active' | 'blocked' | 'restricted' | 'unactivated';
 
-export const ACCESS_FILTERS: readonly AccessFilter[] = ['all', 'active', 'blocked', 'restricted'];
+export const ACCESS_FILTERS: readonly AccessFilter[] = ['all', 'active', 'blocked', 'restricted', 'unactivated'];
 
 export interface RegistryQuery {
   q: string;

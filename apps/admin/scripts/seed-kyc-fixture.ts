@@ -20,8 +20,8 @@ async function main(): Promise<number> {
     await client.query('BEGIN');
 
     await client.query(
-      `INSERT INTO users (id, email, password_hash, full_name, locale)
-       VALUES ($1, $2, $3, $4, 'ru')
+      `INSERT INTO users (id, email, password_hash, full_name, locale, activated_at)
+       VALUES ($1, $2, $3, $4, 'ru', now())
        ON CONFLICT (id) DO NOTHING`,
       [FIXTURE_USER_ID, 'kyc.fixture@example.test', 'x', 'Фикстура Клиентов'],
     );

@@ -19,6 +19,8 @@ export interface RegistryRow {
   blocked: boolean;
   frozen: boolean;
   withdrawBanned: boolean;
+  /** Почта при регистрации не подтверждена — входа в кабинет нет. */
+  activated: boolean;
   balanceMinor: number | null;
   currency: string | null;
   managerId: string | null;
@@ -74,6 +76,7 @@ export async function listClientRegistry(
   }
   if (query.access === 'blocked') where.push('COALESCE(cb.blocked, false)');
   if (query.access === 'active') where.push('NOT COALESCE(cb.blocked, false)');
+  if (query.access === 'unactivated') where.push('u.activated_at IS NULL');
   if (query.access === 'restricted') {
     where.push(`(COALESCE(mf.frozen, false) OR ${activeWithdrawBanSql('mf')})`);
   }
@@ -102,6 +105,7 @@ export async function listClientRegistry(
               COALESCE(cb.blocked, false) AS blocked,
               COALESCE(mf.frozen, false) AS frozen,
               ${activeWithdrawBanSql('mf')} AS withdraw_banned,
+              u.activated_at IS NOT NULL AS activated,
               ra.balance_cents, ra.currency,
               cm.manager_id, mo.display_name AS manager_name
          ${from}
@@ -124,6 +128,7 @@ export async function listClientRegistry(
       blocked: Boolean(r.blocked),
       frozen: Boolean(r.frozen),
       withdrawBanned: Boolean(r.withdraw_banned),
+      activated: r.activated !== false,
       balanceMinor:
         r.balance_cents === null || r.balance_cents === undefined ? null : Number(r.balance_cents),
       currency: (r.currency as string | null) ?? null,

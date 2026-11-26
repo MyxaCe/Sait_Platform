@@ -39,4 +39,5 @@ export const ACCESS_OPTIONS: FilterOption[] = [
   { value: 'active', label: 'Не заблокирован' },
   { value: 'blocked', label: 'Заблокирован' },
   { value: 'restricted', label: 'Ограничены деньги' },
+  { value: 'unactivated', label: 'Почта не подтверждена' },
 ];

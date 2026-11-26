@@ -32,4 +32,5 @@ export const EXPECTED_MIGRATIONS: readonly string[] = [
   '1796400000000_users_onboarding',
   '1796410000000_withdraw_modes',
   '1796480000000_legal_acceptances',
+  '1796560000000_users_activated',
 ];

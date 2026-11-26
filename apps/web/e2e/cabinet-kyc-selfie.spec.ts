@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { requireOrSkip } from './support/gates';
+import { confirmRegistration } from './support/activation';
 
 const CABINET = process.env.CABINET_URL;
 
@@ -12,13 +13,14 @@ async function register(page: Page) {
   await page.goto(`${CABINET}/register`);
   await page.getByLabel(/имя/i).first().fill('Селфи');
   await page.getByLabel(/фамилия/i).fill('Камерова');
-  await page.getByLabel(/email/i).fill(`kyc-selfie-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@example.com`);
+  const email = `kyc-selfie-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@example.com`;
+  await page.getByLabel(/email/i).fill(email);
   await page.getByLabel(/телефон/i).fill('+35725000003');
   await page.getByLabel(/страна/i).fill('Кипр');
   await page.getByLabel(/пароль/i).fill('secret1234!');
   await page.locator('#consent').check();
   await page.getByRole('button', { name: /открыть счёт/i }).click();
-  await expect(page).not.toHaveURL(/\/register/, { timeout: 15_000 });
+  await confirmRegistration(page, email);
 }
 
 test.describe('KYC: селфи с камеры', () => {

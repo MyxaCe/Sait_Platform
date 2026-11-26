@@ -5,6 +5,7 @@ import {
   type LeadSubmittedData,
 } from '@broker/api-client';
 import type { Queryable } from '@broker/money';
+import { issueEmailVerifyMail, type LinkBuilder, type SupportSettings } from '@broker/support';
 import {
   readPromoSettings,
   recordAttributionWithinTx,
@@ -31,6 +32,7 @@ export interface RegisterInput {
 
 export type RegisterRefusal =
   | { ok: false; reason: 'emailExists' }
+  | { ok: false; reason: 'mailNotConfigured' }
   | { ok: false; reason: 'accountTypeUnavailable' }
   | { ok: false; reason: 'startBalanceUnset' }
   | { ok: false; reason: 'startBalanceUnavailable'; detail: string };
@@ -46,6 +48,11 @@ export interface RegisterContext {
   invite?: string | null;
   /** Принятые при регистрации документы и их редакции (разбор доверия 22.11). */
   consents?: ConsentRecord[];
+  /**
+   * Письмо подтверждения почты (решение владельца 26.11: без подтверждения входа нет).
+   * Ставится в той же транзакции, что и клиент: нет письма — нет и клиента.
+   */
+  activation?: { settings: SupportSettings; link: LinkBuilder | null };
 }
 
 async function resolveRegistrationAttribution(ctx: RegisterContext): Promise<ResolvedAttribution | null> {
@@ -82,6 +89,10 @@ export function leadAccountType(portfolioKey: string | null): 'standard' | 'pro'
 }
 
 export async function registerUser(input: RegisterInput, ctx: RegisterContext = {}): Promise<RegisterResult> {
+  if (ctx.activation && !ctx.activation.link) {
+    console.error('[register] отказ: CABINET_PUBLIC_URL не задан — письмо подтверждения не собрать (fail-closed)');
+    return { ok: false, reason: 'mailNotConfigured' };
+  }
   const userId = randomUUID();
   const leadId = randomUUID();
   const occurredAt = new Date().toISOString();
@@ -176,6 +187,14 @@ export async function registerUser(input: RegisterInput, ctx: RegisterContext = 
         refereeEmail: input.email,
         ip: ctx.ip?.trim() || null,
         resolved: attribution,
+      });
+    }
+    if (ctx.activation?.link) {
+      await issueEmailVerifyMail(client as unknown as Queryable, ctx.activation.settings, {
+        user: { id: userId, email: input.email, fullName: `${input.firstName} ${input.lastName}`, locale: input.locale },
+        link: ctx.activation.link,
+        ip: ctx.ip?.trim() || null,
+        now: ctx.now ?? new Date(),
       });
     }
     await client.query('COMMIT');

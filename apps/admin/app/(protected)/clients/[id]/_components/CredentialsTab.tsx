@@ -64,6 +64,7 @@ export function CredentialsTab({
   userId,
   email,
   emailVerifiedAt,
+  activatedAt,
   journal,
   view,
   policy,
@@ -73,6 +74,7 @@ export function CredentialsTab({
   userId: string;
   email: string;
   emailVerifiedAt: string | null;
+  activatedAt: string | null;
   journal: ClientJournalEntry[];
   view: CredentialsView;
   policy: MoneyPolicy;
@@ -97,7 +99,11 @@ export function CredentialsTab({
                     <ToneBadge tone={emailVerifiedAt ? 'positive' : 'warning'}>{emailVerifiedAt ? 'подтверждён' : 'не подтверждён'}</ToneBadge>
                   </span>
                 ),
-                hint: emailVerifiedAt ? `подтверждён ${fmtDateTime(emailVerifiedAt)}` : 'письмо подтверждения ждёт клика клиента',
+                hint: emailVerifiedAt
+                  ? `подтверждён ${fmtDateTime(emailVerifiedAt)}`
+                  : activatedAt
+                    ? 'письмо подтверждения ждёт клика клиента'
+                    : 'регистрация не подтверждена — входа в кабинет нет; без подтверждения удаляется через 7 дней',
               },
               {
                 term: 'Пароль',
@@ -171,6 +177,7 @@ export function CredentialsTab({
             userId={userId}
             email={email}
             emailVerified={emailVerifiedAt !== null}
+            activated={activatedAt !== null}
             checklist={view.settings.checklist}
             minChecked={view.settings.minChecked}
             autoHoldEnabled={view.settings.autoHoldEnabled}

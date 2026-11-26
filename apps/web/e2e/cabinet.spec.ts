@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { requireOrSkip } from './support/gates';
+import { confirmRegistration } from './support/activation';
 
 const CABINET = process.env.CABINET_URL;
 
@@ -14,7 +15,7 @@ test.describe('Личный кабинет', () => {
   const email = `e2e-${Date.now()}@example.com`;
   const password = 'secret1234!';
 
-  test('регистрация → дашборд → выход → вход', async ({ page }) => {
+  test('регистрация → «Проверьте почту» → без ссылки входа нет → ссылка → дашборд → выход → вход', async ({ page }) => {
     await page.goto(`${CABINET}/register`);
     await page.getByLabel(/имя/i).first().fill('Тест');
     await page.getByLabel(/фамилия/i).fill('Кабинетов');
@@ -24,6 +25,18 @@ test.describe('Личный кабинет', () => {
     await page.getByLabel(/пароль/i).fill(password);
     await page.locator('#consent').check();
     await page.getByRole('button', { name: /открыть счёт/i }).click();
+    await expect(page.getByTestId('check-email')).toBeVisible({ timeout: 15_000 });
+
+    await page.goto(`${CABINET}/profile`);
+    await expect(page).toHaveURL(/\/login/);
+    await page.getByLabel(/email/i).fill(email);
+    await page.getByLabel(/пароль/i).fill(password);
+    await page.getByRole('button', { name: /войти/i }).click();
+    await expect(page.getByTestId('login-not-verified')).toBeVisible();
+    await expect(page).toHaveURL(/\/login/);
+
+    await page.goto(`${CABINET}/register/check-email`);
+    await confirmRegistration(page, email);
 
     await expect(page.getByText('Тест Кабинетов').first()).toBeVisible({ timeout: 15_000 });
     await expect(page.getByText(/UID\s*\d{6}/).first()).toBeVisible();
@@ -59,6 +72,8 @@ test.describe('Личный кабинет', () => {
     await page.getByLabel(/пароль/i).fill(password);
     await page.locator('#consent').check();
     await page.getByRole('button', { name: /открыть счёт/i }).click();
-    await expect(page.getByText(/уже существует/i)).toBeVisible();
+    // Повторная регистрация того же адреса — тот же экран «Проверьте почту»: по форме
+    // нельзя узнать, зарегистрирован ли адрес.
+    await expect(page.getByTestId('check-email')).toBeVisible({ timeout: 15_000 });
   });
 });

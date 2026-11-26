@@ -20,6 +20,7 @@ import {
   issuePasswordResetMail,
   loadSupportSettings,
   normalizeEmail,
+  RESEND_MIN_INTERVAL_SECONDS,
   type LinkBuilder,
 } from '@broker/support';
 import { canEditClientCredentials } from '@/components/shell/sections';
@@ -63,6 +64,7 @@ interface ClientRow {
   fullName: string;
   locale: string;
   emailVerified: boolean;
+  activated: boolean;
 }
 
 async function authorize(tx: Queryable, actorId: string, userId: string): Promise<{ ok: true; actor: Actor; client: ClientRow } | Fail<AuthFail>> {
@@ -86,7 +88,7 @@ async function authorize(tx: Queryable, actorId: string, userId: string): Promis
   if (!canEditClientCredentials(role, { isAssignedManager })) return { ok: false, reason: 'forbidden' };
 
   const u = await tx.query(
-    `SELECT id, email, full_name, locale, email_verified_at FROM users WHERE id = $1 FOR UPDATE`,
+    `SELECT id, email, full_name, locale, email_verified_at, activated_at FROM users WHERE id = $1 FOR UPDATE`,
     [userId],
   );
   const row = u.rows[0];
@@ -100,6 +102,7 @@ async function authorize(tx: Queryable, actorId: string, userId: string): Promis
       fullName: String(row.full_name),
       locale: String(row.locale ?? 'ru'),
       emailVerified: row.email_verified_at !== null && row.email_verified_at !== undefined,
+      activated: row.activated_at !== null && row.activated_at !== undefined,
     },
   };
 }
@@ -277,6 +280,53 @@ export async function changeClientEmail(
     if (isUniqueViolation(error)) return { ok: false, reason: 'emailTaken' };
     throw error;
   }
+}
+
+export type ActivationLinkResult =
+  | { ok: true; sentTo: string }
+  | Fail<CommonFail | 'linkUnavailable' | 'alreadyVerified' | 'tooSoon' | 'activationRateLimited'>;
+
+/**
+ * Повторная ссылка подтверждения почты от оператора (клиент пишет «письмо не пришло»).
+ * Только на текущий адрес клиента и только пока он не подтверждён; без чек-листа личности —
+ * ссылка уходит на тот же адрес, что указал сам клиент, но с основанием и записью в
+ * журнале. «Отметить почту подтверждённой» вручную нельзя намеренно: владение адресом
+ * доказывает только ссылка из письма.
+ */
+export async function sendActivationLink(
+  input: CredentialEditBase,
+  deps: { pool: PoolLike; link: LinkBuilder | null; now?: Date },
+): Promise<ActivationLinkResult> {
+  const now = deps.now ?? new Date();
+  return inTransaction<ActivationLinkResult>(deps.pool, async (tx) => {
+    const pr = await prologue(tx, input, false);
+    if (!pr.ok) return rollback<ActivationLinkResult>(pr);
+    const { client, common } = pr.p;
+    if (client.emailVerified) return rollback<ActivationLinkResult>({ ok: false, reason: 'alreadyVerified' });
+    if (!deps.link) return rollback<ActivationLinkResult>({ ok: false, reason: 'linkUnavailable' });
+    const email = normalizeEmail(client.email);
+    const recent = await tx.query(
+      `SELECT 1 FROM auth_mail_tokens WHERE purpose = 'email_verify' AND lower(email) = $1 AND created_at > $2 LIMIT 1`,
+      [email, new Date(now.getTime() - RESEND_MIN_INTERVAL_SECONDS * 1000)],
+    );
+    if (recent.rows.length > 0) return rollback<ActivationLinkResult>({ ok: false, reason: 'tooSoon' });
+    if (await authMailLimited(tx, 'email_verify', email, null, now)) {
+      return rollback<ActivationLinkResult>({ ok: false, reason: 'activationRateLimited' });
+    }
+    const support = await loadSupportSettings(tx);
+    await issueEmailVerifyMail(tx, support, {
+      user: { id: client.id, email, fullName: client.fullName, locale: client.locale },
+      link: deps.link,
+      ip: null,
+      now,
+    });
+    await journal(tx, input.actorId, CREDENTIAL_ACTIONS.activationLinkSent, client.id, {
+      ...common,
+      to: maskEmail(email),
+      activated: client.activated,
+    });
+    return { ok: true, sentTo: maskEmail(email) };
+  });
 }
 
 export type ResetLinkResult = { ok: true; sentTo: string } | Fail<CommonFail | 'linkUnavailable' | 'rateLimited'>;

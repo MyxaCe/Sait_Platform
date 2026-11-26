@@ -9,6 +9,7 @@ import {
   issueTempPasswordAction,
   liftHoldAction,
   resetTwoFactorAction,
+  sendActivationLinkAction,
   sendResetLinkAction,
   setHoldAction,
   type TempPasswordState,
@@ -29,6 +30,8 @@ export interface CredentialsFormsProps {
   withdrawals: { id: string; status: string; amountMinor: number; toAddress: string; requestedAt: string }[];
   hold: { active: boolean; kind: string | null; until: string | null };
   twoFactorEnabled?: boolean;
+  /** false — почта при регистрации так и не подтверждена: входа в кабинет нет. */
+  activated?: boolean;
 }
 
 const STATUS: Record<string, string> = { requested: 'подана', approved: 'одобрена' };
@@ -177,6 +180,31 @@ function ResetLinkForm(p: CredentialsFormsProps) {
     >
       <input type="hidden" name="userId" value={p.userId} />
       <VerifyFields items={p.checklist} checks={checks} tickets={p.tickets} />
+    </ActionForm>
+  );
+}
+
+function ActivationLinkForm(p: CredentialsFormsProps) {
+  return (
+    <ActionForm
+      action={sendActivationLinkAction}
+      submitLabel="Отправить ссылку подтверждения"
+      variant="secondary"
+      okText="Ссылка подтверждения отправлена, запись в журнале."
+      errorText={credentialErrorText}
+      reasonPlaceholder="Почему отправляется повторно (клиент пишет, что письмо не пришло)"
+      extraValid
+      disarmOn=""
+      confirm={{
+        tone: 'primary',
+        title: 'Отправить ссылку подтверждения почты?',
+        summary: <ConfirmFacts rows={[['На email клиента', p.email]]} />,
+        consequence:
+          'Клиент подтвердит адрес сам, по ссылке (действует 24 часа). Отметить почту подтверждённой вручную нельзя: владение адресом доказывает только ссылка.',
+        confirmLabel: 'Да, отправить',
+      }}
+    >
+      <input type="hidden" name="userId" value={p.userId} />
     </ActionForm>
   );
 }
@@ -446,6 +474,18 @@ export function CredentialsForms(p: CredentialsFormsProps) {
       <Section title="Email" hint="Меняется сразу; новый адрес — неподтверждённый, прежний получает уведомление.">
         <EmailForm {...p} />
       </Section>
+      {p.emailVerified ? null : (
+        <Section
+          title="Подтверждение почты"
+          hint={
+            p.activated === false
+              ? 'Почта при регистрации не подтверждена — в кабинет клиент не войдёт, пока не откроет ссылку. Без подтверждения регистрация удаляется через 7 дней.'
+              : 'Новый адрес ещё не подтверждён. Входу это не мешает.'
+          }
+        >
+          <ActivationLinkForm {...p} />
+        </Section>
+      )}
       <Section title="Пароль" hint="Пароль вы не видите и не задаёте: ссылка сброса на email клиента или временный пароль с обязательной сменой.">
         <div className="grid gap-6 xl:grid-cols-2">
           <ResetLinkForm {...p} />

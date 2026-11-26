@@ -275,8 +275,8 @@ async function main(): Promise<number> {
       ids.push(id);
       const reg = ago(s.regDays, 3);
       await c.query(
-        `INSERT INTO users (id, email, password_hash, full_name, locale, email_verified_at, created_at, last_login_at, vip_level)
-         VALUES ($1,$2,'x',$3,$4,$5,$6,$7,$8)`,
+        `INSERT INTO users (id, email, password_hash, full_name, locale, email_verified_at, created_at, last_login_at, vip_level, activated_at)
+         VALUES ($1,$2,'x',$3,$4,$5,$6,$7,$8,$6)`,
         [
           id,
           s.email,

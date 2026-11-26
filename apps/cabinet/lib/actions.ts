@@ -25,7 +25,17 @@ import {
 import { envOr } from '@broker/utils';
 import { localeHref } from '@/i18n/redirect';
 import { MAX_DOC_BYTES } from '@/upload-limits.mjs';
-import { completeLoginChallenge, createLoginChallenge, isTwoFactorEnabled, LOGIN_CHALLENGE_TTL_MINUTES } from '@broker/support';
+import {
+  completeLoginChallenge,
+  createLoginChallenge,
+  isTwoFactorEnabled,
+  loadSupportSettings,
+  LOGIN_CHALLENGE_TTL_MINUTES,
+  requestActivationLink,
+} from '@broker/support';
+import { authLinkBuilder } from './support/auth-link';
+import { supportPool } from './support/state';
+import { setPendingActivation } from './auth/pending-activation-cookie';
 import { cabinetTwoFactorKey, codeError, secondFactorGate, TWO_FACTOR_COOKIE, twoFactorPool } from './two-factor';
 import {
   createSession,
@@ -71,6 +81,8 @@ export async function registerAction(_prev: ActionState, formData: FormData): Pr
   const jar = cookies();
   const geoHeader = process.env.GEO_COUNTRY_HEADER?.trim();
   const ip = clientIp();
+  const link = await authLinkBuilder();
+  const settings = await loadSupportSettings(getPool());
   const result = await registerUser(parsed.data, {
     cookies: {
       ref: jar.get(ATTRIBUTION_COOKIES.ref)?.value ?? null,
@@ -84,15 +96,30 @@ export async function registerAction(_prev: ActionState, formData: FormData): Pr
     ipCountry: geoHeader ? headers().get(geoHeader) : null,
     invite: typeof raw.invite === 'string' && raw.invite ? raw.invite : null,
     consents: consentRecords(await loadConsentDocuments(parsed.data.locale), decodeShownVersions(parsed.data.consentShown)),
+    activation: { settings, link },
   });
+  const next = safeNext(formData.get('next'));
   if (!result.ok) {
     if (result.reason === 'emailExists') {
-      return { fieldErrors: { email: 'emailExists' } };
+      // Адрес уже есть. Наружу — тот же экран «Проверьте почту», что и для новой
+      // регистрации: по форме нельзя узнать, зарегистрирован ли адрес. Если он ещё не
+      // подтверждён, ссылка уходит повторно; если подтверждён — письма нет, а экран
+      // подсказывает войти или восстановить пароль.
+      if (link) {
+        const r = await requestActivationLink(supportPool(), settings, {
+          email: parsed.data.email,
+          ip: ip === 'local' ? null : ip,
+          link,
+        });
+        console.info(`[register] адрес уже зарегистрирован, повторная ссылка: ${r.internal}`);
+      }
+      setPendingActivation({ email: parsed.data.email, next });
+      redirect(await localeHref('/register/check-email', parsed.data.locale));
     }
     return { error: result.reason };
   }
-  await createSession(result.userId);
-  redirect(safeNext(formData.get('next')) ?? (await homePath(parsed.data.locale)));
+  setPendingActivation({ email: parsed.data.email, next });
+  redirect(await localeHref('/register/check-email', parsed.data.locale));
 }
 
 export async function loginAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
@@ -108,6 +135,12 @@ export async function loginAction(_prev: ActionState, formData: FormData): Promi
   const check = await checkLogin(parsed.data.email, parsed.data.password);
   if (!check.ok) {
     return { error: check.error };
+  }
+  if (!check.activated) {
+    // Пароль верный, но почта не подтверждена: сессии нет. Экран входа предлагает
+    // отправить ссылку ещё раз — на адрес из этой cookie, а не из поля формы.
+    setPendingActivation({ email: check.email, next: safeNext(formData.get('next')) });
+    return { error: 'emailNotVerified' };
   }
 
   if (await isTwoFactorEnabled(twoFactorPool(), check.userId)) {

@@ -875,6 +875,7 @@ export default async function ClientCardPage({
           userId={card.userId}
           email={card.email}
           emailVerifiedAt={card.emailVerifiedAt}
+          activatedAt={card.activatedAt}
           journal={card.journal}
           view={credentials}
           policy={policy}

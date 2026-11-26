@@ -16,6 +16,7 @@ import {
   liftWithdrawHold,
   readCredentialSettings,
   resetClientTwoFactor,
+  sendActivationLink,
   sendPasswordResetLink,
   setWithdrawHold,
   updateCredentialSettings,
@@ -90,6 +91,17 @@ export async function sendResetLinkAction(_prev: CredentialActionState, fd: Form
   return guarded(async () => {
     const input = base(fd, op.operatorId);
     const r = await sendPasswordResetLink(input, { pool: moneyPool(), link: linkBuilder() });
+    if (!r.ok) return { error: r.reason };
+    done(input.userId);
+    return { ok: true, detail: `письмо на ${r.sentTo}` };
+  });
+}
+
+export async function sendActivationLinkAction(_prev: CredentialActionState, fd: FormData): Promise<CredentialActionState> {
+  const op = await requireOperator();
+  return guarded(async () => {
+    const input = base(fd, op.operatorId);
+    const r = await sendActivationLink(input, { pool: moneyPool(), link: linkBuilder() });
     if (!r.ok) return { error: r.reason };
     done(input.userId);
     return { ok: true, detail: `письмо на ${r.sentTo}` };

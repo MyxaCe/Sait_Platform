@@ -76,7 +76,8 @@ export async function getSessionUser(): Promise<SessionUser | null> {
             COALESCE(cb.blocked, false) AS blocked
        FROM sessions s JOIN users u ON u.id = s.user_id
        LEFT JOIN client_blocks cb ON cb.user_id = u.id
-      WHERE s.token_hash = $1 AND s.expires_at > now()`,
+      WHERE s.token_hash = $1 AND s.expires_at > now()
+        AND u.activated_at IS NOT NULL`,
     [hashToken(token)],
   );
   const row = result.rows[0];

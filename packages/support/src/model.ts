@@ -75,6 +75,7 @@ export const SUPPORT_ACTIONS = {
   passwordResetCompleted: 'auth.password_reset.completed',
   emailVerifySent: 'auth.email_verify.sent',
   emailVerified: 'auth.email_verify.confirmed',
+  unactivatedPurged: 'auth.unactivated.purged',
 } as const;
 
 export const SUPPORT_SYSTEM_OPERATOR = '00000000-0000-4000-8000-00000000c0b4';

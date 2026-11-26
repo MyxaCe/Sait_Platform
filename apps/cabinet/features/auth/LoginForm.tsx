@@ -7,6 +7,7 @@ import { Button, FormField, Input } from '@broker/ui';
 import { loginAction, loginTwoFactorAction, type ActionState } from '@/lib/actions';
 import { CodeInput } from '@/features/security/CodeInput';
 import { FormMessage, useFieldError } from './FormMessage';
+import { ResendActivationForm } from './AuthMailForms';
 
 function SubmitButton({ label }: { label: string }) {
   const { pending } = useFormStatus();
@@ -36,8 +37,15 @@ function PasswordStep({
   }, [state, onTwoFactor]);
 
   return (
+    <div className="flex flex-col gap-4">
+    {state.error === 'emailNotVerified' ? (
+      <div className="flex flex-col gap-3 rounded-xl border border-border px-4 py-3" data-testid="login-not-verified">
+        <FormMessage error={state.error} />
+        <ResendActivationForm compact />
+      </div>
+    ) : null}
     <form action={formAction} className="flex flex-col gap-4" noValidate>
-      <FormMessage error={state.error} />
+      {state.error === 'emailNotVerified' ? null : <FormMessage error={state.error} />}
       <input type="hidden" name="uiLocale" value={locale} />
       {next ? <input type="hidden" name="next" value={next} /> : null}
       <input type="text" name="website" tabIndex={-1} autoComplete="off" className="hidden" aria-hidden />
@@ -52,6 +60,7 @@ function PasswordStep({
 
       <SubmitButton label={t('loginButton')} />
     </form>
+    </div>
   );
 }
 

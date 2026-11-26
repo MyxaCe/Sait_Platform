@@ -136,6 +136,8 @@ export interface ClientCard {
   registeredAt: string;
   lastLoginAt: string | null;
   emailVerifiedAt: string | null;
+  /** Первое подтверждение почты; null — регистрация не подтверждена, входа в кабинет нет. */
+  activatedAt: string | null;
   state: VerificationState;
   verificationUpdatedAt: string | null;
   block: ClientBlockState;
@@ -168,6 +170,7 @@ export async function getClientCard(
             u.created_at,
             u.last_login_at,
             u.email_verified_at,
+            u.activated_at,
             cv.state,
             cv.updated_at AS verification_updated_at,
             cb.blocked,
@@ -222,6 +225,7 @@ export async function getClientCard(
     emailVerifiedAt: row.email_verified_at
       ? new Date(row.email_verified_at as string | Date).toISOString()
       : null,
+    activatedAt: row.activated_at ? new Date(row.activated_at as string | Date).toISOString() : null,
     state: asState(row.state ?? 'unverified'),
     verificationUpdatedAt: row.verification_updated_at
       ? new Date(row.verification_updated_at as string | Date).toISOString()

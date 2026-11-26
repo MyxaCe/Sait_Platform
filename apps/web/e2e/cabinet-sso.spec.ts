@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { requireOrSkip } from './support/gates';
+import { confirmRegistration } from './support/activation';
 
 const CABINET = process.env.CABINET_URL;
 const TERMINAL = process.env.TERMINAL_URL;
@@ -17,17 +18,14 @@ test.describe('SSO: кабинет → терминал', () => {
     await page.goto(`${CABINET}/register`);
     await page.getByLabel(/имя/i).first().fill('ССО');
     await page.getByLabel(/фамилия/i).fill('Прогонов');
-    await page.getByLabel(/email/i).fill(`sso-e2e-${Date.now()}@example.com`);
+    const email = `sso-e2e-${Date.now()}@example.com`;
+    await page.getByLabel(/email/i).fill(email);
     await page.getByLabel(/телефон/i).fill('+35725000002');
     await page.getByLabel(/страна/i).fill('Кипр');
     await page.getByLabel(/пароль/i).fill('secret1234!');
     await page.locator('#consent').check();
     await page.getByRole('button', { name: /открыть счёт/i }).click();
-
-    await expect(page, 'регистрация не увела с формы: сессия не создана').not.toHaveURL(
-      /\/register/,
-      { timeout: 15_000 },
-    );
+    await confirmRegistration(page, email);
 
     await page.goto(`${CABINET}/trade`);
 

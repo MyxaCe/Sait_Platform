@@ -464,7 +464,9 @@
     "selfieCameraOnly": "The selfie is accepted only as a camera photo — file upload is disabled for this step.",
     "selfieExpired": "The task has expired — please start again.",
     "selfieInvalid": "The photos were not accepted. Please take them again with the camera.",
-    "consentRequired": "To open an account, please confirm that you accept the documents"
+    "consentRequired": "To open an account, please confirm that you accept the documents",
+    "emailNotVerified": "Your email is not confirmed yet. Open the email with the link we sent when you signed up.",
+    "mailNotConfigured": "Sign-up is temporarily unavailable: email sending is not configured. Please try later."
   },
   "history": {
     "title": "History",
@@ -755,7 +757,7 @@
     "token": {
       "invalidToken": "The link is invalid.",
       "expiredToken": "The link has expired.",
-      "usedToken": "The link has already been used."
+      "usedToken": "This link has already been used. If your email is confirmed, just sign in."
     },
     "verifyTitle": "Email confirmation",
     "verifySubtitle": "Press the button to confirm your email address.",
@@ -775,6 +777,21 @@
       "title": "Set a new password",
       "subtitle": "You signed in with a temporary password from your manager. To continue, set your own password — the temporary one will stop working and other sessions will be signed out.",
       "button": "Save password"
+    },
+    "toLogin": "Sign in",
+    "checkEmailTitle": "Check your email",
+    "checkEmailText": "We sent a link to {email}. Open the email and press “Confirm email” — the link is valid for 24 hours. You will then go straight to your account.",
+    "checkEmailTextNoEmail": "We sent you a link to confirm your address. Open the email and press “Confirm email” — the link is valid for 24 hours.",
+    "checkEmailSpam": "No email after a few minutes? Check your Spam and Promotions folders.",
+    "checkEmailExisting": "If you already signed up with this address and confirmed it, no new email will arrive — just sign in or reset your password.",
+    "resendButton": "Send the email again",
+    "resendSent": "We sent another email. If the address is not confirmed yet, it will arrive within a couple of minutes.",
+    "resendErrors": {
+      "tooSoon": "An email was just sent. You can try again in a minute.",
+      "rateLimited": "Too many emails this hour. Please try later.",
+      "noPending": "Please start over: sign up or sign in.",
+      "mailNotConfigured": "Email sending is unavailable right now. Please try later.",
+      "generic": "Could not send the email. Please try later."
     }
   },
   "promo": {

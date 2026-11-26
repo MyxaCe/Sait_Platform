@@ -29,6 +29,9 @@ import { BulkAssignBar, RowCheckbox, SelectAllOnPage } from './_components/manag
 export const dynamic = 'force-dynamic';
 
 function accessBadges(c: RegistryRow) {
+  if (!c.activated) {
+    return <span className="text-warning text-xs font-medium">Почта не подтверждена</span>;
+  }
   if (!c.blocked && !c.frozen && !c.withdrawBanned) {
     return <span className="text-secondary">Активен</span>;
   }

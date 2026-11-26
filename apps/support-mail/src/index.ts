@@ -9,6 +9,7 @@ import { loadStorageConfig, putObject } from '@broker/storage';
 import {
   autoCloseResolved,
   loadSupportSettings,
+  purgeUnactivatedUsers,
   recoverContactLeads,
   writeMailEvent,
   writeMailHeartbeat,
@@ -66,6 +67,10 @@ async function housekeeping(): Promise<void> {
     if (r.recovered > 0) log(`восстановлено обращений с формы контактов: ${r.recovered} (#${r.numbers.join(', #')})`);
     const closed = await autoCloseResolved(db, settings);
     if (closed > 0) log(`автозакрыто решённых: ${closed}`);
+    // Регистрации без подтверждённой почты старше 7 дней (решение владельца 26.11).
+    const purged = await purgeUnactivatedUsers(db);
+    if (purged.deleted > 0) log(`удалено неподтверждённых регистраций: ${purged.deleted}`);
+    for (const s of purged.skipped) warn(`неподтверждённая регистрация ${s.userId} не удалена: ${s.reason}`);
   } catch (e) {
     warn(`housekeeping: ${(e as Error).message}`);
   }

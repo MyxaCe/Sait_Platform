@@ -1,6 +1,7 @@
 export const CREDENTIAL_ACTIONS = {
   emailChanged: 'client.credentials.email_changed',
   resetLinkSent: 'client.credentials.password_reset_link_sent',
+  activationLinkSent: 'client.credentials.activation_link_sent',
   tempPasswordIssued: 'client.credentials.temp_password_issued',
   withdrawalAddressChanged: 'client.credentials.withdrawal_address_changed',
   holdSet: 'client.credentials.withdraw_hold_set',
@@ -164,6 +165,9 @@ export const CREDENTIAL_ERRORS: Record<string, string> = {
   noChange: 'Изменений нет.',
   journalUnavailable: 'Журнал недоступен — действие не выполнено и не записано.',
   twoFactorOff: 'У клиента двухфакторная защита не включена — сбрасывать нечего.',
+  alreadyVerified: 'Почта клиента уже подтверждена — ссылка не нужна.',
+  tooSoon: 'Письмо подтверждения уходило меньше минуты назад — подождите.',
+  activationRateLimited: 'Слишком много писем подтверждения за час на этот адрес — попробуйте позже.',
 };
 
 export function credentialErrorText(error: string, detail?: string): string {

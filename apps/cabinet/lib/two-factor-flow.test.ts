@@ -84,7 +84,7 @@ beforeEach(async () => {
   env.jar.clear();
   env.sessions.length = 0;
   userId = crypto.randomUUID();
-  await env.pg.query(`INSERT INTO users (id, email, password_hash, full_name, locale) VALUES ($1, $2, $3, 'Анна Клиентова', 'ru')`, [
+  await env.pg.query(`INSERT INTO users (id, email, password_hash, full_name, locale, activated_at) VALUES ($1, $2, $3, 'Анна Клиентова', 'ru', now())`, [
     userId,
     `${userId.slice(0, 8)}@client.test`,
     await bcrypt.hash('secret-pass', 4),

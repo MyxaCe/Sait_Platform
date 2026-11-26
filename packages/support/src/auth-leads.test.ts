@@ -101,7 +101,7 @@ describe('подтверждение email', () => {
     expect(await requestEmailVerification(db, S, { userId, ip: null, link })).toBe('sent');
     const token = await lastToken();
     expect((await db.query(`SELECT subject FROM outbound_mail`)).rows[0]!.subject).toBe('Подтвердите email');
-    expect(await confirmEmail(db, { token })).toEqual({ ok: true, userId });
+    expect(await confirmEmail(db, { token })).toEqual({ ok: true, userId, activatedNow: true, twoFactor: false });
     expect((await db.query(`SELECT email_verified_at FROM users`)).rows[0]!.email_verified_at).not.toBeNull();
     expect(await confirmEmail(db, { token })).toEqual({ ok: false, reason: 'usedToken' });
     expect(await requestEmailVerification(db, S, { userId, ip: null, link })).toBe('alreadyVerified');

@@ -464,7 +464,9 @@
     "selfieCameraOnly": "El selfi solo se acepta como foto de la cámara: la subida de archivos está desactivada en este paso.",
     "selfieExpired": "La tarea ha caducado: empiece de nuevo.",
     "selfieInvalid": "No se aceptaron las fotos. Tómelas de nuevo con la cámara.",
-    "consentRequired": "Para abrir una cuenta, confirme que acepta los documentos"
+    "consentRequired": "Para abrir una cuenta, confirme que acepta los documentos",
+    "emailNotVerified": "Tu correo aún no está confirmado. Abre el correo con el enlace que enviamos al registrarte.",
+    "mailNotConfigured": "El registro no está disponible temporalmente: el envío de correos no está configurado. Inténtalo más tarde."
   },
   "history": {
     "title": "Historial",
@@ -755,7 +757,7 @@
     "token": {
       "invalidToken": "El enlace no es válido.",
       "expiredToken": "El enlace ha caducado.",
-      "usedToken": "El enlace ya se ha utilizado."
+      "usedToken": "Este enlace ya se ha usado. Si tu correo está confirmado, simplemente inicia sesión."
     },
     "verifyTitle": "Confirmación del correo electrónico",
     "verifySubtitle": "Pulse el botón para confirmar su dirección de correo electrónico.",
@@ -775,6 +777,21 @@
       "title": "Establezca una nueva contraseña",
       "subtitle": "Ha iniciado sesión con una contraseña temporal de su gestor. Para continuar, establezca su propia contraseña: la temporal dejará de funcionar y se cerrarán las demás sesiones.",
       "button": "Guardar contraseña"
+    },
+    "toLogin": "Iniciar sesión",
+    "checkEmailTitle": "Revisa tu correo",
+    "checkEmailText": "Hemos enviado un enlace a {email}. Abre el correo y pulsa «Confirmar email»: el enlace es válido 24 horas. Después entrarás directamente en tu cuenta.",
+    "checkEmailTextNoEmail": "Te hemos enviado un enlace para confirmar tu dirección. Abre el correo y pulsa «Confirmar email»: el enlace es válido 24 horas.",
+    "checkEmailSpam": "¿No llega el correo tras unos minutos? Revisa la carpeta de spam.",
+    "checkEmailExisting": "Si ya te registraste con esta dirección y la confirmaste, no llegará un correo nuevo: inicia sesión o restablece tu contraseña.",
+    "resendButton": "Enviar el correo de nuevo",
+    "resendSent": "Hemos enviado otro correo. Si la dirección aún no está confirmada, llegará en un par de minutos.",
+    "resendErrors": {
+      "tooSoon": "Acabamos de enviar un correo. Podrás repetir en un minuto.",
+      "rateLimited": "Demasiados correos en esta hora. Inténtalo más tarde.",
+      "noPending": "Empieza de nuevo: regístrate o inicia sesión.",
+      "mailNotConfigured": "El envío de correos no está disponible ahora. Inténtalo más tarde.",
+      "generic": "No se pudo enviar el correo. Inténtalo más tarde."
     }
   },
   "promo": {

@@ -15,7 +15,7 @@ vi.mock('./password', () => ({
   verifyPassword: async (password: string, hash: string) => hash === `hash:${password}`,
 }));
 
-const ROW = { id: 'user-1', password_hash: 'hash:secret-pass', locale: 'ru' };
+const ROW = { id: 'user-1', email: 'a@b.c', password_hash: 'hash:secret-pass', locale: 'ru', activated: true };
 
 beforeEach(() => {
   state.row = null;
@@ -29,9 +29,18 @@ describe('checkLogin · блокировка клиента', () => {
     await expect(checkLogin('a@b.c', 'secret-pass')).resolves.toEqual({
       ok: true,
       userId: 'user-1',
+      email: 'a@b.c',
       locale: 'ru',
       mustChangePassword: false,
+      activated: true,
     });
+  });
+
+  it('почта при регистрации не подтверждена: пароль верный, но activated=false — сессию выдаёт не checkLogin, а отказ в loginAction', async () => {
+    state.row = { ...ROW, blocked: false, activated: false };
+    const { checkLogin } = await import('./login');
+    await expect(checkLogin('a@b.c', 'secret-pass')).resolves.toMatchObject({ ok: true, activated: false });
+    expect(state.sql).toMatch(/activated_at IS NOT NULL AS activated/);
   });
 
   it('временный пароль от менеджера: вход есть, но с обязательной сменой; истёк — отказ', async () => {
