@@ -167,8 +167,9 @@ export function Tour({ steps, labels, resolve, onClose }: TourProps) {
         )}
         style={placement.mode === 'float' ? { top: placement.top, left: placement.left } : undefined}
       >
-        <p className="text-xs text-muted">{stepLabel(labels.stepOf, index + 1, total)}</p>
-        <h2 id={titleId} className="mt-1 text-base font-semibold">
+        <p className="text-xs text-secondary">{stepLabel(labels.stepOf, index + 1, total)}</p>
+        {/* Размер 1rem задан явно: класс размера «base» в этом пресете красит текст цветом фона (см. no-text-base.test.ts). */}
+        <h2 id={titleId} className="mt-1 text-[1rem] font-semibold leading-6 text-primary">
           {step.title}
         </h2>
         <p id={bodyId} className="mt-1.5 whitespace-pre-line text-sm leading-relaxed text-secondary">

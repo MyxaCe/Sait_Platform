@@ -15,7 +15,7 @@ export function HelpButton({ className }: { className?: string }) {
       aria-label={tour.labels.help}
       title={tour.labels.help}
       className={cn(
-        'grid size-9 shrink-0 place-items-center rounded-full border border-border text-base font-semibold text-secondary transition-colors hover:border-accent hover:text-accent',
+        'grid size-9 shrink-0 place-items-center rounded-full border border-border text-[1rem] font-semibold text-secondary transition-colors hover:border-accent hover:text-accent',
         className,
       )}
     >
