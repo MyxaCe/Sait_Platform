@@ -1,5 +1,13 @@
 export { Button, type ButtonProps } from './atoms/Button/Button';
 export { Badge, type BadgeProps, type BadgeVariant } from './atoms/Badge/Badge';
+export {
+  BrandMark,
+  brandMarkParts,
+  type BrandMarkProps,
+  type BrandMarkLogo,
+  type BrandMarkParts,
+  type BrandLogoMode,
+} from './atoms/BrandMark/BrandMark';
 export { Money, type MoneyProps, formatMinor, formatMoney } from './atoms/Money/Money';
 export { Mono, type MonoProps, shortenMiddle } from './atoms/Mono/Mono';
 export { CopyButton, type CopyButtonProps } from './atoms/CopyButton/CopyButton';

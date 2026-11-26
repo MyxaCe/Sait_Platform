@@ -3,7 +3,7 @@
 import { useLocale, useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
 import { Link, usePathname } from '@/i18n/navigation';
-import { Button, Container, cn } from '@broker/ui';
+import { BrandMark, Button, Container, cn, type BrandLogoMode } from '@broker/ui';
 import { LangSwitcher } from './LangSwitcher';
 import { ThemeToggle } from './ThemeToggle';
 import { envOr } from '@broker/utils';
@@ -23,10 +23,11 @@ function cabinetHref(path: '/' | '/login' | '/register', locale: string, default
 export interface SiteHeaderProps {
   brandName: string;
   logo?: { url: string; width: number; height: number; alt: string } | null;
+  logoMode?: BrandLogoMode | null;
   nav: { label: string; href: string }[];
 }
 
-export function SiteHeader({ brandName, logo, nav }: SiteHeaderProps) {
+export function SiteHeader({ brandName, logo, logoMode, nav }: SiteHeaderProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const pathname = usePathname();
   const locale = useLocale();
@@ -53,22 +54,8 @@ export function SiteHeader({ brandName, logo, nav }: SiteHeaderProps) {
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-base/80 backdrop-blur-xl">
       <Container className="flex h-16 items-center justify-between gap-4 lg:h-[72px]">
-        <Link href="/" className="flex items-center gap-2 text-lg font-semibold text-primary">
-          {logo ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={logo.url}
-              width={logo.width}
-              height={logo.height}
-              alt={logo.alt || brandName}
-              className="h-8 w-auto"
-            />
-          ) : (
-            <span className="grid size-8 place-items-center rounded-lg bg-accent font-bold text-base">
-              {brandName.charAt(0)}
-            </span>
-          )}
-          {brandName}
+        <Link href="/" aria-label={brandName} className="flex min-w-0 items-center text-lg font-semibold text-primary">
+          <BrandMark name={brandName} logo={logo} mode={logoMode} size="md" />
         </Link>
 
         <nav className="hidden items-center gap-1 lg:flex" aria-label={t('mainNav')}>

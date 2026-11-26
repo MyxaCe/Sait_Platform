@@ -6,6 +6,9 @@ const brandMediaSlot = mediaSchema.nullable().catch(null);
 const brandColorSlot = hexColorSchema.nullable().catch(null);
 
 const heroBackgroundSlot = z.enum(['quotes', 'off']).optional().catch(undefined);
+// Как показывать бренд в шапке. Незнакомое или отсутствующее значение — прежнее поведение (logo-name).
+export const brandLogoModeSchema = z.enum(['logo-name', 'logo', 'name']);
+const logoModeSlot = brandLogoModeSchema.optional().catch(undefined);
 
 const socialLinkSchema = z.object({ name: z.string().min(1), url: z.string().url() });
 
@@ -93,6 +96,7 @@ const brandLegacySchema = z.object({
   primaryColor: brandColorSlot,
   socials: brandSocialsSchema,
   heroBackground: heroBackgroundSlot,
+  logoMode: logoModeSlot,
   legalEntity: legalEntitySchema,
 });
 
@@ -106,6 +110,7 @@ const brandV2Schema = z
       primaryColor: brandColorSlot,
       socials: brandSocialsSchema,
       heroBackground: heroBackgroundSlot,
+      logoMode: logoModeSlot,
     }),
     legalEntity: legalEntitySchema,
   })
@@ -116,6 +121,7 @@ const brandV2Schema = z
     primaryColor: response.brand.primaryColor,
     socials: response.brand.socials,
     heroBackground: response.brand.heroBackground,
+    logoMode: response.brand.logoMode,
     legalEntity: response.legalEntity,
   }));
 

@@ -6,7 +6,7 @@ import { LangSwitcher } from '@/features/shell/LangSwitcher';
 import { getSiteLanguages } from '@/lib/site-languages';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { redirect } from 'next/navigation';
-import { SiteFooter, footerLegalLines } from '@broker/ui';
+import { BrandMark, SiteFooter, footerLegalLines } from '@broker/ui';
 import { CabinetHeader } from '@/features/shell/CabinetHeader';
 import { LogoutForm } from '@/features/shell/LogoutForm';
 import { MobileNav } from '@/features/shell/MobileNav';
@@ -114,14 +114,14 @@ export default async function AppLayout({ children, params }: LayoutProps) {
 
       <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-border bg-elevated/95 px-4 backdrop-blur lg:hidden">
         <Link href="/" className="flex min-w-0 items-center gap-2 font-semibold">
-          {brand?.logo ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={brand.logo.url} alt={brand.logo.alt || brandName} className="h-7 w-auto" />
-          ) : (
-            <span className="grid size-7 place-items-center rounded-lg bg-accent text-sm font-bold text-on-accent">
-              {brandName.charAt(0)}
-            </span>
-          )}
+          {/* На телефоне рядом с логотипом — «Кабинет»; название бренда текстом только в режиме «только название». */}
+          <BrandMark
+            name={brandName}
+            logo={brand?.logo}
+            mode={brand?.logoMode}
+            size="sm"
+            nameClassName={brand?.logoMode === 'name' ? undefined : 'sr-only'}
+          />
           <span className="truncate">{tCommon('cabinet')}</span>
         </Link>
         <div className="flex items-center gap-1">

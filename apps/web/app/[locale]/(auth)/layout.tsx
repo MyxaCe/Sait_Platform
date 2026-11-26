@@ -2,6 +2,7 @@ import { pageLocale } from '@/lib/locale';
 import { useTranslations } from 'next-intl';
 import { setRequestLocale } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
+import { BrandMark, type BrandLogoMode, type BrandMarkLogo } from '@broker/ui';
 import { getCms } from '@/lib/cms';
 
 interface LayoutProps {
@@ -12,26 +13,31 @@ interface LayoutProps {
 export default async function AuthLayout({ children, params }: LayoutProps) {
   setRequestLocale(params.locale);
   const brand = await getCms('brand', { locale: pageLocale(params.locale) });
-  return <LayoutContent brandName={brand.name}>{children}</LayoutContent>;
+  return (
+    <LayoutContent brandName={brand.name} logo={brand.logo} logoMode={brand.logoMode}>
+      {children}
+    </LayoutContent>
+  );
 }
 
 function LayoutContent({
   children,
   brandName,
+  logo,
+  logoMode,
 }: {
   children: React.ReactNode;
   brandName: string;
+  logo?: BrandMarkLogo | null;
+  logoMode?: BrandLogoMode | null;
 }) {
   const t = useTranslations('auth');
   return (
     <div className="flex min-h-svh flex-col">
       <header className="border-b border-border">
         <div className="mx-auto flex h-16 w-full max-w-page items-center justify-between px-4 sm:px-6 lg:px-8">
-          <Link href="/" className="flex items-center gap-2 text-lg font-semibold text-primary">
-            <span className="grid size-8 place-items-center rounded-lg bg-accent font-bold text-base">
-              {brandName.charAt(0)}
-            </span>
-            {brandName}
+          <Link href="/" aria-label={brandName} className="flex min-w-0 items-center text-lg font-semibold text-primary">
+            <BrandMark name={brandName} logo={logo} mode={logoMode} size="md" />
           </Link>
           <Link href="/" className="text-sm text-secondary transition-colors hover:text-primary">
             {t('backHome')}

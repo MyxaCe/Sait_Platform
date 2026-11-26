@@ -24,7 +24,7 @@ export default async function MarketingLayout({ children, params }: LayoutProps)
 
   return (
     <div className="flex min-h-svh flex-col">
-      <SiteHeader brandName={brand.name} logo={brand.logo} nav={header} />
+      <SiteHeader brandName={brand.name} logo={brand.logo} logoMode={brand.logoMode} nav={header} />
       <main className="flex-1">{children}</main>
       <SupportFab locale={locale} />
       <SiteFooter
