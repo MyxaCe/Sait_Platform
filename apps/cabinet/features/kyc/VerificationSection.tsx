@@ -155,7 +155,9 @@ export async function VerificationSection({
             </div>
           ) : (
             <CappedList
-              limit={3}
+              // У проверенного клиента форм загрузки нет, места на всю высоту панели — показываем
+              // документы целиком; «Показать все» только при настоящем переполнении.
+              limit={verified ? 6 : 3}
               className="border-border mt-3 border-t"
               items={documents.map((doc) => (
                 <li key={doc.id} className="flex items-center justify-between gap-3 px-4 py-3 sm:px-5">

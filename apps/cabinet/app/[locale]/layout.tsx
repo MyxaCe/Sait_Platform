@@ -3,11 +3,10 @@ import { Inter } from 'next/font/google';
 import { notFound } from 'next/navigation';
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages, getTranslations, setRequestLocale } from 'next-intl/server';
-import { hexToRgbChannels } from '@broker/utils';
+import { brandAccentCss } from '@broker/utils';
 import { SiteLanguagesProvider } from '@/i18n/site-languages-context';
 import { getSiteLanguages } from '@/lib/site-languages';
 import { getChromeBrand, resolveBrandName, siteHref } from '@/lib/chrome';
-import { onAccentChannels } from '@/lib/on-accent';
 import '../globals.css';
 import { CabinetCookieNotice } from '@/features/CabinetCookieNotice';
 
@@ -53,15 +52,12 @@ export default async function RootLayout({ children, params }: LayoutProps) {
   const messages = await getMessages();
 
   const brand = await getChromeBrand(locale);
-  const accentChannels = brand?.primaryColor ? hexToRgbChannels(brand.primaryColor) : null;
-  const onAccent = accentChannels ? onAccentChannels(accentChannels) : null;
+  const accentCss = brandAccentCss(brand?.primaryColor);
 
   return (
     <html lang={locale} data-theme="dark" className={inter.variable}>
       <body className="bg-base font-sans text-primary">
-        {accentChannels && (
-          <style>{`:root{--accent:${accentChannels};--text-on-accent:${onAccent};}`}</style>
-        )}
+        {accentCss && <style>{accentCss}</style>}
         <NextIntlClientProvider messages={messages}>
           <SiteLanguagesProvider value={site}>{children}</SiteLanguagesProvider>
           <CabinetCookieNotice policyHref={siteHref('/legal/privacy', locale, site.defaultLanguage)} />

@@ -11,7 +11,8 @@ import { SiteCookieNotice } from '@/components/layout/SiteCookieNotice';
 import { OrganizationJsonLd } from '@/components/seo/OrganizationJsonLd';
 import { OPEN_GRAPH_LOCALES, type PlatformLocale } from '@broker/utils/locales';
 import { SiteLanguagesProvider } from '@/i18n/site-languages-context';
-import { hexToRgbChannels, resolvePrimaryColor } from '@/lib/brand';
+import { brandAccentCss } from '@broker/utils';
+import { resolvePrimaryColor } from '@/lib/brand';
 import { getCms, isCmsConfigured } from '@/lib/cms';
 import { getSiteLanguages } from '@/lib/site-languages';
 import { SITE_URL } from '@/lib/site';
@@ -118,7 +119,7 @@ export default async function RootLayout({ children, params }: LayoutProps) {
 
   const brand = await getCms('brand', { locale: locale as PlatformLocale });
   const primary = resolvePrimaryColor(brand.primaryColor);
-  const accentChannels = primary.color ? hexToRgbChannels(primary.color) : null;
+  const accentCss = brandAccentCss(primary.color);
   const tMeta = await getTranslations({ locale, namespace: 'meta' });
 
   let isDraft = false;
@@ -131,9 +132,7 @@ export default async function RootLayout({ children, params }: LayoutProps) {
   return (
     <html lang={locale} suppressHydrationWarning className={inter.variable}>
       <body className="bg-base font-sans text-primary" data-brand-color={primary.source}>
-        {accentChannels && (
-          <style>{`:root{--accent:${accentChannels};}`}</style>
-        )}
+        {accentCss && <style>{accentCss}</style>}
         <OrganizationJsonLd
           name={brand.name}
           description={tMeta('description')}

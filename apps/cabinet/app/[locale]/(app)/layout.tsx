@@ -1,4 +1,7 @@
 import { localeHref } from '@/i18n/redirect';
+import { cookies } from 'next/headers';
+import { SESSION_COOKIE } from '@/lib/auth/constants';
+import { expiredHref } from '@/lib/auth/expired';
 import { LangSwitcher } from '@/features/shell/LangSwitcher';
 import { getSiteLanguages } from '@/lib/site-languages';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
@@ -39,7 +42,8 @@ export default async function AppLayout({ children, params }: LayoutProps) {
   setRequestLocale(params.locale);
   const user = await getSessionUser();
   if (!user) {
-    redirect(await localeHref('/login', params.locale));
+    // cookie есть, а сессии нет — через обработчик, иначе петля / ↔ /login (ТД-009 п.4)
+    redirect(cookies().has(SESSION_COOKIE) ? expiredHref(params.locale) : await localeHref('/login', params.locale));
   }
   if (user.mustChangePassword) {
     redirect(await localeHref('/change-password', params.locale));

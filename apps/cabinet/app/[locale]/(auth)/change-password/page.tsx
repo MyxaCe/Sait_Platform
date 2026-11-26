@@ -1,4 +1,7 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server';
+import { cookies } from 'next/headers';
+import { SESSION_COOKIE } from '@/lib/auth/constants';
+import { expiredHref } from '@/lib/auth/expired';
 import { redirect } from 'next/navigation';
 import { ForcedPasswordForm } from '@/features/auth/AuthMailForms';
 import { getSessionUser } from '@/lib/auth/session';
@@ -9,7 +12,7 @@ export const dynamic = 'force-dynamic';
 export default async function ChangePasswordPage({ params }: { params: { locale: string } }) {
   setRequestLocale(params.locale);
   const user = await getSessionUser();
-  if (!user) redirect(await localeHref('/login', params.locale));
+  if (!user) redirect(cookies().has(SESSION_COOKIE) ? expiredHref(params.locale) : await localeHref('/login', params.locale));
   if (!user.mustChangePassword) redirect(await localeHref('/', params.locale));
   const t = await getTranslations('authMail');
   return (

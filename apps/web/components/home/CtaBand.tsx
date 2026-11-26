@@ -15,7 +15,7 @@ export function CtaBand() {
             className="pointer-events-none absolute inset-0"
             style={{
               background:
-                'radial-gradient(ellipse 60% 60% at 50% 0%, rgb(212 164 55 / 0.12), transparent)',
+                'radial-gradient(ellipse 60% 60% at 50% 0%, rgb(var(--accent) / 0.12), transparent)',
             }}
           />
           <div className="relative mx-auto max-w-2xl">
