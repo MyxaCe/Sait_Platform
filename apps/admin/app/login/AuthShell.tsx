@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { adminBrand } from '@/lib/brand';
 
 function Fact({ icon, title, text }: { icon: string; title: string; text: string }) {
   return (
@@ -26,17 +27,18 @@ function Fact({ icon, title, text }: { icon: string; title: string; text: string
 }
 
 function Brand() {
+  const brand = adminBrand();
   return (
     <div className="flex items-center gap-2.5">
       <span
         aria-hidden
         className="bg-accent text-on-accent flex size-8 items-center justify-center rounded-md text-sm font-bold"
       >
-        W
+        {brand.initial}
       </span>
       <span className="leading-tight">
-        <span className="text-primary block text-sm font-semibold">Wholesalefy</span>
-        <span className="text-muted block text-[11px]">Центр управления</span>
+        <span className="text-primary block text-sm font-semibold">{brand.title}</span>
+        {brand.name ? <span className="text-muted block text-[11px]">Центр управления</span> : null}
       </span>
     </div>
   );

@@ -1,4 +1,5 @@
 import { buildOtpauthUri as buildUri } from '@broker/support/totp';
+import { adminBrandFrom } from '@/lib/brand/brand';
 
 export {
   base32Decode,
@@ -10,8 +11,14 @@ export {
   type TotpOptions,
 } from '@broker/support/totp';
 
-export const TOTP_ISSUER = 'Wholesalefy Admin';
+/**
+ * Метка записи в приложении-аутентификаторе (только для новых подключений 2FA).
+ * На проверку кода не влияет: код считается из секрета, метка — лишь подпись в приложении.
+ */
+export function totpIssuer(): string {
+  return adminBrandFrom(process.env.ADMIN_BRAND_NAME).totpIssuer;
+}
 
 export function buildOtpauthUri(params: Omit<Parameters<typeof buildUri>[0], 'issuer'> & { issuer?: string }): string {
-  return buildUri({ ...params, issuer: params.issuer ?? TOTP_ISSUER });
+  return buildUri({ ...params, issuer: params.issuer ?? totpIssuer() });
 }

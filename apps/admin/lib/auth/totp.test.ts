@@ -89,3 +89,24 @@ describe('provisioning-URI (otpauth://)', () => {
     expect(uri).toContain('period=30');
   });
 });
+
+describe('метка 2FA из бренда (ADMIN_BRAND_NAME)', () => {
+  it('метка берётся из окружения в момент вызова; код от неё не зависит', () => {
+    const prev = process.env.ADMIN_BRAND_NAME;
+    try {
+      const secret = generateTotpSecret();
+      const t = 1_800_000_000_000;
+      delete process.env.ADMIN_BRAND_NAME;
+      const neutral = buildOtpauthUri({ secret, accountName: 'op' });
+      expect(neutral).toContain(`issuer=${encodeURIComponent('Центр управления')}`);
+      const before = generateTotp(secret, {}, t);
+      process.env.ADMIN_BRAND_NAME = 'Acme';
+      expect(buildOtpauthUri({ secret, accountName: 'op' })).toContain('issuer=Acme%20Admin');
+      expect(generateTotp(secret, {}, t)).toBe(before);
+      expect(verifyTotp(secret, before, {}, t)).toBe(true);
+    } finally {
+      if (prev === undefined) delete process.env.ADMIN_BRAND_NAME;
+      else process.env.ADMIN_BRAND_NAME = prev;
+    }
+  });
+});

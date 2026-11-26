@@ -52,7 +52,15 @@ export function CountBadge({ value, label }: { value: number | null; label: stri
   );
 }
 
-export function NavRail({ items, supportAttention = null }: { items: NavItem[]; supportAttention?: number | null }) {
+export function NavRail({
+  items,
+  supportAttention = null,
+  brand,
+}: {
+  items: NavItem[];
+  supportAttention?: number | null;
+  brand: { name: string | null; title: string; initial: string };
+}) {
   const pathname = usePathname();
   const hasSupport = items.some((i) => i.key === 'support');
   const attention = useSupportAttention(hasSupport, supportAttention, pathname);
@@ -74,11 +82,11 @@ export function NavRail({ items, supportAttention = null }: { items: NavItem[]; 
             aria-hidden
             className="bg-accent text-on-accent flex size-7 items-center justify-center rounded-md text-[13px] font-bold"
           >
-            W
+            {brand.initial}
           </span>
           <span className="min-w-0 leading-tight">
-            <span className="text-primary block truncate text-sm font-semibold">Wholesalefy</span>
-            <span className="text-muted block truncate text-[11px]">Центр управления</span>
+            <span className="text-primary block truncate text-sm font-semibold">{brand.title}</span>
+            {brand.name ? <span className="text-muted block truncate text-[11px]">Центр управления</span> : null}
           </span>
         </div>
 

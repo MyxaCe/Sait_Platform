@@ -132,13 +132,13 @@ async function main(): Promise<number> {
       inReplyTo: null,
       references: [],
       from: { address: 'k.petrov@gmail.example', name: 'Кирилл Петров' },
-      to: ['support@wholesalefy.com'],
+      to: ['support@example.test'],
       subject: 'Партнёрская программа для IB',
       text: 'Добрый день! Мы небольшой IB из Алматы, хотим подключиться к партнёрской программе. Какие условия по ребейтам?',
       date: ago(2),
       mailbox: 'INBOX',
     },
-    { settings: S, ownAddresses: ['support@wholesalefy.com'], now: ago(2) },
+    { settings: S, ownAddresses: ['support@example.test'], now: ago(2) },
   );
   const fischer = users.rows.find((u) => String(u.full_name).includes('Fischer'));
   if (fischer) {
@@ -149,13 +149,13 @@ async function main(): Promise<number> {
         inReplyTo: null,
         references: [],
         from: { address: String(fischer.email), name: 'Elena Fischer' },
-        to: ['support@wholesalefy.com'],
+        to: ['support@example.test'],
         subject: 'Account statement for October',
         text: 'Hello, could you please send me the account statement for October for our accountants? Thank you, Elena',
         date: ago(7),
         mailbox: 'INBOX',
       },
-      { settings: S, ownAddresses: ['support@wholesalefy.com'], now: ago(7) },
+      { settings: S, ownAddresses: ['support@example.test'], now: ago(7) },
     );
     if (v.verdict === 'accepted') {
       await operatorReply(db, S, sup, {
@@ -177,13 +177,13 @@ async function main(): Promise<number> {
       inReplyTo: null,
       references: [],
       from: { address: 'seo@promo.example', name: 'SEO Boost' },
-      to: ['support@wholesalefy.com'],
+      to: ['support@example.test'],
       subject: 'Раскрутка сайта в ТОП-10',
       text: 'Предлагаем продвижение вашего сайта в ТОП-10 Яндекса за 7 дней.',
       date: ago(20),
       mailbox: 'INBOX',
     },
-    { settings: S, ownAddresses: ['support@wholesalefy.com'], now: ago(20) },
+    { settings: S, ownAddresses: ['support@example.test'], now: ago(20) },
   );
   if (spam.verdict === 'accepted') {
     await changeTicketStatus(db, sup, { ticketId: spam.ticketId, to: 'spam', reason: 'Рекламная рассылка', blockSender: true });

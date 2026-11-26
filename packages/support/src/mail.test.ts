@@ -6,7 +6,7 @@ import { changeTicketStatus, operatorReply, type Actor } from './tickets';
 import { createTestDb, seedOperator, type TestDb } from './testing/pg';
 
 const S: SupportSettings = { ...DEFAULT_SUPPORT_SETTINGS, hours: { ...DEFAULT_SUPPORT_SETTINGS.hours, alwaysOpen: true } };
-const OWN = ['support@wholesalefy.com'];
+const OWN = ['support@example.test'];
 let db: TestDb;
 let op: Actor;
 
@@ -63,7 +63,7 @@ describe('входящее письмо', () => {
     const first = await processInboundMail(db, mail(), { settings: S, ownAddresses: OWN });
     if (first.verdict !== 'accepted') throw new Error();
     await operatorReply(db, S, op, { ticketId: first.ticketId, body: 'Проверьте папку «Спам».' });
-    const claimed = await claimDueMail(db, { limit: 10, domain: 'wholesalefy.com' });
+    const claimed = await claimDueMail(db, { limit: 10, domain: 'example.test' });
     const reply = claimed.find((c) => c.purpose === 'support_reply')!;
     expect(reply.inReplyTo).toBeTruthy();
     expect(reply.subject).toMatch(/\[#\d+\]/);
@@ -75,7 +75,7 @@ describe('входящее письмо', () => {
         inReplyTo: reply.rfcMessageId,
         references: [reply.rfcMessageId],
         subject: `Re: ${reply.subject}`,
-        text: 'Нашёл, спасибо!\n\nOn Tue, 10 Nov 2026 at 12:00, Support <support@wholesalefy.com> wrote:\n> Проверьте папку «Спам».',
+        text: 'Нашёл, спасибо!\n\nOn Tue, 10 Nov 2026 at 12:00, Support <support@example.test> wrote:\n> Проверьте папку «Спам».',
       }),
       { settings: S, ownAddresses: OWN },
     );
@@ -112,7 +112,7 @@ describe('входящее письмо', () => {
       verdict: 'loop',
     });
     expect(
-      await processInboundMail(db, mail({ from: { address: 'support@wholesalefy.com', name: null } }), { settings: S, ownAddresses: OWN }),
+      await processInboundMail(db, mail({ from: { address: 'support@example.test', name: null } }), { settings: S, ownAddresses: OWN }),
     ).toMatchObject({ verdict: 'own' });
     expect(
       await processInboundMail(db, mail({ from: { address: 'MAILER-DAEMON@x.example', name: null } }), { settings: S, ownAddresses: OWN }),
@@ -135,7 +135,7 @@ describe('входящее письмо', () => {
     const tok = (await db.query(`SELECT email_thread_token FROM support_tickets`)).rows[0]!.email_thread_token;
     const v = await processInboundMail(
       db,
-      mail({ to: [`support+${tok}@wholesalefy.com`], subject: 'без метки', from: { address: 'other@client.example', name: null } }),
+      mail({ to: [`support+${tok}@example.test`], subject: 'без метки', from: { address: 'other@client.example', name: null } }),
       { settings: S, ownAddresses: OWN },
     );
     expect(v).toMatchObject({ verdict: 'accepted', created: false, ticketId: first.ticketId });
@@ -159,16 +159,16 @@ describe('очередь исходящих', () => {
 
   it('забор: Message-ID назначается один раз и не меняется при повторе; успех → sent', async () => {
     const id = await queueOne();
-    const [a] = await claimDueMail(db, { limit: 5, domain: 'wholesalefy.com' });
-    expect(a).toMatchObject({ id, attempts: 1, rfcMessageId: `<${id}@wholesalefy.com>` });
-    expect(await claimDueMail(db, { limit: 5, domain: 'wholesalefy.com' })).toEqual([]);
+    const [a] = await claimDueMail(db, { limit: 5, domain: 'example.test' });
+    expect(a).toMatchObject({ id, attempts: 1, rfcMessageId: `<${id}@example.test>` });
+    expect(await claimDueMail(db, { limit: 5, domain: 'example.test' })).toEqual([]);
     expect(await markMailFailed(db, a!, 'ECONNRESET')).toBe('retry');
     const row = (await db.query(`SELECT status, next_attempt_at, last_error FROM outbound_mail`)).rows[0]!;
     expect(row).toMatchObject({ status: 'queued', last_error: 'ECONNRESET' });
     expect(await claimDueMail(db, { limit: 5, domain: 'x' })).toEqual([]);
     const later = new Date(Date.now() + backoffMs(1) + 1000);
     const [b] = await claimDueMail(db, { limit: 5, domain: 'other-domain', now: later });
-    expect(b).toMatchObject({ attempts: 2, rfcMessageId: `<${id}@wholesalefy.com>` });
+    expect(b).toMatchObject({ attempts: 2, rfcMessageId: `<${id}@example.test>` });
     await markMailSent(db, b!.id, b!.purpose, '250 2.0.0 OK');
     expect((await db.query(`SELECT status, provider_response, body_text FROM outbound_mail`)).rows[0]).toEqual({
       status: 'sent',

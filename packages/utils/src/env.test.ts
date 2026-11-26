@@ -3,7 +3,7 @@ import { envOr, readEnv } from './env';
 
 describe('readEnv', () => {
   it('значение возвращается как есть', () => {
-    expect(readEnv('https://wholesalefy.com')).toBe('https://wholesalefy.com');
+    expect(readEnv('https://example.test')).toBe('https://example.test');
   });
 
   it('пустая строка — отсутствие, а не значение', () => {
@@ -16,7 +16,7 @@ describe('readEnv', () => {
   });
 
   it('пробелы по краям срезаются', () => {
-    expect(readEnv('  https://wholesalefy.com  ')).toBe('https://wholesalefy.com');
+    expect(readEnv('  https://example.test  ')).toBe('https://example.test');
   });
 
   it('не задано — отсутствие', () => {
@@ -36,8 +36,8 @@ describe('envOr', () => {
   });
 
   it('заданное значение умолчанием не перекрывается', () => {
-    expect(envOr('https://cabinet.wholesalefy.com', 'http://localhost:3002')).toBe(
-      'https://cabinet.wholesalefy.com',
+    expect(envOr('https://cabinet.example.test', 'http://localhost:3002')).toBe(
+      'https://cabinet.example.test',
     );
   });
 

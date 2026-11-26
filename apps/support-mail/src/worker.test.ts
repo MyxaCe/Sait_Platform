@@ -26,9 +26,9 @@ describe('конфигурация из env', () => {
 
   it('пустая строка — отсутствие; 465 — TLS, 587 — STARTTLS; проверка сертификата по умолчанию включена', () => {
     const base = {
-      SUPPORT_MAIL_ADDRESS: 'support@wholesalefy.com',
-      SUPPORT_SMTP_HOST: 'mail.wholesalefy.com',
-      SUPPORT_SMTP_USER: 'support@wholesalefy.com',
+      SUPPORT_MAIL_ADDRESS: 'support@example.test',
+      SUPPORT_SMTP_HOST: 'mail.example.test',
+      SUPPORT_SMTP_USER: 'support@example.test',
       SUPPORT_SMTP_PASSWORD: 'p',
     };
     expect(readMailConfig({ ...base, SUPPORT_SMTP_PASSWORD: ' ' }).smtp).toBeNull();
@@ -46,7 +46,7 @@ describe('отправка очереди', () => {
   });
   afterEach(async () => db.close());
 
-  const from = { address: 'support@wholesalefy.com', name: 'Поддержка' };
+  const from = { address: 'support@example.test', name: 'Поддержка' };
 
   async function queue(purpose: 'support_reply' | 'support_ack' | 'password_reset' = 'support_reply') {
     return enqueueMail(db, { purpose, to: 'c@client.example', subject: 'Re: Вопрос [#1001]', bodyText: 'Ответ', inReplyTo: '<m1@client.example>' });
@@ -58,11 +58,11 @@ describe('отправка очереди', () => {
     const sentRaw: Buffer[] = [];
     const appended: Buffer[] = [];
     const transport: RawTransport = { send: async (raw) => (sentRaw.push(raw), { response: '250 OK' }) };
-    const r = await sendTick({ db, transport, sentCopy: { append: async (b) => void appended.push(b) }, from, domain: 'wholesalefy.com', perHour: 100, supportEmailEnabled: true });
+    const r = await sendTick({ db, transport, sentCopy: { append: async (b) => void appended.push(b) }, from, domain: 'example.test', perHour: 100, supportEmailEnabled: true });
     expect(r).toMatchObject({ sent: 2, failed: 0, retry: 0 });
     expect(appended).toHaveLength(1);
     const text = sentRaw.map((b) => b.toString('utf8')).join('\n');
-    expect(text).toMatch(/Message-ID: <[0-9a-f-]{36}@wholesalefy\.com>/);
+    expect(text).toMatch(/Message-ID: <[0-9a-f-]{36}@example\.test>/);
     expect(text).toContain('In-Reply-To: <m1@client.example>');
     expect(text).toContain('Auto-Submitted: auto-generated');
     const rows = await db.query(`SELECT status FROM outbound_mail`);
@@ -121,7 +121,7 @@ describe('разбор входящего письма', () => {
 
   const RAW = [
     'From: =?UTF-8?B?0JDQvdC90LA=?= <anna@client.example>',
-    'To: support@wholesalefy.com',
+    'To: support@example.test',
     'Subject: =?UTF-8?B?0J3QtSDQv9GA0LjRhdC+0LTQuNGCINC60L7QtA==?=',
     'Message-ID: <abc123@client.example>',
     'Date: Tue, 10 Nov 2026 10:00:00 +0000',
@@ -163,7 +163,7 @@ describe('разбор входящего письма', () => {
   });
 
   it('обработка целиком: тикет с вложением; тот же .eml второй раз — дубль', async () => {
-    const ctx = { settings: S, ownAddresses: ['support@wholesalefy.com'], store: store() };
+    const ctx = { settings: S, ownAddresses: ['support@example.test'], store: store() };
     const r1 = await handleRawMessage(db, Buffer.from(RAW), META, ctx);
     expect(r1).toMatchObject({ ok: true, verdict: { verdict: 'accepted', created: true } });
     expect((await db.query(`SELECT count(*)::int AS n FROM support_attachments`)).rows[0]!.n).toBe(1);

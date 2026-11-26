@@ -8,6 +8,7 @@ import { navForRole } from '@/components/shell/nav-registry';
 import { enrollmentGate } from '@/lib/auth/enrollment-gate';
 import { ServiceUnavailable } from '@/components/shell/ServiceUnavailable';
 import { supportAttentionForSession } from '@/lib/support/attention';
+import { adminBrand } from '@/lib/brand';
 
 export default async function ProtectedLayout({ children }: { children: React.ReactNode }) {
   const operator = await getOperatorSession();
@@ -21,7 +22,7 @@ export default async function ProtectedLayout({ children }: { children: React.Re
 
   return (
     <div className="flex min-h-svh">
-      <NavRail items={navItems} supportAttention={supportAttention} />
+      <NavRail items={navItems} supportAttention={supportAttention} brand={adminBrand()} />
       <div className="flex min-w-0 flex-1 flex-col">
         <TopBar operator={operator} />
         <main className="flex-1 px-6 py-6 xl:px-8">

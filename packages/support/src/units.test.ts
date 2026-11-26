@@ -77,7 +77,7 @@ describe('настройки: мягкое чтение, строгая запи
   });
 
   it('то, что прошло строгую проверку, читается обратно без подмен', () => {
-    const s = { ...DEFAULT_SUPPORT_SETTINGS, autoCloseDays: 3, mail: { fromName: 'Wholesalefy Support' } };
+    const s = { ...DEFAULT_SUPPORT_SETTINGS, autoCloseDays: 3, mail: { fromName: 'Acme Support' } };
     expect(validateSettings(s)).toEqual([]);
     expect(parseSupportSettings(JSON.parse(JSON.stringify(s)))).toEqual(s);
   });
@@ -110,10 +110,10 @@ describe('текст и почтовые заголовки', () => {
     expect(normalizeMessageId(' abc@x ')).toBe('<abc@x>');
     expect(normalizeMessageId('<abc@x>')).toBe('<abc@x>');
     expect(normalizeMessageId('')).toBeNull();
-    expect(threadTokenFromAddress(['Support+abcdef0123456789abcdef01@Wholesalefy.com'], 'support@wholesalefy.com')).toBe(
+    expect(threadTokenFromAddress(['Support+abcdef0123456789abcdef01@Example.test'], 'support@example.test')).toBe(
       'abcdef0123456789abcdef01',
     );
-    expect(threadTokenFromAddress(['support@wholesalefy.com'], 'support@wholesalefy.com')).toBeNull();
+    expect(threadTokenFromAddress(['support@example.test'], 'support@example.test')).toBeNull();
   });
 
   it('цитата отрезается (en/ru/Outlook), пустой результат — исходный текст', () => {

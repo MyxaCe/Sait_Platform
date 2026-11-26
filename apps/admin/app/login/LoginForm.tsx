@@ -80,7 +80,7 @@ export function LoginForm() {
         {totpStep ? (
           <Fragment key="totp">
             <p className="text-secondary text-sm">
-              Откройте приложение-аутентификатор и введите шестизначный код для Wholesalefy.
+              Откройте приложение-аутентификатор и введите шестизначный код.
             </p>
             <label className="flex flex-col gap-1.5">
               <span className={fieldLabel}>Код подтверждения</span>
