@@ -93,7 +93,10 @@ export default async function HomePage({ params }: { params: { locale: string } 
     <div className={cn(PAGE, 'flex flex-col gap-4 lg:gap-5')}>
       {profileM ? <ProfileModule user={user} verification={verification} /> : null}
 
-      <div className={cn(GRID, 'xl:items-stretch')} data-home-grid>
+      {/* Шаги справа занимают два ряда (счета + «Пригласи друга»). Первый ряд гибкий (1fr): если шаги выше,
+          лишняя высота уходит карточкам счетов (у них кнопки прижаты к низу), а «Пригласи друга» остаётся
+          своей естественной высоты — без пустых половин. */}
+      <div className={cn(GRID, 'xl:items-stretch', hasReferral && onboardingM && 'xl:grid-rows-[minmax(0,1fr)_auto]')} data-home-grid>
         {onboardingM ? (
           <div className={cn('min-w-0 xl:col-span-4 xl:col-start-9 xl:row-start-1', ORDER_CLASS, hasReferral && 'xl:row-span-2')} style={orderStyle(order.onboarding)}>
             <OnboardingModule

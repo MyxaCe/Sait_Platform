@@ -137,7 +137,7 @@
     "resetUnsetNote": "Réinitialisation indisponible : le montant de départ du compte démo n’est pas défini dans les paramètres du site.",
     "resetUnavailableNote": "Réinitialisation indisponible : impossible de récupérer les paramètres du site.",
     "balanceNoAccount": "Compte pas encore ouvert",
-    "balanceNoAccountNote": "Le compte démo s’ouvre lors de votre première visite dans le terminal — c’est le terminal qui le crée, pas le site.",
+    "balanceNoAccountNote": "S’ouvre lors de votre première visite dans le terminal.",
     "resetAccepted": "Demande acceptée. Le montant sera mis à jour dès que le terminal aura appliqué la réinitialisation.",
     "resetPositionsOpen": "Clôturez d’abord vos positions ouvertes : une réinitialisation avec elles laisserait un solde d’une vie du compte et des positions d’une autre.",
     "resetNotDemo": "Ce n’est pas un compte démo — il n’y a pas de montant de départ auquel revenir.",

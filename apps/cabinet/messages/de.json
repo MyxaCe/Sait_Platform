@@ -137,7 +137,7 @@
     "resetUnsetNote": "Zurücksetzen nicht möglich: Der Startbetrag des Demokontos ist in den Website-Einstellungen nicht festgelegt.",
     "resetUnavailableNote": "Zurücksetzen nicht möglich: Die Website-Einstellungen konnten nicht abgerufen werden.",
     "balanceNoAccount": "Konto noch nicht eröffnet",
-    "balanceNoAccountNote": "Das Demokonto wird beim ersten Aufruf des Terminals eröffnet — es wird vom Terminal angelegt, nicht von der Website.",
+    "balanceNoAccountNote": "Wird beim ersten Aufruf des Terminals eröffnet.",
     "resetAccepted": "Angenommen. Der Betrag wird aktualisiert, sobald das Terminal das Zurücksetzen ausgeführt hat.",
     "resetPositionsOpen": "Schließen Sie zuerst Ihre offenen Positionen: Ein Zurücksetzen mit offenen Positionen würde einen Kontostand aus einem Kontoleben mit Positionen aus einem anderen mischen.",
     "resetNotDemo": "Dies ist kein Demokonto — es gibt keinen Startbetrag, auf den zurückgesetzt werden kann.",
