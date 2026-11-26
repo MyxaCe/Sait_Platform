@@ -24,8 +24,8 @@ export function compareTier(a: TierPortfolio, b: TierPortfolio): number {
 
 /**
  * Куда повысить клиента или `null`, если повышать некуда.
- * Кандидаты — только публичные портфели (служебные/закрытые выдаёт оператор руками)
- * и портфель по умолчанию. Текущий портфель неизвестен → считается портфелем по умолчанию.
+ * Кандидаты — портфель по умолчанию и публичные портфели с заданным порогом (> 0);
+ * служебные/закрытые и без порога выдаёт только оператор руками. Текущий портфель неизвестен → считается портфелем по умолчанию.
  */
 export function pickUpgrade(
   portfolios: readonly TierPortfolio[],
@@ -36,7 +36,10 @@ export function pickUpgrade(
   const current =
     portfolios.find((p) => p.key === currentKey) ?? portfolios.find((p) => p.isDefault) ?? null;
   const eligible = portfolios
-    .filter((p) => (p.isPublic || p.isDefault) && p.minBalanceMinor <= balanceMinor)
+    // Не по умолчанию с порогом 0 = «порог не задан»: такой портфель автоматически не выдаётся
+    // (после миграции у всех 0 — иначе первое же пополнение уводило бы клиента на старший портфель).
+    .filter((p) => p.isDefault || (p.isPublic && p.minBalanceMinor > 0))
+    .filter((p) => p.minBalanceMinor <= balanceMinor)
     .sort(compareTier);
   const best = eligible[eligible.length - 1] ?? null;
   if (!best) return null;
@@ -57,8 +60,9 @@ export function validateThresholds(portfolios: readonly TierPortfolio[]): TierVa
   for (const p of portfolios) {
     if (p.isDefault && p.minBalanceMinor !== 0) return { ok: false, reason: 'defaultNotZero', key: p.key };
   }
+  // Незаданный порог (0 у портфеля не по умолчанию) в лесенке не участвует: его можно задать позже.
   const ordered = [...portfolios]
-    .filter((p) => p.isPublic || p.isDefault)
+    .filter((p) => p.isDefault || (p.isPublic && p.minBalanceMinor > 0))
     .sort((a, b) => a.sortOrder - b.sortOrder || (a.key < b.key ? -1 : 1));
   for (let i = 1; i < ordered.length; i++) {
     const lower = ordered[i - 1]!;

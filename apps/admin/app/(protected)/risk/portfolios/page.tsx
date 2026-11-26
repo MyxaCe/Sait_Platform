@@ -111,7 +111,7 @@ export default async function PortfoliosPage({
                 <p className="text-secondary text-xs" data-min-balance>
                   Переход с баланса:{' '}
                   <span className="text-primary font-medium tabular-nums">
-                    {p.isDefault || p.minBalanceMinor === 0 ? 'с регистрации' : `от ${formatUsdt(p.minBalanceMinor)} USDT`}
+                    {p.isDefault ? 'с регистрации' : p.minBalanceMinor === 0 ? 'порог не задан — только вручную' : `от ${formatUsdt(p.minBalanceMinor)} USDT`}
                   </span>
                 </p>
                 <p className="text-secondary text-xs">

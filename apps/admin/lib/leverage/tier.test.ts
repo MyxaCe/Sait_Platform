@@ -35,6 +35,12 @@ describe('pickUpgrade — тип счёта по балансу, только в
     const set = [P('standard', 0, 10), P('vip', 100, 20, { isPublic: false })];
     expect(pickUpgrade(set, null, 1_000_000)).toBeNull();
   });
+  it('порог не задан (0 у старших портфелей, как сразу после миграции) — никого не повышаем', () => {
+    const fresh = [P('standard', 0, 10), P('pro', 0, 20), P('enc_prime', 0, 30)];
+    expect(pickUpgrade(fresh, null, 10_000_000)).toBeNull();
+    const partly = [P('standard', 0, 10), P('pro', 500_000, 20), P('enc_prime', 0, 30)];
+    expect(pickUpgrade(partly, null, 10_000_000)?.key).toBe('pro');
+  });
   it('отрицательный или нечисловой баланс — ничего не делаем', () => {
     expect(pickUpgrade(SET, null, -1)).toBeNull();
     expect(pickUpgrade(SET, null, Number.NaN)).toBeNull();
@@ -51,6 +57,9 @@ describe('validateThresholds — пороги растут по порядку �
       reason: 'defaultNotZero',
       key: 'standard',
     });
+  });
+  it('незаданный порог старшего портфеля не мешает задать порог младшему', () => {
+    expect(validateThresholds([P('standard', 0, 10), P('pro', 500_000, 20), P('enc_prime', 0, 30)])).toEqual({ ok: true });
   });
   it('старший дешевле младшего — отказ с названием пары', () => {
     expect(validateThresholds([P('standard', 0, 10), P('pro', 500_000, 20), P('enc_prime', 400_000, 30)])).toEqual({
