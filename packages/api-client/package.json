@@ -5,7 +5,8 @@
   "exports": {
     ".": "./src/index.ts",
     "./schemas": "./src/schemas/index.ts",
-    "./scrubbing-policy.v1.json": "./scrubbing-policy.v1.json"
+    "./scrubbing-policy.v1.json": "./scrubbing-policy.v1.json",
+    "./media-proxy": "./src/media-proxy.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

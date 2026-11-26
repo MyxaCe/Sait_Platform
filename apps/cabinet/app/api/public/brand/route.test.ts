@@ -38,6 +38,19 @@ describe('/api/public/brand — бренд для терминала', () => {
     expect(vi.mocked(getChromeBrand)).toHaveBeenCalledWith('ru');
   });
 
+  it('логотип через /media/ кабинета отдаёт абсолютной ссылкой (терминал на другом поддомене)', async () => {
+    vi.mocked(getChromeBrand).mockResolvedValue({
+      name: 'Brand',
+      primaryColor: null,
+      logo: { url: '/media/logo.png', width: 1, height: 1, alt: '' },
+      logoMode: null,
+      socials: [],
+      legalEntity: null,
+    });
+    const res = await GET(new Request('https://cabinet.example.test/api/public/brand'));
+    expect((await res.json()).logo.url).toBe('https://cabinet.example.test/media/logo.png');
+  });
+
   it('preflight отвечает 204', () => {
     expect(OPTIONS().status).toBe(204);
   });

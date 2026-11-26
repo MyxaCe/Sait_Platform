@@ -45,7 +45,7 @@ test.describe('юрлицо и лицензии из CMS', () => {
     await expect(main.getByTestId('regulation-license')).toHaveCount(2);
     await expect(main.getByRole('link', { name: 'Лицензия (PDF)' })).toHaveAttribute(
       'href',
-      'https://cms.example.test/api/media/file/license.pdf',
+      '/media/license.pdf',
     );
   });
 

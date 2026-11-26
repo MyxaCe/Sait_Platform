@@ -1,4 +1,4 @@
-import { brandLogoModeSchema, legalEntitySchema, type LegalEntity } from '@broker/api-client';
+import { brandLogoModeSchema, legalEntitySchema, rewriteMediaUrls, type LegalEntity } from '@broker/api-client';
 import { readTenantSlug } from '@broker/tenant';
 import { envOr, readEnv } from '@broker/utils';
 import { isPlatformLocale, localizedPath } from '@broker/utils/locales';
@@ -65,14 +65,16 @@ export async function getChromeBrand(locale: string): Promise<ChromeBrand | null
   const data = (await cmsGet('brand', locale)) as Record<string, unknown> | null;
   if (!data || typeof data.name !== 'string') return null;
   const logo = data.logo as ChromeBrand['logo'] | null;
-  return {
+  // Медиа CMS — через /media/ кабинета: хост cms. закрыт по IP. Переписываем после разбора схем
+  // (схемы ждут абсолютные https-ссылки).
+  return rewriteMediaUrls({
     name: data.name,
     primaryColor: typeof data.primaryColor === 'string' ? data.primaryColor : null,
     logo: logo && typeof logo.url === 'string' ? logo : null,
     logoMode: brandLogoModeSchema.safeParse(data.logoMode).success ? (data.logoMode as ChromeBrand['logoMode']) : null,
     socials: Array.isArray(data.socials) ? (data.socials as ChromeBrand['socials']) : [],
     legalEntity: legalEntitySchema.parse(data.legalEntity),
-  };
+  });
 }
 
 export function resolveBrandName(brand: ChromeBrand | null, neutral: string): string {

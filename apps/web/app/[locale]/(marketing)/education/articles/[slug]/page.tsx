@@ -15,6 +15,8 @@ import { StreamFacade } from '@/features/streams/StreamFacade';
 import { LEVEL_LABEL_KEY, findEducationArticle, loadEducationArticles } from '@/lib/articles';
 import { brandName } from '@/lib/brand';
 import { staticParamsFromCms } from '@/lib/cms';
+import { absoluteMediaUrl } from '@broker/api-client';
+import { SITE_URL } from '@/lib/site';
 
 interface PageParams {
   params: { locale: string; slug: string };
@@ -53,7 +55,7 @@ export default async function EducationArticlePage({ params }: PageParams) {
     headline: article.title,
     description: article.excerpt,
     ...(article.publishedAt ? { datePublished: article.publishedAt } : {}),
-    ...(article.cover ? { image: article.cover.url } : {}),
+    ...(article.cover ? { image: absoluteMediaUrl(article.cover.url, SITE_URL) } : {}),
     author: { '@type': 'Organization', name: organization },
     publisher: { '@type': 'Organization', name: organization },
   };

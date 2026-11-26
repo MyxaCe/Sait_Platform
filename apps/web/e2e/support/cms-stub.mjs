@@ -141,6 +141,12 @@ const OPEN_SITE_LEGAL_ENTITY = (locale) => ({
   ],
 });
 
+// PNG 2×2 для проверки прокси медиа.
+const E2E_LOGO_PNG = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAEElEQVR4nGO4ssQciBggFAAxpga9Aw6vFQAAAABJRU5ErkJggg==',
+  'base64',
+);
+
 const DATA = {
   brand: (locale, _raw, site) => ({
     name: 'E2E Brand',
@@ -148,7 +154,13 @@ const DATA = {
     favicon: null,
     primaryColor: null,
     socials: [],
-    ...(site === OPEN_SITE ? { legalEntity: OPEN_SITE_LEGAL_ENTITY(locale) } : {}),
+    ...(site === OPEN_SITE
+      ? {
+          legalEntity: OPEN_SITE_LEGAL_ENTITY(locale),
+          // Хост CMS из браузера недоступен (как cms.<домен> за фильтром IP): логотип идёт через /media/ сайта.
+          logo: { url: 'https://cms.unreachable.invalid/api/media/file/e2e-logo.png', width: 2, height: 2, alt: 'E2E Brand', mimeType: 'image/png' },
+        }
+      : {}),
   }),
   navigation: (locale) => ({
     header:
@@ -258,6 +270,14 @@ const server = http.createServer((req, res) => {
     return send(200, { down: [...down] });
   }
   if (url.pathname === '/health') return send(200, { ok: true });
+  if (url.pathname === '/api/media/file/e2e-logo.png') {
+    res.writeHead(200, { 'Content-Type': 'image/png', 'Content-Length': String(E2E_LOGO_PNG.length) });
+    return res.end(E2E_LOGO_PNG);
+  }
+  if (url.pathname === '/api/media/file/license.pdf') {
+    res.writeHead(200, { 'Content-Type': 'application/pdf' });
+    return res.end(['%PDF-1.4', '%%EOF', ''].join('\n'));
+  }
   if (url.pathname === '/api/v1/query') {
     if (down.has('prometheus')) return send(503, { status: 'error' });
     let body = '';

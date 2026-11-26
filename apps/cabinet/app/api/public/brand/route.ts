@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { getChromeBrand } from '@/lib/chrome';
 import { isPlatformLocale } from '@broker/utils/locales';
+import { absoluteMediaUrl } from '@broker/api-client';
+import { readEnv } from '@broker/utils';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,10 +24,13 @@ export async function GET(request: Request) {
   if (!brand) {
     return NextResponse.json({ error: 'unavailable' }, { status: 503, headers: { ...CORS, 'Cache-Control': 'no-store' } });
   }
+  // Терминал живёт на другом поддомене: логотип (/media/… кабинета) отдаём абсолютной ссылкой.
+  const origin = readEnv(process.env.CABINET_PUBLIC_URL) ?? new URL(request.url).origin;
+  const logo = brand.logo ? { ...brand.logo, url: absoluteMediaUrl(brand.logo.url, origin) } : null;
   return NextResponse.json(
     {
       name: brand.name,
-      logo: brand.logo,
+      logo,
       favicon: null,
       primaryColor: brand.primaryColor,
       logoMode: brand.logoMode ?? 'logo-name',

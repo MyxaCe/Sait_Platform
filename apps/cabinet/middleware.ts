@@ -119,5 +119,5 @@ async function route(request: NextRequest): Promise<NextResponse> {
 }
 
 export const config = {
-  matcher: ['/((?!api|_next|_vercel|.*\\..*).*)'],
+  matcher: ['/((?!api|media|_next|_vercel|.*\\..*).*)'],
 };

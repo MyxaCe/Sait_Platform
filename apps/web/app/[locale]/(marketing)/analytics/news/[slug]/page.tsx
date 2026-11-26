@@ -15,6 +15,8 @@ import { ArticleBody } from '@/components/RichText';
 import { findNews, loadNews } from '@/lib/articles';
 import { brandName } from '@/lib/brand';
 import { staticParamsFromCms } from '@/lib/cms';
+import { absoluteMediaUrl } from '@broker/api-client';
+import { SITE_URL } from '@/lib/site';
 
 interface PageParams {
   params: { locale: string; slug: string };
@@ -64,7 +66,7 @@ export default async function NewsArticlePage({ params }: PageParams) {
     headline: article.title,
     description: article.excerpt,
     datePublished: article.publishedAt,
-    ...(article.cover ? { image: article.cover.url } : {}),
+    ...(article.cover ? { image: absoluteMediaUrl(article.cover.url, SITE_URL) } : {}),
     author: { '@type': 'Organization', name: article.source },
     publisher: { '@type': 'Organization', name: publisher },
   };

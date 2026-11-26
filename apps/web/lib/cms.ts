@@ -1,6 +1,6 @@
 import { draftMode } from 'next/headers';
 import type { z } from 'zod';
-import { CMS_RESPONSE_SCHEMAS, cmsFetch, type ContentLocale } from '@broker/api-client';
+import { CMS_RESPONSE_SCHEMAS, cmsFetch, rewriteMediaUrls, type ContentLocale } from '@broker/api-client';
 import { readTenantSlug } from '@broker/tenant';
 import { lastGoodKey, loadLastGood, saveLastGood } from './cms-last-good';
 import { markCmsOutage } from './cms-outage';
@@ -98,7 +98,8 @@ export async function getCms<K extends CmsResource>(
         searchParams: draft ? { ...siteParams, draft: 'true' } : siteParams,
       });
       if (!draft && key) await saveLastGood(key, data);
-      return withLiveParams(data, locale);
+      // Медиа CMS — через /media/ сайта (хост cms. закрыт по IP). В «последней версии» храним как есть.
+      return withLiveParams(rewriteMediaUrls(data), locale);
     } catch (error) {
       failure = error;
     }
@@ -111,7 +112,7 @@ export async function getCms<K extends CmsResource>(
       console.error(
         `[cms] CMS недоступна — ${resource} (${locale}) показан из последней версии от ${saved.savedAt}: ${describeFailure(failure)}`,
       );
-      return withLiveParams(parsed.data, locale);
+      return withLiveParams(rewriteMediaUrls(parsed.data), locale);
     }
   }
 
